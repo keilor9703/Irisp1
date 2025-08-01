@@ -33,4 +33,11 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Areas\Expendios\" />
+    <Folder Include="Areas\Integrantes\" />
+    <Folder Include="Areas\Listas\" />
+    <Folder Include="Areas\Reportes\" />
+  </ItemGroup>
+
 </Project>

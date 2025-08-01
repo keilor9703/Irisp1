@@ -35,4 +35,4 @@ namespace Comun.Areas.Admin
         public string AREA { get; set; }
 
     }
-}
+} 

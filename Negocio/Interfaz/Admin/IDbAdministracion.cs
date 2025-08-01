@@ -12,6 +12,7 @@ namespace Negocio.Interfaz.Admin
         public Task<DtoResultado<List<DtoSlider>>> F_GetSilerSuperior();
         public Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string V_Usuario, string V_Maquina);
         public Task<DtoResultado<List<DtoRoles>>> F_GetRoles();
+        public Task<DtoResultado<List<DtoUsuario>>> F_GetListUsuarios();
         public Task<DtoResultado<List<DtoUserRoles>>> F_GetUserRoles(long V_Identificacion);
         #endregion
 

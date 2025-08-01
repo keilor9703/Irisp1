@@ -11,11 +11,10 @@
         var UrlGetUserRoles = "@Url.Action("F_GetUserRoles", "Usuarios", new { Area = "Admin" })";
         var UrlInsRoles = "@Url.Action("P_InsRoles", "Usuarios", new { Area = "Admin" })";
         var UrlDelRoles = "@Url.Action("P_DelRoles", "Usuarios", new { Area = "Admin" })";
+         var UrlGetListUsuarios = "@Url.Action("F_GetListUsuarios", "Usuarios", new { Area = "Admin" })";
     </script>
 }
-
 <input type="text" id="txtIdUsuario" class="hidden" />
-
 <section class="content-header"></section>
 <div class="page-titles">
     <div class="breadcrumb-line">
@@ -25,7 +24,6 @@
         </ul>
     </div>
 </div>
-
 <div class="card border-success">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="mr-2 fa fa-pencil-square-o text-white"></i>Administración de Usuarios</h4>
@@ -51,7 +49,7 @@
                             <div class="input-group">
                                 <input tabindex="1" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <span class="input-group-btn">
-                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl" onclick="F_GetFuncionarios($('#txtIdentificacion').val()); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl" onclick="F_GetFuncionarios ($('#txtIdentificacion').val()); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
                                     <button tabindex="3" class="btn btn-warning" id="BtnLimpiarEmpl" onclick="Limpiar(); return false;" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
                                 </span>
                             </div>
@@ -75,13 +73,13 @@
                     <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <input tabindex="6" name="txtCorreo" type="text" id="txtCorreo" autocomplete="off" placeholder=" " class="form-control InputPading" readonly />
-                            <label class="Labels">Correo:</label>
+                            <label class="Labels">Correo Institucional:</label>
                         </div>
                     </div>
                     <div class="col-md-3 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <input tabindex="7" name="txtUserName" type="text" id="txtUserName" autocomplete="off" placeholder=" " class="form-control InputPading" readonly />
-                            <label class="Labels">Usuario Inst.:</label>
+                            <label class="Labels">Usuario Institucional.:</label>
                         </div>
                     </div>
                     <div class="col-md-3 MargFloatBoos">
@@ -120,15 +118,43 @@
             </div>
         </div>
         <div class="card-footer" style="margin-bottom: 10px;">
-            <div class="col-md-12 text-right">
-                <button tabindex="1001" type="button" id="btnGrabar" onclick="P_InsUdpUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar"><span class="fa ico_grabar faa-wrench animated"></span> Guardar</button>
-                <button tabindex="1002" type="button" id="btnLimpiar" onclick="Limpiar(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo"><span class="fa ico_limpiar faa-ring animated"></span> Nuevo</button>
-                <button tabindex="1003" type="button" id="btnEliminar" onclick="OpenModalError(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-eliminar" title="Eliminar"><span class="fas fa-trash-alt faa-ring animated"></span> Eliminar</button>
+            <div class="row">
+                <div class="col-md-6 text-left">
+                    <button tabindex="1003" type="button" id="btnListaUsuarios" onclick="GetGrillaUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important; " class="btn btn-eliminar" title="Listado Usuarios"><span class="fas fa-trash-alt faa-ring animated"></span> Listado Usuarios</button>
+                 </div>
+                 <div class="col-md-6 text-right">
+                 <button tabindex="1001" type="button" id="btnGrabar" onclick="P_InsUdpUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar"><span class="fa ico_grabar faa-wrench animated"></span> Guardar</button>
+                 <button tabindex="1002" type="button" id="btnLimpiar" onclick="Limpiar(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo"><span class="fa ico_limpiar faa-ring animated"></span> Nuevo</button>
+               </div>
             </div>
         </div>
     </div>
 </div>
 
+@* Grilla para listado de usuarios----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+
+<div class="card border-success ">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="mr-2 mdi mdi-account-card-details text-white"></i>Listado de Usuarios</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+    <div id="pn_GrillaUsuarios" class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrillaUsuarios" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@* Fin Grilla para listado de usuarios  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
 <div class="card border-success hidden" id="pn_Roles">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="mr-2 fa fa-server text-white"></i>Asignar Roles</h4>
@@ -168,7 +194,6 @@
         </div>
     </div>
 </div>
-
 <div class="card border-success hidden" id="pn_Grilla">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="mr-2 fa fa-server text-white"></i>Roles Asignados al Funcionario(a)</h4>

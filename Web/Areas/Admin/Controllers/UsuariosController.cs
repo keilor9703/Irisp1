@@ -7,6 +7,8 @@ using System.Security.Claims;
 
 namespace Web.Areas.Admin.Controllers
 {
+
+
     [Area("Admin")]
     [Authorize(Roles = "1,2")]
     public class UsuariosController : Controller
@@ -32,6 +34,20 @@ namespace Web.Areas.Admin.Controllers
         public async Task<IActionResult> F_GetUserRoles(Int64 V_Identificacion)
         {
             var Resultado = await _iDbAdministracion.F_GetUserRoles(V_Identificacion);
+            if (Resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+            }
+        }
+
+
+        public async Task<IActionResult> F_GetListUsuarios()
+        {
+            var Resultado = await _iDbAdministracion.F_GetListUsuarios();
             if (Resultado.IdRespuesta > 0)
             {
                 return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });

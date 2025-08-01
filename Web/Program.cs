@@ -4,9 +4,12 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Negocio.Gestion.Admin;
 using Negocio.Gestion.Clientes;
 using Negocio.Gestion.General;
+using Negocio.Gestion.Irisp1;
+using Negocio.Interfaz.Irisp1;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Clientes;
 using Negocio.Interfaz.General;
+using Negocio.Interfaz.Modulo1;
 using Serilog;
 using Servicios.Api;
 using Servicios.ApiInterfaz;
@@ -56,11 +59,11 @@ builder.Services.AddScoped<IGestionOUD, GestionOUD>();
 
 //Áreas
 builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
+builder.Services.AddScoped<IDbIrisp1, DbIrisp1>();
 builder.Services.AddScoped<IDbFuncionarios, DbFuncionarios>();
 builder.Services.AddScoped<IDbDominios, DbDominios>();
 builder.Services.AddScoped<IDbClientes, DbClientes>();
 builder.Services.AddScoped<IUnidades, Unidades>();
-
 
 // httpClient
 builder.Services.AddHttpClient<IApiWebOud, ApiWebOud>();

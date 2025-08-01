@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.0 UL", "1.0 UL", "{E8C27D9A-9952-4BEA-9953-7071C891CA28}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.0 BL", "2.0 BL", "{CBBFA7C1-974A-409D-A514-A9B23AC4CE25}"
+	ProjectSection(SolutionItems) = preProject
+		Web\SessionExtensionss.cs = Web\SessionExtensionss.cs
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.0 DL", "3.0 DL", "{05EFDD23-8E2A-410F-945C-3A1F5EA849AC}"
 EndProject

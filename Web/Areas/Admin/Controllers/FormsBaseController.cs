@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Negocio.Interfaz.Admin;
+using Negocio.Interfaz.Irisp1;
 using System.Security.Claims;
 
 namespace Web.Areas.Admin.Controllers
@@ -10,10 +10,10 @@ namespace Web.Areas.Admin.Controllers
     public class FormsBaseController : Controller
     {
         #region Propiedades
-        private readonly IDbAdministracion _iDbAdministracion;
+        private readonly IDbIrisp1 _iDbAdministracion;
         #endregion
 
-        public FormsBaseController(IDbAdministracion iDbAdministracion)
+        public FormsBaseController(IDbIrisp1 iDbAdministracion)
         {
             _iDbAdministracion = iDbAdministracion;
         }
@@ -28,19 +28,6 @@ namespace Web.Areas.Admin.Controllers
                 .Select(c => c.Value);
 
             return View();
-        }
-        public async Task<IActionResult> F_GetDatos(Int64 V_Identificacion)
-        {
-            var retorno = await _iDbAdministracion.F_GetSilerSuperior();
-
-            if (retorno != null)
-            {
-                return Json(new { success = true, data = retorno.Data });
-            }
-            else
-            {
-                return Json(new { success = false, data = retorno.Data });
-            }
         }
     }
 }

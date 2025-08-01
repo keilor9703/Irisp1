@@ -1,0 +1,667 @@
+﻿@{ 
+    ViewData["Title"] = "Registros Irisp1";
+}
+@section scripts {
+        <script src="~/areas/irisp1/registrosirisp1.js"></script>
+        <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+      
+        <script type='text/javascript'>
+            var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetEstadosIrisP1 = "@Url.Action("F_GetEstadosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
+
+
+        </script>
+}
+
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio  </span></a></li>
+            <li class="active">Intrumento de Recoleccion de Informacion del Servicio de Policia / Registros IRIS</li>
+        </ul>
+    </div>
+</div>
+@*
+   BUSQUEDA POR AÑOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+<div class="card border-success">
+   
+
+     <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Consulta IRIS</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="row mt-3" > <!-- Se agrega margen superior aquí -->
+        <div class="col-md-2 MargFloatBoos">
+            <div class="form-group has-float-label">
+                @Html.DropDownList("ddlAnioIris", (SelectList)ViewBag.ddlAnioIris, new { @tabindex = 1, id = "ddlAnioIris", @class = "form-control select2" })
+                <label class="Labels">Ver IRIS-P1 por año</label>
+            </div>
+        </div>
+        <div class="col-md-2 ">
+            <button tabindex="1002" id="btnLimpiar" onclick="AbrirModalNuevoIris();" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo">
+                <span class="fa ico_limpiar faa-ring animated"></span> Nuevo IRIS
+            </button>
+        </div>
+    </div>
+</div>
+
+
+@*
+  FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+@*
+GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+<div class="card border-success hidden" id="pn_GrillaVerificacion">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>   Etapa de Verificación</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+    <div class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*
+FIN GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+@*
+GRILLA ETAPA DE INVESTIGACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+<div class="card border-success hidden" id="pn_GrillaInvestigacion">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>   Etapa de Investigación</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+    <div class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrillaInvestigacion" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*
+FIN GRILLA ETAPA DE INVESTIGACION  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+@*
+GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+<div class="card border-success hidden" id="pn_GrillaFinalizacion">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="	fas fa-clipboard-list"></i>   Etapa de Finalización</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla3(); return false;">
+                <i class="ti-minus"></i>
+            </a>
+            <i class="mdi mdi-arrow-expand"></i>  </a>
+        </div>
+    </div>
+    <div  class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-40">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrillaFinalizacion" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@* 
+FIN GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+@* <div class="card-footer" style="margin-bottom: 10px;">
+    <div class="col-md-12 text-center">
+        <button tabindex="7607" type="button" id="btnImprimir" onclick="SweetAlertError(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Imprimir"><span class="fa fa-print faa-wrench animated"></span> Imprimir</button>
+        <button type="button" data-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
+    </div>
+</div> *@
+
+<!-- INICIO DE FORMULARIO EN LA MODAL-->
+
+<div class="modal fade" id="Modal_VerRegistro" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+   <div class="modal-dialog" style="max-width: 70%;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Nuevo Iris - P1</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                @*  DATOS DEL FUNCIONARIO ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+                <fieldset>
+                    <legend style="width: calc(12em + .75rem + 2px) !important;">Funcionario que informa</legend>
+                    <div class="row">
+                        <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <div class="input-group">
+                                   <input tabindex="1" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <span class="input-group-btn">
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl" onclick="F_GetFuncionariosIris ($('#txtIdentificacion').val()); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    
+                                </span>
+                                </div>
+                                <label class="Labels">Identificación</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
+                                <label class="Labels">Funcionario:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-5 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                            <input tabindex="5" name="txtUnidad" type="text" id="txtUnidad" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
+                            <label class="Labels">Unidad:</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 MargFloatBoos hidden">
+                               <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtDependencia" type="text" id="txtDependencia" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
+                                    <label class="Labels">txtDependencia:</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlCuadrante", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlCuadrante", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Cuadrante:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtTelefono" name="txtTelefono" type="number" value="" autocomplete="off" placeholder="Digite # de teléfono" class="form-control InputPading">
+                                <label class="Labels">Celular:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 MargFloatBoos">
+                            
+                            <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtEspecialidad" type="text" id="txtEspecialidad" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
+                                    <label class="Labels">Especialidad</label>
+                                
+                            </div>
+                        </div>
+                    </div >
+                </fieldset>
+                @* FIN  DATOS DEL FUNCIONARIO------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+
+                @*   DATOS IRIS P1-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+                <fieldset class="mt-3">
+                    <legend style="width: calc(6.5em + .75rem + 2px) !important;">Datos IRIS P1</legend>
+                    <div class="row">
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlClase", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlClase", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Clase:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlNomClase1",
+                                                  new List<SelectListItem> {
+                                new SelectListItem { Text = "Seleccione", Value = "0" },
+                                new SelectListItem { Text = "Opción 1", Value = "1" },
+                                new SelectListItem { Text = "Opción 2", Value = "2" }
+                                },
+                                                  htmlAttributes: new { @tabindex = 5, @id = "ddlNomClase1", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Nombre de la Clase:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos" id="textContainer" style="display: none;">
+                            <div class="form-group has-float-label">
+                                <input type="text" id="inputText" class="form-control" placeholder="Ingrese texto aquí" />
+                                <label class="Labels">Texto Adicional:</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlActividad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlActividad", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Tiempo actividad delito :</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlFuente", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlFuente", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Fuente:</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlEntono", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlEntono", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Entorno:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtCampoT" name="txtCampoT" type="text" value="" autocomplete="off" placeholder="Describa en el entorno" class="form-control InputPading">
+                                <label class="Labels">Nombre del entorno afectado:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlZona", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlZona", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Zona:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <textarea tabindex="400" class="form-control" placeholder=" " rows="5" id="txtObservaCabezaCuello" name="txtObservaCabezaCuello" maxlength="4000" cols="40" style="height: 50px !important; text-align:justify; margin-bottom: 0px;"></textarea>
+                                <label class="Labels">Descripcion General:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 MargFloatBoos">
+                            <div class="form-horizontal">
+                                <div class="form-group row" style="margin-bottom: 0px;">
+                                    <label class="col-md-6 col-form-label Labels" style="margin-top:0px;">Registro fotografico?:</label>
+                                    <div class="col-md-4 text-left" style="padding-left:0px;">
+                                        <input tabindex="111" type="checkbox" checked data-toggle="toggle" id="chkDesignado">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group has-float-label">
+                                <div class="input-group">
+                                    <input tabindex="12" name="txtIdentificacionK" type="text" id="txtIdentificacionK" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <span class="input-group-btn">
+                                        <button tabindex="31" class="btn btn-success" id="btnGetAtencionAmbIden" onclick="GetAtencionAmbIden(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                        <button tabindex="3" class="btn btn-warning" id="btnLimpiarAtencionAmbulatoriaA" onclick="LimpiarAtencionAmbulatoria(); return false;" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                    </span>
+                                </div>
+                                <label class="Labels">Anexo fotografico:</label>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                @* FIN  DATOS IRIS P1-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+
+                @*   DATOS INTEGRANTES------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+                <fieldset>
+                    <legend style="width: calc(10.5em + .75rem + 2px) !important;">Datos de Integrantes</legend>
+                    <div class="row">
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <div class="input-group">
+                                    <input tabindex="3" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" >
+                                    <span class="input-group-btn">
+                                        <button tabindex="4" class="btn btn-success" id="btnGetDatosPaciente" onclick="GetDatosPaciente(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    </span>
+                                </div>
+                                <label class="Labels">No. Identificación:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtApellidos" name="txtApellidos" type="text" value="" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                                <label class="Labels">Apellidos:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtApellidos" name="txtNombre" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                                <label class="Labels"> Nombres:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtApellidos" name="txtAlias" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                <label class="Labels">Alias:</label>
+                            </div>
+                        </div>
+                        <!-- Crear una plantilla de fila para los nuevos integrantes -->
+                        <div class="card-footer" style="margin-bottom: 10px;">
+                            <div class="col-md-12 text-right">
+                                <button tabindex="7603" type="button" id="btnAddIntegrante" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario">
+                                    <span class="fa ico_buscar faa-pulse animated white"></span> Añadir Integrante</button>
+                            </div>
+                        </div>
+                        <div class="card border-success">
+                            <div class="card-header d-flex align-items-center">
+                                <h4 class="card-title text-white"><i class="mr-2 mdi mdi-account-card-details text-white"></i>Listado de Integrantes</h4>
+                                <div class="card-actions ms-auto d-flex button-group">
+                                    <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                                    <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                                    <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                        <i data-feather="x" class="feather-sm"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div id="pn_Grilla" class="card-body collapse show">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                            <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="integrantesContainer"></div>
+                        <div id="integranteTemplate" style="display: none;">
+                            <div class="row integrante-row">
+                                <div class="col-md-3 MargFloatBoos">
+                                    <div class="form-group has-float-label">
+                                        <div class="input-group">
+                                            <input tabindex="3" name="txtIdentificacion[]" type="text" autocomplete="off" placeholder=" " class="form-control InputPading" >
+                                            <span class="input-group-btn">
+                                                <button tabindex="4" class="btn btn-success" onclick="GetDatosPaciente(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                            </span>
+                                        </div>
+                                        <label class="Labels">No. Identificación:</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 MargFloatBoos">
+                                    <div class="form-group has-float-label">
+                                        <input tabindex="2" name="txtApellidos[]" type="text" value="" autocomplete="off" placeholder="Digite apellidos" class="form-control InputPading">
+                                        <label class="Labels">Apellidos:</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 MargFloatBoos">
+                                    <div class="form-group has-float-label">
+                                        <input tabindex="2" name="txtNombre[]" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                                        <label class="Labels">Nombres:</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 MargFloatBoos">
+                                    <div class="form-group has-float-label">
+                                        <input tabindex="2" name="txtAlias[]" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                        <label class="Labels">Alias:</label>
+                                    </div>
+                                </div>
+                                <div class="card-footer" style="margin-bottom: 10px;">
+                                    <div class="col-md-12 text-right">
+                                        <button tabindex="7603" type="button" class="btn btn-eliminar btnRemoveIntegrante"
+                                                style="border-radius: 0px 16px 0px 16px !important;" title="Eliminar Integrante">
+                                            <span class="fa fa-trash faa-ring animated white"></span> Quitar Integrante
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                @*  FIN DATOS INTEGRANTES------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+
+                @*DATOS DELITOS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
+
+                <fieldset>
+                    <legend style="width: calc(10.5em + .75rem + 2px) !important;">Datos Delito Principal</legend>
+                    <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Delito Principal:</label>
+                        </div>
+                    </div>
+
+
+                        <div class="col-md-6 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Delito Secundario (Opcional):</label>
+                            </div>
+                        </div>
+                        </div class="row">
+                </fieldset>
+
+                @*FIN DATOS DELITOS--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
+
+                @*UBICACIÓN-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
+
+                <fieldset>
+                    <legend style="width: calc(10.5em + .75rem + 2px) !important;">Ubicación</legend>
+                    <div class="row">
+                    <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Departamento:</label>
+                        </div>
+                    </div>
+                     <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Municipio:</label>
+                        </div>
+                    </div>
+                      <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Cuadrante:</label>
+                        </div>
+                    </div>
+                        <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Dirección:</label>
+                            </div>
+                        </div>
+                         <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Longitud:</label>
+                            </div>
+                        </div>
+                           <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Latitud:</label>
+                            </div>
+                        </div>
+                            <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Dirección:</label>
+                            </div>
+                        </div>
+                           <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Radio de Acción:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 MargFloatBoos">
+                        <button tabindex="7603" type="button" id="btnAddIntegrante" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar en el Mapa</button>
+                       </div>
+                        </div class="row">
+                </fieldset>
+
+                @*FIN UBICACION--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
+
+
+                @* <h4>Overflowing text to show scroll behavior</h4>
+                <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.</p>
+                <p>Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.</p> *@
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
+                <button tabindex="1001" type="button" id="btnGrabar" onclick="P_InsUdpUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar "><span class="fa ico_grabar faa-wrench animated"></span> Guardar Iris p1</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-actualizar estado -->
+</div>
+
+
+<div class="modal fade show" id="Modal_ActualizarEstado" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content CuadroModal">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Estado  </h3>
+                <h2 class="text-center" id="TituloMensaje"></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center" id="ContenidoCambio"></div>
+                <fieldset>
+                    <legend class="custom-legend" !important;"></legend>
+
+                    <div class="row">
+                            <div class="col-md-12 MargFloatBoos">    
+                                 <div class="form-group has-float-label">
+                                     @Html.DropDownList("ddlEstadosIrisP1", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlEstadosIrisP1", @class = "form-control select2", style = "width: 100%;" })
+                                     <label class="Labels">Estado IRISP1</label>
+                                </div>
+
+
+
+                            </div>
+                   </div>
+
+                   </fieldset>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+              <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Estado Proceso-->
+<div id="Process">
+    <div class="loader_sis">
+        <div class="loader_dialoge">
+            <div class="loader_containere text-center">
+                <div class="loadere"></div>
+                <h4 class="text-white">Procesando, espere...</h4>
+            </div>
+        </div>
+    </div>
+    <div class="loader_backe"></div>
+</div>
+
+
+
+
+
+
+@* inicio modal dialog ver datos *@
+<div class="modal fade show" id="ModalCaracteristicasGenerales" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content CuadroModal">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Caracteristicas generales </h3>
+                <h2 class="text-center" id="TituloMensaje"></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center" id="ContenidoCambio"></div>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+                <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Estado Proceso-->
+<div id="Process">
+    <div class="loader_sis">
+        <div class="loader_dialoge">
+            <div class="loader_containere text-center">
+                <div class="loadere"></div>
+                <h4 class="text-white">Procesando, espere...</h4>
+            </div>
+        </div>
+    </div>
+    <div class="loader_backe"></div>
+</div>
+
+<div class="modal fade" id="Modal_Caracteristicas" aria-labelledby="bs-example-modal-lg" aria-hidden="true"> 
+    <div class="modal-dialog modal-l" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel2">Caracteristicas Generales</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" width="100%" height="1000px">
+                        <div class="row">
+                            <div class="col-md-12 MargFloatBoos">
+                                <div class="form-group has-float-label d-flex align-items-center">
+                                  <textarea style="height: 95px !important; text-align:justify; margin-bottom: 0px;" name="txtCaracteristicasGenerales" type="text" id="txtCaracteristicasGenerales" value="" autocomplete="off" class="form-control InputPading" readonly></textarea>
+                                
+                              </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+      <!-- /.modal-actualizar IRISP1 -->
+
+<div class="modal fade show" id="Modal_ActualizarIrisp1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content CuadroModal">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Estado  </h3>
+                <h2 class="text-center" id="TituloMensaje"></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center" id="ContenidoCambio"></div>
+                <fieldset>
+                    <legend class="custom-legend" !important;"></legend>
+
+                    <div class="row">
+                            <div class="col-md-12 MargFloatBoos">    
+                                 <div class="form-group has-float-label">
+                                     @Html.DropDownList("ddlEstadosIrisP1", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlEstadosIrisP1", @class = "form-control select2", style = "width: 100%;" })
+                                     <label class="Labels">Estado IRISP1</label>
+                                </div>
+
+
+
+                            </div>
+                   </div>
+
+                   </fieldset>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+              <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -107,9 +107,25 @@ function SweetAlertExitoso() {
 }
 
 function OpenModalExit() {
-    ModalExitoso("Señor(a) Funcionario(a:)", "Mensaje");
+    ModalExitoso("Señor(a) Funcionario(a:)", "je");
 }
 function Alertas() {
     create('error', 'Se deben digitar minimo dos campos para realizar la busqueda', '/img/AlertError.png');
     return;
 }
+
+
+
+/// CAMBIOS EN MODAL IT JOHN BERMUDEZ
+$(document).ready(function () {
+    $('#ddlNomClase1').change(function () {
+        if ($(this).val() === "1") {
+            // Mostrar caja de texto si se selecciona "Opción 1"
+            $('#textContainer').show();
+        } else {
+            // Ocultar caja de texto para cualquier otra opción
+            $('#textContainer').hide();
+        }
+    });
+});
+

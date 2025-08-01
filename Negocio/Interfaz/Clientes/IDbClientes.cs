@@ -6,6 +6,7 @@ namespace Negocio.Interfaz.Clientes
     public interface IDbClientes
     {
         #region Métodos de Consulta
+        public Task<DtoResultado<List<DtoKardex>>> F_GetKardex(Int64 V_Identificacion);
 
         #endregion
 

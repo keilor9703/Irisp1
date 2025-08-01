@@ -28,8 +28,16 @@ namespace Comun.Areas.Clientes
         public Int32 IdDto { get; set; }
 
 
+        [JsonPropertyName("Dto")]
+        public string? Dto { get; set; }
+
+
         [JsonPropertyName("IdLugar")]
         public Int32 IdLugar { get; set; }
+
+
+        [JsonPropertyName("Lugar")]
+        public string? Lugar { get; set; }
 
 
         [JsonPropertyName("Direccion")]
@@ -38,6 +46,12 @@ namespace Comun.Areas.Clientes
 
         [JsonPropertyName("IdGenero")]
         public Int32 IdGenero { get; set; }
+
+
+        [JsonPropertyName("Genero")]
+        public string? Genero { get; set; }
+
+
 
         [JsonPropertyName("Unidad")]
         public string? Unidad { get; set; }
@@ -57,5 +71,8 @@ namespace Comun.Areas.Clientes
 
         [JsonPropertyName("Maquina")]
         public string? Maquina { get; set; }
+
+        
+
     }
 }

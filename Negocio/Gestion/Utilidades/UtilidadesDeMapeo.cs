@@ -14,27 +14,50 @@ namespace Negocio.Gestion.Utilidades
         /// <typeparam name="T"> Clase que se envia</typeparam>
         /// <param name="dt"></param>
         /// <returns>Lista convertida en la clase</returns>
-        public static List<T> ConvertirDataTableAListaDto<T>(DataTable dt)
+        public static List<T> ConvertirDataTableAListaDto<T>(DataTable dt) where T : new()
         {
-            const BindingFlags bandera = BindingFlags.Public | BindingFlags.Instance;
-            var NombreDeLasColumnas = dt.Columns.Cast<DataColumn>()
-                .Select(c => c.ColumnName.ToUpper())
-                .ToList();
-            var PropiedadesDelObjeto = typeof(T).GetProperties(bandera);
-            var ListaDto = dt.AsEnumerable().Select(datosFila =>
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
+
+            // Diccionario para acceder rápido a los valores por nombre de columna
+            var columnas = dt.Columns.Cast<DataColumn>()
+                .ToDictionary(c => c.ColumnName.Replace("_", "").ToLower(), c => c.ColumnName);
+
+            var propiedades = typeof(T).GetProperties(flags);
+
+            var lista = new List<T>();
+
+            foreach (DataRow row in dt.Rows)
             {
-                var crearInstancia = Activator.CreateInstance<T>();
+                T instancia = new T();
 
-                foreach (var propiedad in PropiedadesDelObjeto.Where(propiedades => NombreDeLasColumnas.Contains(propiedades.Name) && datosFila[propiedades.Name] != DBNull.Value))
+                foreach (var propiedad in propiedades)
                 {
-                    propiedad.SetValue(crearInstancia, datosFila[propiedad.Name.ToUpper()], null);
+                    string nombrePropNormalizado = propiedad.Name.Replace("_", "").ToLower();
+
+                    if (columnas.TryGetValue(nombrePropNormalizado, out string nombreColumnaReal))
+                    {
+                        var valor = row[nombreColumnaReal];
+                        if (valor != DBNull.Value)
+                        {
+                            try
+                            {
+                                var tipoDestino = Nullable.GetUnderlyingType(propiedad.PropertyType) ?? propiedad.PropertyType;
+                                var valorConvertido = Convert.ChangeType(valor, tipoDestino);
+                                propiedad.SetValue(instancia, valorConvertido);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"❌ Error mapeando columna: '{nombreColumnaReal}' → propiedad: '{propiedad.Name}'");
+                                Console.WriteLine($"   Valor: {valor} (tipo: {valor.GetType()}) → Tipo destino: {propiedad.PropertyType}");
+                                Console.WriteLine($"   Excepción: {ex.Message}");
+                            }
+                        }
+                    }
                 }
-                return crearInstancia;
-            }).ToList();
 
-
-
-            return ListaDto;
+                lista.Add(instancia);
+            }
+            return lista;
         }
     }
 }

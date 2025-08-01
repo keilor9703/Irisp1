@@ -14,5 +14,6 @@ namespace Comun.General
 
         [JsonPropertyName("Descripcion2")]
         public string? Descripcion2 { get; set; }
+        public int ANIO { get; set; }
     }
 }

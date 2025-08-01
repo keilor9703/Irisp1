@@ -6,4 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Areas\Expendios\" />
+    <Folder Include="Areas\Integrantes\" />
+    <Folder Include="Areas\Listados\" />
+    <Folder Include="Areas\Reportes\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Areas\Irisp1\DtoIrispCriminalidad.cs" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,144 @@
+﻿
+<section class="content-header"></section>
+
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span>Inicio</span></a></li>
+
+            <li class="active">Intrumento de Recoleccion de Informacion del Servicio de Policia / Verificaión IRIS</li>
+        </ul>
+    </div>
+</div>
+
+@*
+   BUSQUEDA POR AÑOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+<div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="	fas fa-binoculars "></i>  Verificación IRIS</h4>
+    </div>
+</div>
+<fieldset>
+    <legend class="custom-legend" @* style="width:0 *@ !important;"></legend>
+
+    <div class="row">
+        <div class="col-md-12 MargFloatBoos">
+            <div class="form-group has-float-label">
+                @Html.DropDownList("ddlAñoIris", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlAñoIris", @class = "form-control select2", style = "width: 100%;" })
+                <label class="Labels">Ver IRIS-P1 por año</label>
+            </div>
+        </div>
+        <div class="card-footer" style="margin-bottom: 10px;">
+            <div class="col-md-12 text-right">
+                <button tabindex="7603" type="button" id="btnConsultar" onclick="OpenModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Buscar"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar</button>
+                
+            </div>
+        </div>
+
+</fieldset>
+@*
+  FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+@*
+GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+
+
+<div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fas fa-clipboard-list "></i>   Etapa de Verificación</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla3(); return false;">
+                <i class="ti-minus"></i>
+            </a>
+            <i class="mdi mdi-arrow-expand"></i>  </a>
+        </div>
+    </div>
+    <div id="pn_Grilla" class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-40">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrilla3" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*
+FIN GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+@*
+GRILLA ETAPA DE INVESTIGACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+<div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fas fa-clipboard-list "></i>   Etapa de Investigacón</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla3(); return false;">
+                <i class="ti-minus"></i>
+            </a>
+            <i class="mdi mdi-arrow-expand"></i>  </a>
+        </div>
+    </div>
+    <div id="pn_Grilla" class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-40">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrilla3" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@*
+FIN GRILLA ETAPA DE INVESTIGACION  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+
+@*
+GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+<div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i>   Etapa de Finalización</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla3(); return false;">
+                <i class="ti-minus"></i>
+            </a>
+            <i class="mdi mdi-arrow-expand"></i>  </a>
+        </div>
+    </div>
+    <div id="pn_Grilla" class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-40">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrilla3" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* 
+FIN GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+<div class="card-footer" style="margin-bottom: 10px;">
+    <div class="col-md-6 text-right">
+        <button tabindex="7603" type="button" id="btnConsultar" onclick="OpenModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Buscar"><span class="fas fa-download"></span> Descargar Reporte</button>
+
+    </div>
+</div>
+
+

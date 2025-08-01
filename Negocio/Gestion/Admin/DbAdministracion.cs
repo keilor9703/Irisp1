@@ -1,4 +1,4 @@
-﻿using Comun.Areas.Admin;
+﻿ using Comun.Areas.Admin;
 using Comun.General;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -218,6 +218,88 @@ namespace Negocio.Gestion.Admin
             }
             return resp;
         }
+
+
+        public async Task<DtoResultado<List<DtoUsuario>>> F_GetListUsuarios()
+        {
+            DataTable resultado = new();
+            List<DtoUsuario> retorno = new();
+            DtoResultado<List<DtoUsuario>> resp = new();
+
+            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var objCommand = new OracleCommand();
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PKS_ADMINISTRACION_IRIS.F_GetUsuarios";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+                objCommand.Parameters.Add(new OracleParameter("v_consulta", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
+
+                if (Conexion.State == ConnectionState.Open)
+                {
+                    resultado.Load(await objCommand.ExecuteReaderAsync());
+
+                    if (resultado.Rows.Count > 0)
+                    {
+                        foreach (DataRow fila in resultado.Rows)
+                        {
+                            retorno.Add(new DtoUsuario
+                            {
+
+                                GradAlfabetico = fila["GradAlfabetico"].ToString(),
+                                Funcionario = fila["Funcionario"].ToString(),
+                                Identificacion = Convert.ToInt32(fila["Identificacion"].ToString()),
+                                Cargo = fila["Cargo"].ToString(),
+                            });
+                        }
+
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "F_GetDominios";
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                    }
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "Error conexión base de datos";
+                    resp.Operacion = "0";
+                }
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+                _logger.LogError("Creacion de log");
+                _logger.LogWarning("Error Ejecutando PK_CTR_ADMINISTRACION.F_GetSlider " + e);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Operacion = "0";
+
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+                resultado.Dispose();
+            }
+            return resp;
+        }
+
         public async Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string V_Usuario, string V_Maquina)
         {
             DataTable resultado = new();
@@ -340,7 +422,7 @@ namespace Negocio.Gestion.Admin
 
                 objCommand.Parameters.Clear();
                 objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
-      
+
 
                 if (Conexion.State == ConnectionState.Open)
                 {

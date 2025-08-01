@@ -48,10 +48,62 @@ $("#txtFuncionario").autocomplete({
         return false;
     }
 });
-
-
 //Fuciones de Consulta
-function F_GetFuncionarios(V_Identificacion) {
+function GetGrillaUsuarios() {
+    if ($.fn.dataTable.isDataTable("#tbGrillaUsuarios")) {
+        $("#tbGrillaUsuarios").DataTable().destroy();
+    }
+    $("#tbGrillaUsuarios").DataTable({
+        "ajax": {
+            type: "POST",
+            url: UrlGetListUsuarios,
+            async: true,
+            datatype: "json",
+            cache: false
+        },
+        "initComplete": function (settings, json) {
+            if (json.success) {
+                $("#pn_GrillaUsuarios").removeClass('hidden');
+            }
+            else {
+                $("#pn_GrillaUsuarios").addClass('hidden');
+            }
+        },
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            //{
+            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+            //        var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+            //        var Editar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:ModalBitacora(${row.IdUserRol})"><i class="fa fa-edit green"></i>&nbsp;Editar</a></li>`;
+            //        var Ver = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:F_GetBibliaDetalle(${row.IdUserRol})"><i class="fa fa-eye green"></i>&nbsp;Ver Detalle</a></li>`;
+            //        var finBoton = '</ul></div>';
+            //        return inicioBoton + Eliminar + Editar + Ver + finBoton;
+            //    }
+            //},
+            { "title": "Grado", "data": "GradAlfabetico", "name": "GradAlfabetico", className: "celdaJust celda2" },
+            { "title": "Funcionario", "data": "Funcionario", "name": "Funcionario", className: "celdaJust celda30" },
+            { "title": "Identificación", "data": "Identificacion", "name": "Identificacion", className: "celdaJust celda5" },
+            { "title": "Cargo", "data": "Cargo", "name": "Cargo", className: "celdaJust" },
+        ],
+        lengthMenu: [
+            [10, 25, 50, -1],
+            ['10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: false,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
+
+
+
+
+function F_GetFuncionarios(V_Identificacion){
 
     let Identificación = Number(V_Identificacion);
     if (Identificación < 1) {

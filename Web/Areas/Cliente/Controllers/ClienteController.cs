@@ -42,6 +42,23 @@ namespace Web.Areas.Cliente.Controllers
             return View();
         }
 
+        #region Métodos de Consulta        
+        public async Task<IActionResult> F_GetKardex(Int64 V_Identificacion)
+        {
+            var Resultado = await _IDbClientes.F_GetKardex(V_Identificacion);
+            if (Resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+            }
+        }
+
+        #endregion
+
+
         #region Métodos de Inserción y Actualización
         public async Task<IActionResult> P_InsUdpKardex(DtoKardex Obj)
         {
@@ -67,7 +84,7 @@ namespace Web.Areas.Cliente.Controllers
                 return Json(new { success = false, message = "Debe registrar la direccion, revise" });
 
             if (string.IsNullOrWhiteSpace(Obj.Unidad))
-                return Json(new { success = false, message = "Debe seleccionar unidad policial, oiga revise" });
+                return Json(new { success = false, message = "Debe seleccionar unidad policial, revise" });
 
             if (string.IsNullOrWhiteSpace(Obj.Dependencia))
                 return Json(new { success = false, message = "Debe seleccionar dependencia, revise" });
@@ -101,6 +118,9 @@ namespace Web.Areas.Cliente.Controllers
                 return Json(new { success = false, data = 0, message = "Error:  No es posible guardar, revise " + ex });
             }
         }
+
+
+
 
 
         public async Task<JsonResult> F_GetMunicipios(int V_Id)

@@ -34,7 +34,7 @@ namespace Gepad.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult InicioSesion(string returnurl = null)
+        public IActionResult InicioSesion(string returnurl ="nullhttps://disec.policia.gov.co/Irisp1/Home/Indexl") 
         {
             ViewData["ReturnUrl"] = returnurl;
             return View();
