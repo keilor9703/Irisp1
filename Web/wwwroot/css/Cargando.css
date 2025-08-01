@@ -1,0 +1,84 @@
+﻿/*header */
+
+.loader_sis {
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    -webkit-overflow-scrolling: touch;
+    outline: 0;
+    z-index: 100660;
+}
+
+.loader_dialoge {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    margin-top: -100px;
+    margin-left: -100px;
+}
+
+.loader_containere {
+    background-image: url(../img/EscudoPolicia.png);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 130px;
+    position: relative;
+    background-clip: padding-box;
+    outline: 0;
+    padding-top: 25px;
+    margin: 0 auto;
+    width: 200px;
+}
+
+.loadere {
+    border: 5px solid #efd135;
+    border-top: 5px solid #628f3a;
+    border-radius: 50%;
+    width: 180px;
+    margin: 0 auto;
+    height: 180px;
+    animation: spin 4s linear infinite;
+    -webkit-animation: spin 4s linear infinite;
+    -o-animation: spin 4s linear infinite;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+.loader_backe {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: #000;
+    opacity: 0.5;
+    filter: alpha(opacity=50);
+    z-index: 100600;
+}
+
+

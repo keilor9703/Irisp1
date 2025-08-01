@@ -1,0 +1,15 @@
+﻿.LoginA {
+    background: url('../img/FondoIris (3).jpg') no-repeat center center;
+    background-size: cover;
+}
+.LoginB {
+    background: url(../img/login/Login.png)
+}
+
+.TextoSeguridad {
+    font-size: 12px;
+    text-align: justify;
+    color: whitesmoke;
+    margin-top: 163px;
+    width: 100%;    
+}

@@ -1,0 +1,53 @@
+﻿.swal2-container {
+    display: flex;
+    position: fixed;
+    z-index: 1060;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    padding: 0.625em;
+    overflow-x: hidden;
+    background-color: transparent;
+    -webkit-overflow-scrolling: touch;
+}
+
+.swal2-popup .swal2-title {
+    display: block;
+    position: relative;
+    max-width: 100%;
+    margin: 0 0 0.4em;
+    padding: 0;
+    color: yellow;
+    font-size: 1.875em;
+    font-weight: 600;
+    text-align: center;
+    text-transform: none;
+    word-wrap: break-word;
+}
+
+.swal2-popup .swal2-input,
+.swal2-popup .swal2-file,
+.swal2-popup .swal2-textarea {
+    /**/
+    height: 34px !important;
+    font-size: 14px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out !important;
+    border-left: 5px solid #119d93 !important;
+    font-family: "Verdana", sans-serif, Helvetica Neue, Helvetica, Arial, sans-serif !important;
+}
+
+.swal2-popup .swal2-input {
+    height: 1.625em;
+    padding: 0 .75em;
+}
+
+
+
+

@@ -1,0 +1,154 @@
+﻿@{
+    ViewData["Title"] = "Modulo Iris P1";
+}
+
+@section scripts {
+    <script src="~/areas/clientes/clientes.js"></script>
+    <script type='text/javascript'>
+
+        var UrlInsUsuarios = "@Url.Action("P_InsUdpKardex", "Cliente", new { Area = "Cliente" })";
+        var UrlGetUserRoles = "@Url.Action("F_GetUserRoles", "Cliente", new { Area = "Cliente" })";
+        var UrlGetMunicipios = "@Url.Action("F_GetMunicipios", "Cliente", new { Area = "Cliente" })";
+
+
+    </script>
+}
+
+<section class="content-header"></section>
+
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span>Inicio</span></a></li>
+
+            <li class="active">Intrumento de Recoleccion de Informacion del Servicio de Policia / IRIS P1</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Formulario para crear un nuevo IRIS -->
+<div class="card border-success hidden-section" id="formSection">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="mr-2 mdi mdi-account-card-details text-white"></i>Registro Iris-P1 </h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+
+    <fieldset>
+        <legend style="width: calc(10em + .75rem + 2px) !important;"> Informacion Basica</legend>
+
+
+        <div class="row">
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <div class="input-group">
+                        <input tabindex="3" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" onkeypress="return soloNumeros(event)">
+                        <span class="input-group-btn">
+                            <button tabindex="4" class="btn btn-success" id="InsUsuarios" onclick="InsUsuarios(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                        </span>
+                    </div>
+                    <label class="Labels">No. Identificación:</label>
+                </div>
+            </div>
+
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="2" id="txtApellidos" name="txtApellidos" type="text" value="" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                    <label class="Labels">Apellidos:</label>
+                </div>
+            </div>
+
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="2" id="txtNombres" name="txtNombres" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                    <label class="Labels">Nombres:</label>
+                </div>
+            </div>
+
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="1" type="txtFechaNace" id="txtFechaNace" style="width:100%" placeholder="Fecha Evento" class="Calendario" />
+                    <label class="Labels">Fecha de Nacimiento:</label>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("IdDto", null, String.Format("Seleccione una opción"), htmlAttributes: new { @tabindex = 1, id = "IdDto", @class = "form-control select2", style = "width: 80%;" })
+                    @*  @Html.DropDownList("IdDto", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "IdDto", @class = "form-control select2", style = "width: 100%;" }) *@
+                    <label class="Labels">Departamento:</label>
+                </div>
+            </div>
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("IdLugar", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "" } }, htmlAttributes: new { @tabindex = 1, id = "IdLugar", @class = "form-control select2", style = "width: 80%;" })
+                    @* @Html.DropDownList("IdGenero", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "IdGenero", @class = "form-control select2", style = "width: 100%;" }) *@
+                    <label class="Labels">Ciudad:</label>
+                </div>
+            </div>
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("IdGenero", null, String.Format("Seleccione una opción"), htmlAttributes: new { @tabindex = 1, id = "IdGenero", @class = "form-control select2", style = "width: 80%;" })
+                    @* @Html.DropDownList("IdGenero", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "IdGenero", @class = "form-control select2", style = "width: 100%;" }) *@
+                    <label class="Labels">Genero:</label>
+                </div>
+            </div>
+
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="2" id="txtDireccion" name="txtDireccion" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                    <label class="Labels">Direccion de residencia:</label>
+                </div>
+            </div>
+        </div>
+        <div class="row" style="margin-top:5px">
+            <div class="col-md-12 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <textarea tabindex="200" class="form-control" placeholder=" " rows="5" id="txtObservaciones" name="txtObservaciones" maxlength="4000" cols="40" style="height: 75px !important; text-align:justify; margin-bottom: 0px;"></textarea>
+                    <label class="Labels">Observaciones:</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer" style="margin-bottom: 10px;">
+            <div class="col-md-12 text-right">
+                <button tabindex="14" type="button" id="btnGrabarRol" onclick="InsUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span> Guardar Datos</button>
+            </div>
+        </div>
+
+    </fieldset>
+
+
+    <div class="card border-success hidden" id="pn_Grilla">
+        <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"><i class="mr-2 fa fa-server text-white"></i>Consultar Datos</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+                <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                    <i data-feather="x" class="feather-sm"></i>
+                </a>
+            </div>
+        </div>
+        <div class="card-body collapse show">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                        <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+

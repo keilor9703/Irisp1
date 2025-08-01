@@ -1,0 +1,432 @@
+﻿$(document).ready(function () {
+    //Manejo de fechas con Kendo
+    $(".Calendario").kendoDatePicker({
+        culture: "es-CO",
+        interval: 1,
+        animation: {
+            close: {
+                effects: "fadeOut zoom:out",
+                duration: 300
+            },
+            open: {
+                effects: "fadeIn zoom:in",
+                duration: 300
+            }
+        }
+    });
+    //Fin Manejo de fechas Kendo
+});
+
+//Eventos
+$("#txtIdentificacion").keyup(function (event) {
+    if (event.keyCode === 13) {
+        $("#btnConsultarEmpl").click();
+    }
+});
+$("#txtFuncionario").autocomplete({
+    source: function (request, response) {
+        $.ajax({
+            url: UrlGetEmpleadoIntel,
+            type: "POST",
+            dataType: "json",
+            data: { V_Busqueda: $("#txtFuncionario").val() },
+            success: function (respuesta) {
+                response($.map(respuesta.data, function (item) {
+                    return { label: item.Funcionario, value: item.Identificacion };
+                }));
+            },
+            error: function (respuesta) {
+                alert("Error");
+            }
+        });
+    },
+    minLength: 10,
+    select: function (event, ui) {
+        $(document.getElementById("txtFuncionario")).val(ui.item.label);
+        $('#txtIdentificacion').val(ui.item.value);
+        F_GetFuncionarios(ui.item.value);
+        return false;
+    }
+});
+
+
+//Fuciones de Consulta
+function F_GetFuncionarios(V_Identificacion) {
+
+    let Identificación = Number(V_Identificacion);
+    if (Identificación < 1) {
+        create('error', 'Debe digitar número de Identificación', '../../img/AlertError.png');
+        return;
+    }
+
+    $.ajax({
+        type: "POST",
+        url: UrlGetFuncionarios,
+        async: true,
+        data: { V_Identificacion: $("#txtIdentificacion").val() },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+            if (respuesta.success) {
+                $("#imgFoto")[0].src = "https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=" + respuesta.idEncry + "&Token=Mxl7995Julabdfjughyts1*_58$$";
+                $("#txtSituacionLab").val(respuesta.data[0].SituacionLaboral);
+                $("#txtFuncionario").val(respuesta.data[0].Funcionario);
+                $("#txtCorreo").val(respuesta.data[0].Correo);
+                $("#txtUserName").val(respuesta.data[0].Usuario);
+                $("#txtCelular").val(respuesta.data[0].Celular);
+                $("#txtDependencia").val(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
+                $("#txtCargo").val(respuesta.data[0].CargoActual);
+
+                F_GetUserRoles(V_Identificacion);
+            } else {
+                Limpiar();
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "No se Encontro el Funcionario"
+                });
+            }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'No es posible consultar, revise!!'
+            });
+        }
+    });
+}
+function F_GetUserRoles(P_Identificacion) {
+    $.ajax({
+        type: "POST",
+        url: UrlGetUserRoles,
+        async: true,
+        data: { V_Identificacion: P_Identificacion },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+            if (respuesta.success) {
+                $("#pn_Grilla").removeClass('hidden');
+                $("#pn_Roles").removeClass('hidden');
+
+                $("#txtIdUsuario").val(respuesta.data[0].IdUsuario);
+
+                GrillaUserRoles(respuesta.data);
+
+                var uno = document.getElementById('btnGrabar');
+                uno.innerHTML = '<span class="fa ico_grabar faa-wrench animated"></span>Actualizar';		
+
+                var _Bloqueado = respuesta.data[0].Bloqueado;
+                var Activo = 0;
+                if (_Bloqueado == 0) {
+                    Activo = 1;
+                }
+                else {
+                    Activo = 0;
+                }
+
+                $('#chkActivo').prop('checked', Activo).trigger('change');
+
+
+            } else {
+                $("#pn_Grilla").addClass('hidden');
+                $("#pn_Roles").addClass('hidden');
+
+                var uno = document.getElementById('btnGrabar');
+                uno.innerHTML = '<span class="fa ico_grabar faa-wrench animated"></span>Guardar';
+
+                Swal.fire({
+                    type: 'info',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "El usuario no ha sido creado en el sistema, proceda activarlo"
+                });
+            }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'No es posible consultar, revise!!'
+            });
+        }
+    });
+}
+
+
+//Funciones de Inserción y Actualización     AISGNAR ROLES ADMINISTRACION DE USUARIOS
+function P_InsRoles() {
+
+    if ($("#txtJustificacion").val() == "") {
+        create('error', 'Debe registrar justificación para asignar el rol', '../../img/AlertError.png');
+        return;
+    }
+
+    var DtoInsUserRoles = {
+        IdUsuario: $("#txtIdUsuario").val(),
+        IdRol: $("#ddlRol").val(),
+        FechaFin: $("#txtFechaFin").val(),
+        Justificacion: $("#txtJustificacion").val()
+    }
+
+    $.ajax({
+        type: 'POST',
+        url: UrlInsRoles,
+        async: true,
+        dataType: 'json',
+        data: { obj: DtoInsUserRoles },
+        success: function (result) {
+            if (result.success) {
+                F_GetUserRoles($("#txtIdentificacion").val());
+                LimpiarRoles();
+                Swal.fire({
+                    type: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+
+            } else {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+            }
+        },
+        error: function (ex) {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "No es posible grabar, revise"
+            });
+        }
+    });
+}
+function P_InsUdpUsuarios() {
+
+    var _Bloq = 0;
+    let _chkBlq = chkActivo.checked;
+    if (_chkBlq == true) {
+        _Bloq = 0;
+    } else {
+        _Bloq = 1;
+    }
+
+    var DtoUsuario = {
+        Identificacion: $("#txtIdentificacion").val(),
+        Bloqueado: _Bloq
+    }
+
+    $.ajax({
+        type: 'POST',
+        url: UrlInsUdpUsuarios,
+        async: true,
+        dataType: 'json',
+        data: { obj: DtoUsuario },
+        success: function (respuesta) {
+            if (respuesta.success) {
+
+                $("#txtIdUsuario").val(respuesta.data);
+                $("#pn_Roles").removeClass('hidden');
+
+                var uno = document.getElementById('btnGrabar');
+                uno.innerHTML = '<span class="fa ico_grabar faa-wrench animated"></span>Actualizar';
+
+                Swal.fire({
+                    type: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: respuesta.message + ", ahora revise roles del sistema"
+                });
+
+            } else {
+                $("#pn_Roles").addClass('hidden');
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: respuesta.message
+                });
+            }
+        },
+        error: function (ex) {
+            $("#txtIdUsuario").val(0);
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "No es posible grabar, revise"
+            });
+        }
+    });
+}
+
+//Funciones de Eliminación
+function Dell_Roles(P_IdRolUser) {
+
+    bootbox.confirm({
+        message: "Está seguro de eliminar el rol seleccionado?",
+        buttons: {
+            confirm: {
+                label: '<i class="fa fa-check"></i> Si',
+                className: 'btn-success'
+            },
+            cancel: {
+                label: '<i class="fa fa-times"></i> No',
+                className: 'btn-danger'
+            }
+        },
+        callback: function a(result) {
+            if (result) {
+                var t = result;
+                bootbox.prompt({
+                    title: "Justifique el motivo por el cual elimina el rol",
+                    inputType: 'text',
+                    buttons: {
+                        confirm: {
+                            label: '<i class="fa fa-check"></i> Aceptar',
+                            className: "btn-success",
+                        },
+                        cancel: {
+                            label: '<i class="fa fa-times"></i> Cancelar',
+                            className: "btn btn-warning",
+                        }
+                    },
+                    callback: function (resulta) {
+                        if (resulta == null) {
+
+                        }
+                        else if (resulta == "") {
+                            bootbox.alert({
+                                message: "Debe justificar el motivo por el cual elimina el registro",
+                                buttons: {
+                                    ok: {
+                                        label: '<i class="fa fa-check"></i> Aceptar',
+                                        className: 'btn-success',
+                                    }
+                                },
+                                callback: function () { a(t); }
+                            });
+                        }
+                        else {
+                            var resu = resulta.replace(/>|<|&|=|#|\?/gi, "");
+                            P_DelRoles(P_IdRolUser, resu);
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
+
+function P_DelRoles(P_IdUserRol, P_Justificacion) {
+    
+    var DtoInsUserRoles = {
+        IdUserRol: P_IdUserRol,
+        Justificacion: P_Justificacion
+    }
+
+    $.ajax({
+        type: 'POST',
+        url: UrlDelRoles,
+        async: true,
+        dataType: 'json',
+        data: { obj: DtoInsUserRoles },
+        success: function (result) {
+            if (result.success) {
+                F_GetUserRoles($("#txtIdentificacion").val());
+                Swal.fire({
+                    type: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+
+            } else {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+            }
+        },
+        error: function (ex) {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "No es posible grabar, revise"
+            });
+        }
+    });
+}
+
+
+//Grillas
+function GrillaUserRoles(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrilla")) {
+        $("#tbGrilla").DataTable().destroy();
+    }
+    $("#tbGrilla").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+            { "title": "Roles Asignados", "data": "Descripcion", "name": "Descripcion", className: "celdaCenter celda15" },
+            { "title": "Fecha de Asignación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaCenter celda7" },
+            { "title": "Funcionario que Asignó", "data": "FuncionarioCreacion", "name": "FuncionarioCreacion", className: "celdaJust celda17" },
+            { "title": "Fecha Caducidad", "data": "FechaFin", "name": "FechaFin", className: "celdaCenter celda7" },
+            { "title": "Observaciones", "data": "Justificacion", "name": "Justificacion", className: "celdaJust" }
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
+
+
+//Limpiar Variables
+function Limpiar() {
+    $("#imgFoto")[0].src = "/img/Avatar.png";
+    $("#txtSituacionLab").val("");
+    $("#txtFuncionario").val("");
+    $("#txtCorreo").val("");
+    $("#txtUserName").val("");
+    $("#txtCelular").val("");
+    $("#txtDependencia").val("");
+    $("#txtCargo").val("");
+    $("#txtIdentificacion").val("");
+    $('#chkActivo').prop('checked', 0).trigger('change');
+
+    var uno = document.getElementById('btnGrabar');
+    uno.innerHTML = '<span class="fa ico_grabar faa-wrench animated"></span>Guardar';
+
+    $("#pn_Roles").addClass('hidden');
+
+    LimpiarGrilla();
+}
+function LimpiarGrilla() {
+    if ($.fn.dataTable.isDataTable("#tbGrilla")) {
+        $("#tbGrilla").DataTable().destroy();
+    }
+    $("#tbGrilla").empty();
+    $("#pn_Grilla").addClass('hidden');
+}
+function LimpiarRoles() {
+    $("#ddlRol").val("");
+    $("#ddlRol").trigger('change.select2');
+    $("#ddlRol").trigger("chosen:updated");
+
+    $("#txtFechaFin").val("");
+    $("#txtJustificacion").val("");
+}

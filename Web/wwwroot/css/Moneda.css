@@ -1,0 +1,170 @@
+﻿.purse {
+    height: 250px;
+    width: 100%;    
+    -webkit-perspective: 1000px !important;
+    -webkit-box-reflect: below 0 linear-gradient(rgba(255,255,255,0),rgba(255,255,255,0) 45%,rgba(255,255,255,0.2)) !important;
+    -webkit-filter: saturate(1.45) hue-rotate(2deg) !important;
+}
+
+.coin {
+    height: 250px !important;
+    width: 250px !important;
+    position: absolute;
+    -webkit-transform-style: preserve-3d !important;
+    -webkit-transform-origin: 50% !important;
+    -webkit-animation: spin2 6s infinite !important;
+    -webkit-animation-timing-function: linear !important;
+}
+
+    .coin .front, .coin .back {
+        position: absolute !important;
+        height: 250px !important;
+        width: 250px !important;
+        border-radius: 50% !important;
+        background-size: cover !important;
+    }
+
+    .coin .front {
+        -webkit-transform: translateZ(8px) !important;
+    }
+
+    .coin .back {
+        -webkit-transform: translateZ(-8px) rotateY(180deg) !important;
+    }
+
+    .coin .side {
+        -webkit-transform: translateX(117px) !important;
+        -webkit-transform-style: preserve-3d !important;
+        -webkit-backface-visibility: hidden !important;
+    }
+
+        .coin .side .spoke {
+            height: 250px !important;
+            width: 16px !important;
+            position: absolute !important;
+            -webkit-transform-style: preserve-3d !important;
+            -webkit-backface-visibility: hidden !important;
+        }
+
+            .coin .side .spoke:before, .coin .side .spoke:after {
+                content: '';
+                display: block !important;
+                height: 25.682742px !important;
+                width: 16px !important;
+                position: absolute !important;
+                -webkit-transform: rotateX(84.375deg) !important;
+                background: #d8be83 !important;
+                background: linear-gradient(to bottom,#e6cf99 0%,#e6cf99 74%,#c2a970 75%,#c2a970 100%) !important;
+                background-size: 100% 6.4850538783844px !important;
+            }
+
+            .coin .side .spoke:before {
+                -webkit-transform-origin: top center !important;
+            }
+
+            .coin .side .spoke:after {
+                bottom: 0;
+                -webkit-transform-origin: center bottom !important;
+            }
+
+            .coin .side .spoke:nth-child(16) {
+                -webkit-transform: rotateY(90deg) rotateX(180deg);
+            }
+
+            .coin .side .spoke:nth-child(15) {
+                -webkit-transform: rotateY(90deg) rotateX(168.75deg);
+            }
+
+            .coin .side .spoke:nth-child(14) {
+                -webkit-transform: rotateY(90deg) rotateX(157.5deg);
+            }
+
+            .coin .side .spoke:nth-child(13) {
+                -webkit-transform: rotateY(90deg) rotateX(146.25deg);
+            }
+
+            .coin .side .spoke:nth-child(12) {
+                -webkit-transform: rotateY(90deg) rotateX(135deg);
+            }
+
+            .coin .side .spoke:nth-child(11) {
+                -webkit-transform: rotateY(90deg) rotateX(123.75deg);
+            }
+
+            .coin .side .spoke:nth-child(10) {
+                -webkit-transform: rotateY(90deg) rotateX(112.5deg);
+            }
+
+            .coin .side .spoke:nth-child(9) {
+                -webkit-transform: rotateY(90deg) rotateX(101.25deg);
+            }
+
+            .coin .side .spoke:nth-child(8) {
+                -webkit-transform: rotateY(90deg) rotateX(90deg);
+            }
+
+            .coin .side .spoke:nth-child(7) {
+                -webkit-transform: rotateY(90deg) rotateX(78.75deg);
+            }
+
+            .coin .side .spoke:nth-child(6) {
+                -webkit-transform: rotateY(90deg) rotateX(67.5deg);
+            }
+
+            .coin .side .spoke:nth-child(5) {
+                -webkit-transform: rotateY(90deg) rotateX(56.25deg);
+            }
+
+            .coin .side .spoke:nth-child(4) {
+                -webkit-transform: rotateY(90deg) rotateX(45deg);
+            }
+
+            .coin .side .spoke:nth-child(3) {
+                -webkit-transform: rotateY(90deg) rotateX(33.75deg);
+            }
+
+            .coin .side .spoke:nth-child(2) {
+                -webkit-transform: rotateY(90deg) rotateX(22.5deg);
+            }
+
+            .coin .side .spoke:nth-child(1) {
+                -webkit-transform: rotateY(90deg) rotateX(11.25deg);
+            }
+
+    .coin.skeleton .front, .coin.skeleton .back {
+        display: none;
+    }
+
+    .coin.skeleton .side, .coin.skeleton .side .spoke, .coin.skeleton .side .spoke:before, .coin.skeleton .side .spoke:after {
+        -webkit-backface-visibility: visible;
+    }
+
+        .coin.skeleton .side .spoke {
+            background: rgba(170,170,170,0.1) !important;
+        }
+
+            .coin.skeleton .side .spoke:before {
+                background: rgba(255,170,170,0.2) !important;
+            }
+
+            .coin.skeleton .side .spoke:after {
+                background: rgba(204,204,255,0.2);
+            }
+
+@-webkit-keyframes spin2 {
+    from {
+        -webkit-transform: rotateY(0deg);
+    }
+
+    to {
+        -webkit-transform: rotateY(360deg);
+    }
+}
+
+.coin .front {
+    background-image: url('../img/MonedaOFTIC.gif');
+}
+
+.coin .back {
+    background-image: url('../img/MonedaGESPO.png')
+}

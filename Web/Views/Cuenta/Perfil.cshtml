@@ -1,0 +1,92 @@
+﻿@using System.Security.Claims;
+@inject IHttpContextAccessor Accessor
+@using Gepad.Models
+
+@{
+    ViewData["Title"] = "Perfil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var roles = User.Claims.Where(c => c.Type == ClaimTypes.Actor).Select(x => x.Value);
+    var Identificacion = User.FindFirstValue("Identificacion");
+}
+
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span>Inicio</span></a></li>
+            <li class="active">Perfil del Usuario</li>
+        </ul>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 col-xlg-3 col-md-5">
+        <div class="card">
+            <div class="card-body">
+                <center class="mt-4">
+                    <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" class="rounded-circle profile-pic rounded-circle" width="150" />
+                    <h4 class="card-title mt-2">@User.FindFirstValue("Funcionario")</h4>
+                    <h6 class="card-subtitle">@User.FindFirstValue("Cargo")</h6>
+                </center>
+            </div>
+        </div>
+    </div>
+    <!-- Column -->
+    <div class="col-lg-8 col-xlg-9 col-md-7">
+        <!-- tabs -->
+        <div class="pcss3t pcss3t-effect-scale pcss3t-theme-1" style="margin-bottom: 21px;">
+            <input type="radio" name="pcss3t" checked id="Tab_1" class="tab-content-first">
+            <label for="Tab_1"><i class="fa far fa fa-user faa-pulse animated Azul faa-pulse animated Azul"></i>Usuario</label>
+
+            <input type="radio" name="pcss3t" id="Tab2" class="tab-content-2">
+            <label id="Tab_2" for="Tab2"><i class="fa far fa-address-card faa-pulse animated Azul"></i>Rol</label>
+
+            <ul>
+                <li id="tabBody0" class="tab-content tab-content-first">
+                    <div class="card-body">
+                        <ul>
+                            <li>
+                                <strong> Dependencia:  </strong>
+                                <h4 class="text-muted">
+                                    @User.FindFirstValue("Dependencia")
+                                </h4>
+                            </li>
+                            <li>
+                                <strong> Unidad:  </strong>
+                                <h4 class="text-muted">@User.FindFirstValue("Fisica")</h4>
+                            </li>
+                            <li>
+                                <strong> Situación Laboral:  </strong>
+                                <h4 class="text-muted">@User.FindFirstValue("SituacionLaboral")</h4>
+                            </li>
+                            <li>
+                                <strong> Identificación:  </strong>
+                                <h4 class="text-muted">@User.FindFirstValue("Identificacion")</h4>
+                            </li>
+                            <li>
+                                <strong> Usuario:  </strong>
+                                <h4 class="text-muted">@User.FindFirstValue("Usuario")</h4>
+                            </li>
+                            <li>
+                                <strong> Nota:  </strong>
+                                <h4 class="text-muted">Información de SIATH</h4>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li id="tabBody1" class="tab-content tab-content-2">
+                    @foreach (var ValorRol in roles)
+                    {
+                        <ul>
+                            <li>
+                                @ValorRol
+                            </li>
+                        </ul>
+                    }
+                </li>
+            </ul>
+        </div>
+    </div>
+    <!-- Column -->
+</div>
