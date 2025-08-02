@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Negocio.Gestion.Admin;
 using Negocio.Interfaz.Admin;
+using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
 using Oracle.ManagedDataAccess.Client;
 
@@ -19,17 +20,19 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IDbIrisp1 _iDbIrisp1;
         private readonly IDbFuncionarios _iDbFuncionarios;
         private readonly IConfiguration _configuration;
+        private readonly IDbDominios _IDbDominios;
 
         #endregion
 
         #region Constructor
 
-        public RegistrosIrisp1Controller(IDbAdministracion iDbAdministracion, IDbIrisp1 iDbIrisp1, IDbFuncionarios iDbFuncionarios, IConfiguration configuration)
+        public RegistrosIrisp1Controller(IDbAdministracion iDbAdministracion, IDbIrisp1 iDbIrisp1, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios)
         {
             _iDbAdministracion = iDbAdministracion;
             _iDbIrisp1 = iDbIrisp1;
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = configuration;
+            _IDbDominios = idbDominios;
         }
 
         #endregion
@@ -38,7 +41,16 @@ namespace Web.Areas.Irisp1.Controllers
         {
             var ddlAnioIris = (await _iDbIrisp1.F_GetAniosIrisP1()).Data.ToList();
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
-            ViewBag.ddlCanales = new SelectList(Enumerable.Empty<SelectListItem>());
+            ViewBag.ddlClase = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlModExpendio = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlClasiNarcotrafico = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlActividad = new SelectList((await _IDbDominios.F_GetDominiosIris(127)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlFuente = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlEntono = new SelectList((await _IDbDominios.F_GetDominiosIris(155)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlZona = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            
             return View();
         }
 
@@ -93,5 +105,55 @@ namespace Web.Areas.Irisp1.Controllers
 
 
         #endregion
+
+
+        #region Métodos de Insersión
+
+        [HttpPost]
+        public async Task<IActionResult> GuardarFoto(IFormFile foto)
+        {
+            if (foto == null || foto.Length == 0)
+                return Json(new { exito = false, mensaje = "Archivo inválido" });
+
+            var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png" };
+            var extension = Path.GetExtension(foto.FileName).ToLowerInvariant();
+
+            if (!extensionesPermitidas.Contains(extension))
+                return Json(new { exito = false, mensaje = "Formato no permitido" });
+
+            if (foto.Length > 5 * 1024 * 1024)
+                return Json(new { exito = false, mensaje = "Tamaño excedido" });
+
+            try
+            {
+                // Construir nombre único
+                var nombreArchivo = Path.GetFileNameWithoutExtension(foto.FileName);
+                var nuevoNombre = $"{nombreArchivo}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+
+                // Ruta UNC de red
+                var rutaRed = @"\\srvfilesponal3\OFITE\AITEC\GRUDE\TE KEHILOR MARTINEZ\Fotos_Iris";
+                var rutaArchivoCompleta = Path.Combine(rutaRed, nuevoNombre);
+
+                // Guardar archivo en la carpeta de red
+                using (var stream = new FileStream(rutaArchivoCompleta, FileMode.Create))
+                {
+                    await foto.CopyToAsync(stream);
+                }
+
+                return Json(new { exito = true, mensaje = "Imagen guardada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                // Puedes loguear el error si usas Serilog, NLog, etc.
+                return Json(new { exito = false, mensaje = $"Error al guardar imagen: {ex.Message}" });
+            }
+        }
+
+
+
+        #endregion
+
+
+
     }
 }

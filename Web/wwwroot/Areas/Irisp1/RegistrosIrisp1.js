@@ -1,4 +1,6 @@
-﻿$(document).ready(function () {
+﻿let archivoSubido = null; // Guardará el archivo ya cargado
+
+$(document).ready(function () {
     // Inicializa Select2 si no está inicializado
     if ($.fn.select2) {
         $('#ddlAnioIris').select2();       
@@ -9,6 +11,87 @@
         F_GetInfoGrillas();
     });    
 
+    $('#chkRegFoto').change(function () {
+        if ($(this).is(':checked')) {
+            $('#txtAnexoFotografico').closest('.col-md-8').removeClass('hidden');
+        } else {
+            $('#txtAnexoFotografico').closest('.col-md-8').addClass('hidden');
+        }
+    });
+
+
+        $('#btnSubirFoto').on('click', function () {
+            var fileInput = $('#fileAnexoFotografico')[0];
+
+            if (fileInput.files.length === 0) {
+                Swal.fire('Advertencia', 'Debe seleccionar una imagen.', 'warning');
+                return;
+            }
+
+            var file = fileInput.files[0];
+            var maxSizeMB = 5;
+
+            // Validar tipo y tamaño
+            var allowedTypes = ['image/jpeg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                Swal.fire('Error', 'Formato no permitido. Solo se aceptan imágenes JPG o PNG.', 'error');
+                return;
+            }
+
+            if (file.size > maxSizeMB * 1024 * 1024) {
+                Swal.fire('Error', 'La imagen supera el tamaño máximo permitido de 5MB.', 'error');
+                return;
+            }
+
+            // Validar si ya se subió el mismo archivo (por nombre y tamaño)
+            if (archivoSubido && archivoSubido.name === file.name && archivoSubido.size === file.size) {
+                Swal.fire('Información', 'Esta imagen ya fue subida.', 'info');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('foto', file);
+
+            $.ajax({
+                url: '/Irisp1/RegistrosIrisp1/GuardarFoto', // reemplaza con el nombre real de tu controlador
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (resp) {
+                    if (resp.exito) {
+                        // Guardar el archivo actual como referencia
+                        archivoSubido = file;
+
+                        // Mostrar mensaje visual
+                        $('#estadoFoto').show().text('✅ Imagen guardada exitosamente.');
+
+                        // Limpiar input
+                        $('#fileAnexoFotografico').val('');
+
+                        // Opcional: ocultar luego de unos segundos
+                        setTimeout(() => $('#estadoFoto').fadeOut(), 4000);
+                    } else {
+                        Swal.fire('Error', resp.mensaje || 'No se pudo subir la imagen.', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Señor(a) Funcionario(a):',
+                        text: 'Ocurrió un error al subir la imagen.'
+                    });
+                }
+            });
+        });
+
+
+});
+
+$(function () {
+    $("#btnMapa").click(function () {
+        $('#myModal').modal("show");
+    });
 });
 
 function VerCaracteristicasGenerales() {
@@ -234,8 +317,6 @@ function Estados() {
 }
 
 
-
-
 // Definición de columnas base (puedes extraer las columnas comunes a una variable)
 const columnasBase = [
     columnaAcciones(),
@@ -421,20 +502,62 @@ function F_GetFuncionariosIris(V_Identificacion) {
     });
 }
 
-
-
-
 $('#txtDependencia').change(function () {
-
    
-    handleDropdownChange('/Irisp1/RegistrosIrisp1/F_GetCuadrantes', 'V_unidadLabora', $(this).val(), '#ddlCuadrante');  // Cargar lista de canales para agregar medios al turno
+    PoblarDropDown('/Irisp1/RegistrosIrisp1/F_GetCuadrantes', 'V_unidadLabora', $(this).val(), '#ddlCuadrante');  // Cargar lista de canales para agregar medios al turno
   
-    
 });
 
 
 
-function handleDropdownChange(url, paramName, paramValue, dropdownSelector, callback) {
+
+$('#ddlClase').on('change', function () {
+    var claseSeleccionada = $("#ddlClase option:selected").text().trim();
+
+    // Ocultar todos los campos primero
+    $('#txtNombreTrafico').closest('.col-md-3').addClass('hidden');
+    $('#ddlModExpendio').closest('.col-md-4').addClass('hidden');
+
+    $('#txtNombreEstructura').closest('.col-md-3').addClass('hidden');
+    $('#txtCantidadEstructura').closest('.col-md-3').addClass('hidden');
+
+    $('#txtNombreInstalacion').closest('.col-md-3').addClass('hidden');
+    $('#txtCantidadInstalacion').closest('.col-md-3').addClass('hidden');
+
+    $('#txtCantidadPersonas').closest('.col-md-3').addClass('hidden');
+
+    $('#txtNombreNarcotrafico').closest('.col-md-3').addClass('hidden'); // Reutilizado en narcotráfico
+    $('#ddlClasiNarcotrafico').closest('.col-md-4').addClass('hidden');
+
+    // Mostrar según la clase seleccionada
+    switch (claseSeleccionada) {
+        case "Trafico De Estupefacientes":
+            $('#txtNombreTrafico').closest('.col-md-3').removeClass('hidden');
+            $('#ddlModExpendio').closest('.col-md-4').removeClass('hidden');
+            break;
+
+        case "Estructura":
+            $('#txtNombreEstructura').closest('.col-md-3').removeClass('hidden');
+            $('#txtCantidadEstructura').closest('.col-md-3').removeClass('hidden');
+            break;
+
+        case "Instalación Fija":
+            $('#txtNombreInstalacion').closest('.col-md-3').removeClass('hidden'); // primer campo
+            $('#txtCantidadInstalacion').closest('.col-md-3').removeClass('hidden');
+            break;
+
+        case "Persona":
+            $('#txtCantidadPersonas').closest('.col-md-3').removeClass('hidden');
+            break;
+
+        case "Narcotrafico (grandes cantidades)":
+            $('#txtNombreNarcotrafico').closest('.col-md-3').removeClass('hidden'); // segundo campo reutilizado
+            $('#ddlClasiNarcotrafico').closest('.col-md-4').removeClass('hidden');
+            break;
+    }
+});
+
+function PoblarDropDown(url, paramName, paramValue, dropdownSelector, callback) {
 
     if (paramValue) {
         $.getJSON(url, { [paramName]: paramValue }, function (data) {
@@ -459,3 +582,5 @@ function handleDropdownChange(url, paramName, paramValue, dropdownSelector, call
         });
     }
 }
+
+

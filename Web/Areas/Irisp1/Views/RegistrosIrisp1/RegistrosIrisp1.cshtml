@@ -4,8 +4,19 @@
 @section scripts {
         <script src="~/areas/irisp1/registrosirisp1.js"></script>
         <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+
+
+         <!-- Carga la API de ArcGIS -->
+    <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
+    <script src="https://js.arcgis.com/3.44/"></script>
       
+   <script src="~/areas/irisp1/CrearUbicacion.js"></script>
+
+
+
         <script type='text/javascript'>
+             var codigoDaneInicial = 11001;
             var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetEstadosIrisP1 = "@Url.Action("F_GetEstadosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
@@ -29,9 +40,7 @@
    BUSQUEDA POR AÑOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 *@
 <div class="card border-success">
-   
-
-     <div class="card-header d-flex align-items-center">
+    <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Consulta IRIS</h4>
         <div class="card-actions ms-auto d-flex button-group">
             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
@@ -41,22 +50,22 @@
             </a>
         </div>
     </div>
-
-    <div class="row mt-3" > <!-- Se agrega margen superior aquí -->
-        <div class="col-md-2 MargFloatBoos">
-            <div class="form-group has-float-label">
-                @Html.DropDownList("ddlAnioIris", (SelectList)ViewBag.ddlAnioIris, new { @tabindex = 1, id = "ddlAnioIris", @class = "form-control select2" })
-                <label class="Labels">Ver IRIS-P1 por año</label>
+     <div class="card-body collapse show">
+        <div class="row" > <!-- Se agrega margen superior aquí -->
+            <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("ddlAnioIris", (SelectList)ViewBag.ddlAnioIris, new { @tabindex = 1, id = "ddlAnioIris", @class = "form-control select2" })
+                    <label class="Labels">Ver IRIS-P1 por año</label>
+                </div>
+            </div>
+            <div class="col-md-2 ">
+                <button tabindex="1002" id="btnLimpiar" onclick="AbrirModalNuevoIris();" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo">
+                    <span class="fa ico_limpiar faa-ring animated"></span> Nuevo IRIS
+                </button>
             </div>
         </div>
-        <div class="col-md-2 ">
-            <button tabindex="1002" id="btnLimpiar" onclick="AbrirModalNuevoIris();" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo">
-                <span class="fa ico_limpiar faa-ring animated"></span> Nuevo IRIS
-            </button>
-        </div>
-    </div>
+     </div>
 </div>
-
 
 @*
   FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -145,12 +154,6 @@ GRILLA ETAPA DE FINALIZACION ---------------------------------------------------
 FIN GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 *@
 
-@* <div class="card-footer" style="margin-bottom: 10px;">
-    <div class="col-md-12 text-center">
-        <button tabindex="7607" type="button" id="btnImprimir" onclick="SweetAlertError(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Imprimir"><span class="fa fa-print faa-wrench animated"></span> Imprimir</button>
-        <button type="button" data-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
-    </div>
-</div> *@
 
 <!-- INICIO DE FORMULARIO EN LA MODAL-->
 
@@ -225,103 +228,184 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 @* FIN  DATOS DEL FUNCIONARIO------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
 
                 @*   DATOS IRIS P1-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+                 <hr class="my-3" style="border-top: 1px dashed #adb5bd;">
                 <fieldset class="mt-3">
+
                     <legend style="width: calc(6.5em + .75rem + 2px) !important;">Datos IRIS P1</legend>
                     <div class="row">
+
                         <div class="col-md-3 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlClase", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlClase", @class = "form-control select2", style = "width: 100%;" })
+                                @Html.DropDownList("ddlClase", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 5, id = "ddlClase", @class = "form-control select2", style = "width: 100%;" })
                                 <label class="Labels">Clase:</label>
                             </div>
                         </div>
-                        <div class="col-md-3 MargFloatBoos">
+
+                        @* para clase = Trafico de estupefancientes *@
+                        <div class="col-md-3 hidden">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlNomClase1",
-                                                  new List<SelectListItem> {
-                                new SelectListItem { Text = "Seleccione", Value = "0" },
-                                new SelectListItem { Text = "Opción 1", Value = "1" },
-                                new SelectListItem { Text = "Opción 2", Value = "2" }
-                                },
-                                                  htmlAttributes: new { @tabindex = 5, @id = "ddlNomClase1", @class = "form-control select2", style = "width: 100%;" })
-                                <label class="Labels">Nombre de la Clase:</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3 MargFloatBoos" id="textContainer" style="display: none;">
-                            <div class="form-group has-float-label">
-                                <input type="text" id="inputText" class="form-control" placeholder="Ingrese texto aquí" />
-                                <label class="Labels">Texto Adicional:</label>
+                                <input tabindex="2" id="txtNombreTrafico" name="txtNombreTrafico" type="text" value="" autocomplete="off" placeholder="Nombre, si aplica" class="form-control InputPading">
+                                <label class="Labels">Nombre</label>
                             </div>
                         </div>
 
-                        <div class="col-md-3 MargFloatBoos">
+                        <div class="col-md-4 MargFloatBoos hidden">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlActividad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlActividad", @class = "form-control select2", style = "width: 100%;" })
-                                <label class="Labels">Tiempo actividad delito :</label>
+                                @Html.DropDownList("ddlModExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 6, id = "ddlModExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Modalidad Expendio:</label>
                             </div>
                         </div>
 
-                        <div class="col-md-3 MargFloatBoos">
+                           @* para clase = Estructura*@
+                        <div class="col-md-3 hidden">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlFuente", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlFuente", @class = "form-control select2", style = "width: 100%;" })
+                                <input tabindex="2" id="txtNombreEstructura" name="txtNombreEstructura" type="text" value="" autocomplete="off" placeholder="digite el nombre de la estructura" class="form-control InputPading">
+                                <label class="Labels">Nombre Estructura:</label>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-3 hidden">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtCantidadEstructura" name="txtCantidadEstructura" type="text" value="" autocomplete="off" placeholder="Digite la cantidad" class="form-control InputPading">
+                                <label class="Labels">Cantidad:</label>
+                            </div>
+                        </div>
+
+
+                            @* para clase = Instalación Fija*@
+                        <div class="col-md-3 hidden">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtNombreInstalacion" name="txtNombreInstalacion" type="text" value="" autocomplete="off" placeholder="Razón social de la instalación, si aplica" class="form-control InputPading">
+                                <label class="Labels">Nombre Instalación:</label>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-3 hidden">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtCantidadInstalacion" name="txtCantidadInstalacion" type="text" value="" autocomplete="off" placeholder="Digite la cantidad" class="form-control InputPading">
+                                <label class="Labels">Cantidad:</label>
+                            </div>
+                        </div>
+                        
+                        
+                            @* para clase = Persona*@
+                       
+                        <div class="col-md-3 hidden">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtCantidadPersonas" name="txtCantidadPersonas" type="text" value="" autocomplete="off" placeholder="Digite la cantidad de personas" class="form-control InputPading">
+                                <label class="Labels">Cantidad:</label>
+                            </div>
+                        </div>
+
+                        
+                            @* para clase = Narcotrafico*@
+                        <div class="col-md-3 hidden">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtNombreNarcotrafico" name="txtNombreNarcotrafico" type="text" value="" autocomplete="off" placeholder="Digite el nombre" class="form-control InputPading">
+                                <label class="Labels">Nombre: </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 MargFloatBoos hidden">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlClasiNarcotrafico", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlClasiNarcotrafico", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Clasificación Narcotráfico:</label>
+                            </div>
+                        </div>
+
+                    </div>
+                       
+                     @* Demás campos *@
+                    <div class="row">
+                       
+                        <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlActividad", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlActividad", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Tiempo actividad:</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlFuente", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlFuente", @class = "form-control select2", style = "width: 100%;" })
                                 <label class="Labels">Fuente:</label>
                             </div>
                         </div>
 
-                        <div class="col-md-3 MargFloatBoos">
+                        
+                        <div class="col-md-2 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlEntono", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlEntono", @class = "form-control select2", style = "width: 100%;" })
+                                @Html.DropDownList("ddlEntono", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlEntono", @class = "form-control select2", style = "width: 100%;" })
                                 <label class="Labels">Entorno:</label>
                             </div>
                         </div>
+
                         <div class="col-md-3">
                             <div class="form-group has-float-label">
-                                <input tabindex="2" id="txtCampoT" name="txtCampoT" type="text" value="" autocomplete="off" placeholder="Describa en el entorno" class="form-control InputPading">
+                                <input tabindex="2" id="txtCampoT" name="txtCampoT" type="text" value="" autocomplete="off" placeholder="Nombre" class="form-control InputPading">
                                 <label class="Labels">Nombre del entorno afectado:</label>
                             </div>
                         </div>
-                        <div class="col-md-3 MargFloatBoos">
+
+                         <div class="col-md-2 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlZona", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlZona", @class = "form-control select2", style = "width: 100%;" })
+                                @Html.DropDownList("ddlZona", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlZona", @class = "form-control select2", style = "width: 100%;" })
                                 <label class="Labels">Zona:</label>
                             </div>
                         </div>
+
+
                         <div class="col-md-12 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                <textarea tabindex="400" class="form-control" placeholder=" " rows="5" id="txtObservaCabezaCuello" name="txtObservaCabezaCuello" maxlength="4000" cols="40" style="height: 50px !important; text-align:justify; margin-bottom: 0px;"></textarea>
+                                <textarea tabindex="400" class="form-control" placeholder="Digite una descripción corta y diciente las caracteristicas de las personas o inmuebles y la forma como delinquen (Max 2000 caracteres) " rows="5" id="txtObservaCabezaCuello" name="txtObservaCabezaCuello" maxlength="4000" cols="40" style="height: 50px !important; text-align:justify; margin-bottom: 0px;"></textarea>
                                 <label class="Labels">Descripcion General:</label>
                             </div>
                         </div>
                         <div class="col-md-4 MargFloatBoos">
                             <div class="form-horizontal">
                                 <div class="form-group row" style="margin-bottom: 0px;">
-                                    <label class="col-md-6 col-form-label Labels" style="margin-top:0px;">Registro fotografico?:</label>
+                                    <label class="col-md-6 col-form-label Labels" style="margin-top:0px;">Registro fotografico?</label>
                                     <div class="col-md-4 text-left" style="padding-left:0px;">
-                                        <input tabindex="111" type="checkbox" checked data-toggle="toggle" id="chkDesignado">
+                                        <input tabindex="111" type="checkbox" checked data-toggle="toggle" id="chkRegFoto">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-8">
+                       <div class="col-md-8">
                             <div class="form-group has-float-label">
                                 <div class="input-group">
-                                    <input tabindex="12" name="txtIdentificacionK" type="text" id="txtIdentificacionK" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <input tabindex="12" name="fileAnexoFotografico" type="file" id="fileAnexoFotografico"
+                                           accept=".jpg,.jpeg,.png"
+                                           class="form-control InputPading"
+                                           placeholder="Seleccione formato .JPG o .PNG, Dimensiones recomendadas (750x579), peso máx. 5Mb" />
                                     <span class="input-group-btn">
-                                        <button tabindex="31" class="btn btn-success" id="btnGetAtencionAmbIden" onclick="GetAtencionAmbIden(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
-                                        <button tabindex="3" class="btn btn-warning" id="btnLimpiarAtencionAmbulatoriaA" onclick="LimpiarAtencionAmbulatoria(); return false;" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                        <button tabindex="31" class="btn btn-success" id="btnSubirFoto" style="height:34px; border-radius: 0px;" type="button" title="Subir Foto">
+                                            <b><i class="fas fa-upload"></i></b>
+                                        </button>
                                     </span>
                                 </div>
-                                <label class="Labels">Anexo fotografico:</label>
+                                <label class="Labels">Anexo fotográfico:</label>
                             </div>
-                        </div>
+
+                            <div id="estadoFoto" class="mt-2 text-success" style="display: none;">
+                                <i class="fas fa-check-circle"></i> Imagen guardada exitosamente.
+                            </div>
+
+                       </div>
+
+                        
+
                     </div>
                 </fieldset>
                 @* FIN  DATOS IRIS P1-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
 
                 @*   DATOS INTEGRANTES------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
-                <fieldset>
+                <fieldset class="mt-3">
                     <legend style="width: calc(10.5em + .75rem + 2px) !important;">Datos de Integrantes</legend>
                     <div class="row">
-                        <div class="col-md-3 MargFloatBoos">
+                        <div class="col-md-2 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <div class="input-group">
                                     <input tabindex="3" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" >
@@ -344,157 +428,105 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                                 <label class="Labels"> Nombres:</label>
                             </div>
                         </div>
-                        <div class="col-md-3 MargFloatBoos">
+                        <div class="col-md-2 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <input tabindex="2" id="txtApellidos" name="txtAlias" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
                                 <label class="Labels">Alias:</label>
                             </div>
                         </div>
-                        <!-- Crear una plantilla de fila para los nuevos integrantes -->
-                        <div class="card-footer" style="margin-bottom: 10px;">
-                            <div class="col-md-12 text-right">
+                         <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtCelular" name="txtCelular" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                <label class="Labels">Celular:</label>
+                            </div>
+                        </div>
+                         <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtDirección" name="txtDirección" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                <label class="Labels">Dirección:</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 ">
                                 <button tabindex="7603" type="button" id="btnAddIntegrante" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario">
-                                    <span class="fa ico_buscar faa-pulse animated white"></span> Añadir Integrante</button>
+                                <span class="fa ico_buscar faa-pulse animated white"></span> Añadir Integrante</button>
+                        </div>
+
+                        <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlDelitoPrincipal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoPrincipal", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Delito Principal:</label>
                             </div>
                         </div>
-                        <div class="card border-success">
-                            <div class="card-header d-flex align-items-center">
-                                <h4 class="card-title text-white"><i class="mr-2 mdi mdi-account-card-details text-white"></i>Listado de Integrantes</h4>
-                                <div class="card-actions ms-auto d-flex button-group">
-                                    <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-                                    <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-                                    <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                                        <i data-feather="x" class="feather-sm"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            <div id="pn_Grilla" class="card-body collapse show">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                                            <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
-                                        </div>
-                                    </div>
-                                </div>
+
+                        <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlDelitoSecundario", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoSecundario", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Delito Secundario:</label>
                             </div>
                         </div>
-                        <div id="integrantesContainer"></div>
-                        <div id="integranteTemplate" style="display: none;">
-                            <div class="row integrante-row">
-                                <div class="col-md-3 MargFloatBoos">
-                                    <div class="form-group has-float-label">
-                                        <div class="input-group">
-                                            <input tabindex="3" name="txtIdentificacion[]" type="text" autocomplete="off" placeholder=" " class="form-control InputPading" >
-                                            <span class="input-group-btn">
-                                                <button tabindex="4" class="btn btn-success" onclick="GetDatosPaciente(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
-                                            </span>
-                                        </div>
-                                        <label class="Labels">No. Identificación:</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 MargFloatBoos">
-                                    <div class="form-group has-float-label">
-                                        <input tabindex="2" name="txtApellidos[]" type="text" value="" autocomplete="off" placeholder="Digite apellidos" class="form-control InputPading">
-                                        <label class="Labels">Apellidos:</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 MargFloatBoos">
-                                    <div class="form-group has-float-label">
-                                        <input tabindex="2" name="txtNombre[]" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
-                                        <label class="Labels">Nombres:</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 MargFloatBoos">
-                                    <div class="form-group has-float-label">
-                                        <input tabindex="2" name="txtAlias[]" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
-                                        <label class="Labels">Alias:</label>
-                                    </div>
-                                </div>
-                                <div class="card-footer" style="margin-bottom: 10px;">
-                                    <div class="col-md-12 text-right">
-                                        <button tabindex="7603" type="button" class="btn btn-eliminar btnRemoveIntegrante"
-                                                style="border-radius: 0px 16px 0px 16px !important;" title="Eliminar Integrante">
-                                            <span class="fa fa-trash faa-ring animated white"></span> Quitar Integrante
-                                        </button>
+                        
+                       
+                        <div id="pn_Grilla" class="card-body collapse hidden">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                        <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </fieldset>
                 @*  FIN DATOS INTEGRANTES------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
 
-                @*DATOS DELITOS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
-
-                <fieldset>
-                    <legend style="width: calc(10.5em + .75rem + 2px) !important;">Datos Delito Principal</legend>
-                    <div class="row">
-                    <div class="col-md-6 MargFloatBoos">
-                        <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
-                            <label class="Labels">Delito Principal:</label>
-                        </div>
-                    </div>
-
-
-                        <div class="col-md-6 MargFloatBoos">
-                            <div class="form-group has-float-label">
-                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
-                                <label class="Labels">Delito Secundario (Opcional):</label>
-                            </div>
-                        </div>
-                        </div class="row">
-                </fieldset>
-
-                @*FIN DATOS DELITOS--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
+               
 
                 @*UBICACIÓN-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
 
-                <fieldset>
+                <fieldset class="mt-3" >
                     <legend style="width: calc(10.5em + .75rem + 2px) !important;">Ubicación</legend>
                     <div class="row">
-                    <div class="col-md-4 MargFloatBoos">
-                        <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
-                            <label class="Labels">Departamento:</label>
+                   
+                        <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtMunicipio" type="text" id="txtMunicipio" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Municipio:</label>
+                                </div>
                         </div>
-                    </div>
-                     <div class="col-md-4 MargFloatBoos">
-                        <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
-                            <label class="Labels">Municipio:</label>
+                        <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtBarrio" type="text" id="txtBarrio" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Barrio:</label>
+                                </div>
                         </div>
-                    </div>
-                      <div class="col-md-4 MargFloatBoos">
-                        <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlUnidad", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
-                            <label class="Labels">Cuadrante:</label>
+
+                         <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="5" name="txtCuadrante" type="text" id="txtCuadrante" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <label class="Labels">Cuadrante:</label>
+                            </div>
                         </div>
-                    </div>
+                        
                         <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <input tabindex="5" name="txtDireccion" type="text" id="txtDireccion" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <label class="Labels">Dirección:</label>
                             </div>
                         </div>
                          <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <input tabindex="5" name="LONGITUD_CASO" type="text" id="LONGITUD_CASO" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <label class="Labels">Longitud:</label>
                             </div>
                         </div>
                            <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <input tabindex="5" name="LATITUD_CASO" type="text" id="LATITUD_CASO" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <label class="Labels">Latitud:</label>
                             </div>
                         </div>
-                            <div class="col-md-4 MargFloatBoos">
-                            <div class="form-group has-float-label">
-                                <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
-                                <label class="Labels">Dirección:</label>
-                            </div>
-                        </div>
+                           
                            <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading" />
@@ -502,10 +534,34 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                             </div>
                         </div>
                         <div class="col-md-4 MargFloatBoos">
-                        <button tabindex="7603" type="button" id="btnAddIntegrante" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar en el Mapa</button>
-                       </div>
+                             <button tabindex="7603" type="button" id="btnMapa" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar en el Mapa</button>
+                        </div>
                         </div class="row">
                 </fieldset>
+
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
+                      <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="mapModalLabel">Mapa de Ubicación</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                  </div>
+                                  <div class="modal-body">
+                                       <div class="col-12 mb-2">
+                                            <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
+                                       </div>
+                                    <!-- Aquí irá el mapa -->
+                                    <div id="mapaDiv" style="width: 100%; height: 600px;">
+                                     </div>
+                                  </div>
+                            </div>
+                      </div>
+                </div>
+
+
+
 
                 @*FIN UBICACION--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
 
@@ -571,10 +627,6 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
     </div>
     <div class="loader_backe"></div>
 </div>
-
-
-
-
 
 
 @* inicio modal dialog ver datos *@
