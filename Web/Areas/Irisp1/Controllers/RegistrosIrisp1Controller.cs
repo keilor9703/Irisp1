@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Comun.Areas.Integrantes;
+using Gepad.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Negocio.Gestion.Admin;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
+using NuGet.Packaging.Signing;
 using Oracle.ManagedDataAccess.Client;
+using System.Security.Claims;
 
 
 namespace Web.Areas.Irisp1.Controllers
@@ -104,6 +108,28 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+
+        [HttpPost]
+        public async Task<IActionResult> F_ConsultarSeqIris()
+        {
+            var resultado = await _iDbIrisp1.F_ConsultarSeqIris();
+           
+
+            if (resultado.IdRespuesta > 0)
+            {
+                var consecutivo = resultado.Data.ToString();
+
+                consecutivo = ClsEncriptar.Encriptar(consecutivo);
+                return Json(new { success = true, data = consecutivo, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = resultado.Data, message = resultado.Mensaje });
+            }
+        }
+
+
+
         #endregion
 
 
@@ -149,6 +175,32 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
+
+
+        [HttpGet]
+        public async Task<IActionResult> P_InsIntegrantes(DtoIntegrantes Obj_Integrante)
+        {
+            
+
+            try
+            {
+                var Resultado = await _iDbIrisp1.P_InsIntegrantes(Obj_Integrante);
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
 
 
         #endregion

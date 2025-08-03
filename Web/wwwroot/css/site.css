@@ -1027,29 +1027,30 @@ table.table-bordered.dataTable th, table.table-bordered.dataTable td {
 .fondoFooter {
     background-image: linear-gradient(to right, #44658e 0%, #106573 51%, #34c2be 100%) !important;
 }
-/*
+
 fieldset {
     border: 1px solid silver !important;
     border-radius: 4px !important;
     margin-bottom: 5px !important;
     padding: 0px 20px 0px 20px !important; 
-}*/
-
-fieldset {
-    border: 2px solid #198754; /* verde institucional */
-    border-radius: 10px;
-    padding: 15px 20px;
-    margin-bottom: 25px;
-    /*background-color: #f8f9fa;*/ /* fondo sutil gris claro */
-    box-shadow: 0 0 5px rgba(0,0,0,0.05);
 }
+
+/*fieldset {
+    border: 2px solid #198754;*/ /* verde institucional */
+    /*border-radius: 10px;
+    padding: 15px 20px;
+    margin-bottom: 25px;*/
+    /*background-color: #f8f9fa;*/ /* fondo sutil gris claro */
+    /*box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}*/
 
 
 legend {
     padding: 2px !important;
     float: none !important;
     font-size: 18px !important;
-
+    font-weight: bold;
+    color: #006937;
 }
 
 

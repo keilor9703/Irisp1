@@ -88,38 +88,9 @@ $(document).ready(function () {
 
 });
 
-$(function () {
-    $("#btnMapa").click(function () {
-        $('#myModal').modal("show");
-    });
-});
-
-function VerCaracteristicasGenerales() {
-    $('#ModalCaracteristicasGenerales').modal("show");
-}
-
-
-function F_GetInfoGrillas() {
-    $.ajax({
-        type: 'GET',
-        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
-        dataType: 'json',
-        data: { V_Anio: $('#ddlAnioIris').val() },
-        success: function (response) {
-
-            // Inicializar la grilla con los datos filtrados o vacíos
-            GetGrillaVerificacion(response.data);
-            GetGrillaInvestigacion(response.data);
-            GetGrillaFinalizacion(response.data);
-        },
-        error: function () {
-            // En caso de error, inicializar la grilla con datos vacíos
-            GetGrillaVerificacion([]);
-            GetGrillaInvestigacion([]);
-            GetGrillaFinalizacion([]);
-        }
-    });
-}
+//function VerCaracteristicasGenerales() {
+//    $('#ModalCaracteristicasGenerales').modal("show");
+//}
 
 function AbrirModalMas() {
 
@@ -130,6 +101,7 @@ function AbrirModalMas() {
 function AbrirModalNuevoIris() {
 
     $('#Modal_VerRegistro').modal("show");
+    consultarConsecutivo();
 
 }
 
@@ -179,148 +151,50 @@ function AbrirModalDatosCaracteristicas(CaracteristicasGenerales) {
 }
 
 
-// Grilla de Etapa de verificacion
-function inicializarGrilla(selectorTabla, selectorPanel, datos, estados, columnas) {
-    const datosFiltrados = datos.filter(item => estados.includes(item.IdEstado));
-    if ($.fn.dataTable.isDataTable(selectorTabla)) {
-        $(selectorTabla).DataTable().destroy();
-    }
+function F_GetInfoGrillas() {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_Anio: $('#ddlAnioIris').val() },
+        success: function (response) {
 
-    $(selectorTabla).empty();
-    $(selectorPanel).removeClass('hidden');
-
-    $(selectorTabla).DataTable({
-        destroy: true,
-        data: datosFiltrados,
-        language: glOpcionesIdioma,
-        responsive: true,
-        columns: columnas,
-        lengthMenu: [
-            [10, 25, 50, -1],
-            ['10 registros', '25 registros', '50 registros', 'Todos']
-        ],
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaVerificacion(response.data);
+            GetGrillaInvestigacion(response.data);
+            GetGrillaFinalizacion(response.data);
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaVerificacion([]);
+            GetGrillaInvestigacion([]);
+            GetGrillaFinalizacion([]);
+        }
     });
 }
 
-function columnaAcciones() {
-    return {
-        data: null,
-        className: "celdaCenter celda3",
-        render: function (data, type, row) {
-            var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-            var DetallesIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fas fa-list"></i>&nbsp; Detalles </a></li>`;
-            var ActualizarIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarIrisp1()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Iris</a></li>`;
-            var ActualizarEstado = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Estado</a></li>`;
-            var ActualizarExistencia = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:F_GetBibliaDetalle()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Existencia</a></li>`;
-            var Eliminar = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:Dell_Roles()"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
-            var finBoton = '</ul></div>';
-            return inicioBoton + DetallesIris +  ActualizarIris + ActualizarEstado + ActualizarExistencia + Eliminar + finBoton;
-        }
-    };
+
+
+
+// Grillas /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+function GetGrillaVerificacion(datos) {
+    inicializarGrilla("#tbGrilla", "#pn_GrillaVerificacion", datos, [2, 3, 4], columnasBase);
 }
 
-
-
-
-function columnaCaracteristicasGenerales() {
-    return {
-        title: "Características Generales",
-        data: "CaracteristicasGenerales",
-        name: "CaracteristicasGenerales",
-        className: "celdaCenter",
-        render: function (data, type, row) {
-            if (!data || data.trim() === "") {
-                return '';
-            }
-
-            const dataEncoded = encodeURIComponent(data);
-
-            return `
-                <div style="display: flex; align-items: center; max-width: 300px; gap: 10px;">
-                    <button class="btn btn-success btn-sm" type="button"
-                        onclick="AbrirModalDatosCaracteristicas(decodeURIComponent('${dataEncoded}'))">
-                        <span class="fa fa-eye white"></span>
-                    </button>
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
-                        ${data}
-                    </div>
-                </div>
-            `;
-        }
-    };
-}function columnaDescripcionTramite() {
-    return {
-        title: "Descripcion del Tramite",
-        data: "DescripcionTramite",
-        name: "DescripcionTramite",
-        className: "celdaCenter",
-        render: function (data, type, row) {
-            if (!data || data.trim() === "") {
-                return '';
-            }
-
-            const dataEncoded = encodeURIComponent(data);
-
-            return `
-                <div style="display: flex; align-items: center; max-width: 300px; gap: 10px;">
-                    <button class="btn btn-success btn-sm" type="button"
-                        onclick="AbrirModalDatosCaracteristicas(decodeURIComponent('${dataEncoded}'))">
-                        <span class="fa fa-eye white"></span>
-                    </button>
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
-                        ${data}
-                    </div>
-                </div>
-            `;
-        }
-    };
+function GetGrillaInvestigacion(datos) {
+    inicializarGrilla("#tbGrillaInvestigacion", "#pn_GrillaInvestigacion", datos, [72, 73], columnasBase);
 }
 
-function Estados() {
-    return {
-        title: "Estado",
-        data: "EstadoDescripcion",
-        name: "EstadoDescripcion",
-        className: "celdaCenter",
-        render: function (data, type, row) {
-            if (!data) return '';
-
-            const estado = data.toLowerCase();
-            let color = '';
-
-            switch (estado) {
-                case 'sin asignar':
-                    color = '#c53a1d'; // rojo
-                    break;
-                case 'asignado':
-                    color =  '#236305'; // azul
-                    break;
-                case 'avance verificación':
-                    color = '#799137'; // verde
-                    break;
-                case 'investigación':
-                    color = '#2127f5'; // amarillo
-                    break;
-                case 'avance investigación':
-                    color = '#40a8c7'; // naranja
-                    break;
-                case 'finalizado':
-                    color = '#032b57'; // verde
-                    break;
-                default:
-                    color = '#386ca0'; // gris oscuro
-            }
-
-            return `<span style="background-color: ${color}; color: white ; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
-        }
-    };
+function GetGrillaFinalizacion(datos) {
+    inicializarGrilla("#tbGrillaFinalizacion", "#pn_GrillaFinalizacion", datos, [5], columnasBase);
 }
-
 
 // Definición de columnas base (puedes extraer las columnas comunes a una variable)
 const columnasBase = [
-    columnaAcciones(),
-  
+
+    columnaAcciones(1),
     Estados(),
     { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion", className: "celdaCenter" },
     { title: "Codigo ", data: "Codigo", name: "Codigo", className: "celdaCenter" },
@@ -329,7 +203,7 @@ const columnasBase = [
     { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", name: "FechaInicioExistencia", className: "celdaCenter" },
     { title: "Fuente", data: "Clase", name: "Fuente", className: "celdaCenter" },
     { title: "Nombre", data: "NombreClase", name: "NombreClase", className: "celdaCenter" },
-    { title: "Nombre", data: "CaracteristicasGenerales", name: "CaracteristicasGenerales", className: "celdaCenter", visible: false },
+    /*{ title: "Nombre", data: "CaracteristicasGenerales", name: "CaracteristicasGenerales", className: "celdaCenter", visible: false },*/
     columnaCaracteristicasGenerales(),
     columnaDescripcionTramite(),
     // ...agrega aquí el resto de columnas comunes...
@@ -380,26 +254,172 @@ const columnasBase = [
     { title: "Consecutivo del Codigo", data: "ConsecutivoCodigo", name: "ConsecutivoCodigo", className: "celdaCenter", visible: false },
     { title: "Icodigo de Estado", data: "IdEstado", name: "IdEstado", className: "celdaCenter", visible: false },
 
-
-
-
-
 ];
 
-// Puedes agregar o quitar columnas específicas por grilla si es necesario
+const columnasIntegrantes = [
 
-function GetGrillaVerificacion(datos) {
-    inicializarGrilla("#tbGrilla", "#pn_GrillaVerificacion", datos, [2, 3, 4], columnasBase);
+    columnaAcciones(2),
+    Estados(),
+    { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion", className: "celdaCenter" },
+    { title: "Codigo ", data: "Codigo", name: "Codigo", className: "celdaCenter" },
+    { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad", className: "celdaCenter" },
+    { title: "Municipio", data: "Municipio", name: "Municipio", className: "celdaCenter" },
+    { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", name: "FechaInicioExistencia", className: "celdaCenter" },
+    { title: "Fuente", data: "Clase", name: "Fuente", className: "celdaCenter" },
+    { title: "Nombre", data: "NombreClase", name: "NombreClase", className: "celdaCenter" },
+];
+
+function Estados() {
+    return {
+        title: "Estado",
+        data: "EstadoDescripcion",
+        name: "EstadoDescripcion",
+        className: "celdaCenter",
+        render: function (data, type, row) {
+            if (!data) return '';
+
+            const estado = data.toLowerCase();
+            let color = '';
+
+            switch (estado) {
+                case 'sin asignar':
+                    color = '#c53a1d'; // rojo
+                    break;
+                case 'asignado':
+                    color = '#236305'; // azul
+                    break;
+                case 'avance verificación':
+                    color = '#799137'; // verde
+                    break;
+                case 'investigación':
+                    color = '#2127f5'; // amarillo
+                    break;
+                case 'avance investigación':
+                    color = '#40a8c7'; // naranja
+                    break;
+                case 'finalizado':
+                    color = '#032b57'; // verde
+                    break;
+                default:
+                    color = '#386ca0'; // gris oscuro
+            }
+
+            return `<span style="background-color: ${color}; color: white ; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
+        }
+    };
+}
+function columnaAcciones(tipoGrilla) {
+
+    if (tipoGrilla = 1) {
+        return {
+            data: null,
+            className: "celdaCenter celda3",
+            render: function (data, type, row) {
+                var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                var DetallesIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fas fa-list"></i>&nbsp; Detalles </a></li>`;
+                var ActualizarIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarIrisp1()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Iris</a></li>`;
+                var ActualizarEstado = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Estado</a></li>`;
+                var ActualizarExistencia = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:F_GetBibliaDetalle()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Existencia</a></li>`;
+                var Eliminar = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:Dell_Roles()"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                var finBoton = '</ul></div>';
+                return inicioBoton + DetallesIris + ActualizarIris + ActualizarEstado + ActualizarExistencia + Eliminar + finBoton;
+            }
+        };
+    } else if (tipoGrilla = 2) {
+        return {
+            data: null,
+            className: "celdaCenter celda3",
+            render: function (data, type, row) {
+                var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                var EliminarIntegrante = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fas fa-list"></i>&nbsp; Eliminar </a></li>`;
+                var finBoton = '</ul></div>';
+                return inicioBoton + EliminarIntegrante +  finBoton;
+            }
+        };
+
+
+    }
 }
 
-function GetGrillaInvestigacion(datos) {
-    inicializarGrilla("#tbGrillaInvestigacion", "#pn_GrillaInvestigacion", datos, [72, 73], columnasBase);
+
+function inicializarGrilla(selectorTabla, selectorPanel, datos, estados, columnas) {
+    const datosFiltrados = datos.filter(item => estados.includes(item.IdEstado));
+    if ($.fn.dataTable.isDataTable(selectorTabla)) {
+        $(selectorTabla).DataTable().destroy();
+    }
+
+    $(selectorTabla).empty();
+    $(selectorPanel).removeClass('hidden');
+
+    $(selectorTabla).DataTable({
+        destroy: true,
+        data: datosFiltrados,
+        language: glOpcionesIdioma,
+        responsive: true,
+        columns: columnas,
+        lengthMenu: [
+            [10, 25, 50, -1],
+            ['10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+    });
 }
 
-function GetGrillaFinalizacion(datos) {
-    inicializarGrilla("#tbGrillaFinalizacion", "#pn_GrillaFinalizacion", datos, [5], columnasBase);
+
+function columnaCaracteristicasGenerales() {
+    return {
+        title: "Características Generales",
+        data: "CaracteristicasGenerales",
+        name: "CaracteristicasGenerales",
+        className: "celdaCenter",
+        render: function (data, type, row) {
+            if (!data || data.trim() === "") {
+                return '';
+            }
+
+            const dataEncoded = encodeURIComponent(data);
+
+            return `
+                <div style="display: flex; align-items: center; max-width: 300px; gap: 10px;">
+                    <button class="btn btn-success btn-sm" type="button"
+                        onclick="AbrirModalDatosCaracteristicas(decodeURIComponent('${dataEncoded}'))">
+                        <span class="fa fa-eye white"></span>
+                    </button>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
+                        ${data}
+                    </div>
+                </div>
+            `;
+        }
+    };
 }
 
+function columnaDescripcionTramite() {
+    return {
+        title: "Descripcion del Tramite",
+        data: "DescripcionTramite",
+        name: "DescripcionTramite",
+        className: "celdaCenter",
+        render: function (data, type, row) {
+            if (!data || data.trim() === "") {
+                return '';
+            }
+
+            const dataEncoded = encodeURIComponent(data);
+
+            return `
+                <div style="display: flex; align-items: center; max-width: 300px; gap: 10px;">
+                    <button class="btn btn-success btn-sm" type="button"
+                        onclick="AbrirModalDatosCaracteristicas(decodeURIComponent('${dataEncoded}'))">
+                        <span class="fa fa-eye white"></span>
+                    </button>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
+                        ${data}
+                    </div>
+                </div>
+            `;
+        }
+    };
+}
 
 function CambiarEstado() {
 
@@ -441,6 +461,7 @@ function CambiarEstado() {
 };
 
 
+// FIN Grillas /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////nuevo//////////////////////////////////////////
 
@@ -451,6 +472,56 @@ $("#txtIdentificacion").keyup(function (event) {
         $("#btnConsultarEmpl").click();
     }
 });
+
+//Fin Eventos
+
+
+$(function () {
+    $("#btnMapa").click(function () {
+        $('#myModal').modal("show");
+    });
+});
+
+
+$(function () {
+    $("#btnAddIntegrante").click(function () {
+        // Mostrar la grilla
+        $('#pn_GrillaIntegantes').removeClass("hidden").collapse("show");
+
+        // Llamar a función para poblarla
+        cargarIntegrantes();
+    });
+});
+
+function cargarIntegrantes() {
+    $.ajax({
+        url: '/TuControlador/GetIntegrantes', // Ajusta con tu ruta real
+        type: 'GET',
+        dataType: 'json',
+        success: function (data) {
+            let tbody = $('#tbGrillaIntegantes tbody');
+            tbody.empty(); // Limpiar filas previas
+
+            if (data && data.length > 0) {
+                data.forEach(function (item) {
+                    tbody.append(
+                        `<tr>
+                            <td>${item.Nombre}</td>
+                            <td>${item.Documento}</td>
+                            <td>${item.Edad}</td>
+                            <td>${item.Parentesco}</td>
+                        </tr>`
+                    );
+                });
+            } else {
+                tbody.append('<tr><td colspan="4" class="text-center">No se encontraron integrantes</td></tr>');
+            }
+        },
+        error: function () {
+            alert("Error al cargar los integrantes.");
+        }
+    });
+}
 
 
 function F_GetFuncionariosIris(V_Identificacion) {
@@ -509,8 +580,7 @@ $('#txtDependencia').change(function () {
 });
 
 
-
-
+/*Datos Iris P1, campos dinamicos según la clase*/
 $('#ddlClase').on('change', function () {
     var claseSeleccionada = $("#ddlClase option:selected").text().trim();
 
@@ -584,3 +654,34 @@ function PoblarDropDown(url, paramName, paramValue, dropdownSelector, callback) 
 }
 
 
+
+function consultarConsecutivo() {
+    $.ajax({
+        url: UrlGetConsecutivoIris,
+        type: 'POST',
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                $("#txtConsecutivoIris").val(response.data);
+               
+            } else {
+                $("#txtConsecutivoIris").val('');
+                // alert(response.message || "Error al obtener consecutivo.");
+                Swal.fire({
+                    type: 'info',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "Error al obtener consecutivo."
+                });
+            }
+        },
+        error: function () {
+            $("#txtConsecutivoIris").val('');
+            //  alert("Error de comunicación con el servidor.");
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'Error de comunicación con el servidor.'
+            });
+        }
+    });
+}

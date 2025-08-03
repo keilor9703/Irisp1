@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Negocio.Gestion.Utilidades;
+using Comun.Areas.Integrantes;
 
 namespace Negocio.Gestion.Irisp1
 {
@@ -147,7 +148,7 @@ namespace Negocio.Gestion.Irisp1
                     {
                         resp.IdRespuesta = 1;
                         resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetMenu";
+                        resp.Operacion = "F_GetInfoGrillas";
                         resp.Data = retorno;
                     }
                     else
@@ -260,9 +261,6 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-
-
-
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora)
         {
             DataTable resultado = new();
@@ -319,6 +317,121 @@ namespace Negocio.Gestion.Irisp1
 
             return resp;
         }
+
+        public async Task<DtoResultado<long>> F_ConsultarSeqIris()
+        {
+            DtoResultado<long> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.Text; // IMPORTANTE: Es una función, no un procedimiento
+                objCommand.CommandText = "SELECT PK_REGISTRO_IRIS.f_consultar_seq_Iris FROM dual";
+                Conexion.Open();
+
+                var result = await objCommand.ExecuteScalarAsync();
+                long consecutivo = Convert.ToInt64(result?.ToString() ?? "0");
+
+                if (consecutivo > 0)
+                {
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = "Consulta exitosa";
+                    resp.Data = consecutivo;
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "No se pudo obtener el consecutivo";
+                    resp.Data = 0;
+                }
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+            }
+            return resp;
+        }
+
+        
+        public async Task<DtoResultado<string>> P_InsIntegrantes(DtoIntegrantes Obj_Integrante)
+        {
+            DtoResultado<string> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var objCommand = new OracleCommand();
+
+
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_RECEPCION_NET8.P_GuardarLlamada";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                // Parámetros de entrada
+              
+
+                // Parámetros de salida
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("P_MENSAJE", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                if (Conexion.State == ConnectionState.Open)
+                    await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value?.ToString() ?? "0");
+                string mensaje = objCommand.Parameters["P_MENSAJE"].Value?.ToString() ?? "";
+
+                if (resultado > 0)
+                {
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = mensaje;
+                    resp.Data = "OK";
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = mensaje;
+                    resp.Data = "";
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error ejecutando PK_RECEPCION_NET8.P_GuardarLlamada");
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {e.Message}";
+                resp.Data = "";
+            }
+            finally
+            {
+                if (Conexion.State == ConnectionState.Open)
+                    Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
 
     }
 }
