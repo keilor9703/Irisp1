@@ -1,14 +1,18 @@
 ﻿using Comun.Areas.Integrantes;
+using Comun.Areas.Irisp1;
 using Gepad.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Configuration;
 using Negocio.Gestion.Admin;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
 using NuGet.Packaging.Signing;
 using Oracle.ManagedDataAccess.Client;
+using System.Data;
+using System.Net;
 using System.Security.Claims;
 
 
@@ -24,19 +28,24 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IDbIrisp1 _iDbIrisp1;
         private readonly IDbFuncionarios _iDbFuncionarios;
         private readonly IConfiguration _configuration;
+       
         private readonly IDbDominios _IDbDominios;
+        private readonly string _strConexionIris_Test;
+      
 
         #endregion
 
         #region Constructor
 
-        public RegistrosIrisp1Controller(IDbAdministracion iDbAdministracion, IDbIrisp1 iDbIrisp1, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios)
+        public RegistrosIrisp1Controller(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbIrisp1 iDbIrisp1, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios)
         {
+          
             _iDbAdministracion = iDbAdministracion;
             _iDbIrisp1 = iDbIrisp1;
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = configuration;
             _IDbDominios = idbDominios;
+            _strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
         }
 
         #endregion
@@ -52,9 +61,13 @@ namespace Web.Areas.Irisp1.Controllers
             ViewBag.ddlFuente = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlEntono = new SelectList((await _IDbDominios.F_GetDominiosIris(155)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlZona = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            
+            ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlTipoServicio = new SelectList((await _IDbDominios.F_GetDominiosIris(9)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlEspecialidad = new SelectList((await _IDbDominios.F_GetDominiosIris(160)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlCuadrante = new SelectList(Enumerable.Empty<SelectListItem>());
+
+
             return View();
         }
 
@@ -95,11 +108,26 @@ namespace Web.Areas.Irisp1.Controllers
         [HttpGet]
         public async Task<IActionResult> F_GetCuadrantes(string V_unidadLabora)
         {
-            var resultado = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora);
+            var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora);
 
-            if (resultado.IdRespuesta > 0)
+
+
+            if (cuadrantes.IdRespuesta > 0)
             {
-                return Json(resultado.Data); // Solo la lista
+                
+
+                // Seleccionar solo los campos necesarios: Consecutivo y Descripcion
+                var resultado = cuadrantes.Data.Select(x => new
+                {
+                    Codigo = x.CODIGO,
+                    Descripcion = x.DESCRIPCION   // Accediendo a la propiedad 'DESCRIPCION'
+                }).ToList();
+
+                // Devolver la lista de resultados como JSON
+                return Json(resultado);
+
+
+
             }
             else
             {
@@ -129,15 +157,57 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+        [HttpPost]
+        public async Task<IActionResult> F_ConsultarSeqIntegrante()
+        {
+            var resultado = await _iDbIrisp1.F_ConsultarSeqIntegrante();
+
+
+            if (resultado.IdRespuesta > 0)
+            {
+                var consecutivo = resultado.Data.ToString();
+
+                consecutivo = ClsEncriptar.Encriptar(consecutivo);
+                return Json(new { success = true, data = consecutivo, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = resultado.Data, message = resultado.Mensaje });
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetIntegrantes( string V_CriminalidadId)
+        {
+            var resultado = await _iDbIrisp1.F_GetIntegrantes(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = new List<DtoIntegrantes>(), message = resultado.Mensaje });
+            }
+        }
+
+
 
         #endregion
 
 
         #region Métodos de Insersión
 
+
         [HttpPost]
-        public async Task<IActionResult> GuardarFoto(IFormFile foto)
+        public async Task<IActionResult> GuardarFotoConRegistro(IFormFile foto, string idCriminalidad)
         {
+
+            var CriminalidadId_Desencp = Convert.ToInt64(ClsEncriptar.Desencriptar(idCriminalidad));
+
+            var usuario = User.FindFirstValue("Identificacion");
+            var maquina = HttpContext.Session.GetString("IpMaquina");
             if (foto == null || foto.Length == 0)
                 return Json(new { exito = false, mensaje = "Archivo inválido" });
 
@@ -152,39 +222,105 @@ namespace Web.Areas.Irisp1.Controllers
 
             try
             {
-                // Construir nombre único
+                // 1. Guardar archivo en red
                 var nombreArchivo = Path.GetFileNameWithoutExtension(foto.FileName);
                 var nuevoNombre = $"{nombreArchivo}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
-
-                // Ruta UNC de red
                 var rutaRed = @"\\srvfilesponal3\OFITE\AITEC\GRUDE\TE KEHILOR MARTINEZ\Fotos_Iris";
                 var rutaArchivoCompleta = Path.Combine(rutaRed, nuevoNombre);
 
-                // Guardar archivo en la carpeta de red
                 using (var stream = new FileStream(rutaArchivoCompleta, FileMode.Create))
                 {
                     await foto.CopyToAsync(stream);
                 }
 
-                return Json(new { exito = true, mensaje = "Imagen guardada correctamente" });
+                // 2. Llamar procedimiento almacenado
+                using (var Conexion = new OracleConnection(_strConexionIris_Test))
+                    
+                using (var command = new OracleCommand("PK_REGISTRO_IRIS.P_InsCriminalidadFotos", Conexion))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                  
+                    command.Parameters.Add("P_ID_CRIMINALIDAD", OracleDbType.Varchar2).Value = idCriminalidad;
+                    command.Parameters.Add("P_SERVIDOR", OracleDbType.NVarchar2).Value = Environment.MachineName;
+                    command.Parameters.Add("P_TIPO_DOC", OracleDbType.NVarchar2).Value = extension.TrimStart('.'); // jpg, png, etc.
+                    command.Parameters.Add("P_NAME_FILE", OracleDbType.NVarchar2).Value = nuevoNombre;
+                    command.Parameters.Add("P_RUTA", OracleDbType.NVarchar2).Value = rutaArchivoCompleta;
+                    command.Parameters.Add("P_USUARIO_CREACION", OracleDbType.Int32).Value = usuario;
+                    command.Parameters.Add("P_FECHA_CREACION", OracleDbType.Date).Value = DateTime.Now;
+                    command.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.NVarchar2).Value = maquina;
+                    command.Parameters.Add("P_VIGENTE", OracleDbType.Int32).Value = 1;
+                    command.Parameters.Add("P_USUARIO_MODIFICA", OracleDbType.Int32).Value = usuario;
+                    command.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.NVarchar2).Value = maquina;
+                    command.Parameters.Add("P_FECHA_MODIFICA", OracleDbType.Date).Value = DateTime.Now;
+                    command.Parameters.Add("P_ID_CRIMINALIDA", OracleDbType.Int32).Value = CriminalidadId_Desencp;
+
+                    command.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                    command.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+
+                    await Conexion.OpenAsync();
+                    await command.ExecuteNonQueryAsync();
+
+                    var resultado = ((Oracle.ManagedDataAccess.Types.OracleDecimal)command.Parameters["P_RESULTADO"].Value).ToInt32();
+                    var mensaje = command.Parameters["SRV_Message"].Value.ToString();
+
+
+                    if (resultado == 1)
+                    {
+                        return Json(new { exito = true, mensaje = "Foto guardada y registro insertado correctamente" });
+                    }
+                    else
+                    {
+                        return Json(new { exito = false, mensaje = $"Fallo al insertar en base de datos: {mensaje}" });
+                    }
+                }
             }
             catch (Exception ex)
             {
-                // Puedes loguear el error si usas Serilog, NLog, etc.
-                return Json(new { exito = false, mensaje = $"Error al guardar imagen: {ex.Message}" });
+                return Json(new { exito = false, mensaje = $"Error al guardar imagen o registrar: {ex.Message}" });
             }
         }
 
 
 
-        [HttpGet]
+
+
+        [HttpPost]
         public async Task<IActionResult> P_InsIntegrantes(DtoIntegrantes Obj_Integrante)
         {
-            
 
+            Obj_Integrante.ID_CRIMINALIDAD = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.CRIMINALIDAD_ID));
+            Obj_Integrante.ID_INTEGRANTE = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.INTEGRANTE_ID));
             try
             {
-                var Resultado = await _iDbIrisp1.P_InsIntegrantes(Obj_Integrante);
+                var Resultado = await _iDbIrisp1.P_InsIntegrantes(Obj_Integrante, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_InsRegistroIrisP1(DtoIrispCriminalidad Obj_NuevoIrisP1)
+        {
+
+            Obj_NuevoIrisP1.IdCriminalidad = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_NuevoIrisP1.CriminalidadId));
+           
+            try
+            {
+                var Resultado = await _iDbIrisp1.P_InsRegistroIrisP1(Obj_NuevoIrisP1, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
 
                 if (Resultado.IdRespuesta > 0)
                 {

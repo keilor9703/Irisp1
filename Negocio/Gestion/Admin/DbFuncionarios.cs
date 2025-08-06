@@ -56,6 +56,12 @@ namespace Negocio.Gestion.Admin
 
                 if (retorno.Count > 0)
                 {
+                    decimal identificacion = retorno[0].IDENTIFICACION;
+
+                    var datosDireccion = await F_GetDireccionPorIdentificacion(identificacion);
+                    retorno[0].DIRECCION = datosDireccion.DIRECCION;
+                    retorno[0].UNDELABORANDO = datosDireccion.UNDELABORANDO; 
+
                     resp.IdRespuesta = 1;
                     resp.Mensaje = "Consulta Exitosa";
                     resp.Operacion = "F_GetFuncionarios";
@@ -70,27 +76,70 @@ namespace Negocio.Gestion.Admin
             }
             catch (Exception e)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_FUNCIONARIOS.F_GetFuncionarioId " + e);
+                _logger.LogError("Error ejecutando F_GetFuncionarios: " + e);
 
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Mensaje = $"{e.Message} - {e.InnerException?.Message}";
                 resp.Operacion = "0";
-
             }
             finally
             {
                 Conexion.Close();
                 Conexion.Dispose();
                 objCommand.Dispose();
-                objCommand.Connection.Close();
                 resultado.Dispose();
             }
+
             return resp;
         }
+
+
+
+
+
+        public async Task<DtoFuncionarios> F_GetDireccionPorIdentificacion(decimal identificacion)
+        {
+            var resultado = new DtoFuncionarios();
+
+            using var conexion = new OracleConnection(_strConexionTelepol);
+            using var comando = new OracleCommand();
+            try
+            {
+                comando.Connection = conexion;
+                comando.CommandType = CommandType.Text;
+                comando.CommandText = @"SELECT t.direccion, t.undelaborando 
+                                FROM USR_MATERIALIZADAS.VM_CTR_FUNCIONARIOS_ACTIVOS t 
+                                WHERE t.IDENTIFICACION = :identificacion";
+                comando.Parameters.Add(new OracleParameter("identificacion", OracleDbType.Int64)).Value = identificacion;
+
+                await conexion.OpenAsync();
+
+                using var reader = await comando.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    resultado.DIRECCION = reader["DIRECCION"]?.ToString() ?? string.Empty;
+
+                    if (reader["UNDELABORANDO"] != DBNull.Value && int.TryParse(reader["UNDELABORANDO"].ToString(), out int unidad))
+                    {
+                        resultado.UNDELABORANDO = unidad;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error consultando dirección del funcionario: {ex.Message}");
+            }
+            finally
+            {
+                comando.Dispose();
+                conexion.Close();
+                conexion.Dispose();
+            }
+
+            return resultado;
+        }
+
+
         public async Task<DtoResultado<List<DtoFuncionarios>>> F_GetEmpleadoIntel(string V_Busqueda)
         {
             DataTable resultado = new();

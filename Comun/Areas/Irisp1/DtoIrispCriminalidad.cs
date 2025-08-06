@@ -6,6 +6,14 @@ namespace Comun.Areas.Irisp1
     {
         [JsonPropertyName("CriminalidadId")]
         public string? CriminalidadId { get; set; }
+
+
+
+        [JsonPropertyName("IdCriminalidad")]
+        public Int64? IdCriminalidad { get; set; }
+
+
+
         [JsonPropertyName("IdUnidad")]
         public Int64? IdUnidad { get; set; }
         [JsonPropertyName("IdZona")]
@@ -56,8 +64,30 @@ namespace Comun.Areas.Irisp1
         public Int32? IdFuente { get; set; }
         [JsonPropertyName("IdEstadoExistencia")]
         public Int32? IdEstadoExistencia { get; set; }
+        
+        [JsonPropertyName("EntornoAfectado")]
+        public Int32? EntornoAfectado { get; set; }
+
+        [JsonPropertyName("IdtiempoDelito")]
+        public Int32? IdtiempoDelito { get; set; }
+
+        [JsonPropertyName("Clasificacion")]
+        public Int32? Clasificacion { get; set; }
+
+        [JsonPropertyName("Modalidadexpendio")]
+        public Int32? Modalidadexpendio { get; set; }
+
         [JsonPropertyName("DescripcionTramite")]
         public string? DescripcionTramite { get; set; }
+
+        [JsonPropertyName("Origen")]
+        public string? Origen { get; set; }
+
+        [JsonPropertyName("NombreEntornoAfectado")]
+        public string? NombreEntornoAfectado { get; set; }
+
+
+
         [JsonPropertyName("EstadoDescripcion")]
         public string? EstadoDescripcion { get; set; }
         [JsonPropertyName("EstadoExistenciaDescripcion")]
@@ -67,6 +97,11 @@ namespace Comun.Areas.Irisp1
         public string? Municipio { get; set; }
         [JsonPropertyName("DescripcionEstado")]
         public string? DescripcionEstado { get; set; }
+
+
+
+        [JsonPropertyName("EspecialidadAporta")]
+        public int? EspecialidadAporta { get; set; }
 
 
         [JsonPropertyName("Zona")]
@@ -96,12 +131,16 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("Resultados")]
         public string? Resultados { get; set; }
 
-        [JsonPropertyName("CUADRANTE_ID")]
-        public int CUADRANTE_ID { get; set; }
+        [JsonPropertyName("Codigo")]
+        public Int32 CODIGO { get; set; }
 
-        [JsonPropertyName("CODIGO_CUADRANTE")]
-        public string? CODIGO_CUADRANTE { get; set; }
 
+
+        [JsonPropertyName("DESCRIPCION")]
+        public string? DESCRIPCION { get; set; }
+    
+        [JsonPropertyName("Id_modalidad")]
+        public string? Id_modalidad { get; set; }
 
 
 

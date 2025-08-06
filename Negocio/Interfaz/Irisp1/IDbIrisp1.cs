@@ -16,6 +16,8 @@ namespace Negocio.Interfaz.Irisp1
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora); // NUEVO MÉTODO
 
         public Task<DtoResultado<long>> F_ConsultarSeqIris();
+        public Task<DtoResultado<long>> F_ConsultarSeqIntegrante();
+        Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId);
 
         #endregion
 
@@ -23,7 +25,10 @@ namespace Negocio.Interfaz.Irisp1
 
         #region Métodos de Insersión
 
-        public Task<DtoResultado<string>> P_InsIntegrantes(DtoIntegrantes Obj_Integrante);
+        public Task<DtoResultado<Int32>> P_InsIntegrantes(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
+      
+
+        public Task<DtoResultado<string>> P_InsRegistroIrisP1(DtoIrispCriminalidad Obj_NuevoIrisP1, string usuario, string maquina);
 
 
         #endregion

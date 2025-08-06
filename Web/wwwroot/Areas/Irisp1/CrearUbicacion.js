@@ -39,6 +39,13 @@
     }
     );
 
+    var capaEstaciones = new FeatureLayer(
+        "https://services3.arcgis.com/8cBoM4o6pnuUb1z1/ArcGIS/rest/services/SIDENCO_SinMalla/FeatureServer/9", {
+        mode: FeatureLayer.MODE_ONDEMAND,
+        outFields: ["*"]
+    }
+    );
+
     // Símbolo de línea roja para los cuadrantes
     var cuadranteLineSymbol = new SimpleLineSymbol(
         SimpleLineSymbol.STYLE_SOLID,
@@ -79,14 +86,12 @@
 
                     // Actualiza las cajas de texto
                     $("#txtDireccion").val(direccion);
-                    //$("#txtDireLlamante").val(direccion);
                     $("#txtBarrio").val(barrio);
                     $("#txtMunicipio").val(ciudad);
 
                     console.log("Dirección:", direccion, "Barrio:", barrio, "Ciudad:", ciudad);
                 } else {
                     $("#txtDireccion").val("No se pudo obtener la dirección");
-                    //$("#txtDireLlamante").val("No se pudo obtener la dirección");
                     $("#txtBarrio").val("No disponible");
                     $("#txtMunicipio").val("No disponible");
                 }
@@ -94,7 +99,7 @@
             .catch(error => {
                 console.error("Error en geocodificación inversa:", error);
                 $("#txtDireccion").val("Error al obtener dirección");
-                //$("#txtDireLlamante").val("Error al obtener dirección");
+              
                 $("#txtBarrio").val("Error");
                 $("#txtMunicipio").val("Error");
             });
@@ -180,34 +185,74 @@
         map.graphics.clear();
         map.graphics.add(pointGraphic);
 
-        // --- Consulta espacial para obtener el cuadrante ---
+        // Consulta espacial para obtener el cuadrante
         var query = new Query();
         query.geometry = event.mapPoint;
+      
+        obtenerDaneDesdeEstaciones(event.mapPoint);
         query.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
         query.returnGeometry = false;
-        query.outFields = ["NRO_CUADRANTE", "CODIGO_SIEDCO", "CODIGO_UNDE", "DANE"]; // Campos necesarios
+        query.outFields = ["*"]; // ✅ Obtener todos los campos
 
         cuadrantesLayer.queryFeatures(query, function (featureSet) {
             if (featureSet.features.length > 0) {
                 var cuadrante = featureSet.features[0].attributes;
+
+                // ✅ Mostrar todos los campos disponibles
+                console.log("🔎 TODOS LOS CAMPOS DEL CUADRANTE:");
+               console.table(cuadrante);
+
+                // Usar algunos campos clave para mostrar en inputs
                 var nroCuadrante = cuadrante.NRO_CUADRANTE;
-                var codigoSiedco = cuadrante.CODIGO_SIEDCO;
-                var codigoUnde = cuadrante.CODIGO_UNDE;
-
-                console.log("Cuadrante:", nroCuadrante, "SIEDCO:", codigoSiedco, "UNDE:", codigoUnde);
-
-                // Puedes actualizar una caja de texto si deseas:
+                var CodSiedcoCuadrante = cuadrante.CODIGO_SIEDCO;
+                var CodIdCuadrante = cuadrante.CUAD_ID;
+              
                 $("#txtCuadrante").val(nroCuadrante);
+                $("#txtCodSiedcoCuadrante").val(CodSiedcoCuadrante);
+                $("#txtCodIdCuadrante").val(CodIdCuadrante);
+              
             } else {
-                console.warn("No se encontró cuadrante en el punto seleccionado.");
+                console.warn("⚠️ No se encontró cuadrante en el punto seleccionado.");
                 $("#txtCuadrante").val("No encontrado");
             }
         }, function (error) {
-            console.error("Error al consultar cuadrante:", error);
+            console.error("❌ Error al consultar cuadrante:", error);
         });
-
-
     });
+
+
+
+    function obtenerDaneDesdeEstaciones(punto) {
+        var query = new Query();
+        query.geometry = punto;
+        query.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+        query.returnGeometry = false;
+        query.outFields = ["*"]; // ✅ Obtener todos los campos
+
+        capaEstaciones.queryFeatures(query, function (featureSet) {
+            if (featureSet.features.length > 0) {
+                var atributos = featureSet.features[0].attributes;
+
+
+               // console.log("🔎 TODOS LOS CAMPOS DE ESTACION:");
+               //console.table(atributos);
+                var CodDane = atributos.DANE;
+                var CodSiedcoEstacion = atributos.CODIGO_SIEDCO;
+                var CodEstacion = atributos.SIATH;
+
+                $("#txtCodDane").val(CodDane);
+                $("#txtCodSiedcoEstacion").val(CodSiedcoEstacion);
+                $("#txtCodEstacion").val(CodEstacion);
+               
+            } else {
+                console.warn("No se encontró municipio en el punto seleccionado.");
+                $("#txtCodDane").val("");
+            }
+        }, function (error) {
+            console.error("Error al consultar municipio para DANE:", error);
+        });
+    }
+
 
     $("#direccionmapa").keypress(function (e) {
         if (e.which == 13) {

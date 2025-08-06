@@ -1,71 +1,65 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Comun.Areas.Integrantes
 {
     public class DtoIntegrantes
     {
+        [JsonPropertyName("INTEGRANTE_ID")]
+        public string INTEGRANTE_ID { get; set; }
 
-        [JsonPropertyName("integranteId")]
-        public string IntegranteId { get; set; }
+        [JsonPropertyName("CRIMINALIDAD_ID")]
+        public string? CRIMINALIDAD_ID { get; set; }
 
-        [JsonPropertyName("criminalidadId")]
-        public string? CriminalidadId { get; set; }
+        [JsonPropertyName("ALIAS")]
+        public string? ALIAS { get; set; }
 
-        [JsonPropertyName("alias")]
-        public string? Alias { get; set; }
+        [JsonPropertyName("NOMBRE")]
+        public string? NOMBRE { get; set; }
 
-        [JsonPropertyName("nombre")]
-        public string? Nombre { get; set; }
+        [JsonPropertyName("APELLIDO")]
+        public string? APELLIDO { get; set; }
 
-        [JsonPropertyName("apellido")]
-        public string? Apellido { get; set; }
+        [JsonPropertyName("CEDULA")]
+        public long? CEDULA { get; set; }
 
-        [JsonPropertyName("cedula")]
-        public long? Cedula { get; set; }
+        [JsonPropertyName("ID_TIPO_INFO")]
+        public int? ID_TIPO_INFO { get; set; }
 
-        [JsonPropertyName("idTipoInfo")]
-        public int? IdTipoInfo { get; set; }
+        [JsonPropertyName("VIGENTE")]
+        public int? VIGENTE { get; set; }
 
-        [JsonPropertyName("vigente")]
-        public int Vigente { get; set; }
+        [JsonPropertyName("FECHA_CREACION")]
+        public DateTime? FECHA_CREACION { get; set; }
 
-        [JsonPropertyName("fechaCreacion")]
-        public DateTime? FechaCreacion { get; set; }
+        [JsonPropertyName("IDENTIFICACION_CREACION")]
+        public long? IDENTIFICACION_CREACION { get; set; }
 
-        [JsonPropertyName("identificacionCreacion")]
-        public long? IdentificacionCreacion { get; set; }
+        [JsonPropertyName("MAQUINA_CREACION")]
+        public string? MAQUINA_CREACION { get; set; }
 
-        [JsonPropertyName("maquinaCreacion")]
-        public string? MaquinaCreacion { get; set; }
+        [JsonPropertyName("FECHA_MODIFICA")]
+        public DateTime? FECHA_MODIFICA { get; set; }
 
-        [JsonPropertyName("fechaModifica")]
-        public DateTime? FechaModifica { get; set; }
+        [JsonPropertyName("IDENTIFICACION_MODIFICA")]
+        public long? IDENTIFICACION_MODIFICA { get; set; }
 
-        [JsonPropertyName("identificacionModifica")]
-        public long? IdentificacionModifica { get; set; }
+        [JsonPropertyName("MAQUINA_MODIFICA")]
+        public string? MAQUINA_MODIFICA { get; set; }
 
-        [JsonPropertyName("maquinaModifica")]
-        public string? MaquinaModifica { get; set; }
+        [JsonPropertyName("TIPO_DOCUMENTO")]
+        public int? TIPO_DOCUMENTO { get; set; }
 
-        [JsonPropertyName("tipoDocumento")]
-        public int? TipoDocumento { get; set; }
+        [JsonPropertyName("CELULAR")]
+        public long? CELULAR { get; set; }
 
-        [JsonPropertyName("celular")]
-        public long? Celular { get; set; }
+        [JsonPropertyName("DIRECCION")]
+        public string? DIRECCION { get; set; }
 
-        [JsonPropertyName("direccion")]
-        public string? Direccion { get; set; }
+        [JsonPropertyName("ID_INTEGRANTE")]
+        public long? ID_INTEGRANTE { get; set; }
 
-        [JsonPropertyName("idIntegrante")]
-        public int? IdIntegrante { get; set; }
-
-        [JsonPropertyName("idCriminalidad")]
-        public int? IdCriminalidad { get; set; }
-
+        [JsonPropertyName("ID_CRIMINALIDAD")]
+        public long? ID_CRIMINALIDAD { get; set; }
     }
 }

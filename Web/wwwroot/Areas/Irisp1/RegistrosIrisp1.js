@@ -13,104 +13,119 @@ $(document).ready(function () {
 
     $('#chkRegFoto').change(function () {
         if ($(this).is(':checked')) {
-            $('#txtAnexoFotografico').closest('.col-md-8').removeClass('hidden');
+            $('#fotografia').closest('.col-md-4').removeClass('hidden');
         } else {
-            $('#txtAnexoFotografico').closest('.col-md-8').addClass('hidden');
+            $('#fotografia').closest('.col-md-4').addClass('hidden');
         }
     });
 
 
-        $('#btnSubirFoto').on('click', function () {
-            var fileInput = $('#fileAnexoFotografico')[0];
-
-            if (fileInput.files.length === 0) {
-                Swal.fire('Advertencia', 'Debe seleccionar una imagen.', 'warning');
-                return;
-            }
-
-            var file = fileInput.files[0];
-            var maxSizeMB = 5;
-
-            // Validar tipo y tamaño
-            var allowedTypes = ['image/jpeg', 'image/png'];
-            if (!allowedTypes.includes(file.type)) {
-                Swal.fire('Error', 'Formato no permitido. Solo se aceptan imágenes JPG o PNG.', 'error');
-                return;
-            }
-
-            if (file.size > maxSizeMB * 1024 * 1024) {
-                Swal.fire('Error', 'La imagen supera el tamaño máximo permitido de 5MB.', 'error');
-                return;
-            }
-
-            // Validar si ya se subió el mismo archivo (por nombre y tamaño)
-            if (archivoSubido && archivoSubido.name === file.name && archivoSubido.size === file.size) {
-                Swal.fire('Información', 'Esta imagen ya fue subida.', 'info');
-                return;
-            }
-
-            var formData = new FormData();
-            formData.append('foto', file);
-
-            $.ajax({
-                url: '/Irisp1/RegistrosIrisp1/GuardarFoto', // reemplaza con el nombre real de tu controlador
-                type: 'POST',
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function (resp) {
-                    if (resp.exito) {
-                        // Guardar el archivo actual como referencia
-                        archivoSubido = file;
-
-                        // Mostrar mensaje visual
-                        $('#estadoFoto').show().text('✅ Imagen guardada exitosamente.');
-
-                        // Limpiar input
-                        $('#fileAnexoFotografico').val('');
-
-                        // Opcional: ocultar luego de unos segundos
-                        setTimeout(() => $('#estadoFoto').fadeOut(), 4000);
-                    } else {
-                        Swal.fire('Error', resp.mensaje || 'No se pudo subir la imagen.', 'error');
-                    }
-                },
-                error: function () {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Señor(a) Funcionario(a):',
-                        text: 'Ocurrió un error al subir la imagen.'
-                    });
-                }
-            });
-        });
-
-
+   
 });
+function SubirFoto() {
 
-//function VerCaracteristicasGenerales() {
-//    $('#ModalCaracteristicasGenerales').modal("show");
-//}
+        var fileInput = $('#fileAnexoFotografico')[0];
 
+        if (fileInput.files.length === 0) {
+            Swal.fire('Advertencia', 'Debe seleccionar una imagen.', 'warning');
+            return;
+        }
+
+        var file = fileInput.files[0];
+        var maxSizeMB = 5;
+        var allowedTypes = ['image/jpeg', 'image/png'];
+
+        if (!allowedTypes.includes(file.type)) {
+            Swal.fire('Error', 'Formato no permitido. Solo se aceptan imágenes JPG o PNG.', 'error');
+            return;
+        }
+
+        if (file.size > maxSizeMB * 1024 * 1024) {
+            Swal.fire('Error', 'La imagen supera el tamaño máximo permitido de 5MB.', 'error');
+            return;
+        }
+
+        // Evitar reenvío del mismo archivo
+        if (archivoSubido && archivoSubido.name === file.name && archivoSubido.size === file.size) {
+            Swal.fire('Información', 'Esta imagen ya fue subida.', 'info');
+            return;
+        }
+
+        // Captura de los datos requeridos por el procedimiento
+
+        var idCriminalidad = $("#txtConsecutivoIris").val();
+
+
+        if (!idCriminalidad) {
+            Swal.fire('Error', 'Faltan datos requeridos para guardar la imagen.', 'error');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('foto', file);
+        formData.append('idCriminalidad', idCriminalidad);
+
+
+        $.ajax({
+            url: '/Irisp1/RegistrosIrisp1/GuardarFotoConRegistro',
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (resp) {
+                if (resp.exito) {
+                    archivoSubido = file;
+
+                    $('#estadoFoto').show().text('✅ Imagen guardada exitosamente.');
+                    $('#fileAnexoFotografico').val('');
+
+                    setTimeout(() => $('#estadoFoto').fadeOut(), 4000);
+                } else {
+                    Swal.fire('Error', resp.mensaje || 'No se pudo subir la imagen.', 'error');
+                }
+            },
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Ocurrió un error al subir la imagen.'
+                });
+            }
+        });
+    
+}
 function AbrirModalMas() {
 
     $('#ModalCaracteristicasGenerales').modal("show");
 
 }
-
 function AbrirModalNuevoIris() {
 
-    $('#Modal_VerRegistro').modal("show");
-    consultarConsecutivo();
+    const modalElement = document.getElementById('Modal_VerRegistro');
+
+    const modalInstance = new bootstrap.Modal(modalElement, {
+
+        backdrop: 'static',
+
+        keyboard: false,
+
+        focus: false  // Desactiva focus automático de Bootstrap
+
+    });
+
+    modalInstance.show();
+
+
+   
+    consultarConsecutivoIris();
+   
 
 }
-
 function ActualizarIris() {
 
     $('#ModalCaracteristicasGenerales').modal("show");
 
 }
-
 function ActualizarEstadoIris() {
 
     $('#Modal_ActualizarEstado').modal("show");
@@ -118,7 +133,6 @@ function ActualizarEstadoIris() {
 
 
 }
-
 function ActualizarIrisp1() {
 
     $('#Modal_ActualizarIrisp1').modal("show");
@@ -142,15 +156,12 @@ function F_GetEstadosIrisP1() {
     });
 
 }
-
 function AbrirModalDatosCaracteristicas(CaracteristicasGenerales) {
 
     // Mostrar la modal
     $('#Modal_Caracteristicas').modal("show");
     $('#txtCaracteristicasGenerales').val(CaracteristicasGenerales);
 }
-
-
 function F_GetInfoGrillas() {
     $.ajax({
         type: 'GET',
@@ -174,10 +185,7 @@ function F_GetInfoGrillas() {
 }
 
 
-
-
 // Grillas /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 function GetGrillaVerificacion(datos) {
     inicializarGrilla("#tbGrilla", "#pn_GrillaVerificacion", datos, [2, 3, 4], columnasBase);
@@ -256,19 +264,6 @@ const columnasBase = [
 
 ];
 
-const columnasIntegrantes = [
-
-    columnaAcciones(2),
-    Estados(),
-    { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion", className: "celdaCenter" },
-    { title: "Codigo ", data: "Codigo", name: "Codigo", className: "celdaCenter" },
-    { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad", className: "celdaCenter" },
-    { title: "Municipio", data: "Municipio", name: "Municipio", className: "celdaCenter" },
-    { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", name: "FechaInicioExistencia", className: "celdaCenter" },
-    { title: "Fuente", data: "Clase", name: "Fuente", className: "celdaCenter" },
-    { title: "Nombre", data: "NombreClase", name: "NombreClase", className: "celdaCenter" },
-];
-
 function Estados() {
     return {
         title: "Estado",
@@ -308,9 +303,9 @@ function Estados() {
         }
     };
 }
-function columnaAcciones(tipoGrilla) {
+function columnaAcciones() {
 
-    if (tipoGrilla = 1) {
+    
         return {
             data: null,
             className: "celdaCenter celda3",
@@ -324,23 +319,11 @@ function columnaAcciones(tipoGrilla) {
                 var finBoton = '</ul></div>';
                 return inicioBoton + DetallesIris + ActualizarIris + ActualizarEstado + ActualizarExistencia + Eliminar + finBoton;
             }
-        };
-    } else if (tipoGrilla = 2) {
-        return {
-            data: null,
-            className: "celdaCenter celda3",
-            render: function (data, type, row) {
-                var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                var EliminarIntegrante = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fas fa-list"></i>&nbsp; Eliminar </a></li>`;
-                var finBoton = '</ul></div>';
-                return inicioBoton + EliminarIntegrante +  finBoton;
-            }
-        };
+        }
+  
 
-
-    }
+    
 }
-
 
 function inicializarGrilla(selectorTabla, selectorPanel, datos, estados, columnas) {
     const datosFiltrados = datos.filter(item => estados.includes(item.IdEstado));
@@ -363,7 +346,6 @@ function inicializarGrilla(selectorTabla, selectorPanel, datos, estados, columna
         ],
     });
 }
-
 
 function columnaCaracteristicasGenerales() {
     return {
@@ -482,47 +464,135 @@ $(function () {
     });
 });
 
+function InsIntegrantes() {
 
-$(function () {
-    $("#btnAddIntegrante").click(function () {
-        // Mostrar la grilla
-        $('#pn_GrillaIntegantes').removeClass("hidden").collapse("show");
-
-        // Llamar a función para poblarla
-        cargarIntegrantes();
-    });
-});
-
-function cargarIntegrantes() {
     $.ajax({
-        url: '/TuControlador/GetIntegrantes', // Ajusta con tu ruta real
-        type: 'GET',
+        url: UrlGetConsecutivoIntegrante,
+        type: 'POST',
         dataType: 'json',
-        success: function (data) {
-            let tbody = $('#tbGrillaIntegantes tbody');
-            tbody.empty(); // Limpiar filas previas
+        success: function (response) {
+            if (response.success) {
+                $("#txtConsecutivoIntegrante").val(response.data);
 
-            if (data && data.length > 0) {
-                data.forEach(function (item) {
-                    tbody.append(
-                        `<tr>
-                            <td>${item.Nombre}</td>
-                            <td>${item.Documento}</td>
-                            <td>${item.Edad}</td>
-                            <td>${item.Parentesco}</td>
-                        </tr>`
-                    );
+                const Obj_Integrante = {
+                    INTEGRANTE_ID: response.data,
+                    CRIMINALIDAD_ID: $("#txtConsecutivoIris").val(),
+                    ALIAS: $("#txtAlias").val(),
+                    NOMBRE: $("#txtNombreInteg").val(),
+                    APELLIDO: $("#txtApellidosInteg").val(),
+                    CEDULA: parseInt($("#txtIdentificacionInteg").val()),
+                    ID_TIPO_INFO: 30,
+                    VIGENTE: 1,
+                    FECHA_MODIFICA: null,
+                    IDENTIFICACION_MODIFICA: null,
+                    MAQUINA_MODIFICA: null,
+                    TIPO_DOCUMENTO: 1,
+                    CELULAR: parseInt($("#txtCelularInteg").val()),
+                    DIRECCION: $("#txtDirecciónInteg").val()
+                };
+
+                $.ajax({
+                    url: UrlInsIntegrantes,
+                    type: 'POST',
+                    data: Obj_Integrante,
+                    success: function (resp) {
+                        if (resp.success) {
+                            $('#pn_GrillaIntegantes').removeClass('hidden').addClass('show');
+                            F_GetIntegrantes();
+                            limpiarFormularioIntegrantes();
+                        } else {
+                            Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+                    }
                 });
+
             } else {
-                tbody.append('<tr><td colspan="4" class="text-center">No se encontraron integrantes</td></tr>');
+                $("#txtConsecutivoIntegrante").val('');
+                Swal.fire('Error', "No se pudo obtener el consecutivo.", 'info');
             }
         },
         error: function () {
-            alert("Error al cargar los integrantes.");
+            $("#txtConsecutivoIntegrante").val('');
+            Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
         }
     });
 }
 
+function limpiarFormularioIntegrantes() {
+    $("#txtConsecutivoIntegrante").val('');
+    $("#txtAlias").val('');
+    $("#txtNombreInteg").val('');
+    $("#txtApellidosInteg").val('');
+    $("#txtIdentificacionInteg").val('');
+    $("#txtCelularInteg").val('');
+    $("#txtDirecciónInteg").val('');
+}
+
+function F_GetIntegrantes() {
+
+    var V_CriminalidadId = $("#txtConsecutivoIris").val()
+    $.ajax({
+        type: 'GET',
+        url: UrlGetIntegrantes, 
+        async: true,
+        data: { V_CriminalidadId: V_CriminalidadId },
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                $("#pn_GrillaIntegantes").removeClass('hidden');
+                Grillantegrantes(response.data);
+            } else {
+                Grillantegrantes([]);
+                Swal.fire('Error', response.message, 'error');
+            }
+        },
+        error: function () {
+            Grillantegrantes([]);
+            Swal.fire('Error', 'No se pudo obtener la lista de integrantes.', 'error');
+        }
+    });
+}
+
+function Grillantegrantes(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaIntegantes")) {
+        $("#tbGrillaIntegantes").DataTable().destroy();
+    }
+
+    $("#tbGrillaIntegantes").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        columns: [
+            { title: "Alias", data: "ALIAS", className: "celdaCenter" },
+            { title: "Nombre", data: "NOMBRE", className: "celdaCenter" },
+            { title: "Apellido", data: "APELLIDO", className: "celdaCenter" },
+            { title: "Cédula", data: "CEDULA", className: "celdaCenter" },
+            { title: "Dirección", data: "DIRECCION", className: "celdaJust" },
+            {
+                title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaCenter",
+                render: function (data) {
+                    if (!data) return '';
+                    let fecha = new Date(data);
+                    return fecha.toLocaleDateString();
+                }
+            }
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
 
 function F_GetFuncionariosIris(V_Identificacion) {
 
@@ -550,7 +620,12 @@ function F_GetFuncionariosIris(V_Identificacion) {
                 $("#txtDependencia").val(respuesta.data[0].Dependencia).trigger('change');
 
                 $("#txtUnidad").val(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtEspecialidad").val(respuesta.data[0].Fisica);
+               // $("#txtEspecialidad").val(respuesta.data[0].Direccion);
+                $("#txtUndeLabora").val(respuesta.data[0].UndeLaborando);
+                $("#txtSiglaUnidad").val(respuesta.data[0].Fisica);
+
+                
+                
                 //$("#txtCargo").val(respuesta.data[0].CargoActual);
                
                // F_GetUserRoles(V_Identificacion);
@@ -572,12 +647,6 @@ function F_GetFuncionariosIris(V_Identificacion) {
         }
     });
 }
-
-$('#txtDependencia').change(function () {
-   
-    PoblarDropDown('/Irisp1/RegistrosIrisp1/F_GetCuadrantes', 'V_unidadLabora', $(this).val(), '#ddlCuadrante');  // Cargar lista de canales para agregar medios al turno
-  
-});
 
 
 /*Datos Iris P1, campos dinamicos según la clase*/
@@ -627,7 +696,11 @@ $('#ddlClase').on('change', function () {
     }
 });
 
-function PoblarDropDown(url, paramName, paramValue, dropdownSelector, callback) {
+$('#txtDependencia').change(function () {
+    handleDropdownChange('/Irisp1/RegistrosIrisp1/F_GetCuadrantes', 'V_unidadLabora', $(this).val(), '#ddlCuadrante');
+});
+
+function handleDropdownChange(url, paramName, paramValue, dropdownSelector, callback) {
 
     if (paramValue) {
         $.getJSON(url, { [paramName]: paramValue }, function (data) {
@@ -653,9 +726,7 @@ function PoblarDropDown(url, paramName, paramValue, dropdownSelector, callback) 
     }
 }
 
-
-
-function consultarConsecutivo() {
+function consultarConsecutivoIris() {
     $.ajax({
         url: UrlGetConsecutivoIris,
         type: 'POST',
@@ -685,3 +756,168 @@ function consultarConsecutivo() {
         }
     });
 }
+
+
+function P_InsRegistroIrisP1() {
+    var IdClase = $("#ddlClase").val();
+
+    let NombreClaseI = '';
+    let Id_modalidadI = 0;
+    let Cantidad = 0;
+    let Id_ClasiNarcotrafico = 0;
+
+    switch (IdClase) {
+        case '74':
+            NombreClaseI = $("#txtNombreTrafico").val();
+            Id_modalidadI = $("#ddlModExpendio").val();
+            break;
+
+        case '13':
+            NombreClaseI = $("#txtNombreEstructura").val();
+            Cantidad = $("#txtCantidadEstructura").val();
+            break;
+
+        case '14':
+            NombreClaseI = $("#txtNombreInstalacion").val();
+            Cantidad = $("#txtCantidadInstalacion").val();
+            break;
+
+        case '15':
+            Cantidad = $("#txtCantidadPersonas").val();
+            break;
+
+        case '153':
+            NombreClaseI = $("#txtNombreNarcotrafico").val();
+            Id_ClasiNarcotrafico = $("#ddlClasiNarcotrafico").val();
+            break;
+
+        case '154':
+            // Aquí puedes añadir lógica si aplica
+            break;
+
+        default:
+            NombreClaseI = '';
+            Id_modalidadI = 0;
+            Cantidad = 0;
+            Id_ClasiNarcotrafico = 0;
+    }
+
+    const Obj_NuevoIrisP1 = {
+        CriminalidadId: $("#txtConsecutivoIris").val(),
+        IdUnidad: $("#txtUndeLabora").val(),
+        IdZona: $("#ddlZona").val(),
+        IdentificacionInforma: $("#txtIdentificacion").val(),
+        Celular: $("#txtTelefono").val(),
+        IdTipoServicio: $("#ddlTipoServicio").val(),
+        IdCuadrante: $("#txtCodIdCuadrante").val(),
+        IdClase: IdClase,
+        NombreClase: NombreClaseI,
+        Id_modalidad: Id_modalidadI,
+        CantidadIntegrantes: Cantidad,
+        CaracteristicasGenerales: $("#txtCaractGenerales").val(),
+        Vigente: 1,
+        SiglaUnidad: $("#txtSiglaUnidad").val(),
+        IdEstado: 2,
+        IdFuente: $("#ddlFuente").val(),
+        EntornoAfectado: $("#ddlEntono").val(),
+        IdtiempoDelito: $("#ddlActividad").val(),
+        Clasificacion: Id_ClasiNarcotrafico,
+        Modalidadexpendio: Id_modalidadI,
+        Origen: 'WEB',
+        NombreEntornoAfectado: $("#txtNombreEntornoAfectado").val(),
+        EspecialidadAporta: $("#ddlEspecialidad").val()
+    };
+
+    $.ajax({
+        url: UrlInsRegistroIrisP1,
+        type: 'POST',
+        data: Obj_NuevoIrisP1,
+        success: function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: resp.message
+                }).then(() => {
+                    limpiarFormularioIris();
+                });
+            } else {
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+            }
+        },
+        error: function () {
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+        }
+    });
+}
+
+
+function limpiarFormularioIrisP1() {
+
+    $("#txtUndeLabora").val('');
+    $("#txtCodDane").val('');
+    $("#txtCodSiedcoEstacion").val('');
+    $("#txtCodSiedcoCuadrante").val('');
+    $("#txtCodEstacion").val('');
+    $("#txtCodIdCuadrante").val('');
+    $("#txtSiglaUnidad").val('');
+    $("#txtConsecutivoIris").val('');
+    $("#txtConsecutivoIntegrante").val('');
+    $("#txtIdentificacion").val('');
+    $("#txtFuncionario").val('');
+    $("#txtUnidad").val('');
+    $("#txtDependencia").val('');
+    $("#ddlCuadrante").val('');
+    $("#txtTelefono").val('');
+    $("#ddlEspecialidad").val('');
+    $("#ddlTipoServicio").val('');
+    $("#ddlClase").val('');
+    $("#txtNombreTrafico").val('');
+    $("#ddlModExpendio").val('');
+    $("#txtNombreEstructura").val('');
+    $("#txtCantidadEstructura").val('');
+    $("#txtNombreInstalacion").val('');
+    $("#txtCantidadInstalacion").val('');
+    $("#txtCantidadPersonas").val('');
+    $("#txtNombreNarcotrafico").val('');
+    $("#ddlClasiNarcotrafico").val('');
+    $("#ddlActividad").val('');
+    $("#ddlFuente").val('');
+    $("#ddlEntono").val('');
+    $("#txtNombreEntornoAfectado").val('');
+    $("#ddlZona").val('');
+    $("#txtCaractGenerales").val('');
+    $("#txtIdentificacionInteg").val('');
+    $("#txtApellidosInteg").val('');
+    $("#txtNombreInteg").val('');
+    $("#txtAlias").val('');
+    $("#txtCelularInteg").val('');
+    $("#txtDirecciónInteg").val('');
+    $("#ddlDelitoPrincipal").val('');
+    $("#ddlDelitoSecundario").val('');
+    $('#tbGrillaIntegantes').empty();
+    $('#pn_GrillaIntegantes').addClass('hidden').removeClass('show');
+    $('#pn_GrillaIntegantes').collapse('hide');
+    $("#txtMunicipio").val('');
+    $("#txtBarrio").val('');
+    $("#txtCuadrante").val('');
+    $("#txtDireccion").val('');
+    $("#LONGITUD_CASO").val('');
+    $("#LATITUD_CASO").val('');
+    $("#txtRadioAccion").val('');
+
+
+}
+
+
+
+    function mostrarNombreArchivo(input) {
+                                    const archivo = input.files[0];
+    if (archivo) {
+        document.getElementById('nombreArchivo').value = archivo.name;
+                                    } else {
+        document.getElementById('nombreArchivo').value = "";
+                                    }
+                       }
+
+

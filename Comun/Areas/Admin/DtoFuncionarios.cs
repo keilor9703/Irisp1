@@ -4,6 +4,8 @@ namespace Comun.Areas.Admin
 {
     public class DtoFuncionarios
     {
+        
+        
         [JsonPropertyName("Identificacion")]
         public decimal IDENTIFICACION { get; set; }
 
@@ -45,5 +47,11 @@ namespace Comun.Areas.Admin
 
         [JsonPropertyName("Dependencia")]
         public string? DEPENDENCIA { get; set; }
+
+        [JsonPropertyName("Direccion")]
+        public string DIRECCION { get; set; }
+
+        [JsonPropertyName("UndeLaborando")]
+        public int UNDELABORANDO { get; set; }
     }
 }
