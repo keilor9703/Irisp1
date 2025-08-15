@@ -478,32 +478,7 @@ a:not([href]) {
     font-size: 12px !important;
     font-style: normal !important;
 }
-.select2-container--classic .select2-selection--single, .select2-container--default .select2-selection--single, .select2-container--default .select2-selection--single .select2-selection__rendered, .select2-container--default .select2-selection--single .select2-selection__arrow, .select2-container--default .select2-selection--multiple {
-    border-color: #119d93 !important;
-    color: #67757c !important;
-    height: 34px !important;
-    line-height: 34px !important;
-    border-radius: 4px !important;
-}
-.select2-container .select2-selection--single {
-    border: 1px solid #ccc !important;
-    box-sizing: border-box;
-    cursor: pointer;
-    display: block;
-    height: 28px;
-    user-select: none;
-    -webkit-user-select: none;
-}
-    .select2-container .select2-selection--single .select2-selection__rendered {
-        border-radius: 3px !important;
-        border-left: 5px solid;
-        display: block;
-        padding-left: 8px;
-        padding-right: 20px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+
 .modal-header {
     border-bottom-color: #30da51;
     height:76px !important;
@@ -1177,3 +1152,43 @@ legend {
     border-color: #26778f !important;
 }
 
+
+/* Estilo solo para selección única */
+.select2-container--classic .select2-selection--single,
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    border-color: #119d93 !important;
+    color: #67757c !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    border-radius: 4px !important;
+}
+
+/* Estilo personalizado para multiselección */
+.select2-container--default .select2-selection--multiple {
+    min-height: 38px !important;
+    border: 1px solid #119d93 !important;
+    border-radius: 4px !important;
+    padding: 4px !important;
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+    /* Chips de selección */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #119d93 !important;
+        color: white !important;
+        border: none !important;
+        padding: 4px 10px !important;
+        margin: 4px 5px 4px 0 !important;
+        border-radius: 4px !important;
+        font-size: 13px !important;
+    }
+
+    /* Botón X dentro de la opción */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: white !important;
+        margin-right: 6px !important;
+    }

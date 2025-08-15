@@ -58,9 +58,10 @@ namespace Negocio.Gestion.Admin
                 {
                     decimal identificacion = retorno[0].IDENTIFICACION;
 
-                    var datosDireccion = await F_GetDireccionPorIdentificacion(identificacion);
+                    var datosDireccion = await F_GetDatosAdicionalesPorIdentificacion(identificacion);
                     retorno[0].DIRECCION = datosDireccion.DIRECCION;
                     retorno[0].UNDELABORANDO = datosDireccion.UNDELABORANDO; 
+                    retorno[0].ESTACION = datosDireccion.ESTACION; 
 
                     resp.IdRespuesta = 1;
                     resp.Mensaje = "Consulta Exitosa";
@@ -97,7 +98,7 @@ namespace Negocio.Gestion.Admin
 
 
 
-        public async Task<DtoFuncionarios> F_GetDireccionPorIdentificacion(decimal identificacion)
+        public async Task<DtoFuncionarios> F_GetDatosAdicionalesPorIdentificacion(decimal identificacion)
         {
             var resultado = new DtoFuncionarios();
 
@@ -107,9 +108,10 @@ namespace Negocio.Gestion.Admin
             {
                 comando.Connection = conexion;
                 comando.CommandType = CommandType.Text;
-                comando.CommandText = @"SELECT t.direccion, t.undelaborando 
-                                FROM USR_MATERIALIZADAS.VM_CTR_FUNCIONARIOS_ACTIVOS t 
-                                WHERE t.IDENTIFICACION = :identificacion";
+                comando.CommandText = @"SELECT t.direccion, t.undelaborando, C.NIVEL1
+                                          FROM USR_MATERIALIZADAS.VM_CTR_FUNCIONARIOS_ACTIVOS t
+                                          LEFT JOIN USR_MATERIALIZADAS.Vm_Ctr_Unidades_Dependencia C 
+                                            ON T.UNDELABORANDO = C.CONSECUTIVO  WHERE t.IDENTIFICACION =  :identificacion";
                 comando.Parameters.Add(new OracleParameter("identificacion", OracleDbType.Int64)).Value = identificacion;
 
                 await conexion.OpenAsync();
@@ -118,6 +120,7 @@ namespace Negocio.Gestion.Admin
                 if (await reader.ReadAsync())
                 {
                     resultado.DIRECCION = reader["DIRECCION"]?.ToString() ?? string.Empty;
+                    resultado.ESTACION = reader["NIVEL1"]?.ToString() ?? string.Empty;
 
                     if (reader["UNDELABORANDO"] != DBNull.Value && int.TryParse(reader["UNDELABORANDO"].ToString(), out int unidad))
                     {

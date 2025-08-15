@@ -62,7 +62,9 @@ namespace Web.Areas.Irisp1.Controllers
             ViewBag.ddlEntono = new SelectList((await _IDbDominios.F_GetDominiosIris(155)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlZona = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoPrincipalModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoSecundarioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlTipoServicio = new SelectList((await _IDbDominios.F_GetDominiosIris(9)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlEspecialidad = new SelectList((await _IDbDominios.F_GetDominiosIris(160)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlCuadrante = new SelectList(Enumerable.Empty<SelectListItem>());
@@ -99,16 +101,17 @@ namespace Web.Areas.Irisp1.Controllers
             }
             else
             {
-                return Json(new { success = false });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
             }
         }
 
 
 
         [HttpGet]
-        public async Task<IActionResult> F_GetCuadrantes(string V_unidadLabora)
+        public async Task<IActionResult> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
         {
-            var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora);
+            var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora, V_unidadLabora2);
 
 
 
@@ -119,7 +122,7 @@ namespace Web.Areas.Irisp1.Controllers
                 // Seleccionar solo los campos necesarios: Consecutivo y Descripcion
                 var resultado = cuadrantes.Data.Select(x => new
                 {
-                    Codigo = x.CODIGO,
+                    Codigo = x.CODIGOC,
                     Descripcion = x.DESCRIPCION   // Accediendo a la propiedad 'DESCRIPCION'
                 }).ToList();
 
@@ -194,6 +197,80 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
+        [HttpGet]
+        public async Task<IActionResult> F_GetDelitosIris(string V_CriminalidadId)
+        {
+            var resultado = await _iDbIrisp1.F_GetDelitosIris(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+            
+        
+        [HttpGet]
+        public async Task<IActionResult> F_GetInfoAdicional(string V_CriminalidadId)
+        {
+            var resultado = await _iDbIrisp1.F_GetInfoAdicional(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
+            [HttpGet]
+        public async Task<IActionResult> F_GetDocIris(string V_CriminalidadId)
+        {
+            var resultado = await _iDbIrisp1.F_GetDocIris(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> f_GetFotosCriminalidad(string V_CriminalidadId)
+        {
+            var resultado = await _iDbIrisp1.F_GetCriminalidadFotos(V_CriminalidadId);
+          
+
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { data = resultado.Data, exito = resultado.IdRespuesta == 1, mensaje = resultado.Mensaje });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
+
+
+
+
         #endregion
 
 
@@ -255,6 +332,8 @@ namespace Web.Areas.Irisp1.Controllers
                     command.Parameters.Add("P_FECHA_MODIFICA", OracleDbType.Date).Value = DateTime.Now;
                     command.Parameters.Add("P_ID_CRIMINALIDA", OracleDbType.Int32).Value = CriminalidadId_Desencp;
 
+                 
+
                     command.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
                     command.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
 
@@ -280,9 +359,6 @@ namespace Web.Areas.Irisp1.Controllers
                 return Json(new { exito = false, mensaje = $"Error al guardar imagen o registrar: {ex.Message}" });
             }
         }
-
-
-
 
 
         [HttpPost]
@@ -338,6 +414,64 @@ namespace Web.Areas.Irisp1.Controllers
 
         }
 
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_InsDelitosIris(DtoIrispCriminalidad Obj_DelitosIris)
+        {
+
+            Obj_DelitosIris.IdCriminalidad = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_DelitosIris.CriminalidadId));
+
+            try
+            {
+                var Resultado = await _iDbIrisp1.P_InsDelitosIris(Obj_DelitosIris, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_InsInfoAdicionalIris(DtoInfoAdicional Obj_InfoAdicional)
+        {
+
+        
+            try
+            {
+                var Resultado = await _iDbIrisp1.P_InsInfoAdicionalIris(Obj_InfoAdicional, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+     
 
         #endregion
 

@@ -1,9 +1,10 @@
 ﻿let archivoSubido = null; // Guardará el archivo ya cargado
 
 $(document).ready(function () {
-    // Inicializa Select2 si no está inicializado
+  
+
     if ($.fn.select2) {
-        $('#ddlAnioIris').select2();       
+        $('#ddlAnioIris').select2();
     }
 
     // Asocia el evento change
@@ -17,6 +18,12 @@ $(document).ready(function () {
         } else {
             $('#fotografia').closest('.col-md-4').addClass('hidden');
         }
+    });
+
+
+    $('.select2').select2({
+        placeholder: "Seleccione",
+        allowClear: true
     });
 
 
@@ -114,31 +121,20 @@ function AbrirModalNuevoIris() {
     });
 
     modalInstance.show();
-
-
-   
     consultarConsecutivoIris();
-   
-
 }
+
 function ActualizarIris() {
-
     $('#ModalCaracteristicasGenerales').modal("show");
-
 }
 function ActualizarEstadoIris() {
-
     $('#Modal_ActualizarEstado').modal("show");
     F_GetEstadosIrisP1();
-
-
 }
-function ActualizarIrisp1() {
 
+function ActualizarIrisp1() {
     $('#Modal_ActualizarIrisp1').modal("show");
     F_GetEstadosIrisP1();
-
-
 }
 function F_GetEstadosIrisP1() {
    $.ajax({
@@ -156,27 +152,28 @@ function F_GetEstadosIrisP1() {
     });
 
 }
-function AbrirModalDatosCaracteristicas(CaracteristicasGenerales) {
+function AbrirModalVisualizarTexto(Texto) {
 
     // Mostrar la modal
-    $('#Modal_Caracteristicas').modal("show");
-    $('#txtCaracteristicasGenerales').val(CaracteristicasGenerales);
+    $('#Modal_VisualizarTexto').modal("show");
+    $('#txtDescripcion').val(Texto);
 }
 function F_GetInfoGrillas() {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
+        url: UrlGetInfoGrillas,
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
-
-            // Inicializar la grilla con los datos filtrados o vacíos
-            GetGrillaVerificacion(response.data);
-            GetGrillaInvestigacion(response.data);
-            GetGrillaFinalizacion(response.data);
+            console.log("✅ Respuesta exitosa:", response);
+            let data = response.data || [];
+            GetGrillaVerificacion(data);
+            GetGrillaInvestigacion(data);
+            GetGrillaFinalizacion(data);
         },
-        error: function () {
-            // En caso de error, inicializar la grilla con datos vacíos
+        error: function (xhr, status, error) {
+            console.error("❌ Error Ajax:", status, error);
+            console.error("Respuesta cruda:", xhr.responseText);
             GetGrillaVerificacion([]);
             GetGrillaInvestigacion([]);
             GetGrillaFinalizacion([]);
@@ -185,10 +182,92 @@ function F_GetInfoGrillas() {
 }
 
 
+
 // Grillas /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function GetGrillaVerificacion(datos) {
-    inicializarGrilla("#tbGrilla", "#pn_GrillaVerificacion", datos, [2, 3, 4], columnasBase);
+    const datosFiltrados = datos.filter(item => [2, 3, 4].includes(item.IdEstado));
+
+    if ($.fn.dataTable.isDataTable("#tbGrilla")) {
+        $("#tbGrilla").DataTable().destroy();
+    }
+
+    $("#tbGrilla").empty();
+    $("#pn_GrillaVerificacion").removeClass('hidden');
+
+    $("#tbGrilla").DataTable({
+        destroy: true,
+        data: datosFiltrados,
+        language: glOpcionesIdioma,
+        autoWidth: false,
+        responsive: false,
+        columns: [
+            columnaAcciones(datosFiltrados), // puede tener ancho fijo en CSS
+            Estados(),         // idem
+
+            { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion", className: "celdaCenter celda5" },
+            { title: "Codigo", data: "Codigo", name: "Codigo", className: "celdaCenter celda6" },
+            { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad", className: "celdaCenter celda6" },
+            { title: "Municipio", data: "Municipio", name: "Municipio", className: "celdaCenter celda6" },
+
+            {
+                title: "Fecha Inicio Actividad",
+                data: "FechaInicioExistencia",
+                name: "FechaInicioExistencia",
+                className: "celdaCenter celda7",
+                render: function (data) {
+                    if (!data) return ""; // Si es null, vacío o undefined, retorna nada
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha}<br>${hora}`;
+                }
+
+            },
+
+            { title: "Fuente", data: "Clase", name: "Fuente", className: "celdaCenter celda5" },
+            { title: "Nombre", data: "NombreClase", name: "NombreClase", className: "celdaCenter celda7" },
+            columnaCaracteristicasGenerales(),
+            columnaDescripcionTramite(),
+
+            { title: "Zona", data: "Zona", name: "Zona", className: "celdaCenter celda5" },
+            { title: "Tipo Servicio", data: "TipoServicio", name: "TipoServicio", className: "celdaCenter celda6" },
+            { title: "Fuente", data: "Fuente", name: "Fuente", className: "celdaCenter celda5" },
+
+            {
+                title: "Fecha de Creacion",
+                data: "FechaCreacion",
+                name: "FechaCreacion",
+                className: "celdaCenter celda7",
+                render: function (data) {
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha}<br>${hora}`;
+                }
+            },
+
+            { title: "Unidad Verificación Existencia", data: "UnidadVerificacionExiostencia", name: "UnidadVerificacionExiostencia", className: "celdaCenter celda7" },
+            { title: "Fecha Asiganación Verificación Existencia", data: "FechaVerificacionExistencia", name: "FechaVerificacionExistencia", className: "celdaCenter celda7" },
+            { title: "Fecha Respuesta Verificación Existencia", data: "FechaRespuestaVerificacion", name: "FechaRespuestaVerificacion", className: "celdaCenter celda7" },
+            { title: "Contador Verificación Existencia", data: "ContadorVerificacionExistencia", name: "ContadorVerificacionExistencia", className: "celdaCenter celda5" },
+            { title: "Unidad Proceso Investigativo", data: "UnidadProcesoInvestigativo", name: "UnidadProcesoInvestigativo", className: "celdaCenter celda7" },
+            { title: "Fecha Asignación Proceso Investigativo", data: "FechaProcesoInvestigativo", name: "FechaProcesoInvestigativo", className: "celdaCenter celda6" },
+            { title: "Fecha Respuesta Proceso Investigativo", data: "FechaRespuestaInvestigativo", name: "FechaRespuestaInvestigativo", className: "celdaCenter celda6" },
+            { title: "Contador Proceso Investigativo", data: "ContadorProcesoInvestigativo", name: "ContadorProcesoInvestigativo", className: "celdaCenter celda5" },
+            { title: "Resultados", data: "Resultados", name: "Resultados", className: "celdaJust celda5" },
+            { title: "CriminalidadId", data: "CriminalidadId", name: "CriminalidadId", className: "celdaJust celda5" , visible: false }
+
+        ],
+        lengthMenu: [
+            [10, 25, 50, -1],
+            ['10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
 }
 
 function GetGrillaInvestigacion(datos) {
@@ -202,25 +281,39 @@ function GetGrillaFinalizacion(datos) {
 // Definición de columnas base (puedes extraer las columnas comunes a una variable)
 const columnasBase = [
 
-    columnaAcciones(1),
+    columnaAcciones(),
     Estados(),
-    { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion", className: "celdaCenter" },
-    { title: "Codigo ", data: "Codigo", name: "Codigo", className: "celdaCenter" },
-    { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad", className: "celdaCenter" },
-    { title: "Municipio", data: "Municipio", name: "Municipio", className: "celdaCenter" },
-    { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", name: "FechaInicioExistencia", className: "celdaCenter" },
-    { title: "Fuente", data: "Clase", name: "Fuente", className: "celdaCenter" },
-    { title: "Nombre", data: "NombreClase", name: "NombreClase", className: "celdaCenter" },
+    { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion", className: "celdaCenter celda3" },
+    { title: "Codigo ", data: "Codigo", name: "Codigo", className: "celdaCenter celda10" },
+    { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad", className: "celdaCenter celda7" },
+    { title: "Municipio", data: "Municipio", name: "Municipio", className: "celdaCenter celda7" },
+  
+    {
+        title: "Fecha Inicio Actividad",
+        data: "FechaInicioExistencia",
+        name: "FechaInicioExistencia",
+        className: "celdaCenter celda7",
+        render: function (data) {
+            if (!data) return ""; // Si es null, vacío o undefined, retorna nada
+            const fecha = moment(data).format('DD/MM/YYYY');
+            const hora = moment(data).format('hh:mm:ss a');
+            return `${fecha}<br>${hora}`;
+        }
+
+    },
+
+    { title: "Fuente", data: "Clase", name: "Fuente", className: "celdaCenter celda7" },
+    { title: "Nombre", data: "NombreClase", name: "NombreClase", className: "celdaCenter celda7" },
     /*{ title: "Nombre", data: "CaracteristicasGenerales", name: "CaracteristicasGenerales", className: "celdaCenter", visible: false },*/
     columnaCaracteristicasGenerales(),
     columnaDescripcionTramite(),
     // ...agrega aquí el resto de columnas comunes...
 
-    { title: "Codigo Zona", data: "IdZona", name: "IdZona", className: "celdaCenter", visible: false },
-    { title: "Zona", data: "Zona", name: "Zona", className: "celdaCenter" },
-    { title: "Tipo Servicio", data: "TipoServicio", name: "TipoServicio", className: "celdaCenter" },
-    { title: "Codigo Fuente", data: "IdFuente", name: "IdFuente", className: "celdaCenter", visible: false },
-    { title: "Fuente", data: "Fuente", name: "Fuente", className: "celdaCenter" },
+    { title: "Codigo Zona", data: "IdZona", name: "IdZona", className: "celdaCenter v", visible: false },
+    { title: "Zona", data: "Zona", name: "Zona", className: "celdaCenter celda7" },
+    { title: "Tipo Servicio", data: "TipoServicio", name: "TipoServicio", className: "celdaCenter celda7" },
+    { title: "Codigo Fuente", data: "IdFuente", name: "IdFuente", className: "celdaCenter celda7", visible: false },
+    { title: "Fuente", data: "Fuente", name: "Fuente", className: "celdaCenter celda7" },
     {
         title: "Fecha de Creacion",
         data: "FechaCreacion",
@@ -232,35 +325,15 @@ const columnasBase = [
             return `${fecha}<br>${hora}`;
         }
     },
-    { title: "Unidad Verificación Existencia", data: "UnidadVerificacionExiostencia", name: "UnidadVerificacionExiostencia", className: "celdaCenter" },
-    { title: "Fecha Asiganación Verificación Existencia", data: "FechaVerificacionExistencia", name: "FechaVerificacionExistencia", className: "celdaCenter" },
-    { title: "Fecha RespuestaVerificación Existencia", data: "FechaRespuestaVerificacion", name: "FechaRespuestaVerificacion", className: "celdaCenter" },
-    { title: "Contador Verificación Existencia", data: "ContadorVerificacionExistencia", name: "ContadorVerificacionExistencia", className: "celdaCenter" },
-    { title: "Unidad Proceso Investigativo", data: "UnidadProcesoInvestigativo", name: "UnidadProcesoInvestigativo", className: "celdaCenter" },
-    { title: "Fecha Asignación Proceso Investigativo", data: "FechaProcesoInvestigativo", name: "FechaProcesoInvestigativo", className: "celdaCenter" },
-    { title: "Fecha Respuesta Proceso Investigativo", data: "FechaRespuestaInvestigativo", name: "FechaRespuestaInvestigativo", className: "celdaCenter" },
-    { title: "Contador Proceso Investigativo", data: "ContadorProcesoInvestigativo", name: "ContadorProcesoInvestigativo", className: "celdaCenter" },
-    { title: "Resultados", data: "Resultados", name: "Resultados", className: "celdaCenter" },
-
-
-    { title: "Criminalidad", data: "CriminalidadId", name: "Identificación", className: "celdaCenter", visible: false },
-    { title: "Codigo Unidad", data: "IdUnidad", name: "IdUnidad", className: "celdaCenter", visible: false },
-    { title: "Identificación Informa", data: "IdentificacionInforma", name: "IdentificacionInforma", className: "celdaCenter", visible: false },
-    { title: "Codigo Unidad", data: "Celular", name: "Celular", className: "celdaCenter", visible: false },
-    { title: "Codigo Tipo de servcio", data: "IdTipoServicio", name: "IdTipoServicio", className: "celdaCenter", visible: false },
-    { title: "Codigo Cuadrante", data: "IdCuadrante", name: "IdCuadrante", className: "celdaCenter", visible: false },
-    { title: "Codigo Clase", data: "IdClase", name: "IdClase", className: "celdaCenter", visible: false },
-    { title: "Cantidad de Integrantes", data: "CantidadIntegrantes", name: "CantidadIntegrantes", className: "celdaCenter", visible: false },
-    { title: "Vigente", data: "Vigente", name: "Vigente", className: "celdaCenter", visible: false },
-    { title: "Fecha de Creacion", data: "FechaCreacion", name: "FechaCreacion", className: "celdaCenter", visible: false },
-    { title: "Identificacion Crea", data: "IdentificacionCrea", name: "IdentificacionCrea", className: "celdaCenter", visible: false },
-    { title: "Codigo Unidad", data: "MaquinaCrea", name: "MaquinaCrea", className: "celdaCenter", visible: false },
-    { title: "Fecha de Modificacion", data: "FechaModifica", name: "FechaModifica", className: "celdaCenter", visible: false },
-    { title: "Identificacion Modifica", data: "IdentificacionModifica", name: "IdentificacionModifica", className: "celdaCenter", visible: false },
-    { title: "Maquina Modifica", data: "MaquinaModifica", name: "MaquinaModifica", className: "celdaCenter", visible: false },
-    { title: "Codigo", data: "IdUnidad", name: "IdUnidad", className: "celdaCenter", visible: false },
-    { title: "Consecutivo del Codigo", data: "ConsecutivoCodigo", name: "ConsecutivoCodigo", className: "celdaCenter", visible: false },
-    { title: "Icodigo de Estado", data: "IdEstado", name: "IdEstado", className: "celdaCenter", visible: false },
+    { title: "Unidad Verificación Existencia", data: "UnidadVerificacionExiostencia", name: "UnidadVerificacionExiostencia", className: "celdaCenter celda7" },
+    { title: "Fecha Asiganación Verificación Existencia", data: "FechaVerificacionExistencia", name: "FechaVerificacionExistencia", className: "celdaCenter celda7" },
+    { title: "Fecha RespuestaVerificación Existencia", data: "FechaRespuestaVerificacion", name: "FechaRespuestaVerificacion", className: "celdaCenter celda7" },
+    { title: "Contador Verificación Existencia", data: "ContadorVerificacionExistencia", name: "ContadorVerificacionExistencia", className: "celdaCenter celda7" },
+    { title: "Unidad Proceso Investigativo", data: "UnidadProcesoInvestigativo", name: "UnidadProcesoInvestigativo", className: "celdaCenter celda7" },
+    { title: "Fecha Asignación Proceso Investigativo", data: "FechaProcesoInvestigativo", name: "FechaProcesoInvestigativo", className: "celdaCenter celda7" },
+    { title: "Fecha Respuesta Proceso Investigativo", data: "FechaRespuestaInvestigativo", name: "FechaRespuestaInvestigativo", className: "celdaCenter celda7" },
+    { title: "Contador Proceso Investigativo", data: "ContadorProcesoInvestigativo", name: "ContadorProcesoInvestigativo", className: "celdaCenter celda7" },
+    { title: "Resultados", data: "Resultados", name: "Resultados", className: "celdaCenter celda7" }
 
 ];
 
@@ -269,7 +342,7 @@ function Estados() {
         title: "Estado",
         data: "EstadoDescripcion",
         name: "EstadoDescripcion",
-        className: "celdaCenter",
+        className: "celdaCenter celda2",
         render: function (data, type, row) {
             if (!data) return '';
 
@@ -303,27 +376,38 @@ function Estados() {
         }
     };
 }
-function columnaAcciones() {
+function columnaAcciones(datosFiltrados) {
+    return {
+        data: datosFiltrados,
+        className: "celdaCenter celda1",
+        render: function (data, type, row) {
 
-    
-        return {
-            data: null,
-            className: "celdaCenter celda3",
-            render: function (data, type, row) {
-                var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                var DetallesIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fas fa-list"></i>&nbsp; Detalles </a></li>`;
-                var ActualizarIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarIrisp1()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Iris</a></li>`;
-                var ActualizarEstado = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Estado</a></li>`;
-                var ActualizarExistencia = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:F_GetBibliaDetalle()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Existencia</a></li>`;
-                var Eliminar = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:Dell_Roles()"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
-                var finBoton = '</ul></div>';
-                return inicioBoton + DetallesIris + ActualizarIris + ActualizarEstado + ActualizarExistencia + Eliminar + finBoton;
-            }
+            // Convertimos el objeto row a JSON y lo codificamos para enviarlo seguro
+            var DatosFila = encodeURIComponent(JSON.stringify(row));
+
+            var inicioBoton = '<div class="dropdown dropend">' +
+                '<button class="btn btn-success" type="button" id="dropdownMenuButton1" ' +
+                'data-bs-toggle="dropdown" aria-expanded="false">' +
+                '<span class="fas fa-list"></span></button>' +
+                '<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+
+            var DetallesIris = `<li style="padding-left: 15px;">
+                                    <a style="color: #102717;" href="javascript:F_GetDetalleIris('${DatosFila}')">
+                                        <i class="fas fa-list"></i>&nbsp; Detalles
+                                    </a>
+                                </li>`;
+
+            var ActualizarIris = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarIrisp1()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Iris</a></li>`;
+            var ActualizarEstado = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:ActualizarEstadoIris()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Estado</a></li>`;
+            var ActualizarExistencia = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:F_GetBibliaDetalle()"><i class="fa fa-retweet green"></i>&nbsp;Actualizar Existencia</a></li>`;
+            var Eliminar = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:Dell_Roles()"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+
+            var finBoton = '</ul></div>';
+            return inicioBoton + DetallesIris + ActualizarIris + ActualizarEstado + ActualizarExistencia + Eliminar + finBoton;
         }
-  
-
-    
+    }
 }
+
 
 function inicializarGrilla(selectorTabla, selectorPanel, datos, estados, columnas) {
     const datosFiltrados = datos.filter(item => estados.includes(item.IdEstado));
@@ -344,6 +428,12 @@ function inicializarGrilla(selectorTabla, selectorPanel, datos, estados, columna
             [10, 25, 50, -1],
             ['10 registros', '25 registros', '50 registros', 'Todos']
         ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
     });
 }
 
@@ -352,7 +442,7 @@ function columnaCaracteristicasGenerales() {
         title: "Características Generales",
         data: "CaracteristicasGenerales",
         name: "CaracteristicasGenerales",
-        className: "celdaCenter",
+        className: "celdaCenter celda2",
         render: function (data, type, row) {
             if (!data || data.trim() === "") {
                 return '';
@@ -363,7 +453,7 @@ function columnaCaracteristicasGenerales() {
             return `
                 <div style="display: flex; align-items: center; max-width: 300px; gap: 10px;">
                     <button class="btn btn-success btn-sm" type="button"
-                        onclick="AbrirModalDatosCaracteristicas(decodeURIComponent('${dataEncoded}'))">
+                        onclick="AbrirModalVisualizarTexto(decodeURIComponent('${dataEncoded}'))">
                         <span class="fa fa-eye white"></span>
                     </button>
                     <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
@@ -380,7 +470,7 @@ function columnaDescripcionTramite() {
         title: "Descripcion del Tramite",
         data: "DescripcionTramite",
         name: "DescripcionTramite",
-        className: "celdaCenter",
+        className: "celdaCenter celda7",
         render: function (data, type, row) {
             if (!data || data.trim() === "") {
                 return '';
@@ -391,7 +481,7 @@ function columnaDescripcionTramite() {
             return `
                 <div style="display: flex; align-items: center; max-width: 300px; gap: 10px;">
                     <button class="btn btn-success btn-sm" type="button"
-                        onclick="AbrirModalDatosCaracteristicas(decodeURIComponent('${dataEncoded}'))">
+                        onclick="AbrirModalVisualizarTexto(decodeURIComponent('${dataEncoded}'))">
                         <span class="fa fa-eye white"></span>
                     </button>
                     <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
@@ -402,6 +492,50 @@ function columnaDescripcionTramite() {
         }
     };
 }
+
+
+function columnaInforAdicionalDetalleIris() {
+    return {
+        title: "Descripción",
+        data: "Descripcion",
+        name: "Descripcion",
+        className: "celdaCenter celda50",
+        render: function (data, type, row) {
+            if (!data || data.trim() === "") {
+                return '';
+            }
+
+            const dataEncoded = encodeURIComponent(data);
+
+            return `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    max-width: 900px;
+                    margin: 0 auto;
+                    text-align: center;
+                ">
+                    <button class="btn btn-success btn-sm" type="button"
+                        onclick="AbrirModalVisualizarTexto(decodeURIComponent('${dataEncoded}'))"
+                        style="flex-shrink: 0;">
+                        <span class="fa fa-eye white"></span>
+                    </button>
+                    <div style="
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        max-width: 700px;
+                    " title="${data}">
+                        ${data}
+                    </div>
+                </div>
+            `;
+        }
+    };
+}
+
 
 function CambiarEstado() {
 
@@ -456,7 +590,6 @@ $("#txtIdentificacion").keyup(function (event) {
 });
 
 //Fin Eventos
-
 
 $(function () {
     $("#btnMapa").click(function () {
@@ -521,15 +654,9 @@ function InsIntegrantes() {
     });
 }
 
-function limpiarFormularioIntegrantes() {
-    $("#txtConsecutivoIntegrante").val('');
-    $("#txtAlias").val('');
-    $("#txtNombreInteg").val('');
-    $("#txtApellidosInteg").val('');
-    $("#txtIdentificacionInteg").val('');
-    $("#txtCelularInteg").val('');
-    $("#txtDirecciónInteg").val('');
-}
+
+
+
 
 function F_GetIntegrantes() {
 
@@ -543,6 +670,8 @@ function F_GetIntegrantes() {
         success: function (response) {
             if (response.success) {
                 $("#pn_GrillaIntegantes").removeClass('hidden');
+
+               
                 Grillantegrantes(response.data);
             } else {
                 Grillantegrantes([]);
@@ -571,9 +700,9 @@ function Grillantegrantes(Datos) {
             { title: "Nombre", data: "NOMBRE", className: "celdaCenter" },
             { title: "Apellido", data: "APELLIDO", className: "celdaCenter" },
             { title: "Cédula", data: "CEDULA", className: "celdaCenter" },
-            { title: "Dirección", data: "DIRECCION", className: "celdaJust" },
+            { title: "Dirección", data: "DIRECCION", className: "celdaCenter" },
             {
-                title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaCenter",
+                title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaJust",
                 render: function (data) {
                     if (!data) return '';
                     let fecha = new Date(data);
@@ -610,14 +739,17 @@ function F_GetFuncionariosIris(V_Identificacion) {
         dataType: 'json',
         cache: false,
         success: function (respuesta) {
+
             if (respuesta.success) {
                // $("#imgFoto")[0].src = "https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=" + respuesta.idEncry + "&Token=Mxl7995Julabdfjughyts1*_58$$";
                // $("#txtSituacionLab").val(respuesta.data[0].SituacionLaboral);
                 $("#txtFuncionario").val(respuesta.data[0].Funcionario);
                // $("#txtCorreo").val(respuesta.data[0].Correo);
                 //$("#txtUserName").val(respuesta.data[0].Usuario);
+                $("#txtDependencia2").val(respuesta.data[0].Estacion);
                 $("#txtTelefono").val(respuesta.data[0].Celular);
                 $("#txtDependencia").val(respuesta.data[0].Dependencia).trigger('change');
+               
 
                 $("#txtUnidad").val(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
                // $("#txtEspecialidad").val(respuesta.data[0].Direccion);
@@ -647,7 +779,6 @@ function F_GetFuncionariosIris(V_Identificacion) {
         }
     });
 }
-
 
 /*Datos Iris P1, campos dinamicos según la clase*/
 $('#ddlClase').on('change', function () {
@@ -697,28 +828,34 @@ $('#ddlClase').on('change', function () {
 });
 
 $('#txtDependencia').change(function () {
-    handleDropdownChange('/Irisp1/RegistrosIrisp1/F_GetCuadrantes', 'V_unidadLabora', $(this).val(), '#ddlCuadrante');
+    const valor1 = $(this).val();
+    const valor2 = $('#txtDependencia2').val();
+
+    handleDropdownChange('/Irisp1/RegistrosIrisp1/F_GetCuadrantes', {
+        V_unidadLabora: valor1,
+        V_unidadLabora2: valor2
+    }, '#ddlCuadrante');
 });
 
-function handleDropdownChange(url, paramName, paramValue, dropdownSelector, callback) {
-
-    if (paramValue) {
-        $.getJSON(url, { [paramName]: paramValue }, function (data) {
-            let dropdown = $(dropdownSelector);
+function handleDropdownChange(url, params, dropdownSelector, callback) {
+    if (params && params.V_unidadLabora) {
+        $.getJSON(url, params, function (data) {
+            const dropdown = $(dropdownSelector);
             dropdown.empty().append('<option value="">Seleccione</option>');
+
             if (Array.isArray(data) && data.length > 0) {
                 $.each(data, function (index, item) {
                     if (item && item.descripcion) {
-                        dropdown.append(`<option value="${item.id || item.consecutivo || item.codigo}">${item.descripcion}</option>`);
+                        dropdown.append(`<option value="${item.codigo}">${item.descripcion}</option>`);
                     }
                 });
 
-                // Ejecutar el callback después de llenar el dropdown
+                // Volver a inicializar Select2 si es necesario
+                dropdown.trigger('change');
+
                 if (callback && typeof callback === "function") {
                     callback();
                 }
-
-                dropdown.trigger('change'); // Opcional
             }
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.error(`Error al cargar datos desde ${url}:`, textStatus, errorThrown);
@@ -757,7 +894,6 @@ function consultarConsecutivoIris() {
     });
 }
 
-
 function P_InsRegistroIrisP1() {
     var IdClase = $("#ddlClase").val();
 
@@ -792,7 +928,6 @@ function P_InsRegistroIrisP1() {
             break;
 
         case '154':
-            // Aquí puedes añadir lógica si aplica
             break;
 
         default:
@@ -802,6 +937,8 @@ function P_InsRegistroIrisP1() {
             Id_ClasiNarcotrafico = 0;
     }
 
+    var Obj_DelitosSecundarios = obtenerDelitosSecundariosSeleccionados();
+
     const Obj_NuevoIrisP1 = {
         CriminalidadId: $("#txtConsecutivoIris").val(),
         IdUnidad: $("#txtUndeLabora").val(),
@@ -809,7 +946,7 @@ function P_InsRegistroIrisP1() {
         IdentificacionInforma: $("#txtIdentificacion").val(),
         Celular: $("#txtTelefono").val(),
         IdTipoServicio: $("#ddlTipoServicio").val(),
-        IdCuadrante: $("#txtCodIdCuadrante").val(),
+        IdCuadrante: $("#ddlCuadrante").val(),
         IdClase: IdClase,
         NombreClase: NombreClaseI,
         Id_modalidad: Id_modalidadI,
@@ -825,9 +962,42 @@ function P_InsRegistroIrisP1() {
         Modalidadexpendio: Id_modalidadI,
         Origen: 'WEB',
         NombreEntornoAfectado: $("#txtNombreEntornoAfectado").val(),
-        EspecialidadAporta: $("#ddlEspecialidad").val()
+        EspecialidadAporta: $("#ddlEspecialidad").val(),
+        IdDelitoPrincipal: $("#ddlDelitoPrincipal").val(),
+        IdDelitoSecundario: Obj_DelitosSecundarios,
+        IdTipoInfo: 30,
+
+        Latitud: $("#LATITUD_CASO").val(),
+        Longitud: $("#LONGITUD_CASO").val(),
+        Barrio: $("#txtBarrio").val(),
+        Cuadrante: $("#txtCuadrante").val(),
+        Direccion: $("#txtDireccion").val(),
+        CuadranteRural: $("#txtCuadrante").val(),
+        CodigoDane: $("#txtCodDane").val(),
+        CodigoEstacion: $("#txtCodEstacion").val(),
+        CodigoSiedcoCuadrante: $("#txtCodSiedcoCuadrante").val(),
+        MunicipioUbica: $("#txtMunicipio").val(),
+        RadioAccion: $("#txtRadioAccion").val()
+
     };
 
+    // --- Validación de campos obligatorios ---
+    for (let key in Obj_NuevoIrisP1) {
+        if (key !== 'IdDelitoSecundario' && key !== 'IdCuadrante' && key !== 'RadioAccion' &&// puede venir vacío
+            (Obj_NuevoIrisP1[key] === null || Obj_NuevoIrisP1[key] === '' || Obj_NuevoIrisP1[key] === undefined || (typeof Obj_NuevoIrisP1[key] === 'number' && isNaN(Obj_NuevoIrisP1[key]))))
+        {
+            /*Swal.fire('Advertencia', `El campo "${key}" es obligatorio y no puede estar vacío.`, 'warning');*/
+           
+            Swal.fire({
+                type: 'warning',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "Valide todos los campos para completar el presente registro"
+            });
+            return; // detener ejecución
+        }
+    }
+
+    // --- Enviar solicitud ---
     $.ajax({
         url: UrlInsRegistroIrisP1,
         type: 'POST',
@@ -839,7 +1009,7 @@ function P_InsRegistroIrisP1() {
                     title: 'Señor(a) Funcionario(a):',
                     text: resp.message
                 }).then(() => {
-                    limpiarFormularioIris();
+                    limpiarFormularioIrisP1();
                 });
             } else {
                 Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
@@ -851,9 +1021,16 @@ function P_InsRegistroIrisP1() {
     });
 }
 
-
 function limpiarFormularioIrisP1() {
 
+
+    /* Cerrar modal si está visible*/
+    const modal = bootstrap.Modal.getInstance(document.getElementById('Modal_VerRegistro'));
+    if (modal) {
+        modal.hide();
+    }
+
+     /*Campos de texto*/
     $("#txtUndeLabora").val('');
     $("#txtCodDane").val('');
     $("#txtCodSiedcoEstacion").val('');
@@ -867,25 +1044,15 @@ function limpiarFormularioIrisP1() {
     $("#txtFuncionario").val('');
     $("#txtUnidad").val('');
     $("#txtDependencia").val('');
-    $("#ddlCuadrante").val('');
     $("#txtTelefono").val('');
-    $("#ddlEspecialidad").val('');
-    $("#ddlTipoServicio").val('');
-    $("#ddlClase").val('');
     $("#txtNombreTrafico").val('');
-    $("#ddlModExpendio").val('');
     $("#txtNombreEstructura").val('');
     $("#txtCantidadEstructura").val('');
     $("#txtNombreInstalacion").val('');
     $("#txtCantidadInstalacion").val('');
     $("#txtCantidadPersonas").val('');
     $("#txtNombreNarcotrafico").val('');
-    $("#ddlClasiNarcotrafico").val('');
-    $("#ddlActividad").val('');
-    $("#ddlFuente").val('');
-    $("#ddlEntono").val('');
     $("#txtNombreEntornoAfectado").val('');
-    $("#ddlZona").val('');
     $("#txtCaractGenerales").val('');
     $("#txtIdentificacionInteg").val('');
     $("#txtApellidosInteg").val('');
@@ -893,11 +1060,6 @@ function limpiarFormularioIrisP1() {
     $("#txtAlias").val('');
     $("#txtCelularInteg").val('');
     $("#txtDirecciónInteg").val('');
-    $("#ddlDelitoPrincipal").val('');
-    $("#ddlDelitoSecundario").val('');
-    $('#tbGrillaIntegantes').empty();
-    $('#pn_GrillaIntegantes').addClass('hidden').removeClass('show');
-    $('#pn_GrillaIntegantes').collapse('hide');
     $("#txtMunicipio").val('');
     $("#txtBarrio").val('');
     $("#txtCuadrante").val('');
@@ -906,18 +1068,793 @@ function limpiarFormularioIrisP1() {
     $("#LATITUD_CASO").val('');
     $("#txtRadioAccion").val('');
 
+    // Combos con select2 o similares
+    $("#ddlCuadrante").val('').trigger('change');
+    $("#ddlEspecialidad").val('').trigger('change');
+    $("#ddlTipoServicio").val('').trigger('change');
+    $("#ddlClase").val('').trigger('change');
+    $("#ddlModExpendio").val('').trigger('change');
+    $("#ddlClasiNarcotrafico").val('').trigger('change');
+    $("#ddlActividad").val('').trigger('change');
+    $("#ddlFuente").val('').trigger('change');
+    $("#ddlEntono").val('').trigger('change');
+    $("#ddlZona").val('').trigger('change');
+    $("#ddlDelitoPrincipal").val('').trigger('change');
+    $("#ddlDelitoSecundario").val('').trigger('change');
+
+    // Limpiar grilla
+    $('#tbGrillaIntegantes').empty();
+    $('#pn_GrillaIntegantes').addClass('hidden').removeClass('show');
+    $('#pn_GrillaIntegantes').collapse('hide');
+}
+
+
+function limpiarFormularioIntegrantes() {
+    $("#txtConsecutivoIntegrante").val('');
+    $("#txtAlias").val('');
+    $("#txtNombreInteg").val('');
+    $("#txtApellidosInteg").val('');
+    $("#txtIdentificacionInteg").val('');
+    $("#txtCelularInteg").val('');
+    $("#txtDirecciónInteg").val('');
+    $("#txtApellidosIntegModal").val('');
+    $("#txtIdentificacionIntegModal").val('');
+    $("#txtNombreIntegModal").val('');
+    $("#txtAliasModal").val('');
+    $("#txtCelularIntegModal").val('');
+    $("#txtDirecciónIntegModal").val('');
+}
+
+function limpiarFormularioDelitos() {
+    $("#ddlDelitoPrincipalModal").val('').trigger('change');
+    $("#ddlDelitoSecundarioModal").val('').trigger('change');
+
+}
+function mostrarNombreArchivo(input) {
+  const archivo = input.files[0];
+    if (archivo) {
+        document.getElementById('nombreArchivo').value = archivo.name;
+ } else {
+        document.getElementById('nombreArchivo').value = "";
+    }
+}
+
+$('#btnObtener').on('click', function () {
+    const seleccionados = obtenerDelitosSecundariosSeleccionados();
+});
+
+function obtenerDelitosSecundariosSeleccionados() {
+    const delitos = [];
+    $('#ddlDelitoSecundario option:selected').each(function () {
+        delitos.push($(this).val());
+    });
+    console.log("Delitos secundarios seleccionados: ", delitos);
+    return delitos;
+}
+
+function obtenerDelitosSecundariosSeleccionadosModal() {
+    const delitos = [];
+    $('#ddlDelitoSecundarioModal option:selected').each(function () {
+        delitos.push($(this).val());
+    });
+    console.log("Delitos secundarios seleccionados: ", delitos);
+    return delitos;
+}
+
+
+function F_GetDetalleIris(Datos) {
+
+    // Decodificamos y convertimos de nuevo a objeto
+    var registro = JSON.parse(decodeURIComponent(Datos));
+   // console.log("Registro recibido:", registro);
+
+    // Aquí ya puedes usar todos los campos del registro
+    // Swal.fire('Detalle', `Alias: ${registro.ALIAS}\nNombre: ${registro.NOMBRE}`, 'info');
+
+    $("#txtCriminalidadIdModal").val(registro.CriminalidadId);
+    $("#txtConsecutivoIris").val(registro.CriminalidadId);
+
+    var FechaInicio = moment(registro.FechaInicioExistencia).format('DD/MM/YYYY') ;
+    $("#txtCodigoIrispi").text(registro.Codigo);
+   
+    $("#txtClase").text(registro.Clase);
+    $("#txtNombreClase").text(registro.NombreClase);
+    $("#txtCantidad").text(registro.CantidadIntegrantes);
+    $("#txtFuente").text(registro.Fuente);
+    $("#txtFechaInicio").text(FechaInicio);
+    $("#txtCaracteristicas").text(registro.CaracteristicasGenerales);
+    $("#txtCelularIris").text(registro.Celular);
+    $("#txtCodigoCuadrante").text(registro.Cuadrante);
+    $("#txtEstacion1").text(registro.DependCuadrante);
+    $("#txtEstacion2").text(registro.Estacioncuadrante);
+    $("#txtComando").text(registro.Nivel1cuadrante);
+    $("#txtCelularCuadrante").text(registro.CelularCuadrante);
+
+
+
+    var IdenInforma = registro.IdentificacionInforma;
+       
+  
+    $.ajax({
+        type: "POST",
+        url: UrlGetFuncionarios,
+        async: true,
+        data: { V_Identificacion: IdenInforma },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+
+            if (respuesta.success) {
+              
+                $("#txtFuncionarioDetalle").text(respuesta.data[0].Funcionario);
+                $("#txtUnidadDetalle").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
+                $("#txtCorreo").text(respuesta.data[0].Correo);
+                $("#txtCelularSiath").text(respuesta.data[0].Celular);
+          
+                $('#Modal_DetalleIris').modal("show");
+                F_GetRelacionIris();
+                F_GetIntegrantesIris(registro.CriminalidadId);
+                //F_GetUbicacionIris(registro.CriminalidadId);
+                GetGrillaUbicacionIris([registro]);
+
+                F_GetDelitosIris(registro.CriminalidadId); F_GetInfoAdiconalIris(registro.CriminalidadId);
+                F_GetResponsableIris();
+                F_GetDocumentosIris(registro.CriminalidadId);
+                F_GetFotosIris(registro.CriminalidadId);
+            } else {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "No se Encontro el Funcionario"
+                });
+            }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'No es posible consultar, revise!!'
+            });
+        }
+    });
+   
+   
+   
+}
+
+function F_GetRelacionIris() {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_Anio: $('#ddlAnioIris').val() },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaRelacionIris(response.data);
+         
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaRelacionIris([]);
+         
+        }
+    });
+}
+function GetGrillaRelacionIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaRelacionIrisP1")) {
+        $("#tbGrillaRelacionIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaRelacionIrisP1").empty();
+    $("#pn_GrillaRelacionIrisP1").removeClass('hidden');
+
+    //$("#tbGrillaRelacionIrisP1").DataTable({
+    //    destroy: true,
+    //    data: Datos,
+    //    language: glOpcionesIdioma,
+    //    responsive: true,
+    //    "columns": [
+    //        {
+    //            data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+    //                var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+    //                var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+    //                var finBoton = '</ul></div>';
+    //                return inicioBoton + Eliminar + finBoton;
+    //            }
+    //        },
+    //        { "title": "Roles Asignados", "data": "Descripcion", "name": "Descripcion", className: "celdaCenter celda5" },
+    //        { "title": "Fecha de Asignación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaCenter celda7" },
+    //        { "title": "Funcionario que Asignó", "data": "FuncionarioCreacion", "name": "FuncionarioCreacion", className: "celdaJust celda17" },
+    //        { "title": "Fecha Caducidad", "data": "FechaFin", "name": "FechaFin", className: "celdaCenter celda7" },
+    //        { "title": "Observaciones", "data": "Justificacion", "name": "Justificacion", className: "celdaJust" }
+    //    ],
+    //    lengthMenu: [
+    //        [5, 10, 25, 50, -1],
+    //        ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+    //    ],
+    //    ordering: false,
+    //    pageLength: 10,
+    //    bLengthChange: true,
+    //    searching: true,
+    //    paging: true,
+    //    info: true
+    //});
+}
+function F_GetIntegrantesIris(CriminalidadId) {
+   
+
+    $.ajax({
+        type: 'GET',
+        url: UrlGetIntegrantes,
+        async: true,
+        data: { V_CriminalidadId: CriminalidadId },
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                
+                GetGrillaIntegrantesIris(response.data);
+            } else {
+                GetGrillaIntegrantesIris([]);
+                Swal.fire('Error', response.message, 'error');
+            }
+        },
+        error: function () {
+            GetGrillaIntegrantesIris([]);
+            Swal.fire('Error', 'No se pudo obtener la lista de integrantes.', 'error');
+        }
+    });
+}
+function GetGrillaIntegrantesIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaIntegrantesIrisP1")) {
+        $("#tbGrillaIntegrantesIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaIntegrantesIrisP1").empty();
+    $("#pn_GrillaIntegrantesIrisP1").removeClass('hidden');
+
+    $("#tbGrillaIntegrantesIrisP1").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+            { "title": "Alias", "data": "ALIAS", "name": "ALIAS", className: "celdaCenter celda5" },
+            { "title": "Nombre", "data": "NOMBRE", "name": "NOMBRE", className: "celdaCenter celda7" },
+            { "title": "Apellido", "data": "APELLIDO", "name": "APELLIDO", className: "celdaCenter celda17" },
+            { "title": "Cédula", "data": "CEDULA", "name": "CEDULA", className: "celdaCenter celda7" },
+            { "title": "Dirección", "data": "DIRECCION", "name": "DIRECCION", className: "celdaCenter" },
+            { "title": "Fecha Creación", "data": "FECHA_CREACION", "name": "FECHA_CREACION", className: "celdaCenter",   render: function (data) {
+                if (!data) return '';
+                let fecha = new Date(data);
+                return fecha.toLocaleDateString(); }
+            }
+
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+function GetGrillaUbicacionIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaUbicacionIrisP1")) {
+        $("#tbGrillaUbicacionIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaUbicacionIrisP1").empty();
+    $("#pn_GrillaUbicacionIrisP1").removeClass('hidden');
+
+    $("#tbGrillaUbicacionIrisP1").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+            { "title": "Longitud", "data": "Longitud", "name": "Longitud", className: "celdaCenter celda4" },
+            { "title": "Latitud", "data": "Latitud", "name": "Latitud", className: "celdaCenter celda4" },
+            { "title": "Radio", "data": "RadioAccion", "name": "RadioAccion", className: "celdaCenter celda3" },
+            { "title": "Municipio", "data": "MunicipioUbica", "name": "MunicipioUbica", className: "celdaCenter celda5" },
+            { "title": "Cuadrante", "data": "CuadranteUbica", "name": "CuadranteUbica", className: "celdaCenter celda6" },
+            { "title": "Dirección", "data": "Direccion", "name": "Direccion", className: "celdaCenter" }
+        ],
+       
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+function F_GetDelitosIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetDelitosIris, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaDelitosIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaDelitosIris([]);
+
+        }
+    });
+}
+
+function GetGrillaDelitosIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaDelitosIrisP1")) {
+        $("#tbGrillaDelitosIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaDelitosIrisP1").empty();
+    $("#pn_GrillaDelitosIrisP1").removeClass('hidden');
+
+    $("#tbGrillaDelitosIrisP1").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+            { "title": "Delito", "data": "DelitoDesc", "name": "DelitoDesc", className: "celdaCenter celda40" },
+            { "title": "Tipo", "data": "DescTipo", "name": "DescTipo", className: "celdaCenter celda5" },
+            { "title": "Tipo Informacón", "data": "DescTipoInfo", "name": "DescTipoInfo", className: "celdaCenter " }
+          
+        ],
+       
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+
+function F_GetInfoAdiconalIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaInfoAdicionalIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaInfoAdicionalIris([]);
+
+        }
+    });
+}
+
+function GetGrillaInfoAdicionalIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaInforAdicionalIrisP1")) {
+        $("#tbGrillaInforAdicionalIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaInforAdicionalIrisP1").empty();
+    $("#pn_GrillaInfoAdicionalIrisP1").removeClass('hidden');
+
+    $("#tbGrillaInforAdicionalIrisP1").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+            columnaInforAdicionalDetalleIris(),
+            { "title": "Tipo Información", "data": "DescTipoInfo", "name": "DescTipoInfo", className: "celdaCenter" }
+            
+        ],
+        
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+function F_GetResponsableIris() {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_Anio: $('#ddlAnioIris').val() },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaResponsableIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaResponsableIris([]);
+
+        }
+    });
+}
+
+function GetGrillaResponsableIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaResponsableIrisP1")) {
+        $("#tbGrillaResponsableIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaResponsableIrisP1").empty();
+    $("#pn_GrillaResponsableIrisP1").removeClass('hidden');
+
+    //$("#pn_GrillaResponsableIrisP1").DataTable({
+    //    destroy: true,
+    //    data: Datos,
+    //    language: glOpcionesIdioma,
+    //    responsive: true,
+    //    "columns": [
+    //        {
+    //            data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+    //                var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+    //                var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+    //                var finBoton = '</ul></div>';
+    //                return inicioBoton + Eliminar + finBoton;
+    //            }
+    //        },
+    //        { "title": "Roles Asignados", "data": "Descripcion", "name": "Descripcion", className: "celdaCenter celda5" },
+    //        { "title": "Fecha de Asignación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaCenter celda7" },
+    //        { "title": "Funcionario que Asignó", "data": "FuncionarioCreacion", "name": "FuncionarioCreacion", className: "celdaJust celda17" },
+    //        { "title": "Fecha Caducidad", "data": "FechaFin", "name": "FechaFin", className: "celdaCenter celda7" },
+    //        { "title": "Observaciones", "data": "Justificacion", "name": "Justificacion", className: "celdaJust" }
+    //    ],
+    //    lengthMenu: [
+    //        [5, 10, 25, 50, -1],
+    //        ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+    //    ],
+    //    ordering: false,
+    //    pageLength: 10,
+    //    bLengthChange: true,
+    //    searching: true,
+    //    paging: true,
+    //    info: true
+    //});
+}
+
+function F_GetDocumentosIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetDocIris, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaDocumentosIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaDocumentosIris([]);
+
+        }
+    });
+}
+
+function GetGrillaDocumentosIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaDocumentosIrisP1")) {
+        $("#tbGrillaDocumentosIrisP1").DataTable().destroy();
+    }
+
+    $("#tbGrillaDocumentosIrisP1").empty();
+    $("#pn_GrillaDocumentosIrisP1").removeClass('hidden');
+
+    $("#tbGrillaDocumentosIrisP1").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+            { "title": "Nombre", "data": "Nombre", "name": "Nombre", className: "celdaCenter celda5" },
+            { "title": "Enlace", "data": "Url", "name": "Url", className: "celdaCenter celda7" },
+            { "title": "Fecha Creación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaJust celda17" }
+           
+        ],
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+function F_GetFotosIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetFotosIris, // Endpoint del backend
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+           
+            if (response.exito && response.data.length > 0) {
+                RenderGaleriaFotos(response.data);
+                $("#pn_GrillaFotografiasIrisP1").removeClass('hidden');
+            } else {
+                $("#contenedorFotosIrisP1").html('<p class="text-center text-muted">No hay fotos disponibles</p>');
+            }
+        },
+
+        error: function () {
+            $("#contenedorFotosIrisP1").html('<p class="text-center text-danger">Error al cargar las fotos</p>');
+        }
+    });
+}
+
+function RenderGaleriaFotos(fotos) {
+    let html = '<div class="row">';
+    fotos.forEach(function (foto) {
+        html += `
+            <div class="col-md-3 col-sm-4 col-6 mb-3">
+                <div class="card shadow-sm border-light">
+                    <img src="${foto.ruta}" class="card-img-top img-thumbnail" style="height: 180px; object-fit: cover; cursor: pointer;"
+                         alt="${foto.nombreArchivo}" onclick="VerFotoGrande('${foto.ruta}')">
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    $("#contenedorFotosIrisP1").html(html);
+}
+
+// Modal para ver la imagen grande
+function VerFotoGrande(ruta) {
+    const modalHtml = `
+        <div class="modal fade" id="modalFotoGrande" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-body text-center">
+                <img src="${ruta}" class="img-fluid rounded" alt="Foto" />
+              </div>
+            </div>
+          </div>
+        </div>
+    `;
+    $("body").append(modalHtml);
+    $("#modalFotoGrande").modal("show");
+
+    $("#modalFotoGrande").on("hidden.bs.modal", function () {
+        $(this).remove();
+
+        // 🔹 Forzar que la modal principal siga activa y con scroll
+        if ($('.modal.show').length) {
+            $('body').addClass('modal-open');
+        }
+    });
+}
+
+function OpenInsIntegrantesModal() {
+
+    $('#Modal_InsIntegrantes').modal("show");
+}
+
+function OpenInsDelitosModal() {
+
+    $('#Modal_InsDelitos').modal("show");
+}
+
+function OpenInsInfoadiconalModal() {
+
+    $('#Modal_InsInfoAdicional').modal("show");
+}
+
+
+var modalIns = document.getElementById('Modal_InsIntegrantes');
+modalIns.addEventListener('hidden.bs.modal', function () {
+    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
+});
+
+var modalIns = document.getElementById('Modal_InsDelitos');
+modalIns.addEventListener('hidden.bs.modal', function () {
+    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
+});
+
+
+var modalIns = document.getElementById('Modal_InsInfoAdicional');
+modalIns.addEventListener('hidden.bs.modal', function () {
+    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
+});
+
+function InsIntegrantesModal() {
+
+    $.ajax({
+        url: UrlGetConsecutivoIntegrante,
+        type: 'POST',
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                $("#txtConsecutivoIntegrante").val(response.data);
+
+                const Obj_Integrante = {
+                    INTEGRANTE_ID: response.data,
+                    CRIMINALIDAD_ID: $("#txtCriminalidadIdModal").val(),
+                    ALIAS: $("#txtAliasModal").val(),
+                    NOMBRE: $("#txtNombreIntegModal").val(),
+                    APELLIDO: $("#txtApellidosIntegModal").val(),
+                    CEDULA: parseInt($("#txtIdentificacionIntegModal").val()),
+                    ID_TIPO_INFO: 30,
+                    VIGENTE: 1,
+                    FECHA_MODIFICA: null,
+                    IDENTIFICACION_MODIFICA: null,
+                    MAQUINA_MODIFICA: null,
+                    TIPO_DOCUMENTO: 1,
+                    CELULAR: parseInt($("#txtCelularIntegModal").val()),
+                    DIRECCION: $("#txtDirecciónIntegModal").val()
+                };
+
+                $.ajax({
+                    url: UrlInsIntegrantes,
+                    type: 'POST',
+                    data: Obj_Integrante,
+                    success: function (resp) {
+                        if (resp.success) {
+
+                            F_GetIntegrantesIris($("#txtCriminalidadIdModal").val());
+                            $('#Modal_InsIntegrantes').modal('hide');
+                            limpiarFormularioIntegrantes();
+                        } else {
+
+                            Swal.fire({
+                                type: 'error',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: 'Error al insertar: ' + resp.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+                    }
+                });
+
+            } else {
+                $("#txtConsecutivoIntegrante").val('');
+                Swal.fire('Error', "No se pudo obtener el consecutivo.", 'info');
+            }
+        },
+        error: function () {
+            $("#txtConsecutivoIntegrante").val('');
+            Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+        }
+    });
+}
+
+function P_InsDelitosModal() {
+
+    var Obj_DelitosSecundarios = obtenerDelitosSecundariosSeleccionadosModal();
+
+    const Obj_DelitosIris = {
+
+        CriminalidadId: $("#txtCriminalidadIdModal").val(),
+        IdDelitoPrincipal: $("#ddlDelitoPrincipalModal").val(),
+        IdDelitoSecundario: Obj_DelitosSecundarios
+
+    }
+
+
+    $.ajax({
+        url: UrlInsDelitos,
+        type: 'POST',
+        data: Obj_DelitosIris,
+        success: function (resp) {
+            if (resp.success) {
+
+                F_GetDelitosIris($("#txtCriminalidadIdModal").val());
+                $('#Modal_InsDelitos').modal('hide');
+                limpiarFormularioDelitos();
+            } else {
+
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: 'Error al insertar: ' + resp.message
+                });
+            }
+        },
+        error: function () {
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+        }
+    });
 
 }
 
 
+function P_InsInfoAdicionalModal() {
 
-    function mostrarNombreArchivo(input) {
-                                    const archivo = input.files[0];
-    if (archivo) {
-        document.getElementById('nombreArchivo').value = archivo.name;
-                                    } else {
-        document.getElementById('nombreArchivo').value = "";
-                                    }
-                       }
+    const Obj_InfoAdicional = {
+        CriminalidadId: $("#txtCriminalidadIdModal").val(),
+        Descripcion: $("#txtInfoAdicionalModal").val(),
+       
+    };
 
+  
+    $.ajax({
+        url: UrlInsInfoAdicional,
+        type: 'POST',
+        data: Obj_InfoAdicional,
+        success: function (resp) {
+            if (resp.success) {
 
+                F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
+                $("#Modal_InsInfoAdicional").modal("hide");
+
+            } else {
+
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: 'Error al insertar: ' + resp.message
+                });
+            }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "Error en la solicitud"
+            });
+        }
+    });
+
+}

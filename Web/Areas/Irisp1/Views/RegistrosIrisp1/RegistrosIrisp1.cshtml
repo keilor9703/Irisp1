@@ -26,14 +26,17 @@
             var UrlGetConsecutivoIntegrante= "@Url.Action("F_ConsultarSeqIntegrante", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetIntegrantes= "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlInsRegistroIrisP1= "@Url.Action("P_InsRegistroIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetDelitosIris= "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetInfoAdicional= "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetDocIris= "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetFotosIris= "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlInsDelitos= "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlInsInfoAdicional= "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
              
 
 
         </script>
 }
-
-
-
 
 <section class="content-header"></section>
 <div class="page-titles">
@@ -62,7 +65,9 @@
         <div class="row" > <!-- Se agrega margen superior aquí -->
             <div class="col-md-2 MargFloatBoos">
                 <div class="form-group has-float-label">
-                    @Html.DropDownList("ddlAnioIris", (SelectList)ViewBag.ddlAnioIris, new { @tabindex = 1, id = "ddlAnioIris", @class = "form-control select2" })
+                
+
+                     @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
                    
                     <label class="Labels">Ver IRIS-P1 por año</label>
                 </div>
@@ -172,7 +177,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
 *@
 
 
-<!-- INICIO DE FORMULARIO EN LA MODAL-->
+<!-- INICIO DE MODAL REGISTRO IRIS-->
 
 <div class="modal fade" id="Modal_VerRegistro" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
    <div class="modal-dialog" style="max-width: 70%;">
@@ -187,6 +192,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 
                 <input type="text" id="txtConsecutivoIris" class="hidden" value="" />
                 <input type="text" id="txtConsecutivoIntegrante" class="hidden" value="" />
+                <input type="text" id="txtDependencia2" class="hidden" value="" />
 
 
                 @*  DATOS DEL FUNCIONARIO ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
@@ -406,65 +412,62 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                             </div>
                         </div>
 
-                      <div class="col-md-4" id="fotografia">
-                                <div class="form-group has-float-label">
+                          <div class="col-md-4" id="fotografia">
+                                    <div class="form-group has-float-label">
 
-                                    <label class="Labels" style="margin-left: 30px;">Anexo fotográfico:</label>
+                                        <label class="Labels" style="margin-left: 30px;">Anexo fotográfico:</label>
 
 
-                                    <div class="input-group">
+                                        <div class="input-group">
 
-                                        <div class="input-group-append">
-                                            <button tabindex="330"
-                                                    class="btn btn-success"
-                                                    id="btnSubirFoto"
-                                                    onclick="document.getElementById('fileAnexoFotografico').click();"
-                                                    type="button"
-                                                    style="border-radius: 0px;"
-                                                    title="Subir Foto">
-                                                <b><i class="fas fa-folder-open"></i></b>
-                                            </button>
+                                            <div class="input-group-append">
+                                                <button tabindex="330"
+                                                        class="btn btn-success"
+                                                        id="btnSubirFoto"
+                                                        onclick="document.getElementById('fileAnexoFotografico').click();"
+                                                        type="button"
+                                                        style="border-radius: 0px;"
+                                                        title="Subir Foto">
+                                                    <b><i class="fas fa-folder-open"></i></b>
+                                                </button>
+                                            </div>
+
+                                            <!-- Campo para mostrar el nombre del archivo -->
+                                            <input type="text"
+                                                   id="nombreArchivo"
+                                                   class="form-control"
+                                                   onclick="document.getElementById('fileAnexoFotografico').click();"
+                                                   placeholder="Ningún archivo seleccionado"
+                                                   readonly
+                                                   style="background-color: #fff;" />
+
+                                            <!-- Botón para subir archivo -->
+                                            <div class="input-group-append">
+                                                <button tabindex="31"
+                                                        class="btn btn-success"
+                                                        id="btnSubirFoto"
+                                                        onclick="SubirFoto();"
+                                                        type="button"
+                                                        style="border-radius: 0px;"
+                                                        title="Subir Foto">
+                                                    <b><i class="fas fa-upload"></i></b>
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <!-- Campo para mostrar el nombre del archivo -->
-                                        <input type="text"
-                                               id="nombreArchivo"
-                                               class="form-control"
-                                               onclick="document.getElementById('fileAnexoFotografico').click();"
-                                               placeholder="Ningún archivo seleccionado"
-                                               readonly
-                                               style="background-color: #fff;" />
-
-                                        <!-- Botón para subir archivo -->
-                                        <div class="input-group-append">
-                                            <button tabindex="31"
-                                                    class="btn btn-success"
-                                                    id="btnSubirFoto"
-                                                    onclick="SubirFoto();"
-                                                    type="button"
-                                                    style="border-radius: 0px;"
-                                                    title="Subir Foto">
-                                                <b><i class="fas fa-upload"></i></b>
-                                            </button>
-                                        </div>
+                                        <!-- Input real oculto -->
+                                        <input type="file"
+                                               id="fileAnexoFotografico"
+                                               name="fileAnexoFotografico"
+                                               accept=".jpg,.jpeg,.png"
+                                               style="display: none;"
+                                               onchange="mostrarNombreArchivo(this)" />
                                     </div>
 
-                                    <!-- Input real oculto -->
-                                    <input type="file"
-                                           id="fileAnexoFotografico"
-                                           name="fileAnexoFotografico"
-                                           accept=".jpg,.jpeg,.png"
-                                           style="display: none;"
-                                           onchange="mostrarNombreArchivo(this)" />
-                                </div>
-
-                                <div id="estadoFoto" class="mt-2 text-success" style="display: none;">
-                                    <i class="fas fa-check-circle"></i> Imagen guardada exitosamente.
-                                </div>
-                       </div>
-
-                        
-
+                                    <div id="estadoFoto" class="mt-2 text-success" style="display: none;">
+                                        <i class="fas fa-check-circle"></i> Imagen guardada exitosamente.
+                                    </div>
+                           </div>
 
                         
 
@@ -527,14 +530,13 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                             </div>
                         </div>
 
-                        <div class="col-md-6 MargFloatBoos">
+                        <div class="col-md-12 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlDelitoSecundario", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoSecundario", @class = "form-control select2", style = "width: 100%;" })
+                                @Html.DropDownList("ddlDelitoSecundario", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoSecundario", @class = "form-control select2", style = "width: 100%;" ,  multiple = "multiple"})
                                 <label class="Labels">Delito Secundario:</label>
                             </div>
                         </div>
-                        
-                       
+                     
                         <div id="pn_GrillaIntegantes" class="card-body collapse hidden">
                             <div class="row">
                                 <div class="col-md-12">
@@ -581,12 +583,14 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                                 <label class="Labels">Dirección:</label>
                             </div>
                         </div>
+
                          <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <input tabindex="5" name="LONGITUD_CASO" type="text" id="LONGITUD_CASO" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <label class="Labels">Longitud:</label>
                             </div>
                         </div>
+
                            <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <input tabindex="5" name="LATITUD_CASO" type="text" id="LATITUD_CASO" autocomplete="off" placeholder=" " class="form-control InputPading" />
@@ -600,6 +604,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                                 <label class="Labels">Radio de Acción:</label>
                             </div>
                         </div>
+
                         <div class="col-md-4 MargFloatBoos">
                              <button tabindex="7603" type="button" id="btnMapa" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar en el Mapa</button>
                         </div>
@@ -611,9 +616,9 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                             <div class="modal-content">
                                   <div class="modal-header">
                                     <h5 class="modal-title" id="mapModalLabel">Mapa de Ubicación</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-                                      <span aria-hidden="true">&times;</span>
-                                    </button>
+                                   
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                   
                                   </div>
                                   <div class="modal-body">
                                        <div class="col-12 mb-2">
@@ -641,8 +646,516 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
         </div>
         <!-- /.modal-content -->
     </div>
-    <!-- /.modal-actualizar estado -->
+   
 </div>
+
+<!-- FIN  DE MODAL REGISTRO IRIS-->
+
+
+<!-- INICIO DE MODAL DETALLE IRIS-->
+
+<div class="modal fade" id="Modal_DetalleIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+   <div class="modal-dialog" style="max-width: 80%;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Detalle Iris - P1</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+               <input type="text" id="txtCriminalidadIdModal" class="d-none" value="@ViewBag.txtCriminalidadIdModal" />
+
+
+                <div class="container-fluid">
+                    <!-- Encabezado -->
+                    <div class="row text-white p-2" style="background-color: #006837; border-radius: 5px;">
+                        <div class="col-12">
+                            <strong id="txtTituloEstacion"></strong> - 
+                            <span id="txtFechaCreacion"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Columna 1: Aspecto Criminalidad -->
+                        <div class="col-md-4">
+                            <h6 class="fw-bold">ASPECTO CRIMINALIDAD</h6>
+                            <p><strong></strong> 
+                            <p><strong>Codigo IRISPI:</strong> <span id="txtCodigoIrispi"></span></p>
+                            <p><strong>Clase:</strong> <span id="txtClase"></span></p>
+                            <p><strong>Nombre Clase:</strong> <span id="txtNombreClase"></span></p>
+                            <p><strong>Cantidad:</strong> <span id="txtCantidad"></span></p>
+                            <p><strong>Fuente:</strong> <span id="txtFuente"></span></p>
+                            <p><strong>Fecha inicio Existencia:</strong> <span id="txtFechaInicio"></span></p>
+                         
+                        </div>
+
+                        <!-- Columna 2: Funcionario que informa -->
+                        <div class="col-md-4">
+                            <h6 class="fw-bold">FUNCIONARIO QUE INFORMA:</h6>
+                          
+                            <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Visualizar</button>
+                            <p><strong>Funcionario:</strong> <span id="txtFuncionarioDetalle"></span></p>
+                            <p><strong>Unidad:</strong> <span id="txtUnidadDetalle"></span></p>
+                            <p><strong>Correo:</strong> <span id="txtCorreo"></span></p>
+                            <p><strong>Celular SIATH:</strong> <span id="txtCelularSiath"></span></p>
+                            <p><strong>Celular IRIS-PI:</strong> <span id="txtCelularIris"></span></p>
+                        </div>
+
+                        <!-- Columna 3: Información del cuadrante -->
+                        <div class="col-md-4">
+                            <h6 class="fw-bold">INFORMACIÓN DEL CUADRANTE:</h6>
+                            <p><strong></strong> 
+                            <p><span id="txtCodigoCuadrante"></span></p>
+                            <p><span id="txtEstacion1"></span></p>
+                            <p><span id="txtEstacion2"></span></p>
+                            <p><span id="txtComando"></span></p>
+                            <p><strong>Celular cuadrante:</strong> <span id="txtCelularCuadrante"></span></p>
+                        </div>
+
+                         <div class="col-md-12">
+                          
+                            <p><strong>Características Generales:</strong> <span id="txtCaracteristicas"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+               
+
+                <div class="card border-success hidden" id="pn_GrillaRelacionIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Relación con otros IRISP1</h4>
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaRelacionIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                 <style>
+                     /* Selector más específico para sobrescribir el degradado verde */
+                        table#tbGrillaRelacionIrisP1.dataTable thead tr th {
+                            background: white !important;
+                            color: black !important;
+                            text-align: center;
+                            font-weight: bold;
+                            border: 1px solid #ddd !important;
+}
+                        </style>
+
+
+
+                  <div class="card border-success hidden" id="pn_GrillaIntegrantesIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Integrantes</h4>
+                       
+                        <div class="card-actions ms-auto d-flex button-group">
+                              <!-- Botón Nuevo -->
+                            <button type="button" 
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center" 
+                                    id="btnNuevoIntegrante" 
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="OpenInsIntegrantesModal();">
+                              <i class="fas fa-plus"></i> Nuevo
+                            </button>
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaIntegrantesIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                        <style>
+                     /* Selector más específico para sobrescribir el degradado verde */
+                        table#tbGrillaIntegrantesIrisP1.dataTable thead tr th {
+                            background: white !important;
+                            color: black !important;
+                            text-align: center;
+                            font-weight: bold;
+                            border: 1px solid #ddd !important;
+}
+                        </style>
+
+
+                 <div class="card border-success hidden" id="pn_GrillaUbicacionIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Ubicación</h4>
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaUbicacionIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                    <style>
+                     /* Selector más específico para sobrescribir el degradado verde */
+                        table#tbGrillaUbicacionIrisP1.dataTable thead tr th {
+                            background: white !important;
+                            color: black !important;
+                            text-align: center;
+                            font-weight: bold;
+                            border: 1px solid #ddd !important;
+}
+                     </style>
+
+
+                <div class="card border-success hidden" id="pn_GrillaDelitosIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Delitos</h4>
+                        <div class="card-actions ms-auto d-flex button-group">
+
+                               <!-- Botón Nuevo -->
+                            <button type="button" 
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center" 
+                                    id="btnNuevoIntegrante" 
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="OpenInsDelitosModal();">
+                              <i class="fas fa-plus"></i> Nuevo
+                            </button>
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaDelitosIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                       <style>
+                     /* Selector más específico para sobrescribir el degradado verde */
+                            table#tbGrillaDelitosIrisP1.dataTable thead tr th {
+                                background: white !important;
+                                color: black !important;
+                                text-align: center;
+                                font-weight: bold;
+                                border: 1px solid #ddd !important;
+                                }
+                        </style>
+
+
+
+                 <div class="card border-success hidden" id="pn_GrillaInfoAdicionalIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Información Adicional</h4>
+                        <div class="card-actions ms-auto d-flex button-group">
+
+                                <!-- Botón Nuevo -->
+                            <button type="button" 
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center" 
+                                    id="btnNuevoInformacion" 
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="OpenInsInfoadiconalModal();">
+                              <i class="fas fa-plus"></i> Nuevo
+                            </button>
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaInforAdicionalIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                   <style>
+                     /* Selector más específico para sobrescribir el degradado verde */
+                            table#tbGrillaInforAdicionalIrisP1.dataTable thead tr th {
+                                background: white !important;
+                                color: black !important;
+                                text-align: center;
+                                font-weight: bold;
+                                border: 1px solid #ddd !important;
+                                }
+                        </style>
+
+
+               @*   <div class="card border-success hidden" id="pn_GrillaResponsableIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Responsable del IRISP1</h4>
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaResponsableIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> *@
+
+                  <div class="card border-success hidden" id="pn_GrillaDocumentosIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Documentos</h4>
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaDocumentosIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="card border-success hidden" id="pn_GrillaFotografiasIrisP1">
+                        <div class="card-header d-flex align-items-center">
+                            <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Fotografías Asociadas</h4>
+                            <div class="card-actions ms-auto d-flex button-group">
+                                <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                                <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                                <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                    <i data-feather="x" class="feather-sm"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body collapse show">
+                            <div id="contenedorFotosIrisP1" class="mt-3">
+                                <!-- Aquí se renderizan las fotos -->
+                            </div>
+                        </div>
+                 </div>
+
+                <!-- /.modal-Crear Integrante IRISP1 -->
+
+                <div class="modal fade" id="Modal_InsIntegrantes" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+                   <div class="modal-dialog" style="max-width: 900px;" >
+
+                        <div class="modal-content">
+                            <div class="modal-header d-flex align-items-center">
+                                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Nuevo Ingrante</h3>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+
+                            <div class="modal-body">
+
+                                <div class="text-center" id="ContenidoCambio"></div>
+               
+                                    <div class="row">
+                                            <div class="col-md-2 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <div class="input-group">
+                                                    <input tabindex="10" name="txtIdentificacionIntegModal" type="text" id="txtIdentificacionIntegModal" autocomplete="off" placeholder=" " class="form-control InputPading" >
+                                   
+                                                </div>
+                                                <label class="Labels">No. Identificación:</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <input tabindex="11" id="txtApellidosIntegModal" name="txtApellidosIntegModal" type="text" value="" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                                                <label class="Labels">Apellidos:</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <input tabindex="12" id="txtNombreIntegModal" name="txtNombreIntegModal" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                                                <label class="Labels"> Nombres:</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <input tabindex="13" id="txtAliasModal" name="txtAliasModal" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                                <label class="Labels">Alias:</label>
+                                            </div>
+                                        </div>
+                                         <div class="col-md-2 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <input tabindex="14" id="txtCelularIntegModal" name="txtCelularIntegModal" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                                <label class="Labels">Celular:</label>
+                                            </div>
+                                        </div>
+                                         <div class="col-md-3 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <input tabindex="14" id="txtDirecciónIntegModal" name="txtDirecciónIntegModal" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                                <label class="Labels">Dirección:</label>
+                                            </div>
+                                        </div>
+                       
+                                   </div>
+
+                 
+                            </div>
+                            <div class="modal-footer" style="justify-content:center;">
+             
+                               <button tabindex="14" type="button" id="btnAddIntegrante" onclick="InsIntegrantesModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                @* Modal para insertar delitos  *@
+
+                 <div class="modal fade" id="Modal_InsDelitos" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+                   <div class="modal-dialog" style="max-width: 900px;" >
+
+                        <div class="modal-content">
+                            <div class="modal-header d-flex align-items-center">
+                                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Delito</h3>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+
+                            <div class="modal-body">
+
+                                <div class="text-center" id="ContenidoCambio"></div>
+               
+                                    <div class="row">
+                                        <div class="col-md-6 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                @Html.DropDownList("ddlDelitoPrincipalModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoPrincipalModal", @class = "form-control select2", style = "width: 100%;" })
+                                                <label class="Labels">Delito Principal:</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-12 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                @Html.DropDownList("ddlDelitoSecundarioModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoSecundarioModal", @class = "form-control select2", style = "width: 100%;" ,  multiple = "multiple"})
+                                                <label class="Labels">Delito Secundario:</label>
+                                            </div>
+                                        </div>
+                       
+                                   </div>
+
+                 
+                            </div>
+                            <div class="modal-footer" style="justify-content:center;">
+             
+                               <button tabindex="14" type="button" id="btnAddDelitos" onclick="P_InsDelitosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                 @* Modal para insertar información adicional  *@
+
+                 <div class="modal fade" id="Modal_InsInfoAdicional" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+                   <div class="modal-dialog" style="max-width: 900px;" >
+
+                        <div class="modal-content">
+                            <div class="modal-header d-flex align-items-center">
+                                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Información Adicional</h3>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+
+                            <div class="modal-body">
+
+                                <div class="text-center" id="ContenidoCambio"></div>
+               
+                                    <div class="row">
+                                     
+                                   
+                                        <div class="col-md-12 MargFloatBoos">
+                                            <div class="form-group has-float-label">
+                                                <textarea tabindex="12" id="txtInfoAdicionalModal" name="txtInfoAdicionalModal" 
+                                                          placeholder="Digite Información Adicional"
+                                                          class="form-control InputPading" rows="6" 
+                                                          style="resize: vertical; min-height: 150px;"></textarea>
+                                                <label class="Labels">Descripción:</label>
+                                            </div>
+                                        </div>
+                       
+                                   </div>
+
+                 
+                            </div>
+                            <div class="modal-footer" style="justify-content:center;">
+             
+                               <button tabindex="14" type="button" id="btnAddInfoAdicional" onclick="P_InsInfoAdicionalModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+           @*  <div class="modal-footer" style="justify-content:center;">
+              <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
+            </div> *@
+        </div>
+    </div>
+</div>
+
+<!-- INICIO DE MODAL DETALLE IRIS-->
 
 
 <div class="modal fade show" id="Modal_ActualizarEstado" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
@@ -680,8 +1193,6 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
 </div>
 
 
-
-
 <!-- Modal Estado Proceso-->
 <div id="Process">
     <div class="loader_sis">
@@ -695,18 +1206,18 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
     <div class="loader_backe"></div>
 </div>
 
-<div class="modal fade" id="Modal_Caracteristicas" aria-labelledby="bs-example-modal-lg" aria-hidden="true"> 
+<div class="modal fade" id="Modal_VisualizarTexto" aria-labelledby="bs-example-modal-lg" aria-hidden="true"> 
     <div class="modal-dialog modal-l" role="document">
         <div class="modal-content">
             <div class="modal-header d-flex align-items-center">
-                <h3 class="modal-title" id="myLargeModalLabel2">Caracteristicas Generales</h3>
+                <h3 class="modal-title" id="myLargeModalLabel2">Descripción</h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" width="100%" height="2000px">
                         <div class="row">
                             <div class="col-md-12 MargFloatBoos">
                                 <div class="form-group has-float-label d-flex align-items-center">
-                                  <textarea style="height: 95px !important; text-align:justify; margin-bottom: 0px;" name="txtCaracteristicasGenerales" type="text" id="txtCaracteristicasGenerales" value="" autocomplete="off" class="form-control InputPading" readonly></textarea>
+                                  <textarea style="height: 95px !important; text-align:justify; margin-bottom: 0px;" name="txtDescripcion" type="text" id="txtDescripcion" value="" autocomplete="off" class="form-control InputPading" readonly></textarea>
                                 
                               </div>
                             </div>
@@ -716,7 +1227,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
     </div>
 </div>
 
-      <!-- /.modal-actualizar IRISP1 -->
+   <!-- /.modal-actualizar IRISP1 -->
 
 <div class="modal fade show" id="Modal_ActualizarIrisp1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
     <div class="modal-dialog">
@@ -751,3 +1262,6 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
         </div>
     </div>
 </div>
+
+
+

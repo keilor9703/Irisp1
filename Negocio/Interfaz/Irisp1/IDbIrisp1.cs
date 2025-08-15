@@ -13,11 +13,15 @@ namespace Negocio.Interfaz.Irisp1
         public Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1();
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetEstadosIrisP1();
-        public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora); // NUEVO MÉTODO
+        public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2); // NUEVO MÉTODO
 
         public Task<DtoResultado<long>> F_ConsultarSeqIris();
         public Task<DtoResultado<long>> F_ConsultarSeqIntegrante();
-        Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoInfoAdicional>>> F_GetInfoAdicional(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoCriminalidadFoto>>> F_GetCriminalidadFotos(string V_CriminalidadId);
 
         #endregion
 
@@ -29,6 +33,8 @@ namespace Negocio.Interfaz.Irisp1
       
 
         public Task<DtoResultado<string>> P_InsRegistroIrisP1(DtoIrispCriminalidad Obj_NuevoIrisP1, string usuario, string maquina);
+        public Task<DtoResultado<string>> P_InsDelitosIris(DtoIrispCriminalidad Obj_DelitosIris, string usuario, string maquina);
+        public Task<DtoResultado<string>> P_InsInfoAdicionalIris(DtoInfoAdicional Obj_InfoAdicional, string usuario, string maquina);
 
 
         #endregion

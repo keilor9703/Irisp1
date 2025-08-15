@@ -53,5 +53,9 @@ namespace Comun.Areas.Admin
 
         [JsonPropertyName("UndeLaborando")]
         public int UNDELABORANDO { get; set; }
+
+
+        [JsonPropertyName("Estacion")]
+        public string ESTACION { get; set; }
     }
 }
