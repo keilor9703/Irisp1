@@ -32,6 +32,10 @@
             var UrlGetFotosIris= "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlInsDelitos= "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlInsInfoAdicional= "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlUpdCriminalidad= "@Url.Action("P_UpdCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlUpdEstadoCriminalidad= "@Url.Action("P_UpdEstadoCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlUpdExistenciaCriminalidad= "@Url.Action("P_UpdExistenciaCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelIris= "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
              
 
 
@@ -85,96 +89,77 @@
   FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 *@
 
-<input type="text" id="txtUndeLabora" class="d-none" value="@ViewBag.txtUndeLabora" />
-<input type="text" id="txtCodDane" class="d-none" value="@ViewBag.txtCodDane" />
-<input type="text" id="txtCodSiedcoEstacion" class="d-none" value="@ViewBag.txtCodSiedcoEstacion" />
-<input type="text" id="txtCodSiedcoCuadrante" class="d-none" value="@ViewBag.txtCodSiedcoCuadrante" />
-<input type="text" id="txtCodEstacion" class="d-none" value="@ViewBag.txtCodEstacion" />
-<input type="text" id="txtCodIdCuadrante" class="d-none" value="@ViewBag.txtCodIdCuadrante" />
-<input type="text" id="txtSiglaUnidad" class="d-none" value="@ViewBag.txtSiglaUnidad" />
+        <input type="text" id="txtUndeLabora" class="d-none" value="@ViewBag.txtUndeLabora" />
+        <input type="text" id="txtCodDane" class="d-none" value="@ViewBag.txtCodDane" />
+        <input type="text" id="txtCodSiedcoEstacion" class="d-none" value="@ViewBag.txtCodSiedcoEstacion" />
+        <input type="text" id="txtCodSiedcoCuadrante" class="d-none" value="@ViewBag.txtCodSiedcoCuadrante" />
+        <input type="text" id="txtCodEstacion" class="d-none" value="@ViewBag.txtCodEstacion" />
+        <input type="text" id="txtCodIdCuadrante" class="d-none" value="@ViewBag.txtCodIdCuadrante" />
+        <input type="text" id="txtSiglaUnidad" class="d-none" value="@ViewBag.txtSiglaUnidad" />
 
-@*
-GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-<div class="card border-success hidden" id="pn_GrillaVerificacion">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>   Etapa de Verificación</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                <i data-feather="x" class="feather-sm"></i>
-            </a>
-        </div>
-    </div>
-    <div class="card-body collapse show">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                    <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
-                </div>
+        @* GRILLA ETAPA DE VERIFICACION *@
+        <div class="card border-success hidden" id="pn_GrillaVerificacion">
+          <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Etapa de Verificación</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+              <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+              <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+              <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
             </div>
+          </div>
+          <div class="card-body collapse show">
+            <div class="row">
+              <div class="col-md-12">
+                <!-- Evitamos table-responsive para no interferir con scrollX -->
+                <div class="dt-container" style="width:100%; margin-top:0;">
+                  <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-    </div>
-</div>
 
-@*
-FIN GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-@*
-GRILLA ETAPA DE INVESTIGACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-<div class="card border-success hidden" id="pn_GrillaInvestigacion">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>   Etapa de Investigación</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                <i data-feather="x" class="feather-sm"></i>
-            </a>
-        </div>
-    </div>
-    <div class="card-body collapse show">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                    <table id="tbGrillaInvestigacion" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
-                </div>
+        @* GRILLA ETAPA DE INVESTIGACION *@
+        <div class="card border-success hidden" id="pn_GrillaInvestigacion">
+          <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Etapa de Investigación</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+              <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+              <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+              <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
             </div>
+          </div>
+          <div class="card-body collapse show">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="dt-container" style="width:100%; margin-top:0;">
+                  <table id="tbGrillaInvestigacion" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-    </div>
-</div>
 
-@*
-FIN GRILLA ETAPA DE INVESTIGACION  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-@*
-GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-<div class="card border-success hidden" id="pn_GrillaFinalizacion">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="	fas fa-clipboard-list"></i>   Etapa de Finalización</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla3(); return false;">
-                <i class="ti-minus"></i>
-            </a>
-            <i class="mdi mdi-arrow-expand"></i>  </a>
-        </div>
-    </div>
-    <div  class="card-body collapse show">
-        <div class="row">
-            <div class="col-md-40">
-                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                    <table id="tbGrillaFinalizacion" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
-                </div>
+        @* GRILLA ETAPA DE FINALIZACION *@
+        <div class="card border-success hidden" id="pn_GrillaFinalizacion">
+          <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Etapa de Finalización</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+              <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+              <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+              <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
             </div>
+          </div>
+          <div class="card-body collapse show">
+            <div class="row">
+              <div class="col-md-12"> <!-- corregido (antes col-md-40) -->
+                <div class="dt-container" style="width:100%; margin-top:0;">
+                  <table id="tbGrillaFinalizacion" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-    </div>
-</div>
-@* 
-FIN GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
 
 
 <!-- INICIO DE MODAL REGISTRO IRIS-->
@@ -745,17 +730,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 </div>
 
 
-                 <style>
-                     /* Selector más específico para sobrescribir el degradado verde */
-                        table#tbGrillaRelacionIrisP1.dataTable thead tr th {
-                            background: white !important;
-                            color: black !important;
-                            text-align: center;
-                            font-weight: bold;
-                            border: 1px solid #ddd !important;
-}
-                        </style>
-
+               
 
 
                   <div class="card border-success hidden" id="pn_GrillaIntegrantesIrisP1">
@@ -791,16 +766,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 </div>
 
 
-                        <style>
-                     /* Selector más específico para sobrescribir el degradado verde */
-                        table#tbGrillaIntegrantesIrisP1.dataTable thead tr th {
-                            background: white !important;
-                            color: black !important;
-                            text-align: center;
-                            font-weight: bold;
-                            border: 1px solid #ddd !important;
-}
-                        </style>
+                   
 
 
                  <div class="card border-success hidden" id="pn_GrillaUbicacionIrisP1">
@@ -826,16 +792,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 </div>
 
 
-                    <style>
-                     /* Selector más específico para sobrescribir el degradado verde */
-                        table#tbGrillaUbicacionIrisP1.dataTable thead tr th {
-                            background: white !important;
-                            color: black !important;
-                            text-align: center;
-                            font-weight: bold;
-                            border: 1px solid #ddd !important;
-}
-                     </style>
+                   
 
 
                 <div class="card border-success hidden" id="pn_GrillaDelitosIrisP1">
@@ -870,17 +827,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                     </div>
                 </div>
 
-                       <style>
-                     /* Selector más específico para sobrescribir el degradado verde */
-                            table#tbGrillaDelitosIrisP1.dataTable thead tr th {
-                                background: white !important;
-                                color: black !important;
-                                text-align: center;
-                                font-weight: bold;
-                                border: 1px solid #ddd !important;
-                                }
-                        </style>
-
+                 
 
 
                  <div class="card border-success hidden" id="pn_GrillaInfoAdicionalIrisP1">
@@ -916,44 +863,28 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 </div>
 
 
-                   <style>
-                     /* Selector más específico para sobrescribir el degradado verde */
-                            table#tbGrillaInforAdicionalIrisP1.dataTable thead tr th {
-                                background: white !important;
-                                color: black !important;
-                                text-align: center;
-                                font-weight: bold;
-                                border: 1px solid #ddd !important;
-                                }
-                        </style>
+                 
 
+                 @* Insertar documentos *@
 
-               @*   <div class="card border-success hidden" id="pn_GrillaResponsableIrisP1">
+                <div class="card border-success hidden" id="pn_GrillaDocumentosIrisP1">
                     <div class="card-header d-flex align-items-center">
-                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Responsable del IRISP1</h4>
+                        <h4 class="card-title text-white">
+                            <i class="fas fa-clipboard-list"></i> Documentos
+                        </h4>
                         <div class="card-actions ms-auto d-flex button-group">
-                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                                <i data-feather="x" class="feather-sm"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="card-body collapse show">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                                    <table id="tbGrillaResponsableIrisP1" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> *@
+            
+                            <!-- Botón para cargar documento -->
+                            <button type="button" 
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center" 
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="document.getElementById('fileUploadDocumento').click();">
+                                <i class="fas fa-upload"></i> Cargar
+                            </button>
+                            <input type="file" id="fileUploadDocumento" 
+                                   class="d-none" 
+                                   onchange="subirDocumentoSeleccionado(this)" />
 
-                  <div class="card border-success hidden" id="pn_GrillaDocumentosIrisP1">
-                    <div class="card-header d-flex align-items-center">
-                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Documentos</h4>
-                        <div class="card-actions ms-auto d-flex button-group">
                             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
                             <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
                             <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
@@ -971,6 +902,7 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                         </div>
                     </div>
                 </div>
+
 
                  <div class="card border-success hidden" id="pn_GrillaFotografiasIrisP1">
                         <div class="card-header d-flex align-items-center">
@@ -1104,8 +1036,6 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                 </div>
 
 
-
-
                  @* Modal para insertar información adicional  *@
 
                  <div class="modal fade" id="Modal_InsInfoAdicional" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
@@ -1147,6 +1077,8 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
                     </div>
                 </div>
 
+               
+
             </div>
            @*  <div class="modal-footer" style="justify-content:center;">
               <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
@@ -1156,41 +1088,6 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
 </div>
 
 <!-- INICIO DE MODAL DETALLE IRIS-->
-
-
-<div class="modal fade show" id="Modal_ActualizarEstado" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
-    <div class="modal-dialog">
-        <div class="modal-content CuadroModal">
-            <div class="modal-header d-flex align-items-center">
-                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Estado  </h3>
-                <h2 class="text-center" id="TituloMensaje"></h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center" id="ContenidoCambio"></div>
-                <fieldset>
-                    <legend class="custom-legend" !important;"></legend>
-
-                    <div class="row">
-                            <div class="col-md-12 MargFloatBoos">    
-                                 <div class="form-group has-float-label">
-                                     @Html.DropDownList("ddlEstadosIrisP1", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlEstadosIrisP1", @class = "form-control select2", style = "width: 100%;" })
-                                     <label class="Labels">Estado IRISP1</label>
-                                </div>
-
-
-
-                            </div>
-                   </div>
-
-                   </fieldset>
-            </div>
-            <div class="modal-footer" style="justify-content:center;">
-              <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 
 <!-- Modal Estado Proceso-->
@@ -1227,41 +1124,194 @@ FIN GRILLA ETAPA DE FINALIZACION -----------------------------------------------
     </div>
 </div>
 
-   <!-- /.modal-actualizar IRISP1 -->
+<div class="modal fade" id="Modal_UpdRegistroIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+        <div class="modal-dialog" style="max-width: 900px;" >
 
-<div class="modal fade show" id="Modal_ActualizarIrisp1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="scroll-long-outer-modal" aria-modal="true" role="dialog">
-    <div class="modal-dialog">
-        <div class="modal-content CuadroModal">
+            <div class="modal-content">
+                <div class="modal-header d-flex align-items-center">
+                    <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Iris-P1</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="text-center" id="ContenidoCambio"></div>
+               
+                        <div class="row">
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlClaseModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 5, id = "ddlClaseModal", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Clase:</label>
+                                </div>
+                            </div>
+
+                            @* para clase = Trafico de estupefancientes *@
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtNombreTraficoModal" name="txtNombreTraficoModal" type="text" value="" autocomplete="off" placeholder="Nombre, si aplica" class="form-control InputPading">
+                                    <label class="Labels">Nombre</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 MargFloatBoos hidden">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlModExpendioModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 6, id = "ddlModExpendioModal", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Modalidad Expendio:</label>
+                                </div>
+                            </div>
+
+                                @* para clase = Estructura*@
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtNombreEstructuraModal" name="txtNombreEstructuraModal" type="text" value="" autocomplete="off" placeholder="digite el nombre de la estructura" class="form-control InputPading">
+                                    <label class="Labels">Nombre Estructura:</label>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtCantidadEstructuraModal" name="txtCantidadEstructuraModal" type="text" value="" autocomplete="off" placeholder="Digite la cantidad" class="form-control InputPading">
+                                    <label class="Labels">Cantidad:</label>
+                                </div>
+                            </div>
+
+
+                                @* para clase = Instalación Fija*@
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtNombreInstalacionModal" name="txtNombreInstalacionModal" type="text" value="" autocomplete="off" placeholder="Razón social de la instalación, si aplica" class="form-control InputPading">
+                                    <label class="Labels">Nombre Instalación:</label>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtCantidadInstalacionModal" name="txtCantidadInstalacionModal" type="text" value="" autocomplete="off" placeholder="Digite la cantidad" class="form-control InputPading">
+                                    <label class="Labels">Cantidad:</label>
+                                </div>
+                            </div>
+                        
+                        
+                                @* para clase = Persona*@
+                       
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtCantidadPersonasModal" name="txtCantidadPersonasModal" type="text" value="" autocomplete="off" placeholder="Digite la cantidad de personas" class="form-control InputPading">
+                                    <label class="Labels">Cantidad:</label>
+                                </div>
+                            </div>
+
+                        
+                                @* para clase = Narcotrafico*@
+                            <div class="col-md-3 hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="2" id="txtNombreNarcotraficoModal" name="txtNombreNarcotraficoModal" type="text" value="" autocomplete="off" placeholder="Digite el nombre" class="form-control InputPading">
+                                    <label class="Labels">Nombre: </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 MargFloatBoos hidden">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlClasiNarcotraficoModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlClasiNarcotraficoModal", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Clasificación Narcotráfico:</label>
+                                </div>
+                            </div>
+
+                              <div class="col-md-2 MargFloatBoos">
+                                  <div class="form-group has-float-label">
+                                      @Html.DropDownList("ddlFuenteModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlFuenteModal", @class = "form-control select2", style = "width: 100%;" })
+                                      <label class="Labels">Fuente:</label>
+                                  </div>
+                              </div>
+
+                        </div>
+
+                        <div class="row">
+                              <div class="col-md-12 MargFloatBoos">
+                                  <div class="form-group has-float-label">
+                                      <textarea tabindex="400" class="form-control" placeholder="Digite una descripción corta y diciente las caracteristicas de las personas o inmuebles y la forma como delinquen (Max 2000 caracteres) " rows="5" id="txtCaractGeneralesModal" name="txtCaractGeneralesModal" maxlength="4000" cols="40" style="height: 50px !important; text-align:justify; margin-bottom: 0px;"></textarea>
+                                      <label class="Labels">Descripcion General:</label>
+                                  </div>
+                              </div>
+
+                        </div>
+
+                        <input type="text" id="txtCriminalidadIdUpd" class="d-none" value="@ViewBag.txtCriminalidadIdUpd" />
+
+
+                 
+                </div>
+                <div class="modal-footer" style="justify-content:center;">
+             
+                    <button tabindex="14" type="button" id="btnUpdRegistroIris" onclick="actualizarCriminalidad(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade" id="Modal_UpdEstadoRegistroIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+   @*  <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;"> <!-- ancho reducido --> *@
+         <div class="modal-dialog" style="max-width: 500px;"> <!-- ancho reducido -->
+        <div class="modal-content">
             <div class="modal-header d-flex align-items-center">
-                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Estado  </h3>
-                <h2 class="text-center" id="TituloMensaje"></h2>
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Iris-P1</h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
-                <div class="text-center" id="ContenidoCambio"></div>
-                <fieldset>
-                    <legend class="custom-legend" !important;"></legend>
-
-                    <div class="row">
-                            <div class="col-md-12 MargFloatBoos">    
-                                 <div class="form-group has-float-label">
-                                     @Html.DropDownList("ddlEstadosIrisP1", new List<SelectListItem> { new SelectListItem { Text = "Seleccione", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlEstadosIrisP1", @class = "form-control select2", style = "width: 100%;" })
-                                     <label class="Labels">Estado IRISP1</label>
-                                </div>
-
-
-
-                            </div>
-                   </div>
-
-                   </fieldset>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlEstadosIrisP1", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlEstadosIrisP1", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Delito Principal:</label>
+                        </div>
+                    </div>
+                </div>
+                <input type="text" id="txtCriminalidadIdUpd" class="d-none" value="@ViewBag.txtCriminalidadIdUpd" />
             </div>
+
             <div class="modal-footer" style="justify-content:center;">
-              <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
+                <button tabindex="14" type="button" id="btnUpdEstadoIris" onclick="actualizarEstadoCriminalidad(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                    <span class="fa ico_grabar faa-wrench animated"></span>Actualizar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 
+
+<div class="modal fade" id="Modal_UpdExistenciaRegistroIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+   @*  <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;"> <!-- ancho reducido --> *@
+         <div class="modal-dialog" style="max-width: 500px;"> <!-- ancho reducido -->
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Iris-P1</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlExistenciaIrisP1", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlExistenciaIrisP1", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Delito Principal:</label>
+                        </div>
+                    </div>
+                </div>
+                <input type="text" id="txtCriminalidadIdUpd" class="d-none" value="@ViewBag.txtCriminalidadIdUpd" />
+            </div>
+
+            <div class="modal-footer" style="justify-content:center;">
+                <button tabindex="14" type="button" id="btnUpdExistenciaIris" onclick="actualizarExistenciaCriminalidad(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                    <span class="fa ico_grabar faa-wrench animated"></span>Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 

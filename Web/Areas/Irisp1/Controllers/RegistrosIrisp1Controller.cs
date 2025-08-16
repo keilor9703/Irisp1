@@ -1,4 +1,5 @@
-﻿using Comun.Areas.Integrantes;
+﻿using Comun.Areas.AplicacionDTO;
+using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
 using Gepad.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -59,6 +60,7 @@ namespace Web.Areas.Irisp1.Controllers
             ViewBag.ddlClasiNarcotrafico = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlActividad = new SelectList((await _IDbDominios.F_GetDominiosIris(127)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlFuente = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlFuenteModal = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlEntono = new SelectList((await _IDbDominios.F_GetDominiosIris(155)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlZona = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
@@ -66,8 +68,16 @@ namespace Web.Areas.Irisp1.Controllers
             ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlDelitoSecundarioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlTipoServicio = new SelectList((await _IDbDominios.F_GetDominiosIris(9)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlExistenciaIrisP1 = new SelectList((await _IDbDominios.F_GetDominiosIris(63)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlEstadosIrisP1 = new SelectList((await _IDbDominios.F_GetDominiosIris(1)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlEspecialidad = new SelectList((await _IDbDominios.F_GetDominiosIris(160)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlCuadrante = new SelectList(Enumerable.Empty<SelectListItem>());
+
+            ViewBag.ddlClaseModal = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+
+            ViewBag.ddlModExpendioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+
+            ViewBag.ddlClasiNarcotraficoModal = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
 
 
             return View();
@@ -362,6 +372,69 @@ namespace Web.Areas.Irisp1.Controllers
 
 
         [HttpPost]
+        public async Task<IActionResult> GuardarDocumentoConRegistro(IFormFile file, string idCriminalidad)
+        {
+           
+            var usuario = User.FindFirstValue("Identificacion");
+            var maquina = HttpContext.Session.GetString("IpMaquina");
+
+            if (file == null || file.Length == 0)
+                return Json(new { exito = false, mensaje = "Archivo inválido" });
+
+            try
+            {
+                // 1. Guardar archivo en red
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                var nombreArchivoOriginal = Path.GetFileNameWithoutExtension(file.FileName);
+                var nuevoNombre = $"{nombreArchivoOriginal}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+                var rutaRed = @"\\srvfilesponal3\OFITE\AITEC\GRUDE\TE KEHILOR MARTINEZ\Documentos Iris";
+                var rutaArchivoCompleta = Path.Combine(rutaRed, nuevoNombre);
+
+                using (var stream = new FileStream(rutaArchivoCompleta, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // 2. Guardar registro en BD
+                using (var conexion = new OracleConnection(_strConexionIris_Test))
+                using (var command = new OracleCommand("PK_REGISTRO_IRIS.P_InsCriminalidadDocumentos", conexion))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = idCriminalidad;
+                    command.Parameters.Add("P_NOMBRE", OracleDbType.NVarchar2).Value = nombreArchivoOriginal;
+                    command.Parameters.Add("P_URL", OracleDbType.NVarchar2).Value = rutaArchivoCompleta;
+                 
+                   
+                    command.Parameters.Add("P_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
+                    command.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.NVarchar2).Value = maquina;
+                   
+
+                    command.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                    command.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+
+                    await conexion.OpenAsync();
+                    await command.ExecuteNonQueryAsync();
+
+                    var resultado = Convert.ToInt32(((Oracle.ManagedDataAccess.Types.OracleDecimal)command.Parameters["P_RESULTADO"].Value).ToInt32());
+                    var mensaje = command.Parameters["SRV_Message"].Value.ToString();
+
+                    if (resultado == 1)
+                        return Json(new { success = true, message = "Documento guardado correctamente" });
+
+                    else
+                        return Json(new { exito = false, mensaje = $"Error al insertar en BD: {mensaje}" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { exito = false, mensaje = $"Error al guardar documento: {ex.Message}" });
+            }
+        }
+
+
+
+        [HttpPost]
         public async Task<IActionResult> P_InsIntegrantes(DtoIntegrantes Obj_Integrante)
         {
 
@@ -471,7 +544,101 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
-     
+
+        [HttpPost]
+        public async Task<IActionResult> P_UpdCriminalidad(DtoIrispCriminalidad data)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_UpdCriminalidad(
+                    data,
+                    User.FindFirstValue("Identificacion"),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_UpdEstadoCriminalidad(DtoIrispCriminalidad data)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_UpdEstadoCriminalidad(
+                    data,
+                    User.FindFirstValue("Identificacion"),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_UpdExistenciaCriminalidad(DtoIrispCriminalidad data)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_UpdExistenciaCriminalidad(
+                    data,
+                    User.FindFirstValue("Identificacion"),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_DellIris(string CriminalidadId)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_DellIris(
+                    CriminalidadId,
+                    User.FindFirstValue("Identificacion"),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
 
         #endregion
 

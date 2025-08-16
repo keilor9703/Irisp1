@@ -1192,3 +1192,26 @@ legend {
         color: white !important;
         margin-right: 6px !important;
     }
+
+
+#tbGrilla th,
+#tbGrilla td,
+#tbGrillaInvestigacion th,
+#tbGrillaInvestigacion td,
+#tbGrillaFinalizacion th,
+#tbGrillaFinalizacion td {
+    white-space: nowrap; /* Evita que el texto se corte en varias líneas */
+}
+
+.no-wrap {
+    white-space: nowrap;
+}
+
+
+.no-wrap {
+    white-space: nowrap !important;
+}
+
+table.dataTable {
+    width: 100% !important;
+}

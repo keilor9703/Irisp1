@@ -1,4 +1,5 @@
 ﻿using Comun.Areas.Admin;
+using Comun.Areas.AplicacionDTO;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
 using Comun.General;
@@ -35,6 +36,10 @@ namespace Negocio.Interfaz.Irisp1
         public Task<DtoResultado<string>> P_InsRegistroIrisP1(DtoIrispCriminalidad Obj_NuevoIrisP1, string usuario, string maquina);
         public Task<DtoResultado<string>> P_InsDelitosIris(DtoIrispCriminalidad Obj_DelitosIris, string usuario, string maquina);
         public Task<DtoResultado<string>> P_InsInfoAdicionalIris(DtoInfoAdicional Obj_InfoAdicional, string usuario, string maquina);
+        public Task<DtoResultado<string>> P_UpdCriminalidad(DtoIrispCriminalidad data, string usuario, string maquina);
+        public Task<DtoResultado<string>> P_UpdEstadoCriminalidad(DtoIrispCriminalidad data, string usuario, string maquina);
+        public Task<DtoResultado<string>> P_UpdExistenciaCriminalidad(DtoIrispCriminalidad data, string usuario, string maquina);
+        public Task<DtoResultado<string>> P_DellIris(string CriminalidadId, string usuario, string maquina);
 
 
         #endregion
