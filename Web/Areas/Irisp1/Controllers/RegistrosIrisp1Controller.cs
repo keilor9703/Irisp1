@@ -240,7 +240,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
-            [HttpGet]
+        [HttpGet]
         public async Task<IActionResult> F_GetDocIris(string V_CriminalidadId)
         {
             var resultado = await _iDbIrisp1.F_GetDocIris(V_CriminalidadId);
@@ -255,8 +255,6 @@ namespace Web.Areas.Irisp1.Controllers
 
             }
         }
-
-
 
 
         [HttpGet]
@@ -278,6 +276,25 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetUbicacionIris(string V_CriminalidadId)
+        {
+           
+            var resultado = await _iDbIrisp1.F_GetUbicacionIris(V_CriminalidadId);
+
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = new List<DtoUbicacionIris>(), message = resultado.Mensaje });
+            }
+
+
+        }
 
 
 
@@ -616,6 +633,44 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
+
+        [HttpPost]
+        public async Task<IActionResult> P_InsUbicacionIris(DtoUbicacionIris Obj_Ubicacion)
+        {
+
+
+            Obj_Ubicacion.IdCriminalidad = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Ubicacion.CriminalidadId));
+
+            try
+            {
+                var resultado = await _iDbIrisp1.P_InsUbicacionIris(
+                    Obj_Ubicacion,
+                    User.FindFirstValue("Identificacion"),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+
+
+        #endregion
+
+
+
+        #region Métodos de Eliminación
+
+
         [HttpPost]
         public async Task<IActionResult> P_DellIris(string CriminalidadId)
         {
@@ -640,8 +695,113 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
-        #endregion
+        [HttpPost]
+        public async Task<IActionResult> P_DelIntegranteIris(string IntegranteId)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_DelIntegranteIris(IntegranteId, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina")
+                );
 
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_DelDelitosIris(string DelitoId)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_DelDelitosIris(DelitoId, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_DelDelInfoAdicionalIris(string InfoId)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_DelDelInfoAdicionalIris(InfoId, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_DelUbicacionIris(string UbicacionId)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_DelUbicacionIris(UbicacionId, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_DelDocumentoIris(string DocumentoId)
+        {
+            try
+            {
+                var resultado = await _iDbIrisp1.P_DelDocumentoIris(DocumentoId, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
+
+
+
+        #endregion
 
 
     }

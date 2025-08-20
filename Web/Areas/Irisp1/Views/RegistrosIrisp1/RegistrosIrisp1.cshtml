@@ -30,12 +30,19 @@
             var UrlGetInfoAdicional= "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetDocIris= "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetFotosIris= "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetUbicacion= "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlInsDelitos= "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlInsUbicacion= "@Url.Action("P_InsUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlInsInfoAdicional= "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlUpdCriminalidad= "@Url.Action("P_UpdCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlUpdEstadoCriminalidad= "@Url.Action("P_UpdEstadoCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlUpdExistenciaCriminalidad= "@Url.Action("P_UpdExistenciaCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlDelIris= "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelIntegrante= "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelDelitos= "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelInfoAdicionalIris= "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelUbiacionIris= "@Url.Action("P_DelDelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelDocumentoIris= "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
              
 
 
@@ -590,10 +597,10 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4 MargFloatBoos">
-                             <button tabindex="7603" type="button" id="btnMapa" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar en el Mapa</button>
-                        </div>
-                        </div class="row">
+                            <div class="col-md-4 MargFloatBoos">
+                                 <button tabindex="7603" type="button" id="btnMapa" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Guardar Formulario"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar en el Mapa</button>
+                            </div>
+                    </div class="row">
                 </fieldset>
 
                 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
@@ -620,9 +627,7 @@
                 @*FIN UBICACION--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
 
 
-                @* <h4>Overflowing text to show scroll behavior</h4>
-                <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.</p>
-                <p>Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.</p> *@
+               
             </div>
             <div class="modal-footer">
                 <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
@@ -773,6 +778,17 @@
                     <div class="card-header d-flex align-items-center">
                         <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Ubicación</h4>
                         <div class="card-actions ms-auto d-flex button-group">
+
+                               <!-- Botón Nuevo -->
+                            <button type="button" 
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center" 
+                                    id="btnNuevaUbicacion" 
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="OpenInsUbicacionModal();">
+                              <i class="fas fa-plus"></i> Nuevo
+                            </button>
+
+
                             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
                             <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
                             <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
@@ -1076,6 +1092,39 @@
                         </div>
                     </div>
                 </div>
+
+
+                @* Modal para insertar Ubicación  *@
+
+                <div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="mapModalLabel">Mapa de Ubicación</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="col-12 mb-2">
+                                    <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
+                                </div>
+
+                                <!-- Aquí irá el mapa -->
+                                <div id="mapaDiv2" style="width: 100%; height: 600px;"></div>
+                            </div>
+                            <div class="modal-footer d-flex justify-content-end">
+                                <button tabindex="1001"
+                                        type="button"
+                                        id="btnGrabarUbicacion"
+                                        onclick="P_InsUbicacionModal(); return false;"
+                                        class="btn btn-grad"
+                                        style="border-radius: 0px 16px 0px 16px !important;">
+                                    <span class="fa ico_grabar faa-wrench animated"></span> Guardar Ubicación
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
                
 

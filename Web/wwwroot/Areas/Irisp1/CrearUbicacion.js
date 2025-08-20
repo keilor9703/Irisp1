@@ -1,4 +1,6 @@
-﻿require([
+﻿var map; // 
+
+require([
     "esri/map",
     "esri/geometry/Point",
     "esri/symbols/SimpleMarkerSymbol",
@@ -24,6 +26,15 @@
         zoom: 0,
         basemap: "osm" // OpenStreetMap
     });
+
+
+
+    var map = new Map("mapaDiv2", {
+        center: [-74.0721, 4.7110], // Bogotá
+        zoom: 0,
+        basemap: "osm" // OpenStreetMap
+    });
+
 
     // Capa de municipios
     var mpioLayer = new FeatureLayer("https://services3.arcgis.com/8cBoM4o6pnuUb1z1/ArcGIS/rest/services/SIDENCO_SinMalla/FeatureServer/3", {

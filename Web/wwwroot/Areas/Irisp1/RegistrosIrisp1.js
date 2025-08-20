@@ -668,6 +668,8 @@ $(function () {
     });
 });
 
+
+
 function InsIntegrantes() {
 
     $.ajax({
@@ -1306,7 +1308,8 @@ function F_GetDetalleIris(Datos) {
                 F_GetRelacionIris();
                 F_GetIntegrantesIris(registro.CriminalidadId);
                 //F_GetUbicacionIris(registro.CriminalidadId);
-                GetGrillaUbicacionIris([registro]);
+                //GetGrillaUbicacionIris([registro]);
+                F_GetUbicacionIris(registro.CriminalidadId);
 
                 F_GetDelitosIris(registro.CriminalidadId); F_GetInfoAdiconalIris(registro.CriminalidadId);
                 F_GetResponsableIris();
@@ -1406,7 +1409,7 @@ function F_GetIntegrantesIris(CriminalidadId) {
                 GetGrillaIntegrantesIris(response.data);
             } else {
                 GetGrillaIntegrantesIris([]);
-                Swal.fire('Error', response.message, 'error');
+               // Swal.fire('Error', response.message, 'error');
             }
         },
         error: function () {
@@ -1432,7 +1435,12 @@ function GetGrillaIntegrantesIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;">
+                                        <a style="color: #102717; cursor:pointer;" onclick="P_DelIntegranteIris('${row.INTEGRANTE_ID}')">
+                                        <i class="fa fa-trash red"></i>&nbsp;Eliminar
+                                        </a>
+                                    </li>`;
+
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
@@ -1461,6 +1469,81 @@ function GetGrillaIntegrantesIris(Datos) {
         info: false
     });
 }
+
+
+function P_InsUbicacionModal() {
+
+    const Obj_Ubicacion = {
+
+        CriminalidadId: $("#txtCriminalidadIdModal").val(),
+        Latitud: $("#LATITUD_CASO").val(),
+        Longitud: $("#LONGITUD_CASO").val(),
+        MunicipioUbica: $("#txtMunicipio").val(),
+        Barrio: $("#txtBarrio").val(),
+        CuadranteUbica: $("#txtCuadrante").val(),
+        RadioAccion: $("#txtRadioAccion").val(),
+        Direccion: $("#txtDireccion").val(),
+        CodigoDane: $("#txtCodDane").val(),
+        CodigoEstacion: $("#txtCodEstacion").val(),
+        CodigoSiedcoCuadrante: $("#txtCodSiedcoCuadrante").val(),
+      
+       
+    }
+
+
+    $.ajax({
+        url: UrlInsUbicacion,
+        type: 'POST',
+        data: Obj_Ubicacion,
+        success: function (resp) {
+            if (resp.success) {
+
+                F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                $('#myModal2').modal('hide');
+              
+            } else {
+
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: 'Error al insertar: ' + resp.message
+                });
+            }
+        },
+        error: function () {
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+        }
+    });
+
+}
+
+
+function F_GetUbicacionIris(CrininalidadId) {
+
+
+    $.ajax({
+        type: 'GET',
+        url: UrlGetUbicacion,
+        async: true,
+        data: { V_CriminalidadId: CrininalidadId },
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+
+                GetGrillaUbicacionIris(response.data);
+            } else {
+                GetGrillaUbicacionIris([]);
+               // Swal.fire('Error', response.message, 'error');
+            }
+        },
+        error: function () {
+            GetGrillaUbicacionIris([]);
+            Swal.fire('Error', 'No se pudo obtener la lista de ubicaciones.', 'error');
+        }
+    });
+}
+
+
 function GetGrillaUbicacionIris(Datos) {
     if ($.fn.dataTable.isDataTable("#tbGrillaUbicacionIrisP1")) {
         $("#tbGrillaUbicacionIrisP1").DataTable().destroy();
@@ -1478,7 +1561,7 @@ function GetGrillaUbicacionIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelUbicacionIris('${row.UbicacionId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
@@ -1487,7 +1570,7 @@ function GetGrillaUbicacionIris(Datos) {
             { "title": "Latitud", "data": "Latitud", "name": "Latitud", className: "celdaCenter celda4" },
             { "title": "Radio", "data": "RadioAccion", "name": "RadioAccion", className: "celdaCenter celda3" },
             { "title": "Municipio", "data": "MunicipioUbica", "name": "MunicipioUbica", className: "celdaCenter celda5" },
-            { "title": "Cuadrante", "data": "CuadranteUbica", "name": "CuadranteUbica", className: "celdaCenter celda6" },
+            { "title": "Cuadrante", "data": "Cuadrante", "name": "Cuadrante", className: "celdaCenter celda6" },
             { "title": "Dirección", "data": "Direccion", "name": "Direccion", className: "celdaCenter" }
         ],
        
@@ -1537,7 +1620,7 @@ function GetGrillaDelitosIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDelitosIris('${row.DelitoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
@@ -1595,7 +1678,7 @@ function GetGrillaInfoAdicionalIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDelInfoAdicionalIris('${row.InfoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
@@ -1712,7 +1795,7 @@ function GetGrillaDocumentosIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.DocumentoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
@@ -1811,6 +1894,21 @@ function OpenInsIntegrantesModal() {
     $('#Modal_InsIntegrantes').modal("show");
 }
 
+
+function OpenInsUbicacionModal() {
+    $('#myModal2').modal("show");
+
+    $('#myModal2').on('shown.bs.modal', function () {
+        if (typeof map !== "undefined") {
+            map.resize();
+            map.reposition();
+        }
+    });
+}
+
+
+
+
 function OpenInsDelitosModal() {
 
     $('#Modal_InsDelitos').modal("show");
@@ -1839,7 +1937,6 @@ modalIns.addEventListener('hidden.bs.modal', function () {
 
 
 var modalIns = document.getElementById('Modal_InsInfoAdicional');
-
 modalIns.addEventListener('hidden.bs.modal', function () {
     // Solo si queda alguna otra modal visible, mantener el bloqueo del scroll
     if (document.querySelectorAll('.modal.show').length > 0) {
@@ -1948,6 +2045,10 @@ function P_InsDelitosModal() {
     });
 
 }
+
+
+
+
 
 function P_InsInfoAdicionalModal() {
 
@@ -2234,3 +2335,203 @@ function DellIris(CriminalidadId) {
         }
     });
 }
+
+function P_DelIntegranteIris(IntegranteId) {
+    
+                $.ajax({
+                    type: 'POST',
+                    url: UrlDelIntegrante,
+                    async: true,
+                    dataType: 'json',
+                    data: { IntegranteId: IntegranteId },
+                    success: function (result) {
+                        if (result.success) {
+                            var ID = $("#txtCriminalidadIdModal").val();
+                            F_GetIntegrantesIris(ID);
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Señor(a) Funcionario(a:)',
+                            text: "No es posible grabar, revise"
+                        });
+                    }
+                });
+           
+}
+
+
+
+function P_DelDelitosIris(DelitoId) {
+
+   
+                $.ajax({
+                    type: 'POST',
+                    url: UrlDelDelitos,
+                    async: true,
+                    dataType: 'json',
+                    data: { DelitoId: DelitoId },
+                    success: function (result) {
+                        if (result.success) {
+
+                            F_GetDelitosIris($("#txtCriminalidadIdModal").val());
+                            Swal.fire({
+                                type: 'success',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+
+                        } else {
+                            Swal.fire({
+                                type: 'error',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+                        }
+                    },
+                    error: function (ex) {
+                        Swal.fire({
+                            type: 'error',
+                            title: 'Señor(a) Funcionario(a:)',
+                            text: "No es posible grabar, revise"
+                        });
+                    }
+                });
+         
+}
+
+function P_DelDelInfoAdicionalIris(InfoId) {
+
+   
+                $.ajax({
+                    type: 'POST',
+                    url: UrlDelInfoAdicionalIris,
+                    async: true,
+                    dataType: 'json',
+                    data: { InfoId: InfoId },
+                    success: function (result) {
+                        if (result.success) {
+
+                            F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
+                            Swal.fire({
+                                type: 'success',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+
+                        } else {
+                            Swal.fire({
+                                type: 'error',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+                        }
+                    },
+                    error: function (ex) {
+                        Swal.fire({
+                            type: 'error',
+                            title: 'Señor(a) Funcionario(a:)',
+                            text: "No es posible grabar, revise"
+                        });
+                    }
+                });
+  
+}
+
+
+function P_DelUbicacionIris(UbicacionId) {
+
+  
+
+                $.ajax({
+                    type: 'POST',
+                    url: UrlDelUbiacionIris,
+                    async: true,
+                    dataType: 'json',
+                    data: { UbicacionId: UbicacionId },
+                    success: function (result) {
+                        if (result.success) {
+
+                            F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                            Swal.fire({
+                                type: 'success',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+
+                        } else {
+                            Swal.fire({
+                                type: 'error',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+                        }
+                    },
+                    error: function (ex) {
+                        Swal.fire({
+                            type: 'error',
+                            title: 'Señor(a) Funcionario(a:)',
+                            text: "No es posible grabar, revise"
+                        });
+                    }
+                });
+     
+}
+
+
+
+function P_DelDocumentoIris(DocumentoId) {
+
+
+
+    $.ajax({
+        type: 'POST',
+        url: UrlDelDocumentoIris,
+        async: true,
+        dataType: 'json',
+        data: { DocumentoId: DocumentoId },
+        success: function (result) {
+            if (result.success) {
+
+                F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+                Swal.fire({
+                    type: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+
+            } else {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+            }
+        },
+        error: function (ex) {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "No es posible grabar, revise"
+            });
+        }
+    });
+
+}
+
+
+
+
