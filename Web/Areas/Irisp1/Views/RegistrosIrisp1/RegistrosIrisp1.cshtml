@@ -41,7 +41,7 @@
             var UrlDelIntegrante= "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlDelDelitos= "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlDelInfoAdicionalIris= "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelUbiacionIris= "@Url.Action("P_DelDelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlDelUbiacionIris= "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlDelDocumentoIris= "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
              
 
@@ -54,7 +54,7 @@
     <div class="breadcrumb-line">
         <ul class="breadcrumb">
             <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio  </span></a></li>
-            <li class="active">Intrumento de Recoleccion de Informacion del Servicio de Policia / Registros IRIS</li>
+            <li class="active">Intrumento de Recoleccion de Informacion del Servicio de Policia / Registros IRIS-P1</li>
         </ul>
     </div>
 </div>
@@ -661,7 +661,7 @@
                     <!-- Encabezado -->
                     <div class="row text-white p-2" style="background-color: #006837; border-radius: 5px;">
                         <div class="col-12">
-                            <strong id="txtTituloEstacion"></strong> - 
+                            <strong id="txtUnidadDetalle"></strong> - 
                             <span id="txtFechaCreacion"></span>
                         </div>
                     </div>
@@ -683,8 +683,8 @@
                         <!-- Columna 2: Funcionario que informa -->
                         <div class="col-md-4">
                             <h6 class="fw-bold">FUNCIONARIO QUE INFORMA:</h6>
-                          
-                            <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Visualizar</button>
+                           <p><strong></strong> 
+                           @*  <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Visualizar</button> *@
                             <p><strong>Funcionario:</strong> <span id="txtFuncionarioDetalle"></span></p>
                             <p><strong>Unidad:</strong> <span id="txtUnidadDetalle"></span></p>
                             <p><strong>Correo:</strong> <span id="txtCorreo"></span></p>
@@ -940,72 +940,76 @@
 
                 <!-- /.modal-Crear Integrante IRISP1 -->
 
-                <div class="modal fade" id="Modal_InsIntegrantes" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
-                   <div class="modal-dialog" style="max-width: 900px;" >
+                    <div class="modal fade" id="Modal_InsIntegrantes" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+                       <div class="modal-dialog" style="max-width: 900px;" >
 
-                        <div class="modal-content">
-                            <div class="modal-header d-flex align-items-center">
-                                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Nuevo Ingrante</h3>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
+                            <div class="modal-content">
+                                <div class="modal-header d-flex align-items-center">
+                                    <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Nuevo Ingrante</h3>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
 
 
-                            <div class="modal-body">
+                                <div class="modal-body">
 
-                                <div class="text-center" id="ContenidoCambio"></div>
+                                    <div class="text-center" id="ContenidoCambio"></div>
                
-                                    <div class="row">
-                                            <div class="col-md-2 MargFloatBoos">
-                                            <div class="form-group has-float-label">
-                                                <div class="input-group">
-                                                    <input tabindex="10" name="txtIdentificacionIntegModal" type="text" id="txtIdentificacionIntegModal" autocomplete="off" placeholder=" " class="form-control InputPading" >
-                                   
+                                       <div class="row">
+                                            <div class="col-md-3 MargFloatBoos">
+                                                <div class="form-group has-float-label">
+                                                    <input tabindex="10" name="txtIdentificacionIntegModal" type="text" id="txtIdentificacionIntegModal" autocomplete="off" placeholder=" " class="form-control InputPading">
+                                                    <label class="Labels">No. Identificación:</label>
                                                 </div>
-                                                <label class="Labels">No. Identificación:</label>
+                                            </div>
+
+                                            <div class="col-md-3 MargFloatBoos">
+                                                <div class="form-group has-float-label">
+                                                    <input tabindex="11" id="txtApellidosIntegModal" name="txtApellidosIntegModal" type="text" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                                                    <label class="Labels">Apellidos:</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 MargFloatBoos">
+                                                <div class="form-group has-float-label">
+                                                    <input tabindex="12" id="txtNombreIntegModal" name="txtNombreIntegModal" type="text" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                                                    <label class="Labels">Nombres:</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 MargFloatBoos">
+                                                <div class="form-group has-float-label">
+                                                    <input tabindex="13" id="txtAliasModal" name="txtAliasModal" type="text" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                                    <label class="Labels">Alias:</label>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3 MargFloatBoos">
-                                            <div class="form-group has-float-label">
-                                                <input tabindex="11" id="txtApellidosIntegModal" name="txtApellidosIntegModal" type="text" value="" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
-                                                <label class="Labels">Apellidos:</label>
+
+                                        <div class="row mt-2">
+                                            <div class="col-md-3 MargFloatBoos">
+                                                <div class="form-group has-float-label">
+                                                    <input tabindex="14" id="txtCelularIntegModal" name="txtCelularIntegModal" type="text" autocomplete="off" placeholder="Digite el celular" class="form-control InputPading">
+                                                    <label class="Labels">Celular:</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-9 MargFloatBoos">
+                                                <div class="form-group has-float-label">
+                                                    <input tabindex="15" id="txtDirecciónIntegModal" name="txtDirecciónIntegModal" type="text" autocomplete="off" placeholder="Digite la dirección" class="form-control InputPading">
+                                                    <label class="Labels">Dirección:</label>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3 MargFloatBoos">
-                                            <div class="form-group has-float-label">
-                                                <input tabindex="12" id="txtNombreIntegModal" name="txtNombreIntegModal" type="text" value="" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
-                                                <label class="Labels"> Nombres:</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2 MargFloatBoos">
-                                            <div class="form-group has-float-label">
-                                                <input tabindex="13" id="txtAliasModal" name="txtAliasModal" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
-                                                <label class="Labels">Alias:</label>
-                                            </div>
-                                        </div>
-                                         <div class="col-md-2 MargFloatBoos">
-                                            <div class="form-group has-float-label">
-                                                <input tabindex="14" id="txtCelularIntegModal" name="txtCelularIntegModal" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
-                                                <label class="Labels">Celular:</label>
-                                            </div>
-                                        </div>
-                                         <div class="col-md-3 MargFloatBoos">
-                                            <div class="form-group has-float-label">
-                                                <input tabindex="14" id="txtDirecciónIntegModal" name="txtDirecciónIntegModal" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
-                                                <label class="Labels">Dirección:</label>
-                                            </div>
-                                        </div>
-                       
-                                   </div>
+
 
                  
-                            </div>
-                            <div class="modal-footer" style="justify-content:center;">
+                                </div>
+                                <div class="modal-footer" style="justify-content:center;">
              
-                               <button tabindex="14" type="button" id="btnAddIntegrante" onclick="InsIntegrantesModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                                   <button tabindex="14" type="button" id="btnAddIntegrante" onclick="InsIntegrantesModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
 
                 @* Modal para insertar delitos  *@
@@ -1105,7 +1109,7 @@
                             </div>
                             <div class="modal-body">
                                 <div class="col-12 mb-2">
-                                    <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
+                                    <input id="direccionmapa2" type="text" class="form-control" placeholder="Buscar dirección..." />
                                 </div>
 
                                 <!-- Aquí irá el mapa -->
@@ -1136,21 +1140,10 @@
     </div>
 </div>
 
-<!-- INICIO DE MODAL DETALLE IRIS-->
+<!-- FINAL DE MODAL DETALLE IRIS-->
 
 
-<!-- Modal Estado Proceso-->
-<div id="Process">
-    <div class="loader_sis">
-        <div class="loader_dialoge">
-            <div class="loader_containere text-center">
-                <div class="loadere"></div>
-                <h4 class="text-white">Procesando, espere...</h4>
-            </div>
-        </div>
-    </div>
-    <div class="loader_backe"></div>
-</div>
+
 
 <div class="modal fade" id="Modal_VisualizarTexto" aria-labelledby="bs-example-modal-lg" aria-hidden="true"> 
     <div class="modal-dialog modal-l" role="document">
@@ -1270,7 +1263,7 @@
                                 </div>
                             </div>
 
-                              <div class="col-md-2 MargFloatBoos">
+                              <div class="col-md-4 MargFloatBoos">
                                   <div class="form-group has-float-label">
                                       @Html.DropDownList("ddlFuenteModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlFuenteModal", @class = "form-control select2", style = "width: 100%;" })
                                       <label class="Labels">Fuente:</label>

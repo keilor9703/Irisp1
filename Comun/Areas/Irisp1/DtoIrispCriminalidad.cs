@@ -71,14 +71,11 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("IdentificacionCrea")]
         public Int64? IdentificacionCrea { get; set; }
 
-
         [JsonPropertyName("IdentificacionModifica")]
         public Int64? IdentificacionModifica { get; set; }
 
-
         [JsonPropertyName("CODIGOC")]
         public Int64? CODIGOC { get; set; }
-
 
         // ---------- Fechas ----------
         [JsonPropertyName("FechaInicioExistencia")]
@@ -101,6 +98,13 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("FechaRespuestaInvestigativo")]
         public DateTime? FechaRespuestaInvestigativo { get; set; }
+
+        // ---------- Nuevas fechas de tareas ----------
+        [JsonPropertyName("FechaVerificaResponsable")]
+        public DateTime? FechaVerificaResponsable { get; set; }
+
+        [JsonPropertyName("FechaCreacionTareaRespon")]
+        public DateTime? FechaCreacionTareaRespon { get; set; }
 
         // ---------- Cadenas ----------
         [JsonPropertyName("CriminalidadId")]
@@ -129,7 +133,6 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("DescripcionTramite")]
         public string? DescripcionTramite { get; set; }
-
 
         [JsonPropertyName("Origen")]
         public string? Origen { get; set; }
@@ -185,15 +188,58 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("IdTipoInfo")]
         public string? IdTipoInfo { get; set; }
 
+        // ---------- Nuevas cadenas para datos de tareas ----------
+        [JsonPropertyName("IdTarea")]
+        public string? IdTarea { get; set; }
+
+        [JsonPropertyName("IdResponsable")]
+        public string? IdResponsable { get; set; }
+
+        [JsonPropertyName("IdResponsableTarea")]
+        public string? IdResponsableTarea { get; set; }
+
+        [JsonPropertyName("IdListaTarea")]
+        public string? IdListaTarea { get; set; }
+
+        [JsonPropertyName("DescListaTarea")]
+        public string? DescListaTarea { get; set; }
+
+        [JsonPropertyName("ObservacionResponsable")]
+        public string? ObservacionResponsable { get; set; }
+
+        [JsonPropertyName("JustificacionResponsable")]
+        public string? JustificacionResponsable { get; set; }
+
+        [JsonPropertyName("IdEstadoTarea")]
+        public string? IdEstadoTarea { get; set; }
+
+        [JsonPropertyName("DescEstadoTarea")]
+        public string? DescEstadoTarea { get; set; }
+
+        [JsonPropertyName("UnidadResponsable")]
+        public string? UnidadResponsable { get; set; }
+
+        [JsonPropertyName("EstadoTareasGrilla")]
+        public string? EstadoTareasGrilla { get; set; }
+
+        [JsonPropertyName("IdTipoResultado")]
+        public string? IdTipoResultado { get; set; }
+
+        [JsonPropertyName("DescTipoResultado")]
+        public string? DescTipoResultado { get; set; }
+
+        [JsonPropertyName("NumeroResultado")]
+        public string? NumeroResultado { get; set; }
+
+        [JsonPropertyName("EstadoResultados")]
+        public string? EstadoResultados { get; set; }
+
         // ---------- Listas ----------
         public List<int> IdDelitoSecundario { get; set; } = new List<int>();
 
-
-
-
-
+        // ---------- Ubicación ----------
         [JsonPropertyName("UbicacionId")]
-        public string? UbicacionId { get; set; } // mandatory
+        public string? UbicacionId { get; set; }
 
         [JsonPropertyName("Latitud")]
         public string? Latitud { get; set; }
@@ -210,13 +256,16 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("Cuadrante")]
         public string? Cuadrante { get; set; }
 
-
         [JsonPropertyName("CuadranteUbica")]
         public string? CuadranteUbica { get; set; }
 
         [JsonPropertyName("DependCuadrante")]
         public string? DependCuadrante { get; set; }
-        
+
+        [JsonPropertyName("Dependencia")]
+        public string? Dependencia { get; set; }
+
+
         [JsonPropertyName("Estacioncuadrante")]
         public string? Estacioncuadrante { get; set; }
 
@@ -229,13 +278,11 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("RadioAccion")]
         public Int32? RadioAccion { get; set; }
 
-
         [JsonPropertyName("IdentificacionCreacion")]
         public long? IdentificacionCreacion { get; set; }
 
         [JsonPropertyName("MaquinaCreacion")]
         public string? MaquinaCreacion { get; set; }
-
 
         [JsonPropertyName("Direccion")]
         public string? Direccion { get; set; }
@@ -252,15 +299,7 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("CodigoSiedcoCuadrante")]
         public Int32? CodigoSiedcoCuadrante { get; set; }
 
-
         [JsonPropertyName("IdUbicacion")]
         public Int32? IdUbicacion { get; set; }
-
-      
     }
-
-
-
-
-
 }

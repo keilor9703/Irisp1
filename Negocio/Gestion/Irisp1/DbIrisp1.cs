@@ -143,7 +143,7 @@ namespace Negocio.Gestion.Irisp1
                 if (Conexion.State == ConnectionState.Open)
                 {
                     resultado.Load(await objCommand.ExecuteReaderAsync());
-                    objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+                   
                     retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
 
                     if (retorno.Count > 0)

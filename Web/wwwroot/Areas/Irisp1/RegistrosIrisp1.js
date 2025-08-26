@@ -28,7 +28,20 @@ $(document).ready(function () {
 
 
    
+
+   
 });
+
+
+
+// Manejo genérico para cualquier modal secundaria
+$(document).on('hidden.bs.modal', '.modal', function () {
+    // Verifica si todavía hay alguna modal abierta
+    if ($('.modal.show').length > 0) {
+        $('body').addClass('modal-open');
+    }
+});
+
 function SubirFoto() {
 
         var fileInput = $('#fileAnexoFotografico')[0];
@@ -200,9 +213,9 @@ function GetGrillaVerificacion(Datos) {
         columns: [
             columnaAcciones(datosFiltrados),
             Estados(),
-            { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion" },
+            EstadosExistencia(),
             { title: "Codigo", data: "Codigo", name: "Codigo" },
-            { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad" },
+            { title: "Dependencia", data: "Dependencia", name: "Dependencia" },
             { title: "Municipio", data: "Municipio", name: "Municipio" },
             {
                 title: "Fecha Inicio Actividad",
@@ -215,8 +228,9 @@ function GetGrillaVerificacion(Datos) {
                     return `${fecha}<br>${hora}`;
                 }
             },
-            { title: "Fuente", data: "Clase", name: "Fuente" },
+            { title: "Clase", data: "Clase", name: "Clase" },
             { title: "Nombre", data: "NombreClase", name: "NombreClase" },
+            { title: "Cantidad", data: "CantidadIntegrantes", name: "CantidadIntegrantes" },
             columnaCaracteristicasGenerales(),
             columnaDescripcionTramite(),
             { title: "Zona", data: "Zona", name: "Zona" },
@@ -287,9 +301,9 @@ function GetGrillaInvestigacion(Datos) {
         columns: [
             columnaAcciones(datosFiltrados),
             Estados(),
-            { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion" },
+            EstadosExistencia(),
             { title: "Codigo", data: "Codigo", name: "Codigo" },
-            { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad" },
+            { title: "Dependencia", data: "Dependencia", name: "Dependencia" },
             { title: "Municipio", data: "Municipio", name: "Municipio" },
             {
                 title: "Fecha Inicio Actividad",
@@ -302,8 +316,9 @@ function GetGrillaInvestigacion(Datos) {
                     return `${fecha}<br>${hora}`;
                 }
             },
-            { title: "Fuente", data: "Clase", name: "Fuente" },
+            { title: "Clase", data: "Clase", name: "Clase" },
             { title: "Nombre", data: "NombreClase", name: "NombreClase" },
+            { title: "Cantidad", data: "CantidadIntegrantes", name: "CantidadIntegrantes" },
             columnaCaracteristicasGenerales(),
             columnaDescripcionTramite(),
             { title: "Zona", data: "Zona", name: "Zona" },
@@ -374,9 +389,9 @@ function GetGrillaFinalizacion(Datos) {
         columns: [
             columnaAcciones(datosFiltrados),
             Estados(),
-            { title: "Estado Existencia", data: "EstadoExistenciaDescripcion", name: "EstadoExistenciaDescripcion" },
+            EstadosExistencia(),
             { title: "Codigo", data: "Codigo", name: "Codigo" },
-            { title: "Dependencia", data: "SiglaUnidad", name: "SiglaUnidad" },
+            { title: "Dependencia", data: "Dependencia", name: "Dependencia" },
             { title: "Municipio", data: "Municipio", name: "Municipio" },
             {
                 title: "Fecha Inicio Actividad",
@@ -389,8 +404,9 @@ function GetGrillaFinalizacion(Datos) {
                     return `${fecha}<br>${hora}`;
                 }
             },
-            { title: "Fuente", data: "Clase", name: "Fuente" },
+            { title: "Clase", data: "Clase", name: "Clase" },
             { title: "Nombre", data: "NombreClase", name: "NombreClase" },
+            { title: "Cantidad", data: "CantidadIntegrantes", name: "CantidadIntegrantes" },
             columnaCaracteristicasGenerales(),
             columnaDescripcionTramite(),
             { title: "Zona", data: "Zona", name: "Zona" },
@@ -440,9 +456,12 @@ function Estados() {
         title: "Estado",
         data: "EstadoDescripcion",
         name: "EstadoDescripcion",
-        "autoWidth": true,
+        autoWidth: true,
         render: function (data, type, row) {
-            if (!data) return '';
+            // Si el estado viene vacío o nulo
+            if (!data) {
+                return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
+            }
 
             const estado = data.toLowerCase();
             let color = '';
@@ -470,10 +489,43 @@ function Estados() {
                     color = '#386ca0'; // gris oscuro
             }
 
-            return `<span style="background-color: ${color}; color: white ; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
+            return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
         }
     };
 }
+
+function EstadosExistencia() {
+    return {
+        title: "Estado Existencia",
+        data: "EstadoExistenciaDescripcion",
+        name: "EstadoExistenciaDescripcion",
+        autoWidth: true,
+        render: function (data, type, row) {
+            // Si el estado viene vacío o nulo
+            if (!data) {
+                return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
+            }
+
+            const estado = data.toLowerCase();
+            let color = '';
+
+            switch (estado) {
+                case 'no existe':
+                    color = '#c53a1d'; // rojo
+                    break;
+               
+                case 'si existe':
+                    color = '#236305'; // verde
+                    break;
+                default:
+                    color = '#386ca0'; // gris oscuro
+            }
+
+            return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
+        }
+    };
+}
+
 function columnaAcciones(datosFiltrados) {
     return {
         data: datosFiltrados,
@@ -505,7 +557,6 @@ function columnaAcciones(datosFiltrados) {
         }
     }
 }
-
 
 
 function columnaCaracteristicasGenerales() {
@@ -667,6 +718,21 @@ $(function () {
         $('#myModal').modal("show");
     });
 });
+
+
+
+
+// Cuando el modal se muestra, inicializa el mapa correspondiente
+$('#myModal').on('shown.bs.modal', function () {
+    inicializarMapa('mapaDiv');
+});
+
+$('#myModal2').on('shown.bs.modal', function () {
+    inicializarMapa('mapaDiv2');
+});
+
+
+
 
 
 
@@ -1810,6 +1876,8 @@ function GetGrillaDocumentosIris(Datos) {
                     if (!data || data.trim() === "") {
                         return '';
                     }
+
+
                     // Opción 1: enlace azul visible sobre fondo blanco
                     return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;
                 }
@@ -1919,32 +1987,49 @@ function OpenInsInfoadiconalModal() {
     $('#Modal_InsInfoAdicional').modal("show");
 }
 
-var modalIns = document.getElementById('Modal_InsIntegrantes');
-modalIns.addEventListener('hidden.bs.modal', function () {
-    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
-});
+//var modalIns = document.getElementById('Modal_InsIntegrantes');
+//modalIns.addEventListener('hidden.bs.modal', function () {
+//    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
+//});
 
-var modalIns = document.getElementById('Modal_InsDelitos');
-modalIns.addEventListener('hidden.bs.modal', function () {
-    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
-});
-
-
-var modalIns = document.getElementById('Modal_InsInfoAdicional');
-modalIns.addEventListener('hidden.bs.modal', function () {
-    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
-});
+//var modalIns = document.getElementById('Modal_InsDelitos');
+//modalIns.addEventListener('hidden.bs.modal', function () {
+//    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
+//});
 
 
-var modalIns = document.getElementById('Modal_InsInfoAdicional');
-modalIns.addEventListener('hidden.bs.modal', function () {
-    // Solo si queda alguna otra modal visible, mantener el bloqueo del scroll
-    if (document.querySelectorAll('.modal.show').length > 0) {
-        document.body.classList.add('modal-open');
-    }
-});
+//var modalIns = document.getElementById('Modal_InsInfoAdicional');
+//modalIns.addEventListener('hidden.bs.modal', function () {
+//    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
+//});
+
+
+//var modalIns = document.getElementById('Modal_InsInfoAdicional');
+//modalIns.addEventListener('hidden.bs.modal', function () {
+//    // Solo si queda alguna otra modal visible, mantener el bloqueo del scroll
+//    if (document.querySelectorAll('.modal.show').length > 0) {
+//        document.body.classList.add('modal-open');
+//    }
+//});
 
 function InsIntegrantesModal() {
+    // Obtener valores de los campos y limpiar espacios
+    const identificacion = $("#txtIdentificacionIntegModal").val().trim();
+    const apellidos = $("#txtApellidosIntegModal").val().trim();
+    const nombres = $("#txtNombreIntegModal").val().trim();
+    const celular = $("#txtCelularIntegModal").val().trim();
+    const direccion = $("#txtDirecciónIntegModal").val().trim();
+    const alias = $("#txtAliasModal").val().trim();
+
+    // Validar campos obligatorios
+    if (!identificacion || !alias) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Por favor complete todos los campos antes de guardar.'
+        });
+        return; // Detener la ejecución si faltan campos
+    }
 
     $.ajax({
         url: UrlGetConsecutivoIntegrante,
@@ -1957,18 +2042,18 @@ function InsIntegrantesModal() {
                 const Obj_Integrante = {
                     INTEGRANTE_ID: response.data,
                     CRIMINALIDAD_ID: $("#txtCriminalidadIdModal").val(),
-                    ALIAS: $("#txtAliasModal").val(),
-                    NOMBRE: $("#txtNombreIntegModal").val(),
-                    APELLIDO: $("#txtApellidosIntegModal").val(),
-                    CEDULA: parseInt($("#txtIdentificacionIntegModal").val()),
+                    ALIAS: alias,
+                    NOMBRE: nombres,
+                    APELLIDO: apellidos,
+                    CEDULA: parseInt(identificacion),
                     ID_TIPO_INFO: 30,
                     VIGENTE: 1,
                     FECHA_MODIFICA: null,
                     IDENTIFICACION_MODIFICA: null,
                     MAQUINA_MODIFICA: null,
                     TIPO_DOCUMENTO: 1,
-                    CELULAR: parseInt($("#txtCelularIntegModal").val()),
-                    DIRECCION: $("#txtDirecciónIntegModal").val()
+                    CELULAR: parseInt(celular),
+                    DIRECCION: direccion
                 };
 
                 $.ajax({
@@ -1977,15 +2062,13 @@ function InsIntegrantesModal() {
                     data: Obj_Integrante,
                     success: function (resp) {
                         if (resp.success) {
-
                             F_GetIntegrantesIris($("#txtCriminalidadIdModal").val());
                             $('#Modal_InsIntegrantes').modal('hide');
                             limpiarFormularioIntegrantes();
                         } else {
-
                             Swal.fire({
-                                type: 'error',
-                                title: 'Señor(a) Funcionario(a:)',
+                                icon: 'error',
+                                title: 'Señor(a) Funcionario(a):',
                                 text: 'Error al insertar: ' + resp.message
                             });
                         }
@@ -2006,6 +2089,7 @@ function InsIntegrantesModal() {
         }
     });
 }
+
 
 function P_InsDelitosModal() {
 
@@ -2047,46 +2131,50 @@ function P_InsDelitosModal() {
 }
 
 
-
-
-
 function P_InsInfoAdicionalModal() {
 
+    const criminalidadId = $("#txtCriminalidadIdModal").val().trim();
+    const descripcion = $("#txtInfoAdicionalModal").val().trim();
+
+    // Validación de campos vacíos
+    if (criminalidadId === "" || descripcion === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Por favor, complete todos los campos antes de continuar.'
+        });
+        return; // Detener la ejecución si hay campos vacíos
+    }
+
     const Obj_InfoAdicional = {
-        CriminalidadId: $("#txtCriminalidadIdModal").val(),
-        Descripcion: $("#txtInfoAdicionalModal").val(),
-       
+        CriminalidadId: criminalidadId,
+        Descripcion: descripcion,
     };
 
-  
     $.ajax({
         url: UrlInsInfoAdicional,
         type: 'POST',
         data: Obj_InfoAdicional,
         success: function (resp) {
             if (resp.success) {
-
-                F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
+                F_GetInfoAdiconalIris(criminalidadId);
                 $("#Modal_InsInfoAdicional").modal("hide");
-
             } else {
-
                 Swal.fire({
-                    type: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a):',
                     text: 'Error al insertar: ' + resp.message
                 });
             }
         },
         error: function () {
             Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
+                icon: 'error',
+                title: 'Señor(a) Funcionario(a):',
                 text: "Error en la solicitud"
             });
         }
     });
-
 }
 
 function subirDocumentoSeleccionado(input) {
@@ -2373,8 +2461,6 @@ function P_DelIntegranteIris(IntegranteId) {
            
 }
 
-
-
 function P_DelDelitosIris(DelitoId) {
 
    
@@ -2451,47 +2537,44 @@ function P_DelDelInfoAdicionalIris(InfoId) {
   
 }
 
-
 function P_DelUbicacionIris(UbicacionId) {
 
   
 
-                $.ajax({
-                    type: 'POST',
-                    url: UrlDelUbiacionIris,
-                    async: true,
-                    dataType: 'json',
-                    data: { UbicacionId: UbicacionId },
-                    success: function (result) {
-                        if (result.success) {
+        $.ajax({
+            type: 'POST',
+            url: UrlDelUbiacionIris,
+            async: true,
+            dataType: 'json',
+            data: { UbicacionId: UbicacionId },
+            success: function (result) {
+                if (result.success) {
 
-                            F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
-                            Swal.fire({
-                                type: 'success',
-                                title: 'Señor(a) Funcionario(a:)',
-                                text: result.message
-                            });
+                    F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                    Swal.fire({
+                        type: 'success',
+                        title: 'Señor(a) Funcionario(a:)',
+                        text: result.message
+                    });
 
-                        } else {
-                            Swal.fire({
-                                type: 'error',
-                                title: 'Señor(a) Funcionario(a:)',
-                                text: result.message
-                            });
-                        }
-                    },
-                    error: function (ex) {
-                        Swal.fire({
-                            type: 'error',
-                            title: 'Señor(a) Funcionario(a:)',
-                            text: "No es posible grabar, revise"
-                        });
-                    }
+                } else {
+                    Swal.fire({
+                        type: 'error',
+                        title: 'Señor(a) Funcionario(a:)',
+                        text: result.message
+                    });
+                }
+            },
+            error: function (ex) {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "No es posible grabar, revise"
                 });
+            }
+        });
      
 }
-
-
 
 function P_DelDocumentoIris(DocumentoId) {
 
