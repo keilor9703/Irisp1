@@ -103,7 +103,7 @@ function GetGrillaVerificacion(Datos) {
             columnaAcciones(datosFiltrados),
             Estados(),
             EstadosExistencia(),
-            EstadoTareas(),
+           // EstadoTareas(),
             { title: "Codigo", data: "Codigo", name: "Codigo" },
             { title: "Unidad Verificación", data: "UnidadResponsable", name: "UnidadResponsable" },
             { title: "Dependencia", data: "Dependencia", name: "Dependencia" },
@@ -116,7 +116,8 @@ function GetGrillaVerificacion(Datos) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Clase", data: "Clase", name: "Clase" },
@@ -132,9 +133,11 @@ function GetGrillaVerificacion(Datos) {
                 data: "FechaCreacion",
                 name: "FechaCreacion",
                 render: function (data) {
+                    if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
 
@@ -187,7 +190,7 @@ function GetGrillaInvestigacion(Datos) {
             columnaAcciones(datosFiltrados),
             Estados(),
             EstadosExistencia(),
-            EstadoTareas(),
+           // EstadoTareas(),
             { title: "Codigo", data: "Codigo", name: "Codigo" },
             { title: "Unidad Verificación", data: "UnidadResponsable", name: "UnidadResponsable" },
             { title: "Dependencia", data: "Dependencia", name: "Dependencia" },
@@ -200,7 +203,8 @@ function GetGrillaInvestigacion(Datos) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Clase", data: "Clase", name: "Clase" },
@@ -216,9 +220,11 @@ function GetGrillaInvestigacion(Datos) {
                 data: "FechaCreacion",
                 name: "FechaCreacion",
                 render: function (data) {
+                    if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
 
@@ -270,7 +276,7 @@ function GetGrillaFinalizacion(Datos) {
             columnaAcciones(datosFiltrados),
             Estados(),
             EstadosExistencia(),
-            EstadoTareas(),
+           // EstadoTareas(),
             { title: "Codigo", data: "Codigo", name: "Codigo" },
             { title: "Unidad Verificación", data: "UnidadResponsable", name: "UnidadResponsable" },
             { title: "Dependencia", data: "Dependencia", name: "Dependencia" },
@@ -283,7 +289,8 @@ function GetGrillaFinalizacion(Datos) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Clase", data: "Clase", name: "Clase" },
@@ -299,9 +306,11 @@ function GetGrillaFinalizacion(Datos) {
                 data: "FechaCreacion",
                 name: "FechaCreacion",
                 render: function (data) {
+                    if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             
@@ -479,7 +488,9 @@ function columnaAcciones(datosFiltrados) {
                                     </a>
                                 </li>`;
 
-            var VerTareas = `<li style="padding-left: 15px;"><a style="color: #102717;" href="javascript:F_GetTareas('${row.IdResponsable}')"><i class="fa fa-trash red"></i>&nbsp;Ver Tareas</a></li>`;
+            var VerTareas = `<li style="padding-left: 15px;">
+    <a style="color: #102717;" href="javascript:F_GetTareas('${row.CriminalidadId}','${row.IdResponsable}')"> <i class="fa fa-eye"></i>&nbsp;Ver Tareas  </a></li>`;
+
 
             var finBoton = '</ul></div>';
             return inicioBoton + DetallesIris  + VerTareas + finBoton;
@@ -758,10 +769,15 @@ function GetGrillaIntegrantesIris(Datos) {
             { "title": "Cédula", "data": "CEDULA", "name": "CEDULA", className: "celdaCenter celda7" },
             { "title": "Dirección", "data": "DIRECCION", "name": "DIRECCION", className: "celdaCenter" },
             {
-                "title": "Fecha Creación", "data": "FECHA_CREACION", "name": "FECHA_CREACION", className: "celdaCenter", render: function (data) {
-                    if (!data) return '';
-                    let fecha = new Date(data);
-                    return fecha.toLocaleDateString();
+                title: "Fecha Creación",
+                data: "FECHA_CREACION",
+                name: "FECHA_CREACION",
+                render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
                 }
             }
 
@@ -1794,42 +1810,87 @@ function P_InsUbicacionModal() {
 
 }
 
-function F_GetTareas(IdResponsable) {
-
-   
-
+function F_GetTareas(IdCriminalidad,IdResponsable) {
     $.ajax({
         type: "GET",
         url: UrlGetTareasIris,
-        async: true,
         data: { V_ResponsableId: IdResponsable },
         dataType: 'json',
         cache: false,
         success: function (respuesta) {
+            if (respuesta?.success && Array.isArray(respuesta.data) && respuesta.data.length > 0) {
+                $('#Modal_TareasIris').modal("show");
+                GetGrillaTareasIris(respuesta.data);
 
-            if (respuesta.success) {
-                
-                $('#Modal_TaresIris').modal("show");
-                GetGrillaTareasIris(respuesta.data)
+                F_GetResultados(IdCriminalidad, IdResponsable);
+                //console.log("Respuesta completa:", respuesta);
+                //console.log("Contenido de data:", respuesta.data[0].DescTipoResultado);
+
+                  //  GetGrillaResultados(respuesta.data);
+            
             } else {
                 Swal.fire({
-                    type: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: "No hay tareas asignadas"
+                    icon: 'info',
+                    title: 'Señor(a) Funcionario(a)',
+                    text: "No hay tareas asignadas."
                 });
             }
         },
-        error: function () {
+        error: function (xhr, status, error) {
+            console.error("Error en F_GetTareas:", {
+                status: xhr.status,
+                response: xhr.responseText,
+                error: error
+            });
+
             Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: 'No es posible consultar, revise!!'
+                icon: 'error',
+                title: 'Señor(a) Funcionario(a)',
+                text: 'No es posible consultar las tareas. Por favor, revise la conexión o contacte al administrador.'
             });
         }
     });
+}
 
 
+function F_GetResultados(IdCriminalidad, IdResponsable) {
+    $.ajax({
+        type: "GET",
+        url: UrlGetResultadosIris,
+        data: { V_Criminalidad: IdCriminalidad, V_ResponsableId: IdResponsable },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+            if (respuesta?.success && Array.isArray(respuesta.data) && respuesta.data.length > 0) {
+                // Mostrar el panel de resultados
+                $('#pn_GrillaResultados').removeClass('hidden');
+                GetGrillaResultados(respuesta.data);
+            } else {
+                // Ocultar la grilla si está visible
+                $('#pn_GrillaResultados').addClass('hidden');
 
+                //Swal.fire({
+                //    icon: 'info',
+                //    title: 'Señor(a) Funcionario(a)',
+                //    text: "No hay resultados asociados a esta criminalidad."
+                //});
+            }
+
+        },
+        error: function (xhr, status, error) {
+            console.error("Error en F_GetTareas:", {
+                status: xhr.status,
+                response: xhr.responseText,
+                error: error
+            });
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Señor(a) Funcionario(a)',
+                text: 'No es posible consultar las tareas. Por favor, revise la conexión o contacte al administrador.'
+            });
+        }
+    });
 }
 
 function GetGrillaTareasIris(Datos) {
@@ -1859,16 +1920,19 @@ function GetGrillaTareasIris(Datos) {
             columnaObservacion(),
             
             {
-                title: "Fecha respuesta ",
+                title: "Fecha respuesta",
                 data: "FechaModifica",
                 name: "FechaModifica",
+                className: "celdaCenter celda12",
                 render: function (data) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
+
             columnaJustificacion(),
           
             EstadoEvidencias(),
@@ -1886,6 +1950,73 @@ function GetGrillaTareasIris(Datos) {
     });
 }
 
+function GetGrillaResultados(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaResultados")) {
+        $("#tbGrillaResultados").DataTable().destroy();
+    }
+
+    $("#tbGrillaResultados").empty();
+    $("#pn_GrillaResultados").removeClass('hidden');
+
+    $("#tbGrillaResultados").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Eliminar + finBoton;
+                }
+            },
+
+            { "title": "Tipo", "data": "DescTipoResultado", "name": "DescTipoResultado", className: "celdaCenter celda2" },
+            { "title": "Número", "data": "NroSpoaSiedco", "name": "NroSpoaSiedco", className: "celdaCenter celda3" },
+            {
+                title: "Fecha SIEDCO - SPOA",
+                data: "FechaResultado",
+                name: "FechaResultado",
+                className: "celdaCenter celda5",
+                render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
+                }
+            },
+            columnaObservacionResultado(),
+            {
+                title: "Fecha Creación",
+                data: "FechaCreaResultado",
+                name: "FechaCreaResultado",
+                className: "celdaCenter celda5",
+                render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
+                }
+            }
+
+          
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
 
 function columnaObservacion() {
     return {
@@ -1893,7 +2024,36 @@ function columnaObservacion() {
         data: "Observacion",
         name: "Observacion",
         "autoWidth": false,
-        className: "celdaCenter celda6",
+        className: "celdaCenter celda7",
+        render: function (data, type, row) {
+            if (!data || data.trim() === "") {
+                return '';
+            }
+
+            const dataEncoded = encodeURIComponent(data);
+
+            return `
+                <div style="display: flex; align-items: center; max-width: 100px; gap: 10px;">
+                    <button class="btn btn-success btn-sm" type="button"
+                        onclick="AbrirModalVisualizarTexto(decodeURIComponent('${dataEncoded}'))">
+                        <span class="fa fa-eye white"></span>
+                    </button>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
+                        ${data}
+                    </div>
+                </div>
+            `;
+        }
+    };
+}
+
+function columnaObservacionResultado() {
+    return {
+        title: "Observación",
+        data: "ObservacionResultado",
+        name: "ObservacionResultado",
+        "autoWidth": false,
+        className: "celdaCenter celda7",
         render: function (data, type, row) {
             if (!data || data.trim() === "") {
                 return '';
@@ -1922,7 +2082,7 @@ function columnaJustificacion() {
         data: "Justificacion",
         name: "Justificacion",
         "autoWidth": false,
-        className: "celdaCenter celda6" ,
+        className: "celdaCenter celda7" ,
         render: function (data, type, row) {
             if (!data || data.trim() === "") {
                 return '';
@@ -1959,18 +2119,17 @@ function EstadoEvidencias() {
             }
 
             const estado = data.toLowerCase();
-            let color = '';
 
+            // Si no hay evidencia
             if (estado === 'no tiene') {
-                color = '#c53a1d'; // verde
-                return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px;">${data}</span>`;
-            } else {
-                color = '#236305'; // Rojo
-              
-                return `<span href="${data}" style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px;">${data}</span>`;
+                return `<span style="background-color: #c53a1d; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px;">${data}</span>`;
             }
 
-           
+            // Si existe una URL válida, crear enlace de descarga
+            /* return `<a href="${data}" download style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;*/
+            return `<a href="/Irisp1/Verificacion/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
+
+
         }
     };
 }

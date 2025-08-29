@@ -1,6 +1,6 @@
 ﻿using System.Data;
-
 using System.Reflection;
+using System.Diagnostics;
 
 namespace Negocio.Gestion.Utilidades
 
@@ -78,16 +78,13 @@ namespace Negocio.Gestion.Utilidades
 
                             }
 
-                            catch (Exception ex)
+                       
 
-                            {
-
-                                Console.WriteLine($"❌ Error mapeando columna: '{nombreColumnaReal}' → propiedad: '{propiedad.Name}'");
-
-                                Console.WriteLine($"   Valor: {valor} (tipo: {valor.GetType()}) → Tipo destino: {propiedad.PropertyType}");
-
-                                Console.WriteLine($"   Excepción: {ex.Message}");
-
+                                catch (Exception ex)
+                                {
+                                Debug.WriteLine($"❌ Error mapeando columna: '{nombreColumnaReal}' → propiedad: '{propiedad.Name}'");
+                                Debug.WriteLine($"   Valor: {valor} (tipo: {valor.GetType()}) → Tipo destino: {propiedad.PropertyType}");
+                                Debug.WriteLine($"   Excepción: {ex.Message}");
                             }
 
                         }

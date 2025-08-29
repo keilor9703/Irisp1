@@ -22,6 +22,7 @@
             var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "Verificacion", new { Area = "Irisp1" })";
             var UrlGetTareasIris = "@Url.Action("F_GetTareas", "Verificacion", new { Area = "Irisp1" })";
+            var UrlGetResultadosIris = "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })";
             var UrlGetEstadosIrisP1 = "@Url.Action("F_GetEstadosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
             var UrlInsIntegrantes = "@Url.Action("P_InsIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
@@ -736,7 +737,7 @@
 
 <!-- INICIO DE MODAL VER TAREAS IRIS-->
 
-<div class="modal fade" id="Modal_TaresIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+<div class="modal fade" id="Modal_TareasIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
     <div class="modal-dialog" style="max-width: 80%;">
 
         <div class="modal-content">
@@ -772,6 +773,38 @@
                 </div>
 
 
+                 <div class="card border-success hidden" id="pn_GrillaResultados">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Resultados del IRISP1 - Sección para agregar los Nro. SIEDCO ó SPOA</h4>
+
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <!-- Botón Nuevo -->
+                            <button type="button"
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center"
+                                    id="btnNuevoResultado"
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    @* onclick="OpenInsIntegrantesModal();"> *@
+                                    onclick="OpenInsResultadosModal();">
+                                <i class="fas fa-plus"></i> Nuevo
+                            </button>
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                                <i data-feather="x" class="feather-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                    <table id="tbGrillaResultados" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
 
 

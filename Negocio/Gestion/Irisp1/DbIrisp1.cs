@@ -22,7 +22,7 @@ namespace Negocio.Gestion.Irisp1
         #region Propiedades
         private readonly IConfiguration _iConfiguration;
         private readonly string _strConexionIris_Test;
-        private readonly string _strConexionTelepol;
+        private readonly string _strConexionIris_Disec;
         private readonly ILogger _logger;
         #endregion
 
@@ -31,7 +31,7 @@ namespace Negocio.Gestion.Irisp1
         {
             _iConfiguration = iConfiguration;
             _strConexionIris_Test = _iConfiguration.GetConnectionString("strConexionIris_Test");
-            _strConexionTelepol = _iConfiguration.GetConnectionString("strConexionTelepol");
+            _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }
         #endregion
@@ -125,7 +125,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoIrispCriminalidad> retorno = new();
             DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try

@@ -225,7 +225,8 @@ function GetGrillaVerificacion(Datos) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Clase", data: "Clase", name: "Clase" },
@@ -241,9 +242,11 @@ function GetGrillaVerificacion(Datos) {
                 data: "FechaCreacion",
                 name: "FechaCreacion",
                 render: function (data) {
+                    if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Unidad Verificación Existencia", data: "UnidadVerificacionExiostencia", name: "UnidadVerificacionExiostencia" },
@@ -313,7 +316,8 @@ function GetGrillaInvestigacion(Datos) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Clase", data: "Clase", name: "Clase" },
@@ -329,9 +333,11 @@ function GetGrillaInvestigacion(Datos) {
                 data: "FechaCreacion",
                 name: "FechaCreacion",
                 render: function (data) {
+                    if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Unidad Verificación Existencia", data: "UnidadVerificacionExiostencia", name: "UnidadVerificacionExiostencia" },
@@ -401,7 +407,8 @@ function GetGrillaFinalizacion(Datos) {
                     if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Clase", data: "Clase", name: "Clase" },
@@ -417,9 +424,11 @@ function GetGrillaFinalizacion(Datos) {
                 data: "FechaCreacion",
                 name: "FechaCreacion",
                 render: function (data) {
+                    if (!data) return "";
                     const fecha = moment(data).format('DD/MM/YYYY');
                     const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha}<br>${hora}`;
+                    return `${fecha} - ${hora}`;
+
                 }
             },
             { title: "Unidad Verificación Existencia", data: "UnidadVerificacionExiostencia", name: "UnidadVerificacionExiostencia" },
@@ -838,10 +847,14 @@ function Grillantegrantes(Datos) {
             { title: "Dirección", data: "DIRECCION", className: "celdaCenter" },
             {
                 title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaJust",
-                render: function (data) {
-                    if (!data) return '';
-                    let fecha = new Date(data);
-                    return fecha.toLocaleDateString();
+               
+
+                  render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
                 }
             }
         ],
@@ -1516,10 +1529,17 @@ function GetGrillaIntegrantesIris(Datos) {
             { "title": "Apellido", "data": "APELLIDO", "name": "APELLIDO", className: "celdaCenter celda17" },
             { "title": "Cédula", "data": "CEDULA", "name": "CEDULA", className: "celdaCenter celda7" },
             { "title": "Dirección", "data": "DIRECCION", "name": "DIRECCION", className: "celdaCenter" },
-            { "title": "Fecha Creación", "data": "FECHA_CREACION", "name": "FECHA_CREACION", className: "celdaCenter",   render: function (data) {
-                if (!data) return '';
-                let fecha = new Date(data);
-                return fecha.toLocaleDateString(); }
+            {
+                  title: "Fecha Creación",
+                  data: "FECHA_CREACION",
+                  name: "FECHA_CREACION",
+                  render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
+                  }
             }
 
         ],
@@ -1879,7 +1899,8 @@ function GetGrillaDocumentosIris(Datos) {
 
 
                     // Opción 1: enlace azul visible sobre fondo blanco
-                    return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;
+                  /*  return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;*/
+                    return `<a href="/Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
             { "title": "Fecha Creación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaJust celda17" }

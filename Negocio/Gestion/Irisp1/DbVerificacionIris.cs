@@ -269,5 +269,82 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
+        public async Task<DtoResultado<List<DtoTareasIris>>> F_GetResultados(string V_Criminalidad, string V_ResponsableId)
+        {
+            DataTable resultado = new();
+            List<DtoTareasIris> retorno = new();
+            DtoResultado<List<DtoTareasIris>> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_VERIFICACION_IRIS.F_GetResultados";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("P_Ciminalidad_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Criminalidad;
+                objCommand.Parameters.Add("P_Responable_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_ResponsableId;
+
+                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.Output);
+
+
+                if (Conexion.State == ConnectionState.Open)
+                {
+                    resultado.Load(await objCommand.ExecuteReaderAsync());
+
+                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoTareasIris>(resultado);
+
+                    if (retorno.Count > 0)
+                    {
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "F_GetResultados";
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                    }
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "Error conexión base de datos";
+                    resp.Operacion = "0";
+                }
+
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+                _logger.LogError("Creacion de log");
+                _logger.LogWarning("Error Ejecutando PK_VERIFICACION_IRIS.F_GetResultados " + e);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Operacion = "0";
+
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+                resultado.Dispose();
+            }
+            return resp;
+        }
+
     }
 }

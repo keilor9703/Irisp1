@@ -297,6 +297,20 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+        [HttpGet]
+        [Route("Irisp1/RegistroIrisp1/descargar")]
+        public IActionResult DescargarArchivo(string ruta)
+        {
+            Console.WriteLine($"Ruta solicitada: {ruta}");
+
+            if (!System.IO.File.Exists(ruta))
+                return NotFound("Archivo no encontrado");
+
+            var nombreArchivo = Path.GetFileName(ruta);
+            var bytes = System.IO.File.ReadAllBytes(ruta);
+            return File(bytes, "application/octet-stream", nombreArchivo);
+        }
+
 
         #endregion
 
@@ -660,6 +674,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
+
+       
 
 
 

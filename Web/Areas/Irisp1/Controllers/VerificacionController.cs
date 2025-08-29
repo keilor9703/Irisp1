@@ -121,8 +121,43 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> F_GetResultados(string V_Criminalidad, string V_ResponsableId)
+        {
+            var resultado = await _iDbVerificacionIris.F_GetResultados(V_Criminalidad,V_ResponsableId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                //  return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+                return Json(new { success = false, data = resultado.Data });
+
+            }
+        }
+
+
 
         #endregion
+
+
+
+        [HttpGet]
+        [Route("Irisp1/Verificacion/descargar")]
+        public IActionResult DescargarArchivo(string ruta)
+        {
+            Console.WriteLine($"Ruta solicitada: {ruta}");
+
+            if (!System.IO.File.Exists(ruta))
+                return NotFound("Archivo no encontrado");
+
+            var nombreArchivo = Path.GetFileName(ruta);
+            var bytes = System.IO.File.ReadAllBytes(ruta);
+            return File(bytes, "application/octet-stream", nombreArchivo);
+        }
+
 
 
     }

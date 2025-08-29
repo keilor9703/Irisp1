@@ -29,6 +29,7 @@ function inicializarMapa(idMapa) {
             basemap: "osm" // OpenStreetMap
         });
 
+      
 
 
         // Capa de municipios
