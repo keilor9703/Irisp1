@@ -125,7 +125,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoIrispCriminalidad> retorno = new();
             DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var Conexion = new OracleConnection(_strConexionIris_Test);
             using var objCommand = new OracleCommand();
 
             try
