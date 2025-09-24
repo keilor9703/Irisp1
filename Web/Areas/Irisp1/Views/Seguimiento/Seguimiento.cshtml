@@ -1,4 +1,29 @@
-﻿
+﻿@{
+    ViewData["Title"] = "Seguimiento Irisp1";
+}
+@section scripts {
+    @* <script src="~/areas/irisp1/registrosirisp1.js"></script> *@
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="~/areas/irisp1/seguimientoirisp1.js"></script>
+
+    <!-- Carga la API de ArcGIS -->
+    <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
+    <script src="https://js.arcgis.com/3.44/"></script>
+
+    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
+
+    <script type='text/javascript'>
+
+        var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "Seguimiento", new { Area = "Irisp1" })";
+        var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "Seguimiento", new { Area = "Irisp1" })";
+        var UrlConsultarAnioSeguimiento= "@Url.Action("ConsultarAnioSeguimiento", "Seguimiento", new { Area = "Irisp1" })";
+               
+
+    </script>
+}
+
+
 <section class="content-header"></section>
 
 <div class="page-titles">
@@ -17,37 +42,7 @@
 
 <div class="card border-success">
     <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="fas fa-binoculars "></i> Seguimiento IRIS</h4>
-    </div>
-</div>
-<fieldset>
-    <legend class="custom-legend" @* style="width:0 *@ !important;"></legend>
-
-    <div class="row">
-        <div class="col-md-12 MargFloatBoos">
-            <div class="form-group has-float-label">
-                @Html.DropDownList("ddlAñoIris", new List<SelectListItem> { new SelectListItem { Text = "Seleccione el año", Value = "0" } }, htmlAttributes: new { @tabindex = 5, @id = "ddlAñoIris", @class = "form-control select2", style = "width: 100%;" })
-                <label class="Labels">Ver IRIS-P1 por año</label>
-            </div>
-        </div>
-        <div class="card-footer" style="margin-bottom: 10px;">
-            <div class="col-md-12 text-right">
-                <button tabindex="7603" type="button" id="btnConsultar" onclick="OpenModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar" title="Buscar"><span class="fa ico_buscar faa-pulse animated white"></span> Buscar</button>
-
-            </div>
-        </div>
-
-</fieldset>
-@*
-  FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-
-@*
-GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-<div class="card border-success hidden" id="pn_Grilla">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="	fas fa-clipboard-list"></i>  Etapa de Verificación</h4>
+        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Consulta Seguimiento IRIS</h4>
         <div class="card-actions ms-auto d-flex button-group">
             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
             <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
@@ -56,36 +51,56 @@ GRILLA ETAPA DE VERIFICACION ---------------------------------------------------
             </a>
         </div>
     </div>
-    <div class="card-body collapse show">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                    <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+     <div class="card-body collapse show">
+        <div class="row" > <!-- Se agrega margen superior aquí -->
+            <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">               
+
+                     @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
+                   
+                    <label class="Labels">Seguimiento por año</label>
                 </div>
+
+            </div>
+            <div class="col-md-2 ">
+                <button tabindex="1" class="btn btn-azul" id="btnConsultarIris" onclick="ConsultarIrisAnio(); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar iris por año..."><b><i class="fas fa-search"></i></b></button>
             </div>
         </div>
-    </div>
+     </div>
 </div>
 
-<div class="card border-success">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="	fas fa-clipboard-list"></i>   Etapa de Verificación</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla(); return false;">
-                <i class="ti-minus"></i>
-            </a>
+@*
+  FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+@*
+GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+@* ---------------------<!-- Contenedor de la grilla para mostrar la grilla -->------------- *@
+<section class="content hidden " id="pnSeguimiento">
+    <div class="card border-success">
+        <!-- Título de la tarjeta -->
+        <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"> <i class="mr-2 fas fa-paste text-white"></i> Etapa de Verificación</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+                <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
+            </div>
         </div>
-    </div>
-    <div id="pn_Grilla" class="card-body collapse show">
-        <div class="row">
-            <div class="col-md-40">
-                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                    <table id="tbGrilla2" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+
+        <!--  Grilla  para mostrar verificacion-->
+        <div class="card-body collapse show hidden" id="pnGrillaSeguimiento">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                        <table id="tbSeguimiento" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
 @*
 FIN GRILLA ETAPA DE VERIFICACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -95,17 +110,40 @@ FIN GRILLA ETAPA DE VERIFICACION -----------------------------------------------
 GRILLA ETAPA DE INVESTIGACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 *@
 
-<div class="card border-success">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="	fas fa-clipboard-list "></i>   Etapa de Investigacón</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse" onclick="GetGrilla3(); return false;">
-                <i class="ti-minus"></i>
-            </a>
-            <i class="mdi mdi-arrow-expand"></i>  </a>
+<section class="content hidden " id="pnSeguimientoInv">
+    <div class="card border-success">
+        <!-- Título de la tarjeta -->
+        <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"> <i class="mr-2 fas fa-paste text-white"></i> Etapa de Investigación</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+                <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
+            </div>
+        </div>
+
+        <!--  Grilla  para mostrar verificacion-->
+        <div class="card-body collapse show hidden" id="pnGrillaSeguimientoInv">
+            <div class="row">
+                <div class="col-md-40">
+                    <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                        <table id="tbSeguimientoInv" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div id="pn_Grilla" class="card-body collapse show">
+</section>
+
+@* <div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="mr-2 fas fa-paste text-white"></i>  Etapa de Investigación</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a> <i class="mdi mdi-arrow-expand"></i></a>
+        </div>
+    </div>
+    <div id="pn_Grilla3" class="card-body collapse show">
         <div class="row">
             <div class="col-md-40">
                 <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
@@ -114,7 +152,7 @@ GRILLA ETAPA DE INVESTIGACION --------------------------------------------------
             </div>
         </div>
     </div>
-</div>
+</div> *@
 
 
 @*
@@ -126,7 +164,35 @@ FIN GRILLA ETAPA DE INVESTIGACION  ---------------------------------------------
 GRILLA ETAPA DE FINALIZACION ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 *@
 
-<div class="card border-success">
+
+<section class="content hidden " id="pnSeguimientoFin">
+    <div class="card border-success">
+        <!-- Título de la tarjeta -->
+        <div class="card-header d-flex align-items-center">
+            <h4 class="card-title text-white"> <i class="mr-2 fas fa-paste text-white"></i> Etapa de Finalización</h4>
+            <div class="card-actions ms-auto d-flex button-group">
+                <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+                <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
+            </div>
+        </div>
+
+        <!--  Grilla  para mostrar verificacion-->
+        <div class="card-body collapse show hidden" id="pnGrillaSeguimientoFin">
+            <div class="row">
+                <div class="col-md-40">
+                    <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                        <table id="tbSeguimientoFin" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+@* <div class="card border-success">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="	fas fa-clipboard-list"></i>   Etapa de Finalización</h4>
         <div class="card-actions ms-auto d-flex button-group">
@@ -145,7 +211,8 @@ GRILLA ETAPA DE FINALIZACION ---------------------------------------------------
             </div>
         </div>
     </div>
-</div>
+</div> *@
+
 
 
 @* 
