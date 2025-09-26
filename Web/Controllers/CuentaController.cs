@@ -49,7 +49,7 @@ namespace Gepad.Controllers
         
         {
             ViewData["ReturnUrl"] = returnurl;
-            returnurl = returnurl ?? Url.Action(nameof(HomeController.Index), "Home");//Url.Content("~/Home/Index");
+            returnurl = returnurl ?? Url.Action(nameof(HomeController.Index), "Home"); //Url.Content("~/Home/Index");
 
              if (!ModelState.IsValid)
                 return View(loginUsuario);
