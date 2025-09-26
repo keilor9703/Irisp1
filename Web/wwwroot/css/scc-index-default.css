@@ -1,0 +1,230 @@
+﻿/*Estilos Módulo de Noticias*/
+.barra:hover {
+    color: white !important;
+    font-size: 20px;
+    background-color: #008F39 !important;
+    transition: background-color 4s ease-in-out 1s;
+    transition: color 4s ease-in-out 1s;
+    transition: font-size 4s ease-in-out 1s;
+    cursor: pointer;
+}
+
+.btn-evento:hover {
+    color: white;
+    width: 150px;
+    background-color: #008F39;
+    border-color: #008F39;
+    transition: all 0.5s ease-out;
+}
+/*
+*Inicio Evento iconos Redes Sociales
+*/
+
+.color-icon:hover {
+    background-color: rgba(59, 89, 152, 0.8) !important;
+    transition: background-color 3s;
+}
+
+.color-icon-2:hover {
+    background-color: rgba(0, 172, 238, 0.8) !important;
+    transition: background-color 3s;
+}
+
+.color-icon-3:hover {
+    background-color: rgba(63, 114, 155, 0.8) !important;
+    transition: background-color 3s;
+}
+.color-icon-4:hover {
+    background-color: rgba(196, 48, 43, 0.8) !important;
+    transition: background-color 3s;
+}
+.color-icon-5:hover {
+    background-color: rgba(255, 0, 132, 0.8) !important;
+    transition: background-color 3s;
+}
+/*i:hover{
+    color: yellow !important;
+    font-size: 60px !important;
+    margin-top: 2%;
+    transition: font-size 2s ease-in-out 1s;
+}*/
+.imagen-link:hover {
+    border-radius: 60% !important;
+    -webkit-border-radius: 60% !important;
+    box-shadow: 0px 0px 15px 15px #233530;
+    -webkit-box-shadow: 0px 0px 15px 15px #233530;
+    transform: rotate(160deg) !important;
+    -webkit-transform: rotate(360deg) !important;
+    
+}
+.img-link {
+    filter: drop-shadow(2px 2px 5px green) !important;
+}
+/*
+*Fin Evento iconos Redes sociales
+*/
+
+/*
+*Inicio Estilo imagen carrusel de servicio a su mano
+*/
+.imagen-link:hover {
+    filter: opacity(.5);
+    transition: filter 1s ease-in-out 1s;
+    filter: none;
+}
+
+.imagenes-animadas-link {
+    background-image: url('../img/foto5.jpg');
+    transition: background-image;
+    overflow: hidden;
+    background-attachment: fixed;
+    animation: efectoImagenesLink 30s infinite;
+    filter: opacity(.4);
+    z-index: 2;
+}
+
+@keyframes efectoImagenesLink {
+	80% {background-image:url("../assets/images/document/emi.png");}
+}
+/*
+*Fin Estilo imagen carrusel de servicio a su mano
+*/
+
+
+/*
+*inicio Evento imagenes línea de mando
+*/
+.contenedor-cuadro:hover .imagen {
+    -webkit-transform: scale(1.3) !important;
+    transform: scale(1.3) !important;
+}
+.contenedor-cuadro {
+    overflow: hidden !important;
+}
+/*
+*Fin Evento imagenes Linea de Mando
+*/
+
+/*
+*Inicio responsive dispositivo móvil 
+*/
+@media ( max-width: 576px ){
+    .cambio-letra {
+        font-size: 0.1em;
+    }
+    .paddin-espacio {
+        padding-top: 0px !important;
+    }
+    .imagen {
+        height: 80px !important;
+    }
+    .iframe-emisora {
+        display: none;
+    }
+    .texto-parrafo {
+        font-size: small !important;
+    }
+    .texto-parrafo-2 {
+        font-size: small !important;
+    }
+    .texto-parrafo-3 {
+        font-size: small !important;
+    }
+    .texto-parrafo-5 {
+        font-size: small !important;
+    }
+}
+/*
+*Fin responsive dispositivo móvil 
+*/
+
+/*
+*Inicio responsive tablet
+*/
+@media (max-width: 990px){
+    .texto-parrafo {
+    font-size: small !important;
+    }
+
+    .texto-parrafo-2 {
+    font-size: small !important;
+    }
+
+    .texto-parrafo-3 {
+    font-size: small !important;
+    }
+
+    .texto-parrafo-5 {
+    font-size: small !important;
+    }
+}
+/*
+*Fin responsive tablet
+*/
+
+/*
+*Inicio Puntuación Noticia  
+*/
+:root {
+    --color-inactivo: chartreuse;
+    --color-hover: yellow;
+}
+
+.valoracion {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.valoracion button {
+    background-color: initial;
+    border: 0;
+    color: var(--color-inactivo);
+    transition: 1s all;
+}
+
+.valoracion button:hover {
+    cursor: pointer;
+    color: var(--color-hover);
+    transform: rotate(360deg);
+ }
+
+button:nth-child(1):hover ~ button {
+    color: var(--color-hover);
+    transform: rotate(360deg);
+}
+
+button:nth-child(2):hover ~ button {
+    color: var(--color-hover);
+    transform: rotate(360deg);
+}
+
+button:nth-child(3):hover ~ button {
+    color: var(--color-hover);
+    transform: rotate(360deg);
+}
+
+button:nth-child(4):hover ~ button {
+    color: var(--color-hover);
+    transform: rotate(360deg);
+}
+
+button:nth-child(5):hover ~ button {
+    color: var(--color-hover);
+    transform: rotate(360deg);
+}
+
+button:hover,
+button:hover ~ button {
+    color: #00393D;
+}
+
+button[id="button"]:checked ~ i {
+    color: #00393D;
+}
+/*
+*Fin puntuación de noticia
+*/
+
+
+
+

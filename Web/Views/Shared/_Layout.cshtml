@@ -1,0 +1,295 @@
+﻿@using System.Security.Claims;
+@using Gepad.Models
+@inject IHttpContextAccessor Accessor
+
+@{
+    var Identificacion = User.FindFirstValue("Identificacion");
+}
+
+<!DOCTYPE html>
+<html dir="ltr" lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewData["Title"] IRIS-P1</title>
+
+    <!-- Custom CSS -->
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/templatemonster_bt5/dist/css/style.min.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/css/Animaciones.css" rel="stylesheet" />
+    <link href="~/css/labelfloat.css" rel="stylesheet" />
+    <link href="~/templatemonster_bt5/assets/libs/select2/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="~/templatemonster_bt5/assets/libs/sweetalert2/dist/sweetalert2.min.css" rel="stylesheet" />
+    <link href="~/lib/Kendo/styles/kendo.default-v2.min.css" rel="stylesheet" />
+    <link href="~/lib/Kendo/styles/kendo.default.mobile.min.css" rel="stylesheet" />
+    <link href="~/css/vanillatoasts.css" rel="stylesheet" />
+    <link href="~/css/cargando.css" rel="stylesheet" />
+    <link href="~/css/datatabless.css" rel="stylesheet" />
+    <link href="~/lib/icons/font-awesome/css/fontawesome-all.css" rel="stylesheet" />
+    <link href="~/lib/icons/simple-line-icons/css/simple-line-icons.css" rel="stylesheet" />
+    <link href="~/lib/icons/weather-icons/css/weather-icons.min.css" rel="stylesheet" />
+    <link href="~/lib/icons/themify-icons/themify-icons.css" rel="stylesheet" />
+    <link href="~/lib/icons/flag-icon-css/flag-icon.min.css" rel="stylesheet" />
+    <link href="~/lib/icons/material-design-iconic-font/css/materialdesignicons.min.css" rel="stylesheet" />
+    <link href="~/lib/icons/crypto-icons/cryptocoins.css" rel="stylesheet" />
+    <link href="~/lib/font-awesome/css/font-awesome.min.css" rel="stylesheet" />
+    <link href="~/css/colores.css" rel="stylesheet" />
+    <link href="~/lib/autocompletar/autocompletar.css" rel="stylesheet" />
+    <link href="~/lib/autocompletar/autocomplete-custom.css" rel="stylesheet" />
+    <link href="~/lib/autocompletar/chosen.css" rel="stylesheet" />
+    <link href="~/lib/autocompletar/components.css" rel="stylesheet" />
+    <link href="~/lib/autocompletar/jquery2024-ui.min.css" rel="stylesheet" />
+    <link href="~/lib/tabs/css/tabtwo.css" rel="stylesheet" />
+    <link href="~/lib/Tabs/css/normalize.css" rel="stylesheet" />
+    <link href="~/lib/Tabs/css/demo.css" rel="stylesheet" />
+    <link href="~/lib/Tabs/css/tabs.css" rel="stylesheet" />
+    <link href="~/lib/Tabs/css/tabstyles.css" rel="stylesheet" />
+    <link href="~/lib/tabs/css/estilotabs.css" rel="stylesheet" />
+    <link href="~/css/checkbox.css" rel="stylesheet" />
+    <link href="~/css/Select2Columnas.css" rel="stylesheet" />
+
+
+    @await RenderSectionAsync("styles", required: false)
+
+</head>
+
+<body>
+
+
+    <div id="main-wrapper" style="height:auto; min-height:100%">
+        <!-- ============================================================== -->
+        <!-- Topbar header - style you can find in pages.scss -->
+        <!-- ============================================================== -->
+        <header class="topbar">
+            <nav class="navbar top-navbar navbar-expand-md navbar-dark">
+                <div class="navbar-header">
+                    <!-- This is for the sidebar toggle which is visible on mobile only -->
+                    <a class="nav-toggler waves-effect waves-light d-block d-md-none" href="javascript:void(0)"><i class="ti-menu ti-close"></i></a>
+                    <!-- ============================================================== -->
+                    <!-- Logo -->
+                    <!-- ============================================================== -->
+
+                    <a class="navbar-brand" href="@Url.Action("Index", "Home", new { Area = "" })">
+                        <!-- Logo icon -->
+                        <b class="logo-icon">
+                            <img src="~/img/LogoIrisp1.png" width="60" height="60" style="margin-top:2px;" class="light-logo">
+                        </b>
+                        <!--End Logo icon -->
+                        <!-- Logo text -->
+
+                        <div class='column logo-text tituloA'>
+                            <span class="wpr"><span>Policía Nacional</span></span>
+                            <span class="wpr"><span class='title'>IRIS P1</span></span>
+                        </div>
+                    </a>
+
+                    <!-- ============================================================== -->
+                    <!-- End Logo -->
+                    <!-- ============================================================== -->
+                    <!-- ============================================================== -->
+                    <!-- Toggle which is visible on mobile only -->
+                    <!-- ============================================================== -->
+                    <a class="topbartoggler d-block d-md-none waves-effect waves-light" href="javascript:void(0)" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><i class="ti-more"></i></a>
+                </div>
+                <!-- ============================================================== -->
+                <!-- End Logo -->
+                <!-- ============================================================== -->
+                <!-- ============================================================== -->
+                <!-- Right side toggle and navegador Superior-->
+                <!-- ============================================================== -->
+                <div class="navbar-collapse collapse" id="navbarSupportedContent">
+                    <!-- ============================================================== -->
+                    <!-- toggle and nav items Boton de despliegue -->
+                    <!-- ============================================================== -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item d-none d-md-block"><a class="nav-link sidebartoggler waves-effect waves-light" href="javascript:void(0)" data-sidebartype="mini-sidebar"><i class="icon-arrow-left-circle"></i></a></li>
+                    </ul>
+                    <!-- ============================================================== -->
+                    <!-- Right side toggle and nav lista de navegador superior-->
+                    <!-- ============================================================== -->
+                    <ul class="navbar-nav">
+                        <!-- ============================================================== -->
+                        <!-- Search -->
+                        <!-- ============================================================== -->
+                        <!-- ============================================================== -->
+                        <!-- User profile and search Foto del Funcionario y datos del Mismo -->
+                        <!-- ============================================================== -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle waves-effect waves-dark" href="#" data-bs-toggle="dropdown"
+                               aria-haspopup="true" aria-expanded="false">
+                                <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" width="35" class="profile-pic rounded-circle" />
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end user-dd animated flipInY">
+                                <div class="d-flex no-block align-items-center p-3 azulPonal text-white mb-2">
+                                    <div class="">
+                                        <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" class="rounded-circle profile-pic rounded-circle" width="60" />
+                                    </div>
+                                    <div class="ms-2">
+                                        <h4 class="mb-0 text-white">@User.FindFirstValue("Funcionario")</h4>
+                                        <p class=" mb-0">@User.FindFirstValue("Cargo")</p>
+                                    </div>
+                                </div>
+                                <a class="dropdown-item" style="color: green;"  href="@Url.Action("Perfil", "Cuenta", new { Area = "" })">
+                                    <i data-feather="user" class="feather-sm text-warning me-1 ms-1"></i> Mi Perfil
+                                </a>
+
+
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" style="color: green;"  href="@Url.Action("CerrarSesion", "Cuenta", new { Area = "" })">
+                                    <i data-feather="log-out"
+                                       class="feather-sm text-danger me-1 ms-1"></i> Cerrar Sesión
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <div class="pl-4 p-2 text-center">
+                                </div>
+                            </div>
+                        </li>
+                        <!-- ============================================================== -->
+                        <!-- User profile and search -->
+                        <!-- ============================================================== -->
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        <!-- ============================================================== -->
+        <!-- End Topbar header -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- Left Sidebar - style you can find in sidebar.scss menu vertical -->
+        <!-- ============================================================== -->
+        <aside class="left-sidebar">
+            <!-- Sidebar scroll-->
+            <div class="scroll-sidebar">
+                <!-- Sidebar navigation-->
+                @await Html.PartialAsync("../Shared/_Menu", ViewBag.Menu as List<Comun.Areas.Admin.DtoMenu>)
+                <!-- End Sidebar navigation -->
+                
+            </div>
+            <!-- End Sidebar scroll-->
+            <!-- Bottom points-->
+            <div class="sidebar-footer">
+                <!-- item-->
+                <a href="@Url.Action("Index", "Home", new { Area = "" })" class="link" data-bs-toggle="tooltip" data-bs-placement="top" title="Inicio"><i class="fas fa-home"></i></a>
+                <!-- item-->
+                <a href="@Url.Action("Perfil", "Cuenta", new { Area = "" })" class="link" data-bs-toggle="tooltip" data-bs-placement="top" title="Mi Perfil"><i class="ti ti-user"></i></a>
+                <!-- item-->
+                <a href="@Url.Action("CerrarSesion", "Cuenta", new { Area = "" })" class="link" data-bs-toggle="tooltip" data-bs-placement="top" title="Cerrar sesión"><i class="mdi mdi-power"></i></a>
+            </div>
+            <!-- End Bottom points-->
+        </aside>
+
+        <!-- ============================================================== -->
+        <!-- End Left Sidebar - style you can find in sidebar.scss  -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- Page wrapper  -->
+        <!-- ============================================================== -->
+        <div class="page-wrapper">
+
+            <!-- ============================================================== -->
+            <!-- Container fluid  -->
+            <!-- ============================================================== -->
+            <div class="container-fluid">
+                @RenderBody()
+            </div>
+            <!-- ============================================================== -->
+            <!-- End Container fluid  -->
+            <!-- ============================================================== -->
+            <!-- ============================================================== -->
+            <!-- footer -->
+            <!-- ============================================================== -->
+            <footer class="footer BarraPieDameroForms" style="height:57px;">
+                <p><strong>&copy; @DateTime.Now.Year </strong>&nbsp;"Instrumento de Recolección de Información para el Servicio de Policía- IRISP1 </p>
+            </footer>
+            <!-- ============================================================== -->
+            <!-- End footer -->
+            <!-- ============================================================== -->
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- End Page wrapper  -->
+        <!-- ============================================================== -->
+    </div>
+    <!-- ============================================================== -->
+    <!-- End Wrapper -->
+    <!-- ============================================================== -->
+    <!-- Modal Estado Proceso-->
+    <div id="Process">
+        <div class="loader_sis">
+            <div class="loader_dialoge">
+                <div class="loader_containere text-center">
+                    <div class="loadere"></div>
+                    <h4 class="text-white">Procesando, espere...</h4>
+                </div>
+            </div>
+        </div>
+        <div class="loader_backe"></div>
+    </div>
+
+    <!--Script Originales -->
+    <script src="~/lib/jquery/dist/jQuery2024.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- ---------------------------------------------------->
+    <!------------------Plantilla Moster -------------------->
+    <!-- ---------------------------------------------------->
+    <!-- apps -->
+    <script src="~/templatemonster_bt5/dist/js/app.min.js"></script>
+    <!-- full sidebar -->
+    <script>
+        var redireccionarLogin = "@Url.Action("CerrarSesion", "Cuenta", new { Area = "" })";
+        $(function () {
+            let elem = document.getElementById("TituloNivelUno");
+            "use strict";
+            $("#main-wrapper").AdminSettings({
+                Theme: false, // this can be true or false ( true means dark and false means light ),
+                Layout: 'vertical',
+                LogoBg: 'skin1', // You can change the Value to be skin1/skin2/skin3/skin4/skin5/skin6
+                NavbarBg: 'skin1', // You can change the Value to be skin1/skin2/skin3/skin4/skin5/skin6
+                SidebarType: 'full', // You can change it full / mini-sidebar / iconbar / overlay
+                SidebarColor: 'skin1', // You can change the Value to be skin1/skin2/skin3/skin4/skin5/skin6
+                SidebarPosition: false, // it can be true / false ( true means Fixed and false means absolute )
+                HeaderPosition: false, // it can be true / false ( true means Fixed and false means absolute )
+                BoxedLayout: false, // it can be true / false ( true means Boxed and false means Fluid )
+
+            });
+        });
+    </script>
+    <script src="~/templatemonster_bt5/assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js"></script>
+
+    <!--Menu sidebar -->
+    <script src="~/templatemonster_bt5/dist/js/sidebarmenu.js"></script>
+    <!--Custom JavaScript -->
+    <script src="~/templatemonster_bt5/dist/js/feather.min.js"></script>
+    <script src="~/templatemonster_bt5/dist/js/custom.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/lib/Kendo/js/kendo.all.min.js"></script>
+    <script src="~/lib/Kendo/js/cultures/kendo.culture.es-CO.min.js"></script>
+    <script src="~/templatemonster_bt5/assets/libs/sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <script src="~/templatemonster_bt5/assets/extra-libs/sweetalert2/sweet-alert.init.js"></script>
+    <script src="~/templatemonster_bt5/assets/libs/select2/dist/js/select2.full.min.js"></script>
+    <script src="~/templatemonster_bt5/assets/libs/select2/dist/js/select2.min.js"></script>
+    <script src="~/templatemonster_bt5/dist/pages/forms/select2/select2.init.js"></script>
+    <script src="~/templatemonster_bt5/assets/libs/datatables/media/js/jquery.datatables.min.js"></script>
+    <script src="~/templatemonster_bt5/dist/pages/datatable/custom-datatable.js"></script>
+    <script src="~/templatemonster_bt5/dist/pages/datatable/datatable-basic.init.js"></script>
+    <script src="~/js/vanillatoasts.js"></script>
+    <script src="~/js/iniciartabla.js"></script>
+    <script src="~/js/cierreprogramadosesion.js"></script>
+    <script src="~/js/checkbox.js"></script>
+    <script src="~/js/bootbox.js"></script>
+    <script src="~/lib/autocompletar/jquery2024-ui.min.js"></script>    
+    <script src="~/js/bootstrapvalidator.js"></script>
+    <script src="~/js/datatables.rowsgroup.js"></script>
+    <script src="~/js/utilidades.js"></script>
+    @* <script src="~/js/select2colum.js"></script> *@
+
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

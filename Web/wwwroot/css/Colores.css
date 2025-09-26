@@ -1,0 +1,271 @@
+﻿.SemaforoNaranja {
+    background-image: -webkit-radial-gradient(top center, ellipse farthest-side, #ffe366bf, #fb8100a8);
+    background-image: -moz-radial-gradient(top center, ellipse farthest-side, black, white);
+    background-image: -ms-radial-gradient(top center, ellipse farthest-side, black, white);
+    background-image: -o-radial-gradient(top center, ellipse farthest-side, black, white);
+    box-shadow: 2px 0px 1px #fb8100;
+    border-radius: 15px;
+    color: #297516;
+    font-weight: bold
+}
+
+.SemaforoAzul {
+    background-image: -webkit-radial-gradient(#4ee6f5f0, #132ff987);
+    background-image: -moz-radial-gradient(red, black);
+    background-image: -ms-radial-gradient(red, black);
+    background-image: -o-radial-gradient(red, black);
+    box-shadow: 2px 0px 1px #226de1;
+    border-radius: 15px;
+    color: #297516;
+    font-weight: bold
+}
+
+.SemaforoAmarillo {
+    background-image: -webkit-radial-gradient(top center, ellipse farthest-side, #fdfdfd, #f7f70278);
+    background-image: -moz-radial-gradient(top center, ellipse farthest-side, black, white);
+    background-image: -ms-radial-gradient(top center, ellipse farthest-side, black, white);
+    background-image: -o-radial-gradient(top center, ellipse farthest-side, black, white);
+    box-shadow: 2px 0px 1px #e3e309;
+    border-radius: 15px;
+    color: #297516;
+    font-weight: bold
+}
+
+.SemaforoVerde {
+    background-image: -webkit-radial-gradient(top center, ellipse farthest-side, #a1f149, #17670c);
+    background-image: -moz-radial-gradient(top center, ellipse farthest-side, black, white);
+    background-image: -ms-radial-gradient(top center, ellipse farthest-side, black, white);
+    background-image: -o-radial-gradient(top center, ellipse farthest-side, black, white);
+    box-shadow: 2px 0px 1px #42f10b;
+    border-radius: 15px;
+    color: #ffff;
+}
+
+.SemaforoRojo {
+    background-image: -webkit-radial-gradient(top center, #e80e0e8c, #7771713b);
+    background-image: -moz-radial-gradient(top center, red, black);
+    background-image: -ms-radial-gradient(top center, red, black);
+    background-image: -o-radial-gradient(top center, red, black);
+    box-shadow: 2px 0px 1px #fd0606;
+    border-radius: 15px;
+    color: #4e322f;
+    font-weight: bold
+}
+
+.red {
+    color: red;
+}
+
+.green {
+    color: green;
+}
+
+.greenBold {
+    color: green;
+    font-weight: bold;
+    font-size: 14px;
+    font-family: verdana;
+    margin-bottom:4px;
+}
+
+.orange {
+    color: orange;
+}
+
+.darkorchid {
+    color: darkorchid;
+}
+
+.white{
+    color:white;
+}
+
+.black {
+    color: black;
+}
+
+.yellow {
+    color: yellow !important;
+}
+
+.ColorBlack {
+    color: black;
+}
+
+.mediumspringgreen {
+    color: #00fa9a !important;
+}
+
+.plum {
+    color: plum !important;
+}
+
+.plumhijo {
+    color: #f9c5f9 !important;
+}
+
+.aqua {
+    color: aqua !important;
+}
+
+.salmon {
+    color: lightsalmon !important;
+}
+
+.peru {
+    color: peru;
+}
+
+.aquamarine {
+    color: aquamarine;
+}
+
+.salmonhijo {
+    color: #ffb861;
+}
+
+.khaki {
+    color: khaki;
+}
+
+.gold {
+    color: gold !important;
+}
+
+.blueClaro {
+    color: #53cefd !important;
+}
+
+.verde {
+    color: #4af105;
+}
+
+.mar {
+    color: #6df8ff !important;
+}
+
+.Marina {
+    color: #00fa9a !important;
+}
+
+.antiquewhite {
+    color: #faebd7 !important;
+}
+
+.deepskyblue {
+    color: #00f7ff !important;
+}
+
+.chartreuse {
+    color: chartreuse !important;
+}
+
+.blue {
+    color: #478fca !important;
+}
+
+.marino {
+    color: #0cd8e2 !important;
+}
+.text-red {
+    color: #dd4b39 !important
+}
+
+.text-yellow {
+    color: #ffff00 !important
+}
+
+.text-aqua {
+    color: #00c0ef !important
+}
+
+.text-blue {
+    color: #0073b7 !important
+}
+
+.text-white {
+    color: white !important
+}
+
+.text-black {
+    color: #111 !important
+}
+
+.text-light-blue {
+    color: #3c8dbc !important
+}
+
+.text-green {
+    color: #00a65a !important
+}
+
+.text-gray {
+    color: #d2d6de !important
+}
+
+.text-navy {
+    color: #001f3f !important
+}
+
+.text-teal {
+    color: #39cccc !important
+}
+
+.text-olive {
+    color: #3d9970 !important
+}
+
+.text-lime {
+    color: #01ff70 !important
+}
+
+.text-orange {
+    color: #ff851b !important
+}
+
+.text-fuchsia {
+    color: #f012be !important
+}
+
+.text-purple {
+    color: #605ca8 !important
+}
+
+.text-maroon {
+    color: #d81b60 !important
+}
+
+.text-mora {
+    color: #6a29bd !important
+}
+
+.text-azul {
+    color: #2800f9 !important
+}
+
+.text-fuccia {
+    color: #ea19a8 !important
+}
+.Dorado {
+   color: #cfb87c !important;
+}
+.Azul {
+    color: #0f2fa5 !important
+}
+td.SemaforosAmarillo {
+    background: url('../img/SemaforoAmarillo.png') no-repeat center center;
+    cursor: pointer;
+    background-size: 25px;
+}
+
+td.SemaforosRojo {
+    background: url('../img/SemaforoRojo.png') no-repeat center center;
+    cursor: pointer;
+    background-size: 25px;
+}
+
+td.SemaforosVerde {
+    background: url('../img/SemaforoVerde.png') no-repeat center center;
+    cursor: pointer;
+    background-size: 25px;
+}

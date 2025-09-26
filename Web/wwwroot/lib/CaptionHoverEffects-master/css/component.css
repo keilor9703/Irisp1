@@ -1,0 +1,370 @@
+
+.titleIconoModulo {
+    position: absolute;
+    top: 7%;
+    z-index: 30;
+    color: white;
+    font-weight: 500;
+    font-size: 18px;
+    width: 100%;
+    text-align: center;
+    transition: 0.4s !important;
+}
+
+/* Individual Caption Styles */
+
+/* Caption Style 5 */
+.cs-style-5 figure .imgIcon {
+    position: absolute !important;
+    top: 20%;
+    width: 56%;
+    left: 22%;
+    z-index: 10;
+    -webkit-transition: -webkit-transform 0.4s;
+    -moz-transition: -moz-transform 0.4s;
+    transition: transform 0.4s;
+    border-radius: 25px;
+}
+
+.no-touch .cs-style-5 figure:hover .imgIcon, /* =============================== */
+.cs-style-5 figure.cs-hover .imgIcon {
+    -webkit-transform: scale(0.5) translateY(-50%);
+    -moz-transform: scale(0.5) translateY(-50%);
+    -ms-transform: scale(0.5) translateY(-50%);
+    transform: scale(0.5) translateY(-50%);
+    transition: all 0.4s ease;
+    filter: drop-shadow(2px 4px 20px #61b331);
+}
+
+.no-touch .cs-style-5 figure:hover .divGrid, /* =============================== */
+.cs-style-5 figure.cs-hover .divGrid {
+    -webkit-transform: scale(0.5);
+    -moz-transform: scale(0.5);
+    -ms-transform: scale(0.5);
+    transform: scale(0.5);
+    opacity: 0;
+    transition: 0.4s;
+    border-radius: 50%;
+    top: 0;
+}
+
+.no-touch .cs-style-5 figure:hover .titleIconoModulo {
+    -webkit-transform: scale(0.8) translateY(20%);
+    -moz-transform: scale(0.8) translateY(20%);
+    -ms-transform: scale(0.8) translateY(20%);
+    transform: scale(0.8) translateY(20%);
+    transition: 0.6s
+}
+
+.cs-style-5 figure .titleIconoModulo {
+    position: absolute;
+    top: 7%;
+    z-index: 30;
+    color: white;
+    font-weight: 500;
+    font-size: 18px;
+    width: 100%;
+    text-align: center;
+    transition: 0.4s !important;
+}
+
+.grid {
+    padding: 20px 20px 100px 20px;
+    /* max-width: 1300px; */
+    margin: 0 auto;
+    list-style: none;
+    text-align: center;
+}
+
+.divGrid {
+    display: inline-block;
+    width: 348px;
+    margin: 0;
+    padding: 20px;
+    text-align: left;
+    position: relative;
+}
+
+.grid figure {
+    margin: 0;
+    position: relative;
+}
+
+    .grid figure .imgIcon {
+        max-width: 100%;
+        display: block;
+        position: relative;
+        filter: drop-shadow(2px 4px 10px white);
+    }
+
+.grid figcaption {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 20px;
+    background: #032b57;
+    color: #b3ff00;
+}
+
+.carton {
+    opacity: 0;
+    position: absolute !important;
+    top: -10%;
+    transform: scale(0.5);
+    transition: all 0.4s ease;
+}
+
+.no-touch .cs-style-5 figure:hover .carton {
+    opacity: 1;
+    -webkit-transform: scale(0.3);
+    -moz-transform: scale(0.3);
+    -ms-transform: scale(0.3);
+    transform: scale(0.3);
+    transition: all 0.4s ease;
+    top: -10%
+}
+
+.cs-style-5 figcaption {
+    height: 100%;
+    width: 100% !important;
+    opacity: 0;
+    -webkit-transform: scale(0.7);
+    -moz-transform: scale(0.7);
+    -ms-transform: scale(0.7);
+    transform: scale(0.7);
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transition: -webkit-transform 0.4s, opacity 0.4s;
+    -moz-transition: -moz-transform 0.4s, opacity 0.4s;
+    transition: transform 0.4s, opacity 0.4s;
+    border-radius: 10% !important;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0% !important;
+    padding: 20px;
+    background: #2c3f52;
+    color: #b3ff00;
+}
+
+.no-touch .cs-style-5 figure:hover figcaption, /* =============================== */
+.cs-style-5 figure.cs-hover figcaption {
+    -webkit-transform: scale(1);
+    -moz-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+    opacity: 1;
+}
+
+.cs-style-5 figure .btnMenuInact {
+    position: absolute;
+    bottom: 60px;
+    right: 105px;
+    transition: transform 0.4s;
+}
+
+/* Caption Style 6 */
+.cs-style-6 figure .imgIcon {
+    z-index: 10;
+    -webkit-transition: -webkit-transform 0.4s;
+    -moz-transition: -moz-transform 0.4s;
+    transition: transform 0.4s;
+}
+
+.cs-style-5 figure button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+}
+
+@media screen and (max-width: 31.5em) {
+    .grid {
+        padding: 10px 10px 100px 10px;
+    }
+
+    .divGrid {
+        width: 100%;
+        min-width: 300px;
+    }
+}
+
+.no-touch .cs-style-5 figure:hover .btnMenuAct, /* =============================== */
+.cs-style-5 figure.cs-hover .btnMenuAct {
+    -webkit-transform: scale(1);
+    -moz-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+    opacity: 1;
+    transform: translate(100%);
+}
+
+.btnMenuAct {
+    text-align: left;
+    padding: 10px 15px;
+    border-radius: 7px;
+    background: #94e930;
+    color: #032b57 !important;
+    font-weight: 500;
+    margin: 4px;
+    filter: drop-shadow(8px 6px 6px #032b57);
+    width: max-content;
+    opacity: 0;
+    -webkit-transform: scale(0.5);
+    -moz-transform: scale(0.5);
+    -ms-transform: scale(0.5);
+    transform: scale(0.5) translate(-100%);
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transition: -webkit-transform 0.4s, opacity 0.4s;
+    -moz-transition: -moz-transform 0.4s, opacity 0.4s;
+    transition: transform 0.4s, opacity 0.4s;
+    z-index: 40;
+}
+
+.divMenuIndex {
+    filter: drop-shadow(12px 15px 12px #414141);
+    background: linear-gradient(23deg, rgb(97 179 49) 25%, rgb(11 58 15) 97%) !important;
+    height: 255px;
+    width: 306px !important;
+    border-radius: 25px;
+}
+
+.spanSubtitulo {
+    position: absolute;
+    left: 17%;
+    width: 65%;
+    top: 70%;
+}
+
+.spanSubtituloInact {
+    position: absolute;
+    left: 11%;
+    width: 80%;
+    top: 55%;
+}
+
+.divSection {
+    position: absolute;
+    height: 255px;
+    width: 270px;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.no-touch .cs-style-5 figure:hover .imgIconArco1, .cs-style-5 figure.cs-hover .imgIconArco1,
+.no-touch .cs-style-5 figure:hover .imgIconArco2, .cs-style-5 figure.cs-hover .imgIconArco2 {
+    opacity: 1;
+    -webkit-transform: scale(0.63) translateY(-16%);
+    -moz-transform: scale(0.63) translateY(-16%);
+    -ms-transform: scale(0.63) translateY(-16%);
+    transform: scale(0.63) translateY(-23%);
+    transition: all 0.4s ease;
+}
+
+/* Caption Style 5 */
+.cs-style-5 figure .imgIconArco1 {
+    position: absolute;
+    top: 17%;
+    width: 44%;
+    left: 28%;
+    z-index: 10;
+    -webkit-transition: -webkit-transform 0.4s;
+    -moz-transition: -moz-transform 0.4s;
+    transition: transform 0.4s;
+    border-radius: 25px;
+    opacity: 0;
+    -webkit-animation: 3s rotate linear infinite;
+    animation: 3s rotate linear infinite;
+}
+
+/* Caption Style 5 */
+.cs-style-5 figure .imgIconArco2 {
+    position: absolute;
+    top: 22%;
+    width: 36%;
+    left: 32%;
+    z-index: 10;
+    -webkit-transition: -webkit-transform 0.4s;
+    -moz-transition: -moz-transform 0.4s;
+    transition: transform 0.4s;
+    border-radius: 25px;
+    opacity: 0;
+    -webkit-animation: 8s rotate linear infinite;
+    animation: 8s rotate linear infinite;
+}
+
+.divMenuIndexInact {
+    background: linear-gradient(23deg, rgb(41 163 104 / 94%) 25%, rgb(9 136 132) 62%, rgb(21 113 141) 97%) !important;
+    height: 255px;
+    width: 306px !important;
+    border-radius: 25px;
+    filter: grayscale(0.8);
+}
+
+.divInact {
+    filter: grayscale(0.8);
+}
+
+.figcaptionInact {
+    filter: grayscale(0.7)
+}
+
+.no-touch .cs-style-5 figure:hover .imgIconInact, /* =============================== */
+.cs-style-5 figure.cs-hover .imgIconInact {
+    filter: grayscale(0.7) drop-shadow(2px 2px 10px #ffffff) !important;
+}
+
+.no-touch .cs-style-5 figure:hover .btnMenuInact, /* =============================== */
+.cs-style-5 figure.cs-hover .btnMenuInact {
+    opacity: 1;
+    transition: all 0.4s ease;
+    -webkit-transform: translate(5%, 90%);
+    -moz-transform: translate(5%, 90%);
+    -ms-transform: translate(5%, 90%);
+    transform: translate(5%, 90%);
+}
+
+.no-touch .cs-style-5 figure:hover .btnMenuInact2, /* =============================== */
+.cs-style-5 figure.cs-hover .btnMenuInact2 {
+    opacity: 1;
+    transition: all 0.4s ease;
+    -webkit-transform: translate(-50%);
+    -moz-transform: translate(-50%);
+    -ms-transform: translate(-50%);
+    transform: translate(15%, 90%);
+}
+
+.textoPrincipal {
+    text-shadow: 6px 4px 4px #6f99cd69;
+    font-family: 'Francois One', sans-serif;
+    font-weight: bold !important;
+    font-size: 2.5vw;
+    line-height: 3vw;
+    background: -webkit-linear-gradient(left top, #032B57, #234c60);
+    background: linear-gradient(to bottom right, #032B57, #234c60);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/*FIN MONEDA GIRATORIA ==========================================================*/
+#texto_principal {
+    margin-top: -15px;
+    margin-bottom: -23px;
+    text-shadow: 6px 4px 4px #6f99cd69;
+    font-family: 'Francois One', sans-serif;
+    font-weight: bold !important;
+    font-size: 2.5vw;
+    line-height: 3vw;
+    background: -webkit-linear-gradient(left top, #032B57, #234c60);
+    background: linear-gradient(to bottom right, #032B57, #234c60);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
