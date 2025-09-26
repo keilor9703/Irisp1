@@ -65,6 +65,7 @@ builder.Services.AddScoped<IDbDominios, DbDominios>();
 builder.Services.AddScoped<IDbClientes, DbClientes>();
 builder.Services.AddScoped<IUnidades, Unidades>();
 builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
+builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 
 // httpClient
 builder.Services.AddHttpClient<IApiWebOud, ApiWebOud>();
