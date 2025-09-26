@@ -77,7 +77,7 @@ function ConsultarIrisAnio() {
                 GetGrillaFinalizacion(datos);
             } else {
 
-                $("#pnGrillaHechos").addClass('hidden');
+                $("#pnGrillaSeguimiento").addClass('hidden');
                 ModalInfo("Sin resultados", "No se encontraron hechos para el año seleccionado.");
             }
         },
