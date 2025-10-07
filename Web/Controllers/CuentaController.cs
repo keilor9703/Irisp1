@@ -54,14 +54,14 @@ namespace Gepad.Controllers
              if (!ModelState.IsValid)
                 return View(loginUsuario);
 
-             //Deshabilitar el OUD -- ALDANA
-            /*var respuestaOud = await _iGestionOUD.ObtenerOudAsync(loginUsuario);
+             //Deshabilitar el OUD 
+          //var respuestaOud = await _iGestionOUD.ObtenerOudAsync(loginUsuario);
 
-            if (!respuestaOud.Respuesta)
-            {
-                ModelState.AddModelError("", "Usuario o Contraseña incorrecta, revise");
-                return View();
-            }*/
+          //  if (!respuestaOud.Respuesta)
+          //  {
+          //      ModelState.AddModelError("", "Usuario o Contraseña incorrecta, revise");
+          //      return View();
+          //  }
 
             //Obtener IP
             var Ip = _iHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();

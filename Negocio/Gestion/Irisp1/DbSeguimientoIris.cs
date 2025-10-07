@@ -21,6 +21,7 @@ namespace Negocio.Gestion.Irisp1
         private readonly IConfiguration _iConfiguration;
         private readonly string _strConexionIris_Test;
         private readonly string _strConexionTelepol;
+        private readonly string _strConexionIris_Disec;
         private readonly ILogger _logger;
         #endregion
 
@@ -30,6 +31,7 @@ namespace Negocio.Gestion.Irisp1
             _iConfiguration = iConfiguration;
             _strConexionIris_Test = _iConfiguration.GetConnectionString("strConexionIris_Test");
             _strConexionTelepol = _iConfiguration.GetConnectionString("strConexionTelepol");
+            _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }
         #endregion
@@ -39,7 +41,7 @@ namespace Negocio.Gestion.Irisp1
             List<SeguimientoIrisDto> Retorno = new();
             DtoResultado<List<SeguimientoIrisDto>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -120,14 +122,14 @@ namespace Negocio.Gestion.Irisp1
             List<DtoIrispCriminalidad> retorno = new();
             DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
             {
                 objCommand.Connection = Conexion;
                 objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetInfoGrillas";
+                objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
                 objCommand.BindByName = true;
                 Conexion.Open();
 
@@ -138,7 +140,7 @@ namespace Negocio.Gestion.Irisp1
                 if (Conexion.State == ConnectionState.Open)
                 {
                     resultado.Load(await objCommand.ExecuteReaderAsync());
-                    objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+
                     retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
 
                     if (retorno.Count > 0)
@@ -169,7 +171,7 @@ namespace Negocio.Gestion.Irisp1
                 Conexion.Dispose();
                 objCommand.Connection.Close();
                 _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.F_GetInfoGrillas " + e);
+                _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas " + e);
 
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"{e.Message} - {e.InnerException}";
@@ -186,116 +188,7 @@ namespace Negocio.Gestion.Irisp1
             }
             return resp;
         }
-        public async Task<List<SeguimientoDto>> ConsultarSeguimientoIris(string _anio)
-        {
-            var seguimientoIris = new List<SeguimientoDto>();
 
-            try
-             {
-                using (var conexion = new OracleConnection(_strConexionIris_Test))
-                {
-                    await conexion.OpenAsync();
 
-                    using (var comando = new OracleCommand("PK_SEGUIMIENTO_IRIS.F_GetConsultIris", conexion))
-                    {
-                        comando.CommandType = CommandType.StoredProcedure;
-
-                        // 🔹 La función devuelve un REF CURSOR
-                        comando.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-
-                        // 🔹 Parámetro de entrada
-                        comando.Parameters.Add("P_Anio", OracleDbType.Decimal).Value = Convert.ToInt32(_anio);
-
-                        using (var reader = await comando.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                var Iris = new SeguimientoDto
-                                {
-                                    CriminalidadId = reader["CRIMINALIDADID"]?.ToString(),                                   
-                                    IdResponsable = reader["IDRESPONSABLE"]?.ToString(),
-                                    IdEstado = reader["IDESTADO"] != DBNull.Value ? Convert.ToInt32(reader["IDESTADO"]) : (int?)null,
-                                    EstadoDescripcion = reader["ESTADODESCRIPCION"]?.ToString(),
-                                    IdEstadoExistencia = reader["IDESTADOEXISTENCIA"] != DBNull.Value ? Convert.ToInt32(reader["IDESTADOEXISTENCIA"]) : (int?)null,
-                                    EstadoExistenciaDescripcion = reader["ESTADOEXISTENCIADESCRIPCION"]?.ToString(),
-                                    Codigo = reader["CODIGO"]?.ToString(),
-                                    IdUnidadResponsable = reader["IDUNIDADRESPONSABLE"] != DBNull.Value ? Convert.ToInt32(reader["IDUNIDADRESPONSABLE"]) : (int?)null,
-                                    UnidadResponsable = reader["UNIDADRESPONSABLE"]?.ToString(),
-                                    IdUnidad = reader["IDUNIDAD"] != DBNull.Value ? Convert.ToInt32(reader["IDUNIDAD"]) : (int?)null,
-                                    Unidad = reader["UNIDAD"]?.ToString(),
-                                    Dependencia = reader["DEPENDENCIA"]?.ToString(),
-                                    Municipio = reader["MUNICIPIO"]?.ToString(),
-                                    FechaInicioExistencia = reader["FECHAINICIOEXISTENCIA"] != DBNull.Value ? Convert.ToDateTime(reader["FECHAINICIOEXISTENCIA"]) : (DateTime?)null,
-                                    IdClase = reader["IDCLASE"] != DBNull.Value ? Convert.ToInt32(reader["IDCLASE"]) : (int?)null,
-                                    Clase = reader["CLASE"]?.ToString(),
-                                    NombreClase = reader["NOMBRECLASE"]?.ToString(),
-                                    CantidadIntegrantes = reader["CANTIDADINTEGRANTES"] != DBNull.Value ? Convert.ToInt32(reader["CANTIDADINTEGRANTES"]) : (int?)null,
-                                    CaracteristicasGenerales = reader["CARACTERISTICASGENERALES"]?.ToString(),
-                                    DescripcionTramite = reader["DESCRIPCIONTRAMITE"]?.ToString(),
-                                    IdZona = reader["IDZONA"] != DBNull.Value ? Convert.ToInt32(reader["IDZONA"]) : (int?)null,
-                                    Zona = reader["ZONA"]?.ToString(),
-                                    TipoServicio = reader["TIPOSERVICIO"]?.ToString(),
-                                    IdFuente = reader["IDFUENTE"] != DBNull.Value ? Convert.ToInt32(reader["IDFUENTE"]) : (int?)null,
-                                    Fuente = reader["FUENTE"]?.ToString(),
-                                    FechaCreacion = reader["FECHACREACION"] != DBNull.Value ? Convert.ToDateTime(reader["FECHACREACION"]) : (DateTime?)null,
-                                    IdentificacionInforma = reader["IDENTIFICACIONINFORMA"] != DBNull.Value ? Convert.ToInt64(reader["IDENTIFICACIONINFORMA"]) : (long?)null,
-                                    Celular = reader["CELULAR"]?.ToString(),
-                                    IdTipoServicio = reader["IDTIPOSERVICIO"] != DBNull.Value ? Convert.ToInt32(reader["IDTIPOSERVICIO"]) : (int?)null,
-                                    IdCuadrante = reader["IDCUADRANTE"] != DBNull.Value ? Convert.ToInt32(reader["IDCUADRANTE"]) : (int?)null,
-                                    Vigente = reader["VIGENTE"] != DBNull.Value ? Convert.ToInt16(reader["VIGENTE"]) : (short?)null,
-                                    MaquinaCrea = reader["MAQUINACREA"]?.ToString(),
-                                    IdentificacionCrea = reader["IDENTIFICACIONCREA"] != DBNull.Value ? Convert.ToInt64(reader["IDENTIFICACIONCREA"]) : (long?)null,
-                                    FechaModifica = reader["FECHAMODIFICA"] != DBNull.Value ? Convert.ToDateTime(reader["FECHAMODIFICA"]) : (DateTime?)null,
-                                    IdentificacionModifica = reader["IDENTIFICACIONMODIFICA"] != DBNull.Value ? Convert.ToInt64(reader["IDENTIFICACIONMODIFICA"]) : (long?)null,
-                                    MaquinaModifica = reader["MAQUINAMODIFICA"]?.ToString(),
-                                    ConsecutivoCodigo = reader["CONSECUTIVOCODIGO"] != DBNull.Value ? Convert.ToInt32(reader["CONSECUTIVOCODIGO"]) : (int?)null,
-                                    SiglaUnidad = reader["SIGLAUNIDAD"]?.ToString(),
-                                    Cuadrante = reader["CUADRANTE"]?.ToString(),
-                                    DependCuadrante = reader["DEPENDCUADRANTE"]?.ToString(),
-                                    EstacionCuadrante = reader["ESTACIONCUADRANTE"]?.ToString(),
-                                    Nivel1Cuadrante = reader["NIVEL1CUADRANTE"]?.ToString(),
-                                    CelularCuadrante = reader["CELULARCUADRANTE"]?.ToString(),
-                                    //FechaAsignacionVerificacionExistencia = reader["FECHAASIGNACIONVERIFICACIONEXISTENCIA"] != DBNull.Value ? Convert.ToDateTime(reader["FECHAASIGNACIONVERIFICACIONEXISTENCIA"]) : (DateTime?)null,
-                                    IdTipoResultado = reader["IDTIPORESULTADO"] != DBNull.Value ? Convert.ToInt32(reader["IDTIPORESULTADO"]) : (int?)null,
-                                    DescTipoResultado = reader["DESCTIPORESULTADO"]?.ToString(),
-                                    NumeroResultado = reader["NUMERORESULTADO"]?.ToString(),
-                                    EstadoResultados = reader["ESTADORESULTADOS"]?.ToString()
-                                };
-
-                                seguimientoIris.Add(Iris);
-                            }
-                        }
-                    }
-
-                }
-            }
-            catch (OracleException ex)
-            {
-                _logger.LogError($"Error Oracle en Consultar SeguimientoIris: {ex.Message}");
-                throw new Exception("Error Oracle al consultar seguimientos.", ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error inesperado en ConsultarSeguimientoIris: {ex.Message}");
-                throw new Exception("Error inesperado al consultar seguimientos.", ex);
-            }
-
-            return seguimientoIris;
-        }
-
-        //Task<DtoResultado<List<SeguimientoIrisDto>>> IDbSeguimientoIris.F_GetAniosIrisP1()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(int V_Anio)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        Task<DtoResultado<List<DtoIrispCriminalidad>>> IDbSeguimientoIris.F_GetInfoGrillas(int V_Anio)
-        {
-            return F_GetInfoGrillas(V_Anio);
-        }
     }
 }

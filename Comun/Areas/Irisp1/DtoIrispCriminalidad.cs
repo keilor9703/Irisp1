@@ -11,6 +11,10 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("IdUnidad")]
         public Int64? IdUnidad { get; set; }
 
+        [JsonPropertyName("IdUnidadResponsable")]
+        public Int64? IdUnidadResponsable { get; set; }
+
+
         [JsonPropertyName("IdZona")]
         public Int64? IdZona { get; set; }
 
@@ -62,11 +66,9 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("EspecialidadAporta")]
         public int? EspecialidadAporta { get; set; }
 
-        [JsonPropertyName("ContadorVerificacionExistencia")]
-        public Int64? ContadorVerificacionExistencia { get; set; }
+        
 
-        [JsonPropertyName("ContadorProcesoInvestigativo")]
-        public Int64? ContadorProcesoInvestigativo { get; set; }
+        
 
         [JsonPropertyName("IdentificacionCrea")]
         public Int64? IdentificacionCrea { get; set; }
@@ -133,6 +135,12 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("DescripcionTramite")]
         public string? DescripcionTramite { get; set; }
+
+        [JsonPropertyName("ContadorVerificacionExistencia")]
+        public string? ContadorVerificacionExistencia { get; set; }
+
+        [JsonPropertyName("ContadorProcesoInvestigativo")]
+        public string? ContadorProcesoInvestigativo { get; set; }
 
         [JsonPropertyName("Origen")]
         public string? Origen { get; set; }

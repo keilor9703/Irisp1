@@ -1195,8 +1195,15 @@ legend {
     font-size: 12px !important;
     border-radius: 4px !important;
 }
+/*.sidebar-nav ul .sidebar-item .first-level {
+    padding: 5px 0 0 5px;
+    background-color: #002A66 !important;
+}
+*/
+
 .sidebar-nav ul .sidebar-item .first-level {
-    padding: 0px 0px 0px 10px !important;
+    padding: 5px 0 0 5px;
+    background-color: #002A66 !important;
 }
 .sidebar-nav .has-arrow::after {
     top: 21px !important;

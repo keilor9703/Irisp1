@@ -8,7 +8,7 @@ namespace Comun.Areas.Irisp1
 {
     public class SeguimientoDto
     {
-        public DateTime? FechaAsignacionVerificacionExistencia;
+        public DateTime? FechaAsignacionVerificacionExistencia { get; set; }
 
         public string CriminalidadId { get; set; }
 

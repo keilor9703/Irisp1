@@ -44,7 +44,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoIrisp1> Retorno = new();
             DtoResultado<List<DtoIrisp1>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -125,7 +125,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoIrispCriminalidad> retorno = new();
             DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -143,7 +143,7 @@ namespace Negocio.Gestion.Irisp1
                 if (Conexion.State == ConnectionState.Open)
                 {
                     resultado.Load(await objCommand.ExecuteReaderAsync());
-                   
+
                     retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
 
                     if (retorno.Count > 0)
@@ -192,84 +192,130 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetEstadosIrisP1()
-        {
-            DataTable resultado = new();
-            List<DtoIrispCriminalidad> retorno = new();
-            DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
-            using var objCommand = new OracleCommand();
 
-            try
-            {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetEstadosIrisP1";
-                objCommand.BindByName = true;
-                Conexion.Open();
+        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
+        //{
+        //    List<DtoIrispCriminalidad> retorno = new();
+        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
+        //    using var objCommand = new OracleCommand();
 
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());         
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
+        //    try
+        //    {
+        //        objCommand.Connection = Conexion;
+        //        objCommand.CommandType = CommandType.StoredProcedure;
+        //        objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
+        //        objCommand.BindByName = true;
 
-                    if (retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetMenu";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
-                }
+        //        objCommand.Parameters.Clear();
+        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
 
-            }
-            catch (Exception e)
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetEstadosIrisP1 " + e);
+        //        await Conexion.OpenAsync();
 
-                resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
+        //        using var reader = await objCommand.ExecuteReaderAsync();
+        //        while (await reader.ReadAsync())
+        //        {
+        //            var dto = new DtoIrispCriminalidad
+        //            {
+        //                // ---------- Identificadores ----------
+        //                CriminalidadId = reader["CriminalidadId"]?.ToString(),
+        //                IdResponsable = reader["IdResponsable"]?.ToString(),
+        //                IdUnidad = reader["IdUnidad"] == DBNull.Value ? null : Convert.ToInt64(reader["IdUnidad"]),
+        //                IdUnidadResponsable = reader["IdUnidadResponsable"] == DBNull.Value ? null : Convert.ToInt64(reader["IdUnidad"]),
 
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
-            }
-            return resp;
-        }
+        //                // ---------- Numéricos ----------
+        //                IdZona = reader["IdZona"] == DBNull.Value ? null : Convert.ToInt32(reader["IdZona"]),
+        //                IdentificacionInforma = reader["IdentificacionInforma"] == DBNull.Value ? null : Convert.ToInt64(reader["IdentificacionInforma"]),
+        //                IdTipoServicio = reader["IdTipoServicio"] == DBNull.Value ? null : Convert.ToInt32(reader["IdTipoServicio"]),
+        //                IdCuadrante = reader["IdCuadrante"] == DBNull.Value ? null : Convert.ToInt32(reader["IdCuadrante"]),
+        //                IdClase = reader["IdClase"] == DBNull.Value ? null : Convert.ToInt32(reader["IdClase"]),
+        //                CantidadIntegrantes = reader["CantidadIntegrantes"] == DBNull.Value ? null : Convert.ToInt32(reader["CantidadIntegrantes"]),
+        //                Vigente = reader["Vigente"] == DBNull.Value ? null : Convert.ToInt32(reader["Vigente"]),
+        //                ConsecutivoCodigo = reader["ConsecutivoCodigo"] == DBNull.Value ? null : Convert.ToInt32(reader["ConsecutivoCodigo"]),
+        //                IdEstado = reader["IdEstado"] == DBNull.Value ? null : Convert.ToInt32(reader["IdEstado"]),
+        //                IdFuente = reader["IdFuente"] == DBNull.Value ? null : Convert.ToInt32(reader["IdFuente"]),
+        //                IdEstadoExistencia = reader["IdEstadoExistencia"] == DBNull.Value ? null : Convert.ToInt32(reader["IdEstadoExistencia"]),
+        //                CelularCuadrante = reader["CelularCuadrante"] == DBNull.Value ? null : Convert.ToInt64(reader["CelularCuadrante"]),
 
+        //                // ---------- Fechas ----------
+        //                FechaInicioExistencia = reader["FechaInicioExistencia"] == DBNull.Value ? null : Convert.ToDateTime(reader["FechaInicioExistencia"]),
+        //                FechaCreacion = reader["FechaCreacion"] == DBNull.Value ? null : Convert.ToDateTime(reader["FechaCreacion"]),
+        //                FechaModifica = reader["FechaModifica"] == DBNull.Value ? null : Convert.ToDateTime(reader["FechaModifica"]),
+
+        //                // ---------- Auditoría ----------
+        //                IdentificacionCrea = reader["IdentificacionCrea"] == DBNull.Value ? null : Convert.ToInt64(reader["IdentificacionCrea"]),
+        //                MaquinaCrea = reader["MaquinaCrea"]?.ToString(),
+        //                IdentificacionModifica = reader["IdentificacionModifica"] == DBNull.Value ? null : Convert.ToInt64(reader["IdentificacionModifica"]),
+        //                MaquinaModifica = reader["MaquinaModifica"]?.ToString(),
+
+        //                // ---------- Códigos ----------
+        //                Codigo = reader["Codigo"]?.ToString(),
+        //                SiglaUnidad = reader["SiglaUnidad"]?.ToString(),
+
+        //                // ---------- Texto ----------
+        //                CaracteristicasGenerales = reader["CaracteristicasGenerales"]?.ToString(),
+        //                DescripcionTramite = reader["DescripcionTramite"]?.ToString(),
+        //                Celular = reader["Celular"]?.ToString(),
+        //                EstadoDescripcion = reader["EstadoDescripcion"]?.ToString(),
+        //                EstadoExistenciaDescripcion = reader["EstadoExistenciaDescripcion"]?.ToString(),
+        //                Municipio = reader["Municipio"]?.ToString(),
+        //                Zona = reader["Zona"]?.ToString(),
+        //                TipoServicio = reader["TipoServicio"]?.ToString(),
+        //                Fuente = reader["Fuente"]?.ToString(),
+        //                Clase = reader["Clase"]?.ToString(),
+        //                NombreClase = reader["NombreClase"]?.ToString(),
+        //                UnidadResponsable = reader["UnidadResponsable"]?.ToString(),
+
+        //                // ---------- Cuadrantes ----------
+        //                Cuadrante = reader["Cuadrante"]?.ToString(),
+        //                DependCuadrante = reader["DependCuadrante"]?.ToString(),
+        //                Estacioncuadrante = reader["Estacioncuadrante"]?.ToString(),
+        //                Nivel1cuadrante = reader["Nivel1cuadrante"]?.ToString(),
+        //                Dependencia = reader["Dependencia"]?.ToString(),
+
+        //                // ---------- Resultados ----------
+        //                IdTipoResultado = reader["IdTipoResultado"]?.ToString(),
+        //                DescTipoResultado = reader["DescTipoResultado"]?.ToString(),
+        //                NumeroResultado = reader["NumeroResultado"]?.ToString(),
+        //                EstadoResultados = reader["EstadoResultados"]?.ToString()
+        //            };
+
+
+        //            retorno.Add(dto);
+        //        }
+
+        //        resp.IdRespuesta = retorno.Any() ? 1 : 0;
+        //        resp.Mensaje = retorno.Any() ? "Consulta Exitosa" : "No se encontraron datos";
+        //        resp.Operacion = "F_GetInfoGrillas";
+        //        resp.Data = retorno;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        _logger.LogError("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas ", e);
+        //        resp.IdRespuesta = 0;
+        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
+        //        resp.Operacion = "0";
+        //    }
+        //    finally
+        //    {
+        //        await Conexion.CloseAsync();
+        //    }
+
+        //    return resp;
+        //}
+
+
+       
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
         {
             DataTable resultado = new();
             List<DtoIrispCriminalidad> retorno = new();
             DtoResultado<List<DtoIrispCriminalidad>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -325,7 +371,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<long> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -375,7 +421,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<long> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -428,7 +474,7 @@ namespace Negocio.Gestion.Irisp1
 
             try
             {
-                using (var conn = new OracleConnection(_strConexionIris_Test))
+                using (var conn = new OracleConnection(_strConexionIris_Disec))
                 {
                     await conn.OpenAsync();
 
@@ -493,7 +539,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoDelitosIris> retorno = new();
             DtoResultado<List<DtoDelitosIris>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -565,7 +611,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoCriminalidadFoto> retorno = new();
             DtoResultado<List<DtoCriminalidadFoto>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -623,7 +669,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoInfoAdicional> retorno = new();
             DtoResultado<List<DtoInfoAdicional>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -695,7 +741,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoDocumentoIris> retorno = new();
             DtoResultado<List<DtoDocumentoIris>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -769,7 +815,7 @@ namespace Negocio.Gestion.Irisp1
             List<DtoUbicacionIris> retorno = new();
             DtoResultado<List<DtoUbicacionIris>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -846,7 +892,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<Int32> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -912,7 +958,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test); // Usa tu cadena correcta
+            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
             using var objCommand = new OracleCommand();
 
             try
@@ -1016,7 +1062,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test); // Usa tu cadena correcta
+            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
             using var objCommand = new OracleCommand();
 
             try
@@ -1083,7 +1129,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test); // Usa tu cadena correcta
+            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
             using var objCommand = new OracleCommand();
 
             try
@@ -1151,7 +1197,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test); // Usa tu cadena correcta
+            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
             using var objCommand = new OracleCommand();
 
             try
@@ -1235,7 +1281,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1294,7 +1340,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1350,7 +1396,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1411,7 +1457,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1466,7 +1512,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1522,7 +1568,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1578,7 +1624,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1636,7 +1682,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -1693,7 +1739,7 @@ namespace Negocio.Gestion.Irisp1
         {
             DtoResultado<string> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try

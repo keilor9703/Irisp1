@@ -300,6 +300,7 @@ namespace Negocio.Gestion.Admin
             return resp;
         }
 
+                
         public async Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string V_Usuario, string V_Maquina)
         {
             DataTable resultado = new();
@@ -320,6 +321,7 @@ namespace Negocio.Gestion.Admin
 
                 objCommand.Parameters.Add("P_Usuario", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Usuario;
                 objCommand.Parameters.Add("P_Maquina", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Maquina;
+
 
                 objCommand.Parameters.Add("Out_Identificacion", OracleDbType.Int64).Direction = ParameterDirection.Output;
                 objCommand.Parameters.Add("Out_GradAlfabetico", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
@@ -404,6 +406,8 @@ namespace Negocio.Gestion.Admin
             }
             return resp;
         }
+        
+        
         public async Task<DtoResultado<List<DtoRoles>>> F_GetRoles()
         {
             DataTable resultado = new();
@@ -486,75 +490,7 @@ namespace Negocio.Gestion.Admin
             }
             return resp;
         }
-        //public async Task<DtoResultado<List<DtoRoles>>> F_GetRoles()
-        //{
-        //    DataTable resultado = new();
-        //    List<DtoRoles> retorno = new();
-        //    DtoResultado<List<DtoRoles>> resp = new();
-
-        //    using var Conexion = new OracleConnection(strConexionIris_Test);
-        //    using var objCommand = new OracleCommand();
-
-        //    try
-        //    {
-        //        objCommand.Connection = Conexion;
-        //        objCommand.CommandType = CommandType.StoredProcedure;
-        //        objCommand.CommandText = "PKS_ADMINISTRACION_IRIS.F_GetRoles";
-        //        objCommand.BindByName = true;
-        //        Conexion.Open();
-
-        //        objCommand.Parameters.Clear();
-        //        objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
-
-        //        if (Conexion.State == ConnectionState.Open)
-        //        {
-        //            resultado.Load(await objCommand.ExecuteReaderAsync());
-        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoRoles>(resultado);
-
-        //            if (retorno.Count > 0)
-        //            {
-        //                resp.IdRespuesta = 1;
-        //                resp.Mensaje = "Consulta Exitosa";
-        //                resp.Operacion = "F_GetMenu";
-        //                resp.Data = retorno;
-        //            }
-        //            else
-        //            {
-        //                resp.IdRespuesta = 0;
-        //                resp.Mensaje = "No se encontraron datos";
-        //                resp.Operacion = "0";
-        //            }
-        //        }
-        //        else
-        //        {
-        //            resp.IdRespuesta = 0;
-        //            resp.Mensaje = "Error conexión base de datos";
-        //            resp.Operacion = "0";
-        //        }
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Connection.Close();
-        //        _logger.LogError("Creacion de log");
-        //        _logger.LogWarning("Error Ejecutando PKS_ADMINISTRACION_IRIS.F_GetMenu " + e);
-
-        //        resp.IdRespuesta = 0;
-        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
-        //        resp.Operacion = "0";
-
-        //    }
-        //    finally
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Dispose();
-        //        objCommand.Connection.Close();
-        //        resultado.Dispose();
-        //    }
-        //    return resp;
-        //}
+       
         public async Task<DtoResultado<List<DtoUserRoles>>> F_GetUserRoles(Int64 V_Identificacion)
         {
             List<DtoUserRoles> Retorno = new();

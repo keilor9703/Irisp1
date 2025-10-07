@@ -84,37 +84,27 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
-        [HttpPost]
-        public async Task<IActionResult> ConsultarAnioSeguimiento(string _anioSeguimiento)
+        [HttpGet]
+        public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
-            if (string.IsNullOrWhiteSpace(_anioSeguimiento))
+            var resultado = await _iDbSeguimientoIris.F_GetInfoGrillas(V_Anio);
+
+            if (resultado.IdRespuesta > 0)
             {
-                return BadRequest(new { msg = "el año es requerido.", ok = false });
+                return Json(new { success = true, data = resultado.Data });
             }
-
-            try
+            else
             {
-                var resultados = await _iDbSeguimientoIris.ConsultarSeguimientoIris(_anioSeguimiento);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
 
-                if (resultados == null || !resultados.Any())
-                {
-                    return NotFound(new { msg = "No se encontraron iris para el año seleccionado.", ok = false });
-                }
-
-                return Ok(resultados);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { msg = "Error interno del servidor", ok = false, error = ex.Message });
             }
         }
 
 
+
+
     }
 
-    public class AnioRequest
-    {
-        public string _anio { get; set; }
-    }
+
 
 }

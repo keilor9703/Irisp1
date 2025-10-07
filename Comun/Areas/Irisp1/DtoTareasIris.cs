@@ -20,6 +20,9 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("Vigente")]
         public int? Vigente { get; set; }
 
+        [JsonPropertyName("EstadoExistencia")]
+        public int? EstadoExistencia { get; set; }
+
         [JsonPropertyName("IdentificacionCreacion")]
         public long? IdentificacionCreacion { get; set; }
 
@@ -85,6 +88,15 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("ObservacionResultado")]
         public string? ObservacionResultado { get; set; }
+
+        [JsonPropertyName("DescUnidad")]
+        public string? DescUnidad { get; set; }
+
+        [JsonPropertyName("Seguimiento")]
+        public string? Seguimiento { get; set; }
+
+        [JsonPropertyName("CriminalidadId")]
+        public string? CriminalidadId { get; set; }
     }
 
 }

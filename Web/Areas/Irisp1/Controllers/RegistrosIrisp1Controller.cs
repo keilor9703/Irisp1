@@ -85,20 +85,7 @@ namespace Web.Areas.Irisp1.Controllers
 
         #region Métodos de Consulta
 
-        [HttpGet]
-        public async Task<IActionResult> F_GetEstadosIrisP1()
-        {
-            var resultado = await _iDbIrisp1.F_GetEstadosIrisP1();
-
-            if (resultado.IdRespuesta > 0)
-            {
-                return Json(new { success = true, data = resultado.Data });
-            }
-            else
-            {
-                return Json(new { success = false });
-            }
-        }
+    
 
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
@@ -462,6 +449,7 @@ namespace Web.Areas.Irisp1.Controllers
                 return Json(new { exito = false, mensaje = $"Error al guardar documento: {ex.Message}" });
             }
         }
+
 
 
 

@@ -13,7 +13,8 @@ namespace Negocio.Interfaz.Irisp1
 
         public Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1();
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
-        public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetEstadosIrisP1();
+      
+
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2); // NUEVO MÉTODO
 
         public Task<DtoResultado<long>> F_ConsultarSeqIris();

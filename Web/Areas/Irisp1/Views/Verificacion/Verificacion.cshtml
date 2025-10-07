@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
       
-   <script src="~/areas/irisp1/CrearUbicacion2.js"></script>
+   <script src="~/areas/irisp1/CrearUbicacion.js"></script>
 
 
 
@@ -47,6 +47,9 @@
             var UrlDelInfoAdicionalIris= "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlDelUbiacionIris= "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
             var UrlDelDocumentoIris= "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            var UrlGetResponsablesTareasIris= "@Url.Action("F_GetResponsablesTareasIris", "Verificacion", new { Area = "Irisp1" })";
+            var UrlInsResultadoTareas= "@Url.Action("P_InsResultadoTareasIris", "Verificacion", new { Area = "Irisp1" })";
+            var UrlInsRespuestaTarea= "@Url.Action("P_InsTareaRespuesta", "Verificacion", new { Area = "Irisp1" })";
 
     </script>
 }
@@ -176,22 +179,22 @@
 <div class="modal fade" id="Modal_DetalleIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
     <div class="modal-dialog" style="max-width: 80%;">
 
-        <div class="modal-content">
+         <div class="modal-content">
             <div class="modal-header d-flex align-items-center">
-                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Detalle Iris - P1</h3>
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Detalle Iris - P1 / <span class="ms-2">   <strong>Criminalidad:</strong> <span id="txtClaseHeader"></span>  - <strong id="txtNombreClaseHeader"></strong></span></h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
 
-                <input type="text" id="txtCriminalidadIdModal" class="d-none" value="@ViewBag.txtCriminalidadIdModal" />
+               <input type="text" id="txtCriminalidadIdModal" class="d-none" value="@ViewBag.txtCriminalidadIdModal" />
 
 
                 <div class="container-fluid">
                     <!-- Encabezado -->
                     <div class="row text-white p-2" style="background-color: #006837; border-radius: 5px;">
                         <div class="col-12">
+                          
                             <strong id="txtUnidadDetalle"></strong> -  <strong> Fecha de creación: </strong> <span id="txtFechaCreacion"></span>
-                           
                         </div>
                     </div>
 
@@ -199,24 +202,23 @@
                         <!-- Columna 1: Aspecto Criminalidad -->
                         <div class="col-md-4">
                             <h6 class="fw-bold">ASPECTO CRIMINALIDAD</h6>
-                            <p><strong></strong>
+                            <p><strong></strong> 
                             <p><strong>Codigo IRISPI:</strong> <span id="txtCodigoIrispi"></span></p>
-                            <p><strong>Clase:</strong> <span id="txtClase"></span></p>
-                            <p><strong>Nombre Clase:</strong> <span id="txtNombreClase"></span></p>
-                            <p><strong>Cantidad:</strong> <span id="txtCantidad"></span></p>
+                            <p><strong>Clase:</strong> <span id="txtClaseDetalle"></span></p>
+                            <p><strong>Nombre Clase:</strong> <span id="txtNombreClaseDetalle"></span></p>
+                            <p><strong>Cantidad:</strong> <span id="txtCantidadDetalle"></span></p>
                             <p><strong>Fuente:</strong> <span id="txtFuente"></span></p>
                             <p><strong>Fecha inicio Existencia:</strong> <span id="txtFechaInicio"></span></p>
-
+                         
                         </div>
 
                         <!-- Columna 2: Funcionario que informa -->
                         <div class="col-md-4">
                             <h6 class="fw-bold">FUNCIONARIO QUE INFORMA:</h6>
-                            <p>
-                                <strong></strong>
-                                @*  <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Visualizar</button> *@
+                           <p><strong></strong> 
+                           @*  <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Visualizar</button> *@
                             <p><strong>Funcionario:</strong> <span id="txtFuncionarioDetalle"></span></p>
-                            <p><strong>Unidad:</strong> <span id="txtUnidadDetalle"></span></p>
+                            <p><strong>Unidad:</strong> <span id="txtUnidadDetalle2"></span></p>
                             <p><strong>Correo:</strong> <span id="txtCorreo"></span></p>
                             <p><strong>Celular SIATH:</strong> <span id="txtCelularSiath"></span></p>
                             <p><strong>Celular IRIS-PI:</strong> <span id="txtCelularIris"></span></p>
@@ -225,7 +227,7 @@
                         <!-- Columna 3: Información del cuadrante -->
                         <div class="col-md-4">
                             <h6 class="fw-bold">INFORMACIÓN DEL CUADRANTE:</h6>
-                            <p><strong></strong>
+                            <p><strong></strong> 
                             <p><span id="txtCodigoCuadrante"></span></p>
                             <p><span id="txtEstacion1"></span></p>
                             <p><span id="txtEstacion2"></span></p>
@@ -233,13 +235,12 @@
                             <p><strong>Celular cuadrante:</strong> <span id="txtCelularCuadrante"></span></p>
                         </div>
 
-                        <div class="col-md-12">
-
+                         <div class="col-md-12">
+                          
                             <p><strong>Características Generales:</strong> <span id="txtCaracteristicas"></span></p>
                         </div>
                     </div>
                 </div>
-
 
 
                 <div class="card border-success hidden" id="pn_GrillaRelacionIrisP1">
@@ -639,7 +640,7 @@
                             </div>
                             <div class="modal-body">
                                 <div class="col-12 mb-2">
-                                    <input id="direccionmapa2" type="text" class="form-control" placeholder="Buscar dirección..." />
+                                    <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
                                 </div>
 
                                 <!-- Aquí irá el mapa -->
@@ -783,7 +784,6 @@
                                     class="btn btn-green btn-sm py-0 px-2 align-self-center"
                                     id="btnNuevoResultado"
                                     style="line-height:1.2; font-size: 0.8rem;"
-                                    @* onclick="OpenInsIntegrantesModal();"> *@
                                     onclick="OpenInsResultadosModal();">
                                 <i class="fas fa-plus"></i> Nuevo
                             </button>
@@ -808,19 +808,138 @@
 
 
 
-                <div class="card border-success hidden" id="pn_GrillaResponsablesTareas  ">
+            <!-- Modal Responder Tarea -->
+                <div class="modal fade" id="Modal_InsRtaTarea" aria-labelledby="labelModalInsRtaTarea" aria-hidden="true">
+                    <div class="modal-dialog modal-lg"> <!-- usa modal-lg para ancho consistente -->
+                        <div class="modal-content">
+                            <div class="modal-header d-flex align-items-center">
+                                <h3 class="modal-title fw-bold" id="labelModalInsRtaTarea">Responder Tarea</h3>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="row g-3">
+                                    <!-- Campo Tipo -->
+                                    <div class="col-md-4">
+                                        <div class="form-group has-float-label">
+                                            @Html.DropDownList("ddlTipoExiste", null, "Seleccione", 
+                                                new { id = "ddlTipoExiste", @class = "form-control select2", style = "width:100%;" })
+                                            <label class="Labels">Existe el IRISP1?:</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Fecha Verificación -->
+                                    <div class="col-md-4">
+                                        <div class="form-group has-float-label">
+                                            <input tabindex="12" type="text" id="txtFechaVerificaTarea" style="width:100%" placeholder="Fecha" class="CalendarioHora" value="@ViewBag.FechaAd" />
+                                                <label class="Labels">Fecha Verificación:</label>
+                                        </div>
+                                    </div>
+
+                                        <!-- 🔹 Campo oculto para guardar el ID de la tarea -->
+                                        <input type="hidden" id="txtTareaId" name="txtTareaId" />       
+
+                                    <!-- Descripción -->
+                                    <div class="col-md-12">
+                                        <div class="form-group has-float-label">
+                                            <textarea id="txtInfoJustificacionModal" name="txtInfoJustificacionModal"
+                                                        placeholder="Justifique la actividad de verificación realizada"
+                                                        class="form-control InputPading" rows="6"
+                                                        style="resize: vertical; min-height: 150px;"></textarea>
+                                            <label class="Labels">Justificación:</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer justify-content-center">
+                                <button type="button" id="btnGuardarTarea"
+                                        onclick="InsRespuestaTareaModal(); return false;"
+                                        class="btn btn-grad" style="border-radius:0 16px 0 16px !important;">
+                                    <i class="fa fa-save"></i> Guardar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                @* INICIO Modal para insertar resultados *@
+
+
+                <div class="modal fade" id="Modal_AgregarResultado" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+                      <div class="modal-dialog" style="max-width: 800px;">
+
+                           <div class="modal-content">
+                              <div class="modal-header d-flex align-items-center">
+                                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Agregar Resultado</h3>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+
+                              <div class="modal-body">
+                                <div class="row">
+                                  <!-- Campo Tipo -->
+                                    <div class="col-md-3 MargFloatBoos">
+                                        <div class="form-group has-float-label">
+                                            @Html.DropDownList("ddlTipoResultado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoResultado", @class = "form-control select2", style = "width: 100%;" })
+                                            <label class="Labels">Tipo:</label>
+                                        </div>
+                                     </div>
+
+                                  <!-- Campo Número -->
+                                  <div class="col-md-4 MargFloatBoos">
+                                    <div class="form-group has-float-label">
+                                      <input type="number" id="txtNumeroResultado" name="txtNumeroResultado" autocomplete="off" placeholder="Digite un número" class="form-control InputPading">
+                                      <label class="Labels">Número:</label>
+                                    </div>
+                                  </div>
+
+                                  <!-- Campo Fecha -->
+                                     
+
+                                       <!-- Fecha Verificación -->
+                                    <div class="col-md-4">
+                                        <div class="form-group has-float-label">
+                                            <input tabindex="12" type="text" id="txtFechaResultado" style="width:100%" placeholder="Fecha" class="CalendarioHora" value="@ViewBag.FechaAd" />
+                                                <label class="Labels">Fecha SIEDCO - SPOA:</label>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Observaciones -->
+                                <div class="row mt-3">
+                                  <div class="col-md-12">
+                                    <div class="form-group has-float-label">
+                                      <textarea id="txtObservacionesResultado" name="txtObservacionesResultado" rows="3" class="form-control InputPading" placeholder="Digite una observación (campo opcional)"></textarea>
+                                      <label class="Labels">Observaciones:</label>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div class="modal-footer" style="justify-content:center;">
+                                <button type="button" id="btnGuardarResultado" onclick="P_InsResultadoTareaModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                                  <span class="fa ico_grabar faa-wrench animated"></span>Guardar
+                                </button>
+                              </div>
+                           </div>
+                      </div>
+                </div>
+
+
+
+                @* FIN Modal para insertar resultados *@
+
+
+
+                <div class="card border-success hidden" id="pn_GrillaResponsablesTareas">
                     <div class="card-header d-flex align-items-center">
                         <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Responsables del IRISP1</h4>
 
                         <div class="card-actions ms-auto d-flex button-group">
-                            <!-- Botón Nuevo -->
-                            <button type="button"
-                                    class="btn btn-green btn-sm py-0 px-2 align-self-center"
-                                    id="btnNuevoIntegrante"
-                                    style="line-height:1.2; font-size: 0.8rem;"
-                                    onclick="OpenInsIntegrantesModal();">
-                                <i class="fas fa-plus"></i> Nuevo
-                            </button>
+                           
 
                             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
                             <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
