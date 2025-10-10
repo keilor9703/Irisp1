@@ -5,15 +5,16 @@ using Negocio.Gestion.Admin;
 using Negocio.Gestion.Clientes;
 using Negocio.Gestion.General;
 using Negocio.Gestion.Irisp1;
-using Negocio.Interfaz.Irisp1;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Clientes;
 using Negocio.Interfaz.General;
-using Negocio.Interfaz.Modulo1;
+using Negocio.Interfaz.Irisp1;
 using Serilog;
 using Servicios.Api;
 using Servicios.ApiInterfaz;
 using Web;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
@@ -83,6 +84,8 @@ builder.Services.AddSession(options =>
 //AppSettings
 builder.Services.AddOptions();
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+
+
 
 
 var RutaVisualizador = builder.Configuration.GetValue<string>("Visualizador");

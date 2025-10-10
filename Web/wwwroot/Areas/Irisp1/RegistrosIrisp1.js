@@ -1956,12 +1956,12 @@ function OpenInsIntegrantesModal() {
 function OpenInsUbicacionModal() {
     $('#myModal2').modal("show");
 
-    $('#myModal2').on('shown.bs.modal', function () {
-        if (typeof map !== "undefined") {
-            map.resize();
-            map.reposition();
-        }
-    });
+    //$('#myModal2').on('shown.bs.modal', function () {
+    //    if (typeof map !== "undefined") {
+    //        map.resize();
+    //        map.reposition();
+    //    }
+    //});
 }
 
 

@@ -124,14 +124,14 @@
     background-color: #151b3b !important;
 }
 
-/*Footer*/ 
+/*Footer*/
 
 .BarraPieDameroForms {
     /*cambia color verde*/
     /*background: linear-gradient(124deg, #082b09, #7cd387, #006937, #175624b8, #6cbf37, #1a670c, #39a22e, #006937, #7cd387, #082b09) !important; 
     background-size: 1800% 1800%;
     box-shadow: 1px 3px 2px #48a262;*/
-    background-image: linear-gradient( #151b3b, #002a66 ) !important;
+    background-image: linear-gradient( #151b3b, #151b3b ) !important;
     background-size: 1800% 1800%;
     box-shadow: 1px 3px 2px #48a262;
 }

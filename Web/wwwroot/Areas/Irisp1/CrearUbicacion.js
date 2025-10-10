@@ -347,5 +347,9 @@ function inicializarMapa(idMapa) {
         map.addLayer(mpioLayer);
         map.addLayer(cuadrantesLayer); // <--- ¡Aquí agregas la capa de cuadrantes!
 
+
+
+
+       
     })
 };

@@ -9,9 +9,15 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Oracle.ManagedDataAccess.Client;
+using System.Data;
+using System.Diagnostics;
+using Comun.Areas.Irisp1;
+using Microsoft.Extensions.Logging;
 
 namespace Negocio.Gestion.Irisp1
 {
@@ -35,6 +41,10 @@ namespace Negocio.Gestion.Irisp1
             _logger = logger;
         }
         #endregion
+
+
+
+        #region Métodos de Consulta
 
         public async Task<DtoResultado<List<SeguimientoIrisDto>>> F_GetAniosIrisP1()
         {
@@ -189,6 +199,84 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
+
+
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
+        {
+            DataTable resultado = new();
+            List<DtoIrispCriminalidad> retorno = new();
+            DtoResultado<List<DtoIrispCriminalidad>> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_GetResponsables";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+                objCommand.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_CriminalidadId;
+                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                if (Conexion.State == ConnectionState.Open)
+                {
+                    resultado.Load(await objCommand.ExecuteReaderAsync());
+                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
+
+                    if (retorno.Count > 0)
+                    {
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "P_GetResponsables";
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                    }
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "Error conexión base de datos";
+                    resp.Operacion = "0";
+                }
+
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+                _logger.LogError("Creacion de log");
+                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.P_GetResponsables " + e);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Operacion = "0";
+
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+                resultado.Dispose();
+            }
+            return resp;
+        }
+
+
+
+
+        #endregion
 
     }
 }

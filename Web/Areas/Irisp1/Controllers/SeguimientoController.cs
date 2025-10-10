@@ -1,23 +1,17 @@
-﻿using Comun.Areas.AplicacionDTO;
+﻿
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
-using Comun.General;
-using Gepad.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Configuration;
-using Negocio.Gestion.Admin;
-using Negocio.Gestion.Irisp1;
+
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
-using NuGet.Packaging.Signing;
-using Oracle.ManagedDataAccess.Client;
+
 using System.Data;
-using System.Net;
-using System.Security.Claims;
+
 
 namespace Web.Areas.Irisp1.Controllers
 {
@@ -32,8 +26,7 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IConfiguration _configuration;
 
         private readonly IDbDominios _IDbDominios;
-        private readonly string _strConexionIris_Test;
-        private object _IDbSeguimientoIris;
+     
 
 
         #endregion
@@ -48,7 +41,7 @@ namespace Web.Areas.Irisp1.Controllers
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = configuration;
             _IDbDominios = idbDominios;
-            _strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
+            //_strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
         }
         #endregion
         public async Task<ActionResult> Seguimiento()
@@ -84,6 +77,8 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+
+        #region Métodos de Consulta
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
@@ -101,10 +96,24 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> F_GetResponsables(string V_CriminalidadId)
+        {
+            var resultado = await _iDbSeguimientoIris.F_GetResponsables(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = new List<DtoIntegrantes>(), message = resultado.Mensaje });
+            }
+        }
 
 
+
+
+        #endregion
     }
-
-
-
 }

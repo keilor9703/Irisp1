@@ -85,14 +85,13 @@ function F_GetInfoGrillas() {
     });
 }
 
-// 🔧 función utilitaria para crear o actualizar tablas
+// 🔧 Función utilitaria para inicializar o refrescar tablas
 function renderDataTable(selector, datosFiltrados, columnas) {
     if ($.fn.dataTable.isDataTable(selector)) {
-        // actualizar data en vez de recrear
         const table = $(selector).DataTable();
         table.clear();
         table.rows.add(datosFiltrados);
-        table.draw();
+        table.draw(false);
         return;
     }
 
@@ -100,9 +99,9 @@ function renderDataTable(selector, datosFiltrados, columnas) {
         data: datosFiltrados,
         language: glOpcionesIdioma,
         scrollX: true,
-        // scrollY: 400,          // alto fijo para habilitar virtualización
-        scroller: true,        // solo renderiza las filas visibles
-        deferRender: true,     // retrasa render hasta que sean visibles
+        scrollY: 400,      // altura fija con scroll
+        scroller: true,    // virtualización (solo renderiza lo visible)
+        deferRender: true, // retrasar render hasta que se vea
         autoWidth: false,
         responsive: false,
 
@@ -117,7 +116,7 @@ function renderDataTable(selector, datosFiltrados, columnas) {
             ['10 registros', '25 registros', '50 registros', '100 registros']
         ],
         pageLength: 25,
-        ordering: true,
+        ordering: false,
         searching: true,
         paging: true,
         info: true
@@ -133,9 +132,10 @@ function GetGrillaVerificacion(Datos) {
         Estados(),
         EstadosExistencia(),
         { title: "Codigo", data: "Codigo" },
+        { title: "Unidad Verificación", data: "UnidadResponsable" },
         { title: "Dependencia", data: "Dependencia" },
         { title: "Municipio", data: "Municipio" },
-        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", render: formatDate },
+        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia" },
         { title: "Clase", data: "Clase" },
         { title: "Nombre", data: "NombreClase" },
         { title: "Cantidad", data: "CantidadIntegrantes" },
@@ -145,15 +145,6 @@ function GetGrillaVerificacion(Datos) {
         { title: "Tipo Servicio", data: "TipoServicio" },
         { title: "Fuente", data: "Fuente" },
         { title: "Fecha de Creacion", data: "FechaCreacion" },
-        { title: "Unidad Verificación Existencia", data: "UnidadResponsable" },
-        { title: "Fecha Asignación Verificación", data: "FechaVerificacionExistencia", render: formatDate },
-        { title: "Fecha Respuesta Verificación", data: "FechaRespuestaVerificacion", render: formatDate },
-        //{ title: "Contador Verificación", data: "ContadorVerificacionExistencia" },
-        Contador1(),
-        { title: "Unidad Proceso Investigativo", data: "UnidadProcesoInvestigativo" },
-        { title: "Fecha Asignación Investigativo", data: "FechaProcesoInvestigativo", render: formatDate },
-        { title: "Fecha Respuesta Investigativo", data: "FechaRespuestaInvestigativo", render: formatDate },
-        Contador2(),
         Resultados(),
         { title: "CriminalidadId", data: "CriminalidadId", visible: false }
     ]);
@@ -168,9 +159,10 @@ function GetGrillaInvestigacion(Datos) {
         Estados(),
         EstadosExistencia(),
         { title: "Codigo", data: "Codigo" },
+        { title: "Unidad Verificación", data: "UnidadResponsable" },
         { title: "Dependencia", data: "Dependencia" },
         { title: "Municipio", data: "Municipio" },
-        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", render: formatDate },
+        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia" },
         { title: "Clase", data: "Clase" },
         { title: "Nombre", data: "NombreClase" },
         { title: "Cantidad", data: "CantidadIntegrantes" },
@@ -180,14 +172,6 @@ function GetGrillaInvestigacion(Datos) {
         { title: "Tipo Servicio", data: "TipoServicio" },
         { title: "Fuente", data: "Fuente" },
         { title: "Fecha de Creacion", data: "FechaCreacion" },
-        { title: "Unidad Verificación Existencia", data: "UnidadResponsable" },
-        { title: "Fecha Asignación Verificación", data: "FechaVerificacionExistencia", render: formatDate },
-        { title: "Fecha Respuesta Verificación", data: "FechaRespuestaVerificacion", render: formatDate },
-        Contador1(),
-        { title: "Unidad Proceso Investigativo", data: "UnidadProcesoInvestigativo" },
-        { title: "Fecha Asignación Investigativo", data: "FechaProcesoInvestigativo", render: formatDate },
-        { title: "Fecha Respuesta Investigativo", data: "FechaRespuestaInvestigativo", render: formatDate },
-        Contador2(),
         Resultados(),
         { title: "CriminalidadId", data: "CriminalidadId", visible: false }
     ]);
@@ -202,9 +186,10 @@ function GetGrillaFinalizacion(Datos) {
         Estados(),
         EstadosExistencia(),
         { title: "Codigo", data: "Codigo" },
+        { title: "Unidad Verificación", data: "UnidadResponsable" },
         { title: "Dependencia", data: "Dependencia" },
         { title: "Municipio", data: "Municipio" },
-        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", render: formatDate },
+        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia" },
         { title: "Clase", data: "Clase" },
         { title: "Nombre", data: "NombreClase" },
         { title: "Cantidad", data: "CantidadIntegrantes" },
@@ -214,20 +199,11 @@ function GetGrillaFinalizacion(Datos) {
         { title: "Tipo Servicio", data: "TipoServicio" },
         { title: "Fuente", data: "Fuente" },
         { title: "Fecha de Creacion", data: "FechaCreacion" },
-        { title: "Unidad Verificación Existencia", data: "UnidadResponsable" },
-        { title: "Fecha Asignación Verificación", data: "FechaVerificacionExistencia", render: formatDate },
-        { title: "Fecha Respuesta Verificación", data: "FechaRespuestaVerificacion", render: formatDate },
-        Contador1(),
-        { title: "Unidad Proceso Investigativo", data: "UnidadProcesoInvestigativo" },
-        { title: "Fecha Asignación Investigativo", data: "FechaProcesoInvestigativo", render: formatDate },
-        { title: "Fecha Respuesta Investigativo", data: "FechaRespuestaInvestigativo", render: formatDate },
-        //  { title: "Contador Investigativo", data: "ContadorProcesoInvestigativo" },
-        Contador2(),
-        //  { title: "Resultados", data: "Resultados", className: "celdaJust" },
         Resultados(),
         { title: "CriminalidadId", data: "CriminalidadId", visible: false }
     ]);
 }
+
 
 function Estados() {
     return {
@@ -322,9 +298,9 @@ function columnaAcciones(datosFiltrados) {
 
             var Asignar = `<li style="padding-left: 15px;">
                                     <a style="color: #102717;" href="#"
-                                       class="btn-detalle-iris"
+                                       class="btn-asignar-iris"
                                        data-datos="${DatosFila}">
-                                        <i class="fas fa-list"></i>&nbsp; Detalles
+                                        <i class="fas fa-list"></i>&nbsp; Asignar
                                     </a>
                                 </li>`;
 
@@ -343,7 +319,7 @@ function columnaAcciones(datosFiltrados) {
 
 
 // Delegación de eventos para los botones de detalle
-$(document).on("click", ".btn-detalle-iris", function (e) {
+$(document).on("click", ".btn-asignar-iris", function (e) {
     e.preventDefault();
 
     // Recuperamos el JSON guardado en data-datos
@@ -537,3 +513,740 @@ function Resultados() {
         }
     };
 }
+
+function F_GetDetalleIris(registro) {
+    console.log("✅ Registro recibido:", registro);
+
+    $("#txtCriminalidadIdModal").val(registro.CriminalidadId);
+    $("#txtConsecutivoIris").val(registro.CriminalidadId);
+
+    var FechaInicio = registro.FechaInicioExistencia ? moment(registro.FechaInicioExistencia).format('DD/MM/YYYY hh:mm:ss a') : '';
+    var FechaCreacion = registro.FechaCreacion ? moment(registro.FechaCreacion).format('DD/MM/YYYY hh:mm:ss a') : '';
+
+    $("#txtCodigoIrispi").text(registro.Codigo);
+    $("#txtClaseHeader").text(registro.Clase);
+    $("#txtClaseDetalle").text(registro.Clase);
+    $("#txtNombreClaseHeader").text(registro.NombreClase);
+    $("#txtNombreClaseDetalle").text(registro.NombreClase);
+    $("#txtCantidad").text(registro.CantidadIntegrantes);
+    $("#txtCantidadDetalle").text(registro.CantidadIntegrantes);
+    $("#txtFuente").text(registro.Fuente);
+    $("#txtFechaInicio").text(FechaInicio);
+    $("#txtCaracteristicas").text(registro.CaracteristicasGenerales);
+    $("#txtCelularIris").text(registro.Celular);
+    $("#txtCodigoCuadrante").text(registro.Cuadrante);
+    $("#txtEstacion1").text(registro.DependCuadrante);
+    $("#txtEstacion2").text(registro.Estacioncuadrante);
+    $("#txtComando").text(registro.Nivel1cuadrante);
+    $("#txtCelularCuadrante").text(registro.CelularCuadrante);
+    $("#txtFechaCreacion").text(FechaCreacion);
+
+    // ✅ Renderiza el badge con color (no solo texto)
+    $("#txtEstado").html(RenderEstadoBadge(registro.EstadoDescripcion));
+
+    // ✅ Lo mismo para Estado Existencia, si aplica
+    $("#txtEstadoExistencia").html(RenderEstadoBadge(registro.EstadoExistenciaDescripcion));
+
+    var IdenInforma = registro.IdentificacionInforma;
+
+    $.ajax({
+        type: "POST",
+        url: UrlGetFuncionarios,
+        async: true,
+        data: { V_Identificacion: IdenInforma },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+            if (respuesta.success) {
+                $("#txtFuncionarioDetalle").text(respuesta.data[0].Funcionario);
+                $("#txtUnidadDetalle").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
+                $("#txtUnidadDetalle2").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
+                $("#txtCorreo").text(respuesta.data[0].Correo);
+                $("#txtCelularSiath").text(respuesta.data[0].Celular);
+
+                $('#Modal_AsignarIris').modal("show");
+
+               
+                F_GetUbicacionIris(registro.CriminalidadId);
+                F_GetIntegrantesIris(registro.CriminalidadId);
+                F_GetDelitosIris(registro.CriminalidadId);
+                F_GetDocumentosIris(registro.CriminalidadId);
+                F_GetInfoAdiconalIris(registro.CriminalidadId);
+                F_GetResponsableIris(registro.CriminalidadId)
+                //F_GetFotosIris(registro.CriminalidadId);
+                F_GetTareas(registro.CriminalidadId)
+                F_GetResultados(registro.CriminalidadId);
+            } else {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "No se Encontro el Funcionario"
+                });
+            }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'No es posible consultar, revise!!'
+            });
+        }
+    });
+}
+
+
+// 1️⃣ Función utilitaria para renderizar el estado (extraída de Estados().render)
+function RenderEstadoBadge(estadoTexto) {
+    if (!estadoTexto) {
+        return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
+    }
+
+    const estado = estadoTexto.toLowerCase();
+    let color = '';
+
+    switch (estado) {
+        case 'sin asignar':
+            color = '#c53a1d'; // rojo
+            break;
+        case 'asignado':
+            color = '#236305'; // verde oscuro
+            break;
+        case 'avance verificación':
+            color = '#799137'; // verde oliva
+            break;
+        case 'investigación':
+            color = '#2127f5'; // azul fuerte
+            break;
+        case 'avance investigación':
+            color = '#40a8c7'; // celeste
+            break;
+        case 'finalizado':
+            color = '#032b57'; // azul oscuro
+            break;
+        default:
+            color = '#386ca0'; // gris
+    }
+
+    return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${estadoTexto}</span>`;
+}
+
+// 2️⃣ Función principal de detalle
+
+function F_GetUbicacionIris(CrininalidadId) {
+
+
+    $.ajax({
+        type: 'GET',
+        url: UrlGetUbicacion,
+        async: true,
+        data: { V_CriminalidadId: CrininalidadId },
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+
+                GetGrillaUbicacionIris(response.data);
+            } else {
+                GetGrillaUbicacionIris([]);
+                // Swal.fire('Error', response.message, 'error');
+            }
+        },
+        error: function () {
+            GetGrillaUbicacionIris([]);
+            Swal.fire('Error', 'No se pudo obtener la lista de ubicaciones.', 'error');
+        }
+    });
+}
+
+function GetGrillaUbicacionIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaUbicacion")) {
+        $("#tbGrillaUbicacion").DataTable().destroy();
+    }
+
+    $("#tbGrillaUbicacion").empty();
+
+    $("#tbGrillaUbicacion").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        columns: [
+            {
+                title: "Mapa",
+                data: null,
+                className: "celdaCenter celda3",
+                render: function (data, type, row) {
+                    return `
+                        <button class="btn btn-success btn-sm btn-mapa" 
+                                title="Ver en mapa" 
+                                onclick="OpenInsUbicacionModal('${row.Latitud}', '${row.Longitud}')">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </button>`;
+                }
+            },
+            { title: "Longitud", data: "Longitud", class: "celdaCenter" },
+            { title: "Latitud", data: "Latitud", class: "celdaCenter" },
+            { title: "Radio", data: "RadioAccion", class: "celdaCenter" },
+            { title: "Municipio", data: "MunicipioUbica", class: "celdaCenter" },
+            { title: "Cuadrante", data: "Cuadrante", class: "celdaCenter" },
+            { title: "Dirección", data: "Direccion", class: "celdaCenter" }
+        ],
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+function OpenInsUbicacionModal(latitud, longitud) {
+    console.log("🗺️ Abriendo modal con coordenadas:", latitud, longitud);
+
+    // Abre el modal
+    $('#myModal').modal("show");
+
+    // Evento al mostrarse completamente
+    $('#myModal').off('shown.bs.modal').on('shown.bs.modal', function () {
+        console.log("✅ Modal visible, inicializando mapa...");
+
+        // Inicializa el mapa
+        inicializarMapa('mapaDiv');
+
+        // Espera un poco a que cargue ArcGIS y luego centra el muñeco verde
+        setTimeout(() => {
+            if (typeof window.ubicarLlamadaEnMapa === "function") {
+                window.ubicarLlamadaEnMapa(latitud, longitud);
+            }
+        }, 800);
+    });
+
+    // 🧹 Evento al cerrar completamente el modal: destruir mapa
+    $('#myModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
+        console.log("🧹 Modal cerrado, destruyendo mapa...");
+
+        // Si existe un mapa, destrúyelo correctamente
+        if (typeof map !== "undefined" && map) {
+            try {
+                map.destroy();   // Libera memoria del objeto ArcGIS
+                console.log("🧭 Mapa destruido correctamente");
+            } catch (err) {
+                console.warn("⚠️ Error al destruir mapa:", err);
+            }
+        }
+
+        // Limpia el contenedor HTML del mapa (para crear uno nuevo luego)
+        $("#mapaDiv").empty();
+
+        // Elimina la variable global 'map' para asegurar una nueva instancia
+        window.map = undefined;
+    });
+}
+
+function F_GetIntegrantesIris(CriminalidadId) {
+
+
+    $.ajax({
+        type: 'GET',
+        url: UrlGetIntegrantes,
+        async: true,
+        data: { V_CriminalidadId: CriminalidadId },
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+
+                GetGrillaIntegrantesIris(response.data);
+            } else {
+                GetGrillaIntegrantesIris([]);
+                // Swal.fire('Error', response.message, 'error');
+            }
+        },
+        error: function () {
+            GetGrillaIntegrantesIris([]);
+            Swal.fire('Error', 'No se pudo obtener la lista de integrantes.', 'error');
+        }
+    });
+}
+
+function GetGrillaIntegrantesIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaIntegrantes")) {
+        $("#tbGrillaIntegrantes").DataTable().destroy();
+    }
+
+    $("#tbGrillaIntegrantes").empty();
+    
+
+    $("#tbGrillaIntegrantes").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            {
+                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+                    var Antecedentes = `<li style="padding-left: 17px;">
+                                        <a style="color: #102717; cursor:pointer;" onclick="F_GetAntecedentes('${row.INTEGRANTE_ID}')">
+                                        <i class="fa fa-trash red"></i>&nbsp;Antecedentes
+                                        </a>
+                                    </li>`;
+
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + Antecedentes + finBoton;
+                }
+            },
+            { "title": "Alias", "data": "ALIAS", class: "celdaCenter" },
+            { "title": "Nombre", "data": "NOMBRE", class: "celdaCenter" },
+            { "title": "Apellido", "data": "APELLIDO", class: "celdaCenter" },
+            { "title": "Cédula", "data": "CEDULA", class: "celdaCenter" },
+            { "title": "Dirección", "data": "DIRECCION", class: "celdaCenter" },
+            { "title": "Fecha Creación", "data": "FECHA_CREACION", render: formatDate, class: "celdaCenter" }
+           
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        lengthChange: true,
+        searching: true,
+        ordering: true,
+        pageLength: 10,
+        paging: true,
+        info: true
+    });
+}
+
+function F_GetDelitosIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetDelitosIris, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaDelitosIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaDelitosIris([]);
+
+        }
+    });
+}
+
+function GetGrillaDelitosIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaDelitos")) {
+        $("#tbGrillaDelitos").DataTable().destroy();
+    }
+
+    $("#tbGrillaDelitos").empty();
+   
+
+    $("#tbGrillaDelitos").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            //{
+            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+            //        var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDelitosIris('${row.DelitoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+            //        var finBoton = '</ul></div>';
+            //        return inicioBoton + Eliminar + finBoton;
+            //    }
+            //},
+            { "title": "Delito", "data": "DelitoDesc" },
+            { "title": "Tipo", "data": "DescTipo" },
+            { "title": "Tipo Informacón", "data": "DescTipoInfo" }
+
+        ],
+
+        lengthChange: true,
+        searching: true,
+        ordering: true,
+        pageLength: 10,
+        paging: true,
+        info: true
+    });
+}
+
+
+
+
+function F_GetDocumentosIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetDocIris, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaDocumentosIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaDocumentosIris([]);
+
+        }
+    });
+}
+
+function GetGrillaDocumentosIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaDocumento")) {
+        $("#tbGrillaDocumento").DataTable().destroy();
+    }
+
+    $("#tbGrillaDocumento").empty();
+   
+
+    $("#tbGrillaDocumento").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            //{
+            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+            //        var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.DocumentoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+            //        var finBoton = '</ul></div>';
+            //        return inicioBoton + Eliminar + finBoton;
+            //    }
+            //},
+            { "title": "Nombre", "data": "Nombre", "name": "Nombre", className: "celdaCenter celda5" },
+            {
+                "title": "Enlace",
+                "data": "Url",
+                "name": "Url",
+                className: "celdaCenter celda7",
+                "render": function (data, type, row) {
+                    if (!data || data.trim() === "") {
+                        return '';
+                    }
+
+
+                    // Opción 1: enlace azul visible sobre fondo blanco
+                    /*  return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;*/
+                    return `<a href="/Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
+                }
+            },
+            { "title": "Fecha Creación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaJust celda17" }
+        ],
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+
+function F_GetInfoAdiconalIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaInfoAdicionalIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaInfoAdicionalIris([]);
+
+        }
+    });
+}
+
+function GetGrillaInfoAdicionalIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaInfoAdicional")) {
+        $("#tbGrillaInfoAdicional").DataTable().destroy();
+    }
+
+    $("#tbGrillaInfoAdicional").empty();
+    
+
+    $("#tbGrillaInfoAdicional").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            //{
+            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+            //        var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDelInfoAdicionalIris('${row.InfoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+            //        var finBoton = '</ul></div>';
+            //        return inicioBoton + Eliminar + finBoton;
+            //    }
+            //},
+            columnaInforAdicionalDetalleIris(),
+            { "title": "Tipo Información", "data": "DescTipoInfo", "name": "DescTipoInfo", className: "celdaCenter" }
+
+        ],
+
+        lengthChange: false,
+        searching: false,
+        ordering: false,
+        pageLength: 10,
+        paging: false,
+        info: false
+    });
+}
+
+
+
+function F_GetResponsableIris(CriminalidadId) {
+    $.ajax({
+        type: 'GET',
+        url: UrlGetResponsable, // URL del endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_CriminalidadId: CriminalidadId },
+        success: function (response) {
+
+            // Inicializar la grilla con los datos filtrados o vacíos
+            GetGrillaResponsableIris(response.data);
+
+        },
+        error: function () {
+            // En caso de error, inicializar la grilla con datos vacíos
+            GetGrillaResponsableIris([]);
+
+        }
+    });
+}
+
+function GetGrillaResponsableIris(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaResponsables")) {
+        $("#tbGrillaResponsables").DataTable().destroy();
+    }
+
+    $("#tbGrillaResponsables").empty();
+   
+
+    $("#tbGrillaResponsables").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+           
+            { "title": "Responsable", "data": "FuncionarioResponsable" },
+            { "title": "Unidad", "data": "UnidadFuncionarioResponsable"},
+           // { "title": "Funcionario que Asignó", "data": "FuncionarioCreacion" },
+          
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: true,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
+
+
+function F_GetTareas(IdCriminalidad) {
+   
+    $("#txtCriminalidadIdModal").val(IdCriminalidad);
+
+    // 🔹 NUEVO: Obtener responsables
+    $.ajax({
+        type: "GET",
+        url: UrlGetResponsablesTareasIris, // crea este endpoint en backend
+        data: { V_Criminalidad: IdCriminalidad },
+        dataType: 'json',
+        cache: false,
+        success: function (resp) {
+            if (resp?.success && Array.isArray(resp.data)) {
+                GetGrillaResponsablesTareas(resp.data);
+            } else {
+
+
+                GetGrillaResponsablesTareas([]);
+                //Swal.fire({
+                //    icon: 'info',
+                //    title: 'Señor(a) Funcionario(a)',
+                //    text: "No hay tareas asignadas."
+                //});
+            }
+        },
+        error: function () {
+            Swal.fire({
+                icon: 'error',
+                title: 'Señor(a) Funcionario(a)',
+                text: 'No es posible consultar las tareas. Por favor, revise la conexión o contacte al administrador.'
+            });
+        }
+    });
+}
+
+
+function GetGrillaResponsablesTareas(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaResponsablesVerificacion")) {
+        $("#tbGrillaResponsablesVerificacion").DataTable().destroy();
+    }
+
+    $("#tbGrillaResponsablesVerificacion").empty();
+    $("#pn_GrillaResponsablesVerificacion").removeClass('hidden');
+
+    $("#tbGrillaResponsablesVerificacion").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        columns: [
+            { title: "Unidad", data: "DescUnidad", className: "celdaJust" },
+            {
+                title: "Seguimiento Tareas",
+                data: "Seguimiento",
+                className: "celdaJust",
+                render: function (data) {
+                    return data ?? '';
+                }
+            }
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: true,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
+
+
+
+function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
+    $.ajax({
+        type: "GET",
+        url: UrlGetResultadosIris,
+        data: { V_Criminalidad: IdCriminalidad },//, V_ResponsableId: IdResponsable },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+            if (respuesta?.success && Array.isArray(respuesta.data) && respuesta.data.length > 0) {
+                // Mostrar el panel de resultados
+                $('#pn_GrillaResultados').removeClass('hidden');
+                GetGrillaResultados(respuesta.data);
+            } else {
+
+                $('#pn_GrillaResultados').removeClass('hidden');
+                // Ocultar la grilla si está visible
+                //$('#pn_GrillaResultados').addClass('hidden');
+
+                //Swal.fire({
+                //    icon: 'info',
+                //    title: 'Señor(a) Funcionario(a)',
+                //    text: "No hay resultados asociados a esta criminalidad."
+                //});
+            }
+
+        },
+        error: function (xhr, status, error) {
+            console.error("Error en F_GetTareas:", {
+                status: xhr.status,
+                response: xhr.responseText,
+                error: error
+            });
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Señor(a) Funcionario(a)',
+                text: 'No es posible consultar las tareas. Por favor, revise la conexión o contacte al administrador.'
+            });
+        }
+    });
+}
+
+function GetGrillaResultados(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaResultados")) {
+        $("#tbGrillaResultados").DataTable().destroy();
+    }
+
+    $("#tbGrillaResultados").empty();
+    $("#pn_GrillaResultados").removeClass('hidden');
+
+    $("#tbGrillaResultados").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        "columns": [
+            //{
+            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+            //        var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:Dell_Roles(${row.IdUserRol})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+            //        var finBoton = '</ul></div>';
+            //        return inicioBoton + Eliminar + finBoton;
+            //    }
+            //},
+
+            { "title": "Tipo", "data": "DescTipoResultado", "name": "DescTipoResultado", className: "celdaCenter celda2" },
+            { "title": "Número", "data": "NroSpoaSiedco", "name": "NroSpoaSiedco", className: "celdaCenter celda3" },
+            {
+                title: "Fecha SIEDCO - SPOA",
+                data: "FechaResultado",
+                name: "FechaResultado",
+                className: "celdaCenter celda5",
+                render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
+                }
+            },
+            columnaObservacionResultado(),
+            {
+                title: "Fecha Creación",
+                data: "FechaCreaResultado",
+                name: "FechaCreaResultado",
+                className: "celdaCenter celda5",
+                render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
+                }
+            }
+
+
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: true,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}
+
+
+
+function OpenInsResponsableValModal() {
+
+    $('#Modal_InsResponable').modal("show");
+}
+

@@ -298,6 +298,13 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("CuadranteRural")]
         public string? CuadranteRural { get; set; }
 
+        [JsonPropertyName("FuncionarioResponsable")]
+        public string? FuncionarioResponsable { get; set; }
+
+
+        [JsonPropertyName("UnidadFuncionarioResponsable")]
+        public string? UnidadFuncionarioResponsable { get; set; }
+
         [JsonPropertyName("CodigoDane")]
         public Int32? CodigoDane { get; set; }
 
