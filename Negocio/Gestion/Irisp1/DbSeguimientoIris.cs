@@ -275,8 +275,236 @@ namespace Negocio.Gestion.Irisp1
 
 
 
+        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesSeguimiento()
+        {
+            DataTable resultado = new();
+            List<DtoDominios> retorno = new();
+            DtoResultado<List<DtoDominios>> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
+              
+
+
+
+                if (Conexion.State == ConnectionState.Open)
+                {
+                    resultado.Load(await objCommand.ExecuteReaderAsync());
+
+                    if (resultado.Rows.Count > 0)
+                    {
+                        foreach (DataRow fila in resultado.Rows)
+                        {
+                            retorno.Add(new DtoDominios
+                            {
+                                SIGLA = fila["SIGLA"].ToString(),
+                                DESCRIPCION_DEPENDENCIA = fila["DESCRIPCION_DEPENDENCIA"].ToString()
+                            });
+                        }
+
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "F_GetDominios";
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                        resp.Data = new List<DtoDominios>(); // 👈💥 evita el NullReference
+                    }
+
+                    Conexion.Close();
+                    Conexion.Dispose();
+                    objCommand.Connection.Close();
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "No se pudo realizar la conexión a la base de datos";
+                    resp.Operacion = "0";
+                }
+
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+                _logger.LogError("Creacion de log");
+                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento " + e);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Operacion = "0";
+
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+                resultado.Dispose();
+            }
+            return resp;
+        }
+
+        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesPorSigla(string V_Sigla)
+        {
+            DataTable resultado = new();
+            List<DtoDominios> retorno = new();
+            DtoResultado<List<DtoDominios>> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetUnidadesPorSigla";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
+
+                objCommand.Parameters.Add("p_sigla", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Sigla;
+
+                if (Conexion.State == ConnectionState.Open)
+                {
+                    resultado.Load(await objCommand.ExecuteReaderAsync());
+
+                    if (resultado.Rows.Count > 0)
+                    {
+                        foreach (DataRow fila in resultado.Rows)
+                        {
+                            retorno.Add(new DtoDominios
+                            {
+                                CONSECUTIVO = fila["CONSECUTIVO"].ToString(),
+                                DESCRIPCION_DEPENDENCIA = fila["DESCRIPCION_DEPENDENCIA"].ToString(),
+                                SIGLA = fila["SIGLA_PAPA"].ToString()
+                            });
+                        }
+
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "F_GetDominios";
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                        resp.Data = new List<DtoDominios>(); // 👈💥 evita el NullReference
+                    }
+
+                    Conexion.Close();
+                    Conexion.Dispose();
+                    objCommand.Connection.Close();
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "No se pudo realizar la conexión a la base de datos";
+                    resp.Operacion = "0";
+                }
+
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+                _logger.LogError("Creacion de log");
+                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento " + e);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Operacion = "0";
+
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+                resultado.Dispose();
+            }
+            return resp;
+        }
+
+
 
         #endregion
+
+
+
+        public async Task<DtoResultado<Int32>> P_InsResponsable(DtoIrispCriminalidad Obj_Responsable, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_InsResponsable";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = Obj_Responsable.CriminalidadId;
+                objCommand.Parameters.Add("P_ID_UNIDAD", OracleDbType.Int32).Value = Obj_Responsable.IdUnidad ?? 0;
+                objCommand.Parameters.Add("P_TAREA", OracleDbType.Int32).Value = Obj_Responsable.IdTareai ?? 1;
+                objCommand.Parameters.Add("P_OBSERVACION", OracleDbType.Varchar2).Value = Obj_Responsable.Observacion;
+                objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA", OracleDbType.Varchar2).Value = maquina;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
 
     }
 }

@@ -66,9 +66,10 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("EspecialidadAporta")]
         public int? EspecialidadAporta { get; set; }
 
-        
 
-        
+        [JsonPropertyName("IdTareai")]
+        public Int32? IdTareai { get; set; }
+
 
         [JsonPropertyName("IdentificacionCrea")]
         public Int64? IdentificacionCrea { get; set; }
@@ -214,6 +215,9 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("ObservacionResponsable")]
         public string? ObservacionResponsable { get; set; }
+
+        [JsonPropertyName("Observacion")]
+        public string? Observacion { get; set; }
 
         [JsonPropertyName("JustificacionResponsable")]
         public string? JustificacionResponsable { get; set; }

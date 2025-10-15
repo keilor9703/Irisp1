@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Negocio.Gestion.Utilidades;
 using Negocio.Interfaz.Irisp1;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -373,9 +374,33 @@ namespace Negocio.Gestion.Irisp1
 
                 if (Conexion.State == ConnectionState.Open)
                 {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
+                    //resultado.Load(await objCommand.ExecuteReaderAsync());
 
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoTareasIris>(resultado);
+                    //retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoTareasIris>(resultado);
+
+
+
+                    using var reader = await objCommand.ExecuteReaderAsync();
+
+                    while (await reader.ReadAsync())
+                    {
+                        var dto = new DtoTareasIris
+                        {
+                            ResponValidacionId = reader["IDRESPONSABLE"]?.ToString(),
+                            IdUnidadResponsable = reader["IDUNIDADRESPONSABLE"]?.ToString(),
+                            DescUnidad = reader["DESCUNIDAD"]?.ToString(),
+                            UnidadCompleta = reader["UNIDADCOMPLETA"]?.ToString(),
+                            Aceptada = reader["ACEPTADA"]?.ToString(),
+                        };
+
+                        // 👇 Aquí manejamos correctamente el CLOB:
+                        if (reader["SEGUIMIENTO"] is OracleClob clob && !clob.IsNull)
+                            dto.Seguimiento = clob.Value; // ← Extrae el texto completo del CLOB
+                        else
+                            dto.Seguimiento = reader["SEGUIMIENTO"]?.ToString();
+
+                        retorno.Add(dto);
+                    }
 
                     if (retorno.Count > 0)
                     {

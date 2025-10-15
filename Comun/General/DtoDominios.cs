@@ -15,5 +15,18 @@ namespace Comun.General
         [JsonPropertyName("Descripcion2")]
         public string? Descripcion2 { get; set; }
         public int ANIO { get; set; }
+
+
+
+        [JsonPropertyName("CONSECUTIVO")]
+        public string? CONSECUTIVO { get; set; }
+
+
+        [JsonPropertyName("DESCRIPCION_DEPENDENCIA")]
+        public string? DESCRIPCION_DEPENDENCIA { get; set; }
+
+        [JsonPropertyName("SIGLA")]
+        public string? SIGLA { get; set; }
+
     }
 }

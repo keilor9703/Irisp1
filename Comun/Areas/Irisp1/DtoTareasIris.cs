@@ -74,6 +74,10 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("EstadoTareasGrilla")]
         public string? EstadoTareasGrilla { get; set; }
 
+        [JsonPropertyName("Aceptada")]
+        public string? Aceptada { get; set; }
+
+
         [JsonPropertyName("Evidencia")]
         public string? Evidencia { get; set; }
 
@@ -97,6 +101,12 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("CriminalidadId")]
         public string? CriminalidadId { get; set; }
+
+        [JsonPropertyName("UnidadCompleta")]
+        public string? UnidadCompleta { get; set; }
+
+        [JsonPropertyName("IdUnidadResponsable")]
+        public string? IdUnidadResponsable { get; set; }
     }
 
 }

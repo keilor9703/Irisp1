@@ -1,13 +1,21 @@
 ﻿let archivoSubido = null; // Guardará el archivo ya cargado
+let EstadoExistencia = null; // Guardará el archivo ya cargado
 
 $(document).ready(function () {
 
-
+    // Inicializa select2 generales
     if ($.fn.select2) {
         $('#ddlAnioIris').select2();
     }
 
-    // Asocia el evento change
+    $('.select2').select2({
+        placeholder: "Seleccione",
+        allowClear: true
+    });
+
+    $('#ddlTipoUnidad').select2();
+
+ 
     $('#ddlAnioIris').on('change', function () {
         F_GetInfoGrillas();
     });
@@ -19,14 +27,6 @@ $(document).ready(function () {
             $('#fotografia').closest('.col-md-4').addClass('hidden');
         }
     });
-
-
-    $('.select2').select2({
-        placeholder: "Seleccione",
-        allowClear: true
-    });
-
-
 
 });
 
@@ -518,7 +518,7 @@ function F_GetDetalleIris(registro) {
     console.log("✅ Registro recibido:", registro);
 
     $("#txtCriminalidadIdModal").val(registro.CriminalidadId);
-    $("#txtConsecutivoIris").val(registro.CriminalidadId);
+   
 
     var FechaInicio = registro.FechaInicioExistencia ? moment(registro.FechaInicioExistencia).format('DD/MM/YYYY hh:mm:ss a') : '';
     var FechaCreacion = registro.FechaCreacion ? moment(registro.FechaCreacion).format('DD/MM/YYYY hh:mm:ss a') : '';
@@ -541,11 +541,23 @@ function F_GetDetalleIris(registro) {
     $("#txtCelularCuadrante").text(registro.CelularCuadrante);
     $("#txtFechaCreacion").text(FechaCreacion);
 
+
     // ✅ Renderiza el badge con color (no solo texto)
     $("#txtEstado").html(RenderEstadoBadge(registro.EstadoDescripcion));
 
     // ✅ Lo mismo para Estado Existencia, si aplica
+
+   
     $("#txtEstadoExistencia").html(RenderEstadoBadge(registro.EstadoExistenciaDescripcion));
+   
+    if (!registro.EstadoExistenciaDescripcion) {
+        EstadoExistencia = 'Por establecer';
+    } else {
+        EstadoExistencia = registro.EstadoExistenciaDescripcion;
+    }
+
+
+    
 
     var IdenInforma = registro.IdentificacionInforma;
 
@@ -599,8 +611,10 @@ function F_GetDetalleIris(registro) {
 function RenderEstadoBadge(estadoTexto) {
     if (!estadoTexto) {
         return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
+        
     }
 
+    
     const estado = estadoTexto.toLowerCase();
     let color = '';
 
@@ -610,6 +624,12 @@ function RenderEstadoBadge(estadoTexto) {
             break;
         case 'asignado':
             color = '#236305'; // verde oscuro
+            break;
+        case 'si existe':
+            color = '#236305'; // verde oscuro
+            break;
+        case 'no existe':
+            color = '#c53a1d'; // verde oscuro
             break;
         case 'avance verificación':
             color = '#799137'; // verde oliva
@@ -902,7 +922,7 @@ function GetGrillaDocumentosIris(Datos) {
 
     $("#tbGrillaDocumento").empty();
    
-
+    
     $("#tbGrillaDocumento").DataTable({
         destroy: true,
         data: Datos,
@@ -1057,7 +1077,7 @@ function GetGrillaResponsableIris(Datos) {
     });
 }
 
-
+var EstadoGlobalAceptada = "";
 function F_GetTareas(IdCriminalidad) {
    
     $("#txtCriminalidadIdModal").val(IdCriminalidad);
@@ -1071,7 +1091,20 @@ function F_GetTareas(IdCriminalidad) {
         cache: false,
         success: function (resp) {
             if (resp?.success && Array.isArray(resp.data)) {
+
+
+                // ✅ Recorre todos los registros para revisar el campo Aceptada
+                const tieneAceptada = resp.data.some(
+                    (item) => item.Aceptada && item.Aceptada.toUpperCase() === "SI"
+                );
+
+                // ✅ Guarda en la variable global el estado
+                EstadoGlobalAceptada = tieneAceptada ? "Aceptada" : "No Aceptada";
+
+
+
                 GetGrillaResponsablesTareas(resp.data);
+
             } else {
 
 
@@ -1094,6 +1127,15 @@ function F_GetTareas(IdCriminalidad) {
 }
 
 
+
+
+function decodeHtmlEntities(text) {
+    if (!text) return "";
+    var textarea = document.createElement("textarea");
+    textarea.innerHTML = text;
+    return textarea.value;
+}
+
 function GetGrillaResponsablesTareas(Datos) {
     if ($.fn.dataTable.isDataTable("#tbGrillaResponsablesVerificacion")) {
         $("#tbGrillaResponsablesVerificacion").DataTable().destroy();
@@ -1108,16 +1150,37 @@ function GetGrillaResponsablesTareas(Datos) {
         language: glOpcionesIdioma,
         responsive: true,
         columns: [
-            { title: "Unidad", data: "DescUnidad", className: "celdaJust" },
+
+            //{
+            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
+            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+            //        var CambiarUnidad = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:OpenInsResponsableValModal(${row.ResponValidacionID})"><i class="fa fa-trash red"></i>&nbsp;Cambiar Unidad</a></li>`;
+            //        var EliminarUnidad = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DellUnidad(${row.ResponValidacionID})"><i class="fa fa-trash red"></i>&nbsp;Eliminar Unidad</a></li>`;
+            //        var finBoton = '</ul></div>';
+            //        return inicioBoton + CambiarUnidad + EliminarUnidad + finBoton;
+            //    }
+            //},
+
             {
+                data: "UnidadCompleta",
+                title: "Unidad",
+                className: "celda30"
+            },
+            {
+                data: "Seguimiento",  // 👈 corregido aquí (mayúscula)
                 title: "Seguimiento Tareas",
-                data: "Seguimiento",
-                className: "celdaJust",
-                render: function (data) {
-                    return data ?? '';
+                className: "text-start align-top",
+                render: function (data, type, row) {
+                    if (type === 'display' && data) {
+                        return decodeHtmlEntities(data);
+                    }
+                    return data;
                 }
             }
         ],
+        createdRow: function (row, data, dataIndex) {
+            $('td', row).eq(1).html(decodeHtmlEntities(data.Seguimiento));
+        },
         lengthMenu: [
             [5, 10, 25, 50, -1],
             ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
@@ -1130,8 +1193,6 @@ function GetGrillaResponsablesTareas(Datos) {
         info: true
     });
 }
-
-
 
 function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
     $.ajax({
@@ -1244,9 +1305,260 @@ function GetGrillaResultados(Datos) {
 }
 
 
+function columnaObservacionResultado() {
+    return {
+        title: "Observación",
+        data: "ObservacionResultado",
+        name: "ObservacionResultado",
+        "autoWidth": false,
+        className: "celdaCenter celda7",
+        render: function (data, type, row) {
+            if (!data || data.trim() === "") {
+                return '';
+            }
 
-function OpenInsResponsableValModal() {
+            const dataEncoded = encodeURIComponent(data);
 
-    $('#Modal_InsResponable').modal("show");
+            return `
+                <div style="display: flex; align-items: center; max-width: 100px; gap: 10px;">
+                    <button class="btn btn-success btn-sm" type="button"
+                        onclick="AbrirModalVisualizarTexto(decodeURIComponent('${dataEncoded}'))">
+                        <span class="fa fa-eye white"></span>
+                    </button>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;" title="${data}">
+                        ${data}
+                    </div>
+                </div>
+            `;
+        }
+    };
 }
 
+
+
+function OpenInsResponsableValModal() {
+    const modalElement = document.getElementById('Modal_InsResponable');
+    const modalInstance = new bootstrap.Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: true,
+        focus: true // 👈 clave: permite escribir en el buscador de Select2
+    });
+    modalInstance.show();
+
+    // ✅ Re-inicializa los Select2 dentro de la modal con el parent correcto
+    $('#ddlTipoUnidad, #ddlTipoDependencia, #ddlTipoTarea').select2({
+        dropdownParent: $('#Modal_InsResponable'),
+        placeholder: "Seleccione",
+        allowClear: true,
+        width: '100%'
+    });
+}
+
+$('#ddlTipoUnidad').on('change', function () {
+    const siglaUnidad = $(this).val(); // obtiene el valor seleccionado
+
+    if (siglaUnidad && siglaUnidad !== '') {
+        console.log("Unidad seleccionada:", siglaUnidad);
+
+        // Ejecuta el método que deseas con el valor seleccionado
+       // ConsultarDependencias(siglaUnidad);
+    } else {
+        console.warn("⚠️ No se seleccionó ninguna unidad.");
+    }
+});
+
+$(document).on('change', '#ddlTipoUnidad', function () {
+    handleDropdownChange('/Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia');
+});
+
+function handleDropdownChange(url, paramName, paramValue, dropdownSelector, callback) {
+    if (paramValue) {
+        $.getJSON(url, { [paramName]: paramValue }, function (data) {
+            const $dropdown = $(dropdownSelector);
+            $dropdown.empty().append('<option value="">Seleccione</option>');
+
+            if (Array.isArray(data) && data.length > 0) {
+                $.each(data, function (index, item) {
+                    if (item && item.descripcion) {
+                        /*dropdown.append(`<option value="${item.id || item.consecutivo || item.codigo}">${item.descripcion}</option>`);*/
+                        $dropdown.append(`<option value="${item.codigo}"data-sigla="${item.sigla || ''}"data-descripcion="${item.descripcion}"> ${item.descripcion}</option>`);
+                    }
+                });
+
+                // Ejecutar callback si existe
+                if (typeof callback === "function") callback();
+
+                $dropdown.trigger('change');
+            }
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.error(`Error al cargar datos desde ${url}:`, textStatus, errorThrown);
+        });
+    }
+}
+
+$('#ddlTipoDependencia').on('change', function () {
+    const $opt = $(this).find(':selected');
+    const id = $opt.val();
+    const descripcion = $opt.data('descripcion');
+    const sigla = $opt.data('sigla');
+
+    // Guardar en el propio select
+    $(this).data('idSeleccionado', id);
+    $(this).data('descripcionSeleccionada', descripcion);
+    $(this).data('siglaSeleccionada', sigla);
+
+    console.log('Guardado en el select:', $(this).data());
+});
+
+
+function P_InsResponsabeValModal() {
+    const tipoTarea = parseInt($("#ddlTipoTarea").val());
+    const estadoExistencia = (typeof EstadoExistencia !== "undefined" ? EstadoExistencia.toLowerCase() : "");
+    const estadoAceptada = (typeof EstadoGlobalAceptada !== "undefined" ? EstadoGlobalAceptada.toLowerCase() : "");
+
+    // 🔹 Validación: asignar proceso investigativo (71)
+    if (tipoTarea === 71) {
+        if (estadoExistencia === 'si existe') {
+            // OK, continúa
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Señor(a) Funcionario(a):',
+                text: 'Para asignar el proceso investigativo, el IRISP debe estar en estado existencia "Si Existe".'
+            });
+            return;
+        }
+    }
+
+    // 🔹 Validación: verificación de existencia (52)
+    if (tipoTarea === 52) {
+        if (estadoAceptada === 'no aceptada') {
+            // OK, continúa
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Señor(a) Funcionario(a):',
+                text: 'Ya se registró una unidad responsable de la verificación de la existencia o existen tareas de verificación no rechazadas.'
+            });
+            return;
+        }
+    }
+
+    // 🔹 Objeto a enviar
+    const Obj_Responsable = {
+        CriminalidadId: $("#txtCriminalidadIdModal").val(),
+        IdUnidad: $('#ddlTipoDependencia').data('idSeleccionado'),
+        IdTareai: tipoTarea,
+        Observacion: $("#txtObservaciones").val()
+    };
+
+    // 🔹 Validar campos obligatorios (excepto Observacion)
+    for (let key in Obj_Responsable) {
+        if (key !== 'Observacion') {
+            const val = Obj_Responsable[key];
+            if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Valide todos los campos para completar el registro.'
+                });
+                return;
+            }
+        }
+    }
+
+    // 🔹 Enviar solicitud AJAX
+    $.ajax({
+        url: UrlInsResponsable,
+        type: 'POST',
+        data: Obj_Responsable, // Si tu backend espera JSON, agrega: contentType: 'application/json', data: JSON.stringify(Obj_Responsable)
+        success: function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: resp.message
+                }).then(() => {
+                    // Limpieza del formulario
+                    $('#ddlTipoUnidad, #ddlTipoDependencia, #ddlTipoTarea').val('').trigger('change');
+                    $("#txtObservaciones").val('');
+                    $("#Modal_InsResponable").modal('hide');
+
+                    // Refrescar la grilla
+                    F_GetTareas($("#txtCriminalidadIdModal").val());
+                });
+            } else {
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            Swal.fire('Error', 'Fallo en la llamada AJAX: ' + error, 'error');
+        }
+    });
+}
+
+
+
+function OpenInsResponsableValModal(V_ResponsableValidacionId) {
+
+
+    $("#txtResponsableId").val(V_ResponsableValidacionId);
+    const modalElement = document.getElementById('Modal_Updesponable');
+    const modalInstance = new bootstrap.Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: true,
+        focus: true // 👈 clave: permite escribir en el buscador de Select2
+    });
+    modalInstance.show();
+
+    // ✅ Re-inicializa los Select2 dentro de la modal con el parent correcto
+    $('#ddlTipoUnidad, #ddlTipoDependencia').select2({
+        dropdownParent: $('#Modal_Updesponable'),
+        placeholder: "Seleccione",
+        allowClear: true,
+        width: '100%'
+    });
+}
+
+function P_UpdUnidadResponsable() {
+
+   
+    const obj_responsableUpd = {
+
+        IdResponsable: $("#txtResponsableId").val(),
+        IdUnidad: $('#ddlTipoDependencia').data('idSeleccionado')
+
+    }
+
+    // 🔹 Enviar solicitud AJAX
+    $.ajax({
+        url: UrlUpdResponsable,
+        type: 'POST',
+        data: Obj_Responsable, // Si tu backend espera JSON, agrega: contentType: 'application/json', data: JSON.stringify(Obj_Responsable)
+        success: function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: resp.message
+                }).then(() => {
+                    // Limpieza del formulario
+                    $('#ddlTipoUnidad, #ddlTipoDependencia, #ddlTipoTarea').val('').trigger('change');
+                    $("#txtObservaciones").val('');
+                    $("#Modal_InsResponable").modal('hide');
+
+                    // Refrescar la grilla
+                    F_GetTareas($("#txtCriminalidadIdModal").val());
+                });
+            } else {
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            Swal.fire('Error', 'Fallo en la llamada AJAX: ' + error, 'error');
+        }
+    });
+
+
+
+}

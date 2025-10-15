@@ -30,6 +30,10 @@
         var UrlGetResponsable= "@Url.Action("F_GetResponsables", "Seguimiento", new { Area = "Irisp1" })";
         var UrlGetResponsablesTareasIris= "@Url.Action("F_GetResponsablesTareasIris", "Verificacion", new { Area = "Irisp1" })";
          var UrlGetResultadosIris = "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })";
+         var UrlGetDependencias = "@Url.Action("F_GetUnidadesPorSigla", "Seguimiento", new { Area = "Irisp1" })";
+         var UrlInsResponsable = "@Url.Action("P_InsResponsable", "Seguimiento", new { Area = "Irisp1" })";
+         var UrlUpdResponsable = "@Url.Action("P_UpdUnidadResponsable", "Seguimiento", new { Area = "Irisp1" })";
+
 
     </script>
 }
@@ -163,6 +167,9 @@
 
 <!-- MODAL: Visualizar Detalle IRISP1 -->
 <div class="modal fade" id="Modal_AsignarIris" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+
+    <input type="text" id="txtCriminalidadIdModal" class="d-none" value="@ViewBag.txtCriminalidadIdModal" />
+    <input type="text" id="txtEstadoExistencia2" class="d-none" value="@ViewBag.txtEstadoExistencia2" />
 
    <div class="modal-dialog" style="max-width: 80%;">
 
@@ -432,36 +439,40 @@
             <div class="modal-body">
                 <div class="row">
                     <!-- Campo Tipo -->
-                    <div class="col-md-3 MargFloatBoos">
+                    <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
                             @Html.DropDownList("ddlTipoUnidad", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoUnidad", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Unidad:</label>
                         </div>
                     </div>
-                    <div class="col-md-3 MargFloatBoos">
+                    <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
                             @Html.DropDownList("ddlTipoDependencia", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoDependencia", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Dependencia:</label>
                         </div>
                     </div>
 
-                    <div class="col-md-3 MargFloatBoos">
+                </div>
+
+                <div class="row">
+                     
+                    <div class="col-md-5 MargFloatBoos">
                         <div class="form-group has-float-label">
                             @Html.DropDownList("ddlTipoTarea", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoTarea", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Tarea:</label>
                         </div>
                     </div>
-                    <!-- Observaciones -->
-                    <div class="row mt-3">
-                        <div class="col-md-12">
-                            <div class="form-group has-float-label">
-                                <textarea id="txtObservaciones" name="txtObservaciones" rows="3" class="form-control InputPading" placeholder="Digite una observación (campo opcional)"></textarea>
-                                <label class="Labels">Observaciones:</label>
-                            </div>
+                </div>
+
+                       
+                <!-- Observaciones -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group has-float-label">
+                            <textarea id="txtObservaciones" name="txtObservaciones" rows="3" class="form-control InputPading" placeholder="Digite una observación (campo opcional)"></textarea>
+                            <label class="Labels">Observaciones:</label>
                         </div>
                     </div>
-
-
                 </div>
 
               
@@ -475,6 +486,55 @@
         </div>
     </div>
 </div>
+
+
+
+
+
+
+<div class="modal fade" id="Modal_Updesponable" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 800px;">
+
+        <input type="text" id="txtResponsableId" class="d-none" value="@ViewBag.txtResponsableId" />
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Asignar Responsable</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Campo Tipo -->
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoUnidad", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoUnidad", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Unidad:</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoDependencia", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoDependencia", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Dependencia:</label>
+                        </div>
+                    </div>
+
+                </div>
+
+                
+            </div>
+
+            <div class="modal-footer" style="justify-content:center;">
+                <button type="button" id="btnGuardarResultado" onclick="P_UpdUnidadResponsable(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                    <span class="fa ico_grabar faa-wrench animated"></span>Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 
 
 

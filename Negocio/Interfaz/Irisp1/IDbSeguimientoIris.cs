@@ -18,11 +18,15 @@ namespace Negocio.Interfaz.Irisp1
       
         Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
 
-         Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId);
+        Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId);
+        Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesPorSigla(string V_Sigla);
 
+        Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesSeguimiento();
 
         #region Métodos de Insersión  
 
+        Task<DtoResultado<Int32>> P_InsResponsable(DtoIrispCriminalidad Obj_Responsable, string usuario, string maquina);
+        
 
 
         #endregion
