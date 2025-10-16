@@ -74,8 +74,17 @@ namespace Web.Areas.Irisp1.Controllers
 
             ViewBag.ddlClasiNarcotraficoModal = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlTipoUnidad = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
+            ViewBag.ddlTipoUnidad2 = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
             ViewBag.ddlTipoDependencia = new SelectList(Enumerable.Empty<SelectListItem>());
+            ViewBag.ddlTipoDependencia2 = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlTipoTarea = new SelectList((await _IDbDominios.F_GetDominiosIris(51)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            var dominios = (await _IDbDominios.F_GetDominiosIris(58)).Data?
+                             .Where(x => x.Descripcion == "Aceptada" || x.Descripcion == "Rechazada")
+                             .OrderBy(x => x.Descripcion)
+                             .ToList();
+
+            ViewBag.ddlTipoEvalTarea = new SelectList(dominios, "IdDominio", "Descripcion");
+
 
             return View();
         }
@@ -153,6 +162,90 @@ namespace Web.Areas.Irisp1.Controllers
             try
             {
                 var Resultado = await _iDbSeguimientoIris.P_InsResponsable(Obj_Responsable, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_UpdUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd)
+        {
+
+
+            try
+            {
+                var Resultado = await _iDbSeguimientoIris.P_UpdUnidadResponsable(obj_responsableUpd, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_DelUnidadResponsable(DtoIrispCriminalidad obj_DelResponsable)
+        {
+
+
+            try
+            {
+                var Resultado = await _iDbSeguimientoIris.P_DelUnidadResponsable(obj_DelResponsable, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_EvalTarea(DtoIrispCriminalidad obj_EvalTarea)
+        {
+
+
+            try
+            {
+                var Resultado = await _iDbSeguimientoIris.P_EvalTarea(obj_EvalTarea, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
 
                 if (Resultado.IdRespuesta > 0)
                 {

@@ -4,6 +4,7 @@
 @section scripts {
     @* <script src="~/areas/irisp1/registrosirisp1.js"></script> *@
     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/irisp1/seguimientoirisp1.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -16,26 +17,7 @@
 
     <script src="~/areas/irisp1/CrearUbicacion.js"></script> 
 
-    <script type='text/javascript'>
-
-        var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "Seguimiento", new { Area = "Irisp1" })";
-        var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "Seguimiento", new { Area = "Irisp1" })";
-        var UrlConsultarAnioSeguimiento= "@Url.Action("ConsultarAnioSeguimiento", "Seguimiento", new { Area = "Irisp1" })";
-        var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
-        var UrlGetIntegrantes= "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
-        var UrlGetUbicacion= "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";     
-        var UrlGetDelitosIris= "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-        var UrlGetInfoAdicional= "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })";
-        var UrlGetDocIris= "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-        var UrlGetResponsable= "@Url.Action("F_GetResponsables", "Seguimiento", new { Area = "Irisp1" })";
-        var UrlGetResponsablesTareasIris= "@Url.Action("F_GetResponsablesTareasIris", "Verificacion", new { Area = "Irisp1" })";
-         var UrlGetResultadosIris = "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })";
-         var UrlGetDependencias = "@Url.Action("F_GetUnidadesPorSigla", "Seguimiento", new { Area = "Irisp1" })";
-         var UrlInsResponsable = "@Url.Action("P_InsResponsable", "Seguimiento", new { Area = "Irisp1" })";
-         var UrlUpdResponsable = "@Url.Action("P_UpdUnidadResponsable", "Seguimiento", new { Area = "Irisp1" })";
-
-
-    </script>
+   
 }
 
 
@@ -77,7 +59,7 @@
                 </div>
             </div>
             <div class="col-md-2 ">
-                <button tabindex="1002" id="btnLimpiar" onclick="AbrirModalNuevoIris();" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo">
+                <button tabindex="1002" id="btnNuevo" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo">
                     <span class="fa ico_limpiar faa-ring animated"></span> Nuevo IRIS
                 </button>
             </div>
@@ -207,8 +189,7 @@
                                 <p><i class="fas fa-file-alt"></i><strong> Fuente:</strong> <span id="txtFuente"></span></p>
                                 <p><i class="fas fa-check-square"></i><strong> Estado:</strong> <span id="txtEstado"></span></p>
                                 <p><i class="fas fa-check-square"></i><strong> Estado Existencia:</strong> <span id="txtEstadoExistencia"></span></p>
-                                <p><i class="fas fa-clipboard"></i><strong> Característics Generales:</strong> </p>
-                                <p><span id="txtCaracteristicas"></span></p>
+                              
                          
                             </div>
                         </div>
@@ -349,7 +330,15 @@
                         </section>
                     </div>
                 </div>
+                <div class="row ms-3">
 
+                    <div class="col-md-12">
+
+                        <p><i class="fas fa-clipboard"></i><strong> Características Generales:</strong> </p>
+                        <p><span id="txtCaracteristicas"></span></p>
+                    </div>
+
+                </div>
 
                 <div class="row">
 
@@ -364,8 +353,7 @@
                                 <button type="button"
                                         class="btn btn-green btn-sm py-0 px-2 align-self-center"
                                         id="btnNuevoResultado"
-                                        style="line-height:1.2; font-size: 0.8rem;"
-                                        onclick="OpenInsResponsableValModal();">
+                                        style="line-height:1.2; font-size: 0.8rem;">
                                     <i class="fas fa-plus"></i> Nuevo
                                 </button>
 
@@ -479,7 +467,7 @@
             </div>
 
             <div class="modal-footer" style="justify-content:center;">
-                <button type="button" id="btnGuardarResultado" onclick="P_InsResponsabeValModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                <button type="button" id="btnGuardarResponsable"  style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
                     <span class="fa ico_grabar faa-wrench animated"></span>Guardar
                 </button>
             </div>
@@ -492,7 +480,7 @@
 
 
 
-<div class="modal fade" id="Modal_Updesponable" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+<div class="modal fade" id="Modal_UpdResponable" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
     <div class="modal-dialog" style="max-width: 800px;">
 
         <input type="text" id="txtResponsableId" class="d-none" value="@ViewBag.txtResponsableId" />
@@ -508,13 +496,13 @@
                     <!-- Campo Tipo -->
                     <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
-                            @Html.DropDownList("ddlTipoUnidad", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoUnidad", @class = "form-control select2", style = "width: 100%;" })
+                            @Html.DropDownList("ddlTipoUnidad2", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoUnidad2", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Unidad:</label>
                         </div>
                     </div>
                     <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
-                            @Html.DropDownList("ddlTipoDependencia", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoDependencia", @class = "form-control select2", style = "width: 100%;" })
+                            @Html.DropDownList("ddlTipoDependencia2", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoDependencia2", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Dependencia:</label>
                         </div>
                     </div>
@@ -525,13 +513,53 @@
             </div>
 
             <div class="modal-footer" style="justify-content:center;">
-                <button type="button" id="btnGuardarResultado" onclick="P_UpdUnidadResponsable(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                <button type="button" id="btnActualizarResponsable" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
                     <span class="fa ico_grabar faa-wrench animated"></span>Actualizar
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+
+
+
+
+<div class="modal fade" id="Modal_EvaluarTarea" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 500px;">
+
+        <input type="text" id="txtTareaId" class="d-none" value="@ViewBag.txtTareaId" />
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Evaluar Tarea</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Campo Tipo -->
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoEvalTarea", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoEvalTarea", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Evaluación de actividad:</label>
+                        </div>
+                    </div>
+                 
+                </div>
+
+
+            </div>
+
+            <div class="modal-footer" style="justify-content:center;">
+                <button type="button" id="btnEvalTarea" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                    <span class="fa ico_grabar faa-wrench animated"></span>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 

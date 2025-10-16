@@ -26,6 +26,9 @@ namespace Negocio.Interfaz.Irisp1
         #region Métodos de Insersión  
 
         Task<DtoResultado<Int32>> P_InsResponsable(DtoIrispCriminalidad Obj_Responsable, string usuario, string maquina);
+        Task<DtoResultado<Int32>> P_UpdUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina);
+        Task<DtoResultado<Int32>> P_DelUnidadResponsable(DtoIrispCriminalidad obj_DelResponsable, string usuario, string maquina);
+        Task<DtoResultado<Int32>> P_EvalTarea(DtoIrispCriminalidad obj_EvalTarea, string usuario, string maquina);
         
 
 

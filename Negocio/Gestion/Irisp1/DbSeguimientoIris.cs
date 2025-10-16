@@ -201,78 +201,146 @@ namespace Negocio.Gestion.Irisp1
 
 
 
+        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
+        //{
+        //    DataTable resultado = new();
+        //    List<DtoIrispCriminalidad> retorno = new();
+        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
+
+        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
+        //    using var objCommand = new OracleCommand();
+
+        //    try
+        //    {
+        //        objCommand.Connection = Conexion;
+        //        objCommand.CommandType = CommandType.StoredProcedure;
+        //        objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_GetResponsables";
+        //        objCommand.BindByName = true;
+        //        Conexion.Open();
+
+        //        objCommand.Parameters.Clear();
+        //        objCommand.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_CriminalidadId;
+        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+        //        if (Conexion.State == ConnectionState.Open)
+        //        {
+        //            resultado.Load(await objCommand.ExecuteReaderAsync());
+        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
+
+        //            if (retorno.Count > 0)
+        //            {
+        //                resp.IdRespuesta = 1;
+        //                resp.Mensaje = "Consulta Exitosa";
+        //                resp.Operacion = "P_GetResponsables";
+        //                resp.Data = retorno;
+        //            }
+        //            else
+        //            {
+        //                resp.IdRespuesta = 0;
+        //                resp.Mensaje = "No se encontraron datos";
+        //                resp.Operacion = "0";
+        //            }
+        //        }
+        //        else
+        //        {
+        //            resp.IdRespuesta = 0;
+        //            resp.Mensaje = "Error conexión base de datos";
+        //            resp.Operacion = "0";
+        //        }
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Conexion.Close();
+        //        Conexion.Dispose();
+        //        objCommand.Connection.Close();
+        //        _logger.LogError("Creacion de log");
+        //        _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.P_GetResponsables " + e);
+
+        //        resp.IdRespuesta = 0;
+        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
+        //        resp.Operacion = "0";
+
+        //    }
+        //    finally
+        //    {
+        //        Conexion.Close();
+        //        Conexion.Dispose();
+        //        objCommand.Dispose();
+        //        objCommand.Connection.Close();
+        //        resultado.Dispose();
+        //    }
+        //    return resp;
+        //}
+
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
         {
-            DataTable resultado = new();
-            List<DtoIrispCriminalidad> retorno = new();
-            DtoResultado<List<DtoIrispCriminalidad>> resp = new();
+            var retorno = new List<DtoIrispCriminalidad>();
+            var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
 
             using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            using var objCommand = new OracleCommand("PK_SEGUIMIENTO_IRIS.P_GetResponsables", Conexion)
+            {
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_GetResponsables";
-                objCommand.BindByName = true;
-                Conexion.Open();
-
-                objCommand.Parameters.Clear();
                 objCommand.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_CriminalidadId;
                 objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
+                await Conexion.OpenAsync();
 
-                    if (retorno.Count > 0)
+                using var reader = await objCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    var dto = new DtoIrispCriminalidad
                     {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "P_GetResponsables";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
+                        FuncionarioResponsable = reader["FuncionarioResponsable"] != DBNull.Value
+                            ? reader["FuncionarioResponsable"].ToString()
+                            : string.Empty,
+
+                        UnidadFuncionarioResponsable = reader["UnidadFuncionarioResponsable"] != DBNull.Value
+                            ? reader["UnidadFuncionarioResponsable"].ToString()
+                            : string.Empty
+                    };
+
+                    retorno.Add(dto);
+                }
+
+                if (retorno.Count > 0)
+                {
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = "Consulta Exitosa";
+                    resp.Operacion = "P_GetResponsables";
+                    resp.Data = retorno;
                 }
                 else
                 {
                     resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
+                    resp.Mensaje = "No se encontraron datos";
                     resp.Operacion = "0";
                 }
-
             }
             catch (Exception e)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.P_GetResponsables " + e);
-
+                _logger.LogError("Error ejecutando PK_SEGUIMIENTO_IRIS.P_GetResponsables", e);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"{e.Message} - {e.InnerException}";
                 resp.Operacion = "0";
-
             }
             finally
             {
-                Conexion.Close();
-                Conexion.Dispose();
+                if (Conexion.State == ConnectionState.Open)
+                    await Conexion.CloseAsync();
+
                 objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
             }
+
             return resp;
         }
-
 
 
         public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesSeguimiento()
@@ -505,6 +573,172 @@ namespace Negocio.Gestion.Irisp1
 
             return resp;
         }
+
+
+
+        public async Task<DtoResultado<Int32>> P_UpdUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_UpdUnidadResponsable";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("P_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_responsableUpd.IdResponsable;
+                objCommand.Parameters.Add("P_ID_UNIDAD_NUEVA", OracleDbType.Int32).Value = obj_responsableUpd.IdUnidad ?? 0;
+               
+                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
+
+
+
+        public async Task<DtoResultado<Int32>> P_DelUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_DelUnidadResponsable";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("P_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_responsableUpd.IdResponsable;
+                objCommand.Parameters.Add("P_ID_UNIDAD", OracleDbType.Int32).Value = obj_responsableUpd.IdUnidad ?? 0;
+
+                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
+
+
+
+        public async Task<DtoResultado<Int32>> P_EvalTarea(DtoIrispCriminalidad obj_EvalTarea, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_EvalTarea";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("P_TAREA_ID", OracleDbType.Varchar2).Value = obj_EvalTarea.IdTarea;
+                objCommand.Parameters.Add("P_EVAL_TAREA_ID", OracleDbType.Int32).Value = obj_EvalTarea.IdEstado ?? 0;
+
+                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
+
 
     }
 }

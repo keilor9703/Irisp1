@@ -28,6 +28,35 @@ $(document).ready(function () {
         }
     });
 
+
+
+    //Onclicks
+    
+    $("#btnNuevo").on("click", function (e) {
+        e.preventDefault();
+        AbrirModalNuevoIris();
+    });
+    $("#btnNuevoResultado").on("click", function (e) {
+        e.preventDefault();
+        OpenInsResponsableValModal();
+    });
+    $("#btnGuardarResponsable").on("click", function (e) {
+        e.preventDefault();
+        P_InsResponsabeValModal();
+    });
+    $("#btnActualizarResponsable").on("click", function (e) {
+        e.preventDefault();
+        P_UpdUnidadResponsable();
+    });
+    $("#btnEvalTarea").on("click", function (e) {
+        e.preventDefault();
+        P_EvalTarea();
+    });
+
+
+
+
+
 });
 
 // Manejo genérico para cualquier modal secundaria
@@ -65,7 +94,7 @@ function formatDate(dateStr) {
 function F_GetInfoGrillas() {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoGrillas,
+        url: AppRoutes.Seguimiento.UrlGetInfoGrillas,
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
@@ -305,8 +334,8 @@ function columnaAcciones(datosFiltrados) {
                                 </li>`;
 
             var Finalizar = `<li style="padding-left: 15px;">
-                                    <a style="color: #102717;" href="javascript:ActualizarIrisp1('${row.CriminalidadId}')">
-                                        <i class="fa fa-retweet green"></i>&nbsp;Actualizar Iris
+                                    <a style="color: #102717;" href="javascript:Finalizar('${row.CriminalidadId}')">
+                                        <i class="fa fa-retweet green"></i>&nbsp;Finalizar
                                     </a>
                                   </li>`;
          
@@ -563,7 +592,7 @@ function F_GetDetalleIris(registro) {
 
     $.ajax({
         type: "POST",
-        url: UrlGetFuncionarios,
+        url: AppRoutes.Seguimiento.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: IdenInforma },
         dataType: 'json',
@@ -584,10 +613,11 @@ function F_GetDetalleIris(registro) {
                 F_GetDelitosIris(registro.CriminalidadId);
                 F_GetDocumentosIris(registro.CriminalidadId);
                 F_GetInfoAdiconalIris(registro.CriminalidadId);
-                F_GetResponsableIris(registro.CriminalidadId)
-                //F_GetFotosIris(registro.CriminalidadId);
+              
+               
                 F_GetTareas(registro.CriminalidadId)
                 F_GetResultados(registro.CriminalidadId);
+               F_GetResponsableIris(registro.CriminalidadId)
             } else {
                 Swal.fire({
                     type: 'error',
@@ -657,7 +687,7 @@ function F_GetUbicacionIris(CrininalidadId) {
 
     $.ajax({
         type: 'GET',
-        url: UrlGetUbicacion,
+        url: AppRoutes.Seguimiento.UrlGetUbicacion,
         async: true,
         data: { V_CriminalidadId: CrininalidadId },
         dataType: 'json',
@@ -767,7 +797,7 @@ function F_GetIntegrantesIris(CriminalidadId) {
 
     $.ajax({
         type: 'GET',
-        url: UrlGetIntegrantes,
+        url: AppRoutes.Seguimiento.UrlGetIntegrantes,
         async: true,
         data: { V_CriminalidadId: CriminalidadId },
         dataType: 'json',
@@ -838,7 +868,7 @@ function GetGrillaIntegrantesIris(Datos) {
 function F_GetDelitosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetDelitosIris, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Seguimiento.UrlGetDelitosIris, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -898,7 +928,7 @@ function GetGrillaDelitosIris(Datos) {
 function F_GetDocumentosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetDocIris, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Seguimiento.UrlGetDocIris, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -969,7 +999,7 @@ function GetGrillaDocumentosIris(Datos) {
 function F_GetInfoAdiconalIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Seguimiento.UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1025,9 +1055,11 @@ function GetGrillaInfoAdicionalIris(Datos) {
 
 
 function F_GetResponsableIris(CriminalidadId) {
+
+    $("#Process").hide();
     $.ajax({
         type: 'GET',
-        url: UrlGetResponsable, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Seguimiento.UrlGetResponsable, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1085,7 +1117,7 @@ function F_GetTareas(IdCriminalidad) {
     // 🔹 NUEVO: Obtener responsables
     $.ajax({
         type: "GET",
-        url: UrlGetResponsablesTareasIris, // crea este endpoint en backend
+        url: AppRoutes.Seguimiento.UrlGetResponsablesTareasIris, // crea este endpoint en backend
         data: { V_Criminalidad: IdCriminalidad },
         dataType: 'json',
         cache: false,
@@ -1150,24 +1182,38 @@ function GetGrillaResponsablesTareas(Datos) {
         language: glOpcionesIdioma,
         responsive: true,
         columns: [
-
-            //{
-            //    data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
-            //        var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-            //        var CambiarUnidad = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:OpenInsResponsableValModal(${row.ResponValidacionID})"><i class="fa fa-trash red"></i>&nbsp;Cambiar Unidad</a></li>`;
-            //        var EliminarUnidad = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DellUnidad(${row.ResponValidacionID})"><i class="fa fa-trash red"></i>&nbsp;Eliminar Unidad</a></li>`;
-            //        var finBoton = '</ul></div>';
-            //        return inicioBoton + CambiarUnidad + EliminarUnidad + finBoton;
-            //    }
-            //},
-
             {
-                data: "UnidadCompleta",
+                data: null,
+                className: "celdaCenter celda3",
+                render: function (data, type, row) {
+                    var inicioBoton = '<div class="dropdown dropend">' +
+                        '<button class="btn btn-success" type="button" id="dropdownMenuButton1" ' +
+                        'data-bs-toggle="dropdown" aria-expanded="false">' +
+                        '<span class="fas fa-list"></span></button>' +
+                        '<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
+
+                    var CambiarUnidad =
+                        `<li style="padding-left: 17px;">` +
+                        `<a style="color: #102717;" href="javascript:OpenUpdResponsableValModal('${row.ResponValidacionId}')">` +
+                        `<i class="fa fa-exchange-alt"></i>&nbsp;Cambiar Unidad</a></li>`;
+
+                    var EliminarUnidad =
+                        `<li style="padding-left: 17px;">` +
+                        `<a style="color: #102717;" href="javascript:P_DelUnidadResponsable('${row.ResponValidacionId}','${row.IdUnidadResponsable}')">` +
+                        `<i class="fa fa-trash red"></i>&nbsp;Eliminar Unidad</a></li>`;
+
+                    var finBoton = '</ul></div>';
+                    return inicioBoton + CambiarUnidad + EliminarUnidad + finBoton;
+                }
+            },
+            {
                 title: "Unidad",
+                data: "UnidadCompleta",
+                name: "UnidadCompleta",
                 className: "celda30"
             },
             {
-                data: "Seguimiento",  // 👈 corregido aquí (mayúscula)
+                data: "Seguimiento",
                 title: "Seguimiento Tareas",
                 className: "text-start align-top",
                 render: function (data, type, row) {
@@ -1178,9 +1224,6 @@ function GetGrillaResponsablesTareas(Datos) {
                 }
             }
         ],
-        createdRow: function (row, data, dataIndex) {
-            $('td', row).eq(1).html(decodeHtmlEntities(data.Seguimiento));
-        },
         lengthMenu: [
             [5, 10, 25, 50, -1],
             ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
@@ -1194,10 +1237,14 @@ function GetGrillaResponsablesTareas(Datos) {
     });
 }
 
+
+
+
+
 function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
     $.ajax({
         type: "GET",
-        url: UrlGetResultadosIris,
+        url: AppRoutes.Seguimiento.UrlGetResultadosIris,
         data: { V_Criminalidad: IdCriminalidad },//, V_ResponsableId: IdResponsable },
         dataType: 'json',
         cache: false,
@@ -1354,22 +1401,18 @@ function OpenInsResponsableValModal() {
     });
 }
 
-$('#ddlTipoUnidad').on('change', function () {
-    const siglaUnidad = $(this).val(); // obtiene el valor seleccionado
 
-    if (siglaUnidad && siglaUnidad !== '') {
-        console.log("Unidad seleccionada:", siglaUnidad);
-
-        // Ejecuta el método que deseas con el valor seleccionado
-       // ConsultarDependencias(siglaUnidad);
-    } else {
-        console.warn("⚠️ No se seleccionó ninguna unidad.");
-    }
-});
 
 $(document).on('change', '#ddlTipoUnidad', function () {
     handleDropdownChange('/Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia');
+   
 });
+
+$(document).on('change', '#ddlTipoUnidad2', function () {
+  
+    handleDropdownChange('/Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia2');
+});
+
 
 function handleDropdownChange(url, paramName, paramValue, dropdownSelector, callback) {
     if (paramValue) {
@@ -1410,6 +1453,20 @@ $('#ddlTipoDependencia').on('change', function () {
     console.log('Guardado en el select:', $(this).data());
 });
 
+
+$('#ddlTipoDependencia2').on('change', function () {
+    const $opt = $(this).find(':selected');
+    const id = $opt.val();
+    const descripcion = $opt.data('descripcion');
+    const sigla = $opt.data('sigla');
+
+    // Guardar en el propio select
+    $(this).data('idSeleccionado', id);
+    $(this).data('descripcionSeleccionada', descripcion);
+    $(this).data('siglaSeleccionada', sigla);
+
+    console.log('Guardado en el select:', $(this).data());
+});
 
 function P_InsResponsabeValModal() {
     const tipoTarea = parseInt($("#ddlTipoTarea").val());
@@ -1469,9 +1526,9 @@ function P_InsResponsabeValModal() {
 
     // 🔹 Enviar solicitud AJAX
     $.ajax({
-        url: UrlInsResponsable,
+        url: AppRoutes.Seguimiento.UrlInsResponsable,
         type: 'POST',
-        data: Obj_Responsable, // Si tu backend espera JSON, agrega: contentType: 'application/json', data: JSON.stringify(Obj_Responsable)
+        data: Obj_Responsable, 
         success: function (resp) {
             if (resp.success) {
                 Swal.fire({
@@ -1499,21 +1556,21 @@ function P_InsResponsabeValModal() {
 
 
 
-function OpenInsResponsableValModal(V_ResponsableValidacionId) {
+function OpenUpdResponsableValModal(V_ResponsableValidacionId) {
 
 
     $("#txtResponsableId").val(V_ResponsableValidacionId);
-    const modalElement = document.getElementById('Modal_Updesponable');
+    const modalElement = document.getElementById('Modal_UpdResponable');
     const modalInstance = new bootstrap.Modal(modalElement, {
         backdrop: 'static',
         keyboard: true,
-        focus: true // 👈 clave: permite escribir en el buscador de Select2
+        focus: true // 
     });
     modalInstance.show();
 
     // ✅ Re-inicializa los Select2 dentro de la modal con el parent correcto
-    $('#ddlTipoUnidad, #ddlTipoDependencia').select2({
-        dropdownParent: $('#Modal_Updesponable'),
+    $('#ddlTipoUnidad2, #ddlTipoDependencia2').select2({
+        dropdownParent: $('#Modal_UpdResponable'),
         placeholder: "Seleccione",
         allowClear: true,
         width: '100%'
@@ -1521,20 +1578,16 @@ function OpenInsResponsableValModal(V_ResponsableValidacionId) {
 }
 
 function P_UpdUnidadResponsable() {
-
    
     const obj_responsableUpd = {
-
         IdResponsable: $("#txtResponsableId").val(),
-        IdUnidad: $('#ddlTipoDependencia').data('idSeleccionado')
-
+        IdUnidad: $('#ddlTipoDependencia2').data('idSeleccionado')
     }
-
-    // 🔹 Enviar solicitud AJAX
+       
     $.ajax({
-        url: UrlUpdResponsable,
+        url: AppRoutes.Seguimiento.UrlUpdResponsable,
         type: 'POST',
-        data: Obj_Responsable, // Si tu backend espera JSON, agrega: contentType: 'application/json', data: JSON.stringify(Obj_Responsable)
+        data: obj_responsableUpd, 
         success: function (resp) {
             if (resp.success) {
                 Swal.fire({
@@ -1543,9 +1596,9 @@ function P_UpdUnidadResponsable() {
                     text: resp.message
                 }).then(() => {
                     // Limpieza del formulario
-                    $('#ddlTipoUnidad, #ddlTipoDependencia, #ddlTipoTarea').val('').trigger('change');
-                    $("#txtObservaciones").val('');
-                    $("#Modal_InsResponable").modal('hide');
+                    $('#ddlTipoUnidad2, #ddlTipoDependencia2').val('').trigger('change');
+                   
+                    $("#Modal_UpdResponable").modal('hide');
 
                     // Refrescar la grilla
                     F_GetTareas($("#txtCriminalidadIdModal").val());
@@ -1559,6 +1612,96 @@ function P_UpdUnidadResponsable() {
         }
     });
 
+
+}
+
+
+function P_DelUnidadResponsable(V_ResposablId, V_IdUnidadResponsable) {
+    const obj_DelResponsable = {
+        IdResponsable: V_ResposablId,
+        IdUnidad: V_IdUnidadResponsable
+    };
+
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: 'Esta acción eliminará la unidad responsable seleccionada.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: AppRoutes.Seguimiento.UrlDelResponsable,
+                type: 'POST',
+                data: obj_DelResponsable,
+                success: function (resp) {
+                    if (resp.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Señor(a) Funcionario(a):',
+                            text: resp.message
+                        }).then(() => {
+                            F_GetTareas($("#txtCriminalidadIdModal").val());
+                        });
+                    } else {
+                        Swal.fire('Error', 'Error al eliminar: ' + resp.message, 'error');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    Swal.fire('Error', 'Fallo en la llamada AJAX: ' + error, 'error');
+                }
+            });
+        }
+    });
+}
+
+
+function AbrirModalEvaluarTarea(V_IdResponsable) {
+  
+    $("#txtTareaId").val(V_IdResponsable);
+
+    $("#Modal_EvaluarTarea").modal("show");
+
+
+}
+
+function P_EvalTarea() {
+
+    const obj_EvalTarea = {
+        IdTarea: $("#txtTareaId").val(),
+        IdEstado: $('#ddlTipoEvalTarea').val()
+    }
+
+    $.ajax({
+        url: AppRoutes.Seguimiento.UrlEvaltarea,
+        type: 'POST',
+        data: obj_EvalTarea,
+        success: function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: resp.message
+                }).then(() => {
+                    // Limpieza del formulario
+                    $('#ddlTipoEvalTarea').val('').trigger('change');
+
+                    $("#Modal_EvaluarTarea").modal('hide');
+
+                    // Refrescar la grilla
+                    F_GetTareas($("#txtCriminalidadIdModal").val());
+                });
+            } else {
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            Swal.fire('Error', 'Fallo en la llamada AJAX: ' + error, 'error');
+        }
+    });
 
 
 }

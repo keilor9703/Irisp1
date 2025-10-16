@@ -13,6 +13,7 @@ namespace Negocio.Gestion.General
         private readonly IConfiguration _iConfiguration;
         private readonly string _strConexionDesa;
         private readonly ILogger _logger;
+        private readonly string _strConexionIris_Disec;
         #endregion
 
         #region Constructor
@@ -22,6 +23,7 @@ namespace Negocio.Gestion.General
         {
             _iConfiguration = iConfiguration;
             _strConexionDesa = _iConfiguration.GetConnectionString("strConexionIris_Test");
+            _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }
         #endregion
@@ -34,13 +36,13 @@ namespace Negocio.Gestion.General
             List<DtoDominios> retorno = new();
             DtoResultado<List<DtoDominios>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionDesa);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
             try
             {
                 objCommand.Connection = Conexion;
                 objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_IRIS_PRUEBA.F_GetDominiosIris";
+                objCommand.CommandText = "PKS_ADMINISTRACION_IRIS.F_GetDominiosIris";
                 objCommand.BindByName = true;
                 Conexion.Open();
 
@@ -125,7 +127,7 @@ namespace Negocio.Gestion.General
             {
                 objCommand.Connection = Conexion;
                 objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "pk_Clientes.F_GetDominios";
+                objCommand.CommandText = "PKS_ADMINISTRACION_IRIS.F_GetDominios";
                 objCommand.BindByName = true;
                 Conexion.Open();
 
