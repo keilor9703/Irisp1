@@ -9,6 +9,8 @@
         F_GetInfoGrillas();
     });
 
+    F_GetInfoGrillas($('#ddlAnioIris').val());
+
     $('.select2').select2({
         placeholder: "Seleccione",
         allowClear: true

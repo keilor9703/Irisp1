@@ -55,7 +55,7 @@ namespace Gepad.Controllers
                 return View(SlidersView);
 
             }
-            catch (Exception e)
+            catch (Exception )
             {
                 var SlidersView = new List<DtoSlider>();
                 var SliderView = new DtoSlider

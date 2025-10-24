@@ -7,10 +7,16 @@ $(document).ready(function () {
         $('#ddlAnioIris').select2();
     }
 
+
+
+
     // Asocia el evento change
     $('#ddlAnioIris').on('change', function () {
         F_GetInfoGrillas();
     });    
+
+
+    F_GetInfoGrillas($('#ddlAnioIris').val());
 
     $('#chkRegFoto').change(function () {
         if ($(this).is(':checked')) {
@@ -178,6 +184,7 @@ function formatDate(dateStr) {
 }
 
 function F_GetInfoGrillas() {
+   // console.log("✅ año:", $('#ddlAnioIris').val());
     $.ajax({
         type: 'GET',
         url: UrlGetInfoGrillas,

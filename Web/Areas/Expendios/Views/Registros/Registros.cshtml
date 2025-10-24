@@ -1,0 +1,131 @@
+﻿
+@{
+    ViewData["Title"] = "Registro Expendios";
+    
+}
+
+@section scripts {
+        
+     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="~/areas/rutas/RutasIris.js"></script>
+    <script src="~/areas/expendios/registroexpendio.js"></script>
+
+
+         <!-- Carga la API de ArcGIS -->
+    <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
+    <script src="https://js.arcgis.com/3.44/"></script>
+      
+  @*  <script src="~/areas/irisp1/CrearUbicacion.js"></script> *@
+
+
+
+       
+}
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio </span></a></li>
+            <li class="active">Instrumento de Recoleccion de Informacion del Servicio de Policía / Registro de Expendios</li>
+        </ul>
+    </div>
+</div>
+@*
+   BUSQUEDA POR AÑOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+<div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Consulta IRIS</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+     <div class="card-body collapse show">
+        <div class="row" > <!-- Se agrega margen superior aquí -->
+            <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                
+
+                     @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
+                   
+                    <label class="Labels">Ver IRIS-P1 por año</label>
+                </div>
+            </div>
+            <div class="col-md-2 ">
+                <button tabindex="1002" id="btnLimpiar" onclick="AbrirModalNuevoIris();" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo Expendio">
+                    <span class="fa ico_limpiar faa-ring animated"></span> Nuevo
+                </button>
+            </div>
+        </div>
+     </div>
+</div>
+
+@*
+  FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+
+
+@* CAMPOS OCULTOS *@
+<input type="text" id="txtUndeLabora" class="d-none" value="@ViewBag.txtUndeLabora" />
+<input type="text" id="txtCodDane" class="d-none" value="@ViewBag.txtCodDane" />
+<input type="text" id="txtCodSiedcoEstacion" class="d-none" value="@ViewBag.txtCodSiedcoEstacion" />
+<input type="text" id="txtCodSiedcoCuadrante" class="d-none" value="@ViewBag.txtCodSiedcoCuadrante" />
+<input type="text" id="txtCodEstacion" class="d-none" value="@ViewBag.txtCodEstacion" />
+<input type="text" id="txtCodIdCuadrante" class="d-none" value="@ViewBag.txtCodIdCuadrante" />
+<input type="text" id="txtSiglaUnidad" class="d-none" value="@ViewBag.txtSiglaUnidad" />
+
+@* GRILLA ETAPA DE VERIFICACION *@
+<div class="card border-success hidden" id="pn_GrillaExpendios">
+    <div class="card-header d-flex align-items-center">
+    <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i>Informaciones Expendios</h4>
+    <div class="card-actions ms-auto d-flex button-group">
+        <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+        <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+        <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close"><i data-feather="x" class="feather-sm"></i></a>
+    </div>
+    </div>
+    <div class="card-body collapse show">
+    <div class="row">
+        <div class="col-md-12">
+        <!-- Evitamos table-responsive para no interferir con scrollX -->
+        <div class="dt-container" style="width:100%; margin-top:0;">
+            <table id="tbGrillaExpendios" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
+        </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+
+
+<div class="modal fade" id="Modal_VisualizarTexto" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog modal-l" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel2">Descripción</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" width="100%" height="2000px">
+                <div class="row">
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label d-flex align-items-center">
+                            <textarea style="height: 95px !important; text-align:justify; margin-bottom: 0px;" name="txtDescripcion" type="text" id="txtDescripcion" value="" autocomplete="off" class="form-control InputPading" readonly></textarea>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+

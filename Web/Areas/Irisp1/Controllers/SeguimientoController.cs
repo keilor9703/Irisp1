@@ -35,13 +35,13 @@ namespace Web.Areas.Irisp1.Controllers
 
         #region Constructor
 
-        public SeguimientoController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbSeguimientoIris iDbSeguimientoIris, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios)
+        public SeguimientoController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbSeguimientoIris iDbSeguimientoIris, IDbFuncionarios iDbFuncionarios, IDbDominios idbDominios)
         {
 
             _iDbAdministracion = iDbAdministracion;
             _iDbSeguimientoIris = iDbSeguimientoIris;
             _iDbFuncionarios = iDbFuncionarios;
-            _configuration = configuration;
+            _configuration = iConfiguration;
             _IDbDominios = idbDominios;
             //_strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
         }
@@ -49,7 +49,13 @@ namespace Web.Areas.Irisp1.Controllers
         public async Task<ActionResult> Seguimiento()
         {
             var ddlAnioIris = (await _iDbSeguimientoIris.F_GetAniosIrisP1()).Data.ToList();
-            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
+
+         
+            var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
+
+            //  Crea el SelectList con el año actual seleccionado por defecto
+            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+
             ViewBag.ddlClase = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlModExpendio = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlClasiNarcotrafico = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");

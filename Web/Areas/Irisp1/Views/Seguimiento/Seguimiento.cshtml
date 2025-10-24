@@ -2,23 +2,28 @@
     ViewData["Title"] = "Seguimiento Irisp1";
 }
 @section scripts {
-    @* <script src="~/areas/irisp1/registrosirisp1.js"></script> *@
+   @*  <!-- Dependencias primero -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- SweetAlert2 (si lo usas) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> *@
+
+    <!-- XLSX: CDN principal -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
+
     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+
+    <!-- Tus rutas y tu JS principal (después de XLSX) -->
     <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/irisp1/seguimientoirisp1.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-   
-
-    <!-- Carga la API de ArcGIS -->
+    <!-- ArcGIS y otros al final -->
     <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
-    <script src="https://js.arcgis.com/3.44/"></script> 
-
-    <script src="~/areas/irisp1/CrearUbicacion.js"></script> 
-
-   
+    <script src="https://js.arcgis.com/3.44/"></script>
+    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
 }
+
 
 
 <section class="content-header"></section>
@@ -28,7 +33,7 @@
         <ul class="breadcrumb">
             <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span>Inicio</span></a></li>
 
-            <li class="active">Intrumento de Recoleccion de Informacion del Servicio de Policia / Seguimiento IRIS P1</li>
+            <li class="active">Instrumento de Recoleccion de Informacion del Servicio de Policía / Seguimiento IRIS P1</li>
         </ul>
     </div>
 </div>
@@ -38,34 +43,46 @@
 *@
 <div class="card border-success">
     <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Consulta IRIS</h4>
+        <h4 class="card-title text-white mb-0">
+            <i class="fas fa-clipboard-list"></i> Consulta IRIS
+        </h4>
         <div class="card-actions ms-auto d-flex button-group">
             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+            <a class="link text-white d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="link text-white d-flex align-items-center pe-0" data-action="close">
                 <i data-feather="x" class="feather-sm"></i>
             </a>
         </div>
     </div>
-     <div class="card-body collapse show">
-        <div class="row" > <!-- Se agrega margen superior aquí -->
-            <div class="col-md-2 MargFloatBoos">
-                <div class="form-group has-float-label">
-                
 
-                     @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
-                   
+    <div class="card-body collapse show">
+        <div class="row align-items-end g-3">
+            <!-- Select -->
+            <div class="col-md-1">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
+                             htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
                     <label class="Labels">Ver IRIS-P1 por año</label>
                 </div>
             </div>
-            <div class="col-md-2 ">
-                <button tabindex="1002" id="btnNuevo" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo">
+
+            <!-- Botones en la misma fila -->
+            <div class="col-md-auto d-flex gap-2">
+                @* <button tabindex="1002" id="btnNuevo"
+                        class="btn btn-limpiar"
+                        style="border-radius: 0px 16px 0px 16px !important;"
+                        title="Nuevo">
                     <span class="fa ico_limpiar faa-ring animated"></span> Nuevo IRIS
+                </button> *@
+
+                <button id="btnDescargarExcel" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Descargar Excel
                 </button>
             </div>
         </div>
-     </div>
+    </div>
 </div>
+
 
 @*
   FIN  BUSQUEDA POR AÑOS ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

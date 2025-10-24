@@ -13,11 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Gestion\Expendios\" />
     <Folder Include="Gestion\Integrantes\" />
     <Folder Include="Gestion\Listas\" />
     <Folder Include="Gestion\Reportes\" />
-    <Folder Include="Interfaz\Expendios\" />
     <Folder Include="Interfaz\Integrantes\" />
     <Folder Include="Interfaz\Listas\" />
     <Folder Include="Interfaz\Reportes\" />

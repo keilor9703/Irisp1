@@ -20,6 +20,9 @@ $(document).ready(function () {
         F_GetInfoGrillas();
     });
 
+    F_GetInfoGrillas($('#ddlAnioIris').val());
+
+
     $('#chkRegFoto').change(function () {
         if ($(this).is(':checked')) {
             $('#fotografia').closest('.col-md-4').removeClass('hidden');
@@ -32,10 +35,10 @@ $(document).ready(function () {
 
     //Onclicks
     
-    $("#btnNuevo").on("click", function (e) {
-        e.preventDefault();
-        AbrirModalNuevoIris();
-    });
+    //$("#btnNuevo").on("click", function (e) {
+    //    e.preventDefault();
+    //    AbrirModalNuevoIris();
+    //});
     $("#btnNuevoResultado").on("click", function (e) {
         e.preventDefault();
         OpenInsResponsableValModal();
@@ -90,6 +93,59 @@ function formatDate(dateStr) {
         hour12: true // 👈 esto activa AM/PM
     });
 }
+
+// 📥 Descargar todas las grillas en un solo archivo Excel
+$('#btnDescargarExcel').on('click', function () {
+    try {
+        // ✅ Obtiene los DataTables ya inicializados
+        const tablaVerificacion = $('#tbGrilla').DataTable();
+        const tablaInvestigacion = $('#tbGrillaInvestigacion').DataTable();
+        const tablaFinalizacion = $('#tbGrillaFinalizacion').DataTable();
+
+        // 🔄 Convierte cada tabla a un array de objetos JSON
+        const dataVerificacion = tablaVerificacion.rows().data().toArray();
+        const dataInvestigacion = tablaInvestigacion.rows().data().toArray();
+        const dataFinalizacion = tablaFinalizacion.rows().data().toArray();
+
+        // 📘 Crea el libro Excel
+        const wb = XLSX.utils.book_new();
+
+        // 🧾 Crea las hojas de Excel
+        if (dataVerificacion.length > 0) {
+            const ws1 = XLSX.utils.json_to_sheet(dataVerificacion);
+            XLSX.utils.book_append_sheet(wb, ws1, 'Verificación');
+        }
+        if (dataInvestigacion.length > 0) {
+            const ws2 = XLSX.utils.json_to_sheet(dataInvestigacion);
+            XLSX.utils.book_append_sheet(wb, ws2, 'Investigación');
+        }
+        if (dataFinalizacion.length > 0) {
+            const ws3 = XLSX.utils.json_to_sheet(dataFinalizacion);
+            XLSX.utils.book_append_sheet(wb, ws3, 'Finalización');
+        }
+
+        // 💾 Descarga el archivo
+        XLSX.writeFile(wb, 'Reporte_IrisP1.xlsx');
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Descarga completa',
+            text: 'El archivo Excel se ha generado exitosamente.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    } catch (e) {
+        console.error(e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error al generar Excel',
+            text: 'Hubo un problema al generar el archivo.'
+        });
+    }
+});
+
+
+
 
 function F_GetInfoGrillas() {
     $.ajax({
@@ -1473,6 +1529,31 @@ function P_InsResponsabeValModal() {
     const estadoExistencia = (typeof EstadoExistencia !== "undefined" ? EstadoExistencia.toLowerCase() : "");
     const estadoAceptada = (typeof EstadoGlobalAceptada !== "undefined" ? EstadoGlobalAceptada.toLowerCase() : "");
 
+
+    // 🔹 Objeto a enviar
+    const Obj_Responsable = {
+        CriminalidadId: $("#txtCriminalidadIdModal").val(),
+        IdUnidad: $('#ddlTipoDependencia').data('idSeleccionado'),
+        IdTareai: tipoTarea,
+        Observacion: $("#txtObservaciones").val()
+    };
+
+    // 🔹 Validar campos obligatorios (excepto Observacion)
+    for (let key in Obj_Responsable) {
+        if (key !== 'Observacion') {
+            const val = Obj_Responsable[key];
+            if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Valide todos los campos para completar el registro.'
+                });
+                return;
+            }
+        }
+    }
+
+
     // 🔹 Validación: asignar proceso investigativo (71)
     if (tipoTarea === 71) {
         if (estadoExistencia === 'si existe') {
@@ -1501,29 +1582,7 @@ function P_InsResponsabeValModal() {
         }
     }
 
-    // 🔹 Objeto a enviar
-    const Obj_Responsable = {
-        CriminalidadId: $("#txtCriminalidadIdModal").val(),
-        IdUnidad: $('#ddlTipoDependencia').data('idSeleccionado'),
-        IdTareai: tipoTarea,
-        Observacion: $("#txtObservaciones").val()
-    };
-
-    // 🔹 Validar campos obligatorios (excepto Observacion)
-    for (let key in Obj_Responsable) {
-        if (key !== 'Observacion') {
-            const val = Obj_Responsable[key];
-            if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Señor(a) Funcionario(a):',
-                    text: 'Valide todos los campos para completar el registro.'
-                });
-                return;
-            }
-        }
-    }
-
+   
     // 🔹 Enviar solicitud AJAX
     $.ajax({
         url: AppRoutes.Seguimiento.UrlInsResponsable,

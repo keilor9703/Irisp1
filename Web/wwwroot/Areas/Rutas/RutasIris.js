@@ -29,7 +29,17 @@ window.AppRoutes = Object.freeze({
         UrlGetDelitosIris: '/Irisp1/RegistrosIrisp1/F_GetDelitosIris',
         UrlGetInfoAdicional: '/Irisp1/RegistrosIrisp1/F_GetInfoAdicional',
         UrlGetDocIris: '/Irisp1/RegistrosIrisp1/F_GetDocIris'
+    },
+
+
+
+     // Rutas para módulo Expendios / Registro
+    RegistroExpendio: {
+        // Controlador Seguimiento
+        UrlGetInfoGrillas: '/Expendios/Registros/F_GetInfoGrillas',
+     
     }
+
 
 
 });

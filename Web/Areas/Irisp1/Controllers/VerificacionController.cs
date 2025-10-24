@@ -58,8 +58,13 @@ namespace Web.Areas.Irisp1.Controllers
         public async Task<ActionResult> Verificacion()
         {
             var ddlAnioIris = (await _iDbVerificacionIris.F_GetAniosIrisP1()).Data.ToList();
-            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
-          
+           
+
+            var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
+
+            //  Crea el SelectList con el año actual seleccionado por defecto
+            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+
             ViewBag.ddlClase = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlModExpendio = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlClasiNarcotrafico = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
