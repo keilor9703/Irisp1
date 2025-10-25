@@ -630,9 +630,7 @@ function F_GetDetalleIris(registro) {
     // ✅ Renderiza el badge con color (no solo texto)
     $("#txtEstado").html(RenderEstadoBadge(registro.EstadoDescripcion));
 
-    // ✅ Lo mismo para Estado Existencia, si aplica
-
-   
+    // ✅ Lo mismo para Estado Existencia
     $("#txtEstadoExistencia").html(RenderEstadoBadge(registro.EstadoExistenciaDescripcion));
    
     if (!registro.EstadoExistenciaDescripcion) {

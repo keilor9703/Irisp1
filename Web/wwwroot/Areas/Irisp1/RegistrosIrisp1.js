@@ -596,44 +596,6 @@ function columnaInforAdicionalDetalleIris() {
 }
 
 
-//function CambiarEstado() {
-
-//    $("#notificacion1").empty();
-
-//    var DtoIrispCriminalidad = {
-//        CriminalidadId: $("#IdCriminalidad1").val(),
-//        IdEstado: $("#ID_ESTADO").val()
-//    };
-
-//    $.ajax({
-//        type: 'POST',
-//        url: urlEstado,
-//        dataType: 'json',
-//        data: DtoIrispCriminalidad,
-//        success: function (response) {
-//            if (response.ok == true) {
-//                Swal.fire({
-//                    title: 'Guardar',
-//                    text: response.mensaje,
-//                    type: 'success',
-//                    showCancelButton: false,
-//                    confirmButtonColor: '#0a1934',
-//                    cancelButtonColor: '#d33',
-//                    confirmButtonText: 'Aceptar'
-//                }).then((result) => {
-//                    if (result.value) {
-//                        window.location.reload();
-//                    }
-//                });
-//            } else {
-//                sweetAlert("Atención", response.mensaje, "warning");
-//            }
-//        },
-//        error: function (ex) {
-//            sweetAlert("Error", "No se pudo guardar el registro, intente nuevamente", "error");
-//        }
-//    });
-//};
 
 
 
@@ -875,28 +837,24 @@ function F_GetFuncionariosIris(V_Identificacion) {
         success: function (respuesta) {
 
             if (respuesta.success) {
-               // $("#imgFoto")[0].src = "https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=" + respuesta.idEncry + "&Token=Mxl7995Julabdfjughyts1*_58$$";
-               // $("#txtSituacionLab").val(respuesta.data[0].SituacionLaboral);
+             
                 $("#txtFuncionario").val(respuesta.data[0].Funcionario);
-               // $("#txtCorreo").val(respuesta.data[0].Correo);
-                //$("#txtUserName").val(respuesta.data[0].Usuario);
+              
                 $("#txtDependencia2").val(respuesta.data[0].Estacion);
                 $("#txtTelefono").val(respuesta.data[0].Celular);
                 $("#txtDependencia").val(respuesta.data[0].Dependencia).trigger('change');
                
 
                 $("#txtUnidad").val(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-               // $("#txtEspecialidad").val(respuesta.data[0].Direccion);
+             
                 $("#txtUndeLabora").val(respuesta.data[0].UndeLaborando);
                 $("#txtSiglaUnidad").val(respuesta.data[0].Fisica);
 
                 
                 
-                //$("#txtCargo").val(respuesta.data[0].CargoActual);
-               
-               // F_GetUserRoles(V_Identificacion);
+                
             } else {
-               // Limpiar();
+               
                 Swal.fire({
                     type: 'error',
                     title: 'Señor(a) Funcionario(a:)',

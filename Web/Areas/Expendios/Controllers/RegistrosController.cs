@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Comun.Areas.Integrantes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Negocio.Gestion.Admin;
+using Negocio.Gestion.General;
 using Negocio.Gestion.Irisp1;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Expendios;
@@ -41,11 +43,36 @@ namespace Web.Areas.Expendios.Controllers
 
             //  Crea el SelectList con el año actual seleccionado por defecto
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+            ViewBag.ddlDelitoModal = new SelectList((await _iDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlTipoResultado = new SelectList((await _iDbDominios.F_GetDominiosIris(76)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlSubTipoResultado = new SelectList(Enumerable.Empty<SelectListItem>());
             return View();
         }
 
 
         #region Métodos de Consulta
+
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetDominiosIris(Int32 V_id)
+        {
+            var resultado = await _iDbDominios.F_GetDominiosIris(V_id);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
+
+
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
@@ -61,6 +88,78 @@ namespace Web.Areas.Expendios.Controllers
 
             }
         }
+
+
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetIntegrantes(string V_CriminalidadId)
+        {
+            var resultado = await _iDbRegistroExpendio.F_GetIntegrantes(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = new List<DtoIntegrantes>(), message = resultado.Mensaje });
+            }
+        }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetDelitosIris(string V_CriminalidadId)
+        {
+            var resultado = await _iDbRegistroExpendio.F_GetDelitosIris(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetBitacora(string V_CriminalidadId)
+        {
+            var resultado = await _iDbRegistroExpendio.F_GetBitacora(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetResultados(string V_CriminalidadId)
+        {
+            var resultado = await _iDbRegistroExpendio.F_GetResultados(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+            }
+        }
+
 
         #endregion
 

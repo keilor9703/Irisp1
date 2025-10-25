@@ -5,18 +5,23 @@
 }
 
 @section scripts {
-        
-     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+
+
+    <!-- XLSX: CDN principal -->
+    @* <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script> *@
+
+    
+
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
     <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/expendios/registroexpendio.js"></script>
 
 
-         <!-- Carga la API de ArcGIS -->
+    <!-- Carga la API de ArcGIS -->
     <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
-      
-  @*  <script src="~/areas/irisp1/CrearUbicacion.js"></script> *@
+    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
 
 
 
@@ -127,5 +132,481 @@
 
 
 
+<!-- INICIO DE MODAL DETALLE IRIS-->
+
+<div class="modal fade" id="Modal_DetalleExpendio" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 80%;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Detalle Expendio: <span class="ms-2">  <span id="txtClaseHeader"></span>  / <strong id="txtCodigoHeader"></strong></span></h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <input type="text" id="txtCriminalidadIdModal" class="d-none" value="@ViewBag.txtCriminalidadIdModal" />
+
+
+                <div class="container-fluid">
+                    <!-- Encabezado -->
+                    <div class="row text-white p-2" style="background-color: #006837; border-radius: 5px;">
+                        <div class="col-12">
+
+                            <strong id="txtUnidadDetalle"></strong> -  <strong> Fecha informa Expendio: </strong> <span id="txtFechaCreacion"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Columna 1:  DATOS BÁSICOS -->
+                        <div class="col-md-4">
+                            <h6 class="fw-bold">DATOS BÁSICOS</h6>
+                            <p><strong></strong>
+                            <p><strong>Codigo Expendio:</strong> <span id="txtCodigoExpendio"></span></p>
+                            <p><strong>Unidad que informa:</strong> <span id="txtUnidadInforma"></span></p>
+                            <p><strong>Sigla:</strong> <span id="txtSiglaInforma"></span></p>
+                            <p><strong>Zona:</strong> <span id="txtZona"></span></p>
+                            <p><strong>Clase:</strong> <span id="txtClase"></span></p>
+                            <p><strong>Fuente:</strong> <span id="txtFuente"></span></p>
+                            <p><strong>Categoría:</strong> <span id="txtCategoria"></span></p>
+                            <p><strong> Otra categoría:</strong> <span id="txtOtraCategoria"></span></p>
+                           
+
+                        </div>
+
+                        <!-- Columna 2: DATOS UBICACIÓN -->
+                        <div class="col-md-4">
+                            <h6 class="fw-bold">DATOS UBICACIÓN:</h6>
+                            <p>
+                                <strong></strong>
+                           
+                            <p><strong>Municipio:</strong> <span id="txtMunicipio"></span></p>
+                            <p><strong>Barrio:</strong> <span id="txtBarrio"></span></p>
+                            <p><strong>Cuadrante:</strong> <span id="txtCuadrante"></span></p>
+                            <p><strong>Latitud:</strong> <span id="txtLatitud"></span></p>
+                            <p><strong>Longitud:</strong> <span id="txtLongitud"></span></p>
+                            <p><strong>Dirección:</strong> <span id="txtDireccion"></span></p>
+                            @* <p><strong>Ubicación:</strong> <span id="txtCelularIris"></span></p> *@
+                            <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Ver Mapa</button>
+                        </div>
+
+                        <!-- Columna 3: DATOS ESTADO -->
+                        <div class="col-md-4">
+                            <h6 class="fw-bold">DATOS ESTADO:</h6>
+                            <p><strong></strong>
+                            <p><strong>Estado:</strong> <span id="txtEstado"></span></p>
+                            <p><strong>Código Operación:</strong> <span id="txtCodigoOperacion"></span></p>
+                            <p><strong>Nombre Operación:</strong> <span id="txtNombreOperacion"></span></p>
+                            <p><strong>NUNC:</strong> <span id="txtNUNC"></span></p>
+                            <p><strong>SIEDCO:</strong> <span id="txtSIEDCO"></span></p>
+                            <p><strong>Fue erradicado?:</strong> <span id="txtErradicado"></span></p>
+                            
+                        </div>
+
+                        <div class="col-md-12">
+
+                            <p><strong>Características Generales:</strong> <span id="txtCaracteristicas"></span></p>
+                        </div>
+                    </div>
+                
+                    <div class="row mt-3">
+
+                        
+
+                            <section id="TabGrillas" style="margin-top:10px;">
+                                <div class="col-md-12">
+                                    <section id="PnTabularesTipo1" style="margin-top:1px;">
+                                        <!-- tabs -->
+                                        <div class="pcss3t pcss3t-effect-scale pcss3t-theme-1" style="margin-bottom: 21px;">
+
+                                            <!-- Tabs encabezado -->
+                                            <input type="radio" name="pcss3t" id="Tab_Integrantes" class="tab-content-2">
+                                            <label for="Tab_Integrantes"><i class="fas fa-users Azul"></i> Integrantes</label>
+
+                                            <input type="radio" name="pcss3t" id="Tab_Delito" class="tab-content-3">
+                                            <label for="Tab_Delito"><i class="fas fa-gavel Azul"></i> Delito</label>
+
+                                            <input type="radio" name="pcss3t" id="Tab_Bitacora" class="tab-content-4">
+                                            <label for="Tab_Bitacora"><i class="fas fa-file-alt Azul"></i>  Bitacora de Información</label>
+
+                                        <input type="radio" name="pcss3t" id="Tab_Resultados" class="tab-content-5">
+                                            <label for="Tab_Resultados"><i class="fas fa-info-circle Azul"></i> Resultados</label>
+
+                                           
+
+
+
+                                            <!-- Contenido de cada Tab -->
+                                            <ul>
+
+                                            <!-- 👥 Integrantes -->
+                                            <li id="tabBody1" class="tab-content tab-content-2">
+                                                <div class="card-body">
+
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <!-- Contenedor del botón alineado a la derecha -->
+                                                            <div class=" d-flex justify-content-end mb-2">
+                                                                <button type="button"
+                                                                        class="hidden btn btn-success btn-sm d-flex align-items-center"
+                                                                        id="btnNuevoIntegrante"
+                                                                        style="line-height:1.2; font-size:0.85rem;">
+                                                                    <i class="fas fa-plus me-1"></i> Nuevo
+                                                                </button>
+                                                            </div>
+
+                                                            <div class="table-responsive">
+                                                                <table id="tbGrillaIntegrantes"
+                                                                       class="table table-bordered table-striped"
+                                                                       width="100%">
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </li>
+
+
+
+                                                <!-- ⚖️ Delito -->
+                                                <li id="tabBody2" class="tab-content tab-content-3">
+                                                    <div class="card-body">
+
+                                                        <div class="row">
+                                                            <div class="col-md-12">
+
+                                                            <div class=" d-flex justify-content-end mb-2">
+                                                                <button type="button"
+                                                                        class="hidden btn btn-success btn-sm d-flex align-items-center"
+                                                                        id="btnNuevoDelito"
+                                                                        style="line-height:1.2; font-size:0.85rem;">
+                                                                    <i class="fas fa-plus me-1"></i> Nuevo
+                                                                </button>
+                                                            </div>
+                                                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                                                    <table id="tbGrillaDelitos" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </li>
+
+                                                @* Bitacora *@
+                                                <li id="tabBody3" class="tab-content tab-content-4">
+                                                    <div class="card-body">
+
+                                                        <div class="row">
+                                                            <div class="col-md-12">
+
+                                                            <div class="d-flex justify-content-end mb-2">
+                                                                <button type="button"
+                                                                        class=" hidden btn btn-success btn-sm d-flex align-items-center"
+                                                                        id="btnNuevoBitacora"
+                                                                        style="line-height:1.2; font-size:0.85rem;">
+                                                                    <i class="fas fa-plus me-1"></i> Nuevo
+                                                                </button>
+                                                            </div>
+                                                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                                                    <table id="tbGrillaBitacora" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </li>
+
+                                                @* Resultados *@
+                                                <li id="tabBody4" class=" tab-content tab-content-5">
+                                                    <div class="card-body">
+
+                                                        <div class="row">
+                                                            <div class="col-md-12">
+                                                            <div class="d-flex justify-content-end mb-2">
+                                                                <button type="button"
+                                                                        class=" hidden btn btn-success btn-sm d-flex align-items-center"
+                                                                        id="btnNuevoResultado"
+                                                                        style="line-height:1.2; font-size:0.85rem;">
+                                                                    <i class="fas fa-plus me-1"></i> Nuevo
+                                                                </button>
+                                                            </div>
+                                                                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                                                    <table id="tbGrillaResultdos" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </li>
+
+
+                                                
+
+
+
+                                            </ul>
+                                        </div>
+                                        <!--/ tabs -->
+                                    </section>
+                                </div>
+                            </section>
+                       
+
+
+                    </div>
+
+                
+                
+                
+                
+                </div>
+
+
+
+
+            </div>
+            @*  <div class="modal-footer" style="justify-content:center;">
+              <button tabindex="1002"  id="btnLimpiar" onclick=CambiarEstado() style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="CambiarEstado"><span class="fa ico_limpiar faa-ring animated"></span> Actualizar Estado</button>
+            </div> *@
+        </div>
+    </div>
+</div>
+
+<!-- FINAL DE MODAL DETALLE IRIS-->
+
+
+<!-- INICIO DE MODAL VER UBICACION EXPENDIO-->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mapModalLabel">Mapa de Ubicación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-12 mb-2">
+                    <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
+                </div>
+
+                <!-- Aquí irá el mapa -->
+                <div id="mapaDiv" style="width: 100%; height: 600px;"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<!-- /.modal-Crear Integrante IRISP1 -->
+
+<div class="modal fade" id="Modal_InsIntegrantesExendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Nuevo Ingrante</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+               
+
+                <div class="row">
+                    <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <div class="input-group">
+                                <input tabindex="1" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <span class="input-group-btn">
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl" onclick="F_GetFuncionarios ($('#txtIdentificacion').val()); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    <button tabindex="3" class="btn btn-warning" id="BtnLimpiarEmpl" onclick="Limpiar(); return false;" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                </span>
+                            </div>
+                            <label class="Labels">Identificación:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="13" id="txtAliasModal" name="txtAliasModal" type="text" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                            <label class="Labels">Alias:</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" id="txtNombreIntegModal" name="txtNombreIntegModal" type="text" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                            <label class="Labels">Nombres:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="11" id="txtApellidosIntegModal" name="txtApellidosIntegModal" type="text" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                            <label class="Labels">Apellidos:</label>
+                        </div>
+                    </div>
+
+                                       
+                </div>
+
+               
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnAddIntegranteExpendio" onclick="InsIntegrantesExpendiosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@* Modal para insertar delitos  *@
+
+<div class="modal fade" id="Modal_InsDelitosExpendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Delito</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+             
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlDelitoModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoModal", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Delito:</label>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnAddDelitosExpendios" onclick="P_InsDelitosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* Modal para insertar información adicional  *@
+
+<div class="modal fade" id="Modal_InsInfoBitacora" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;"> Registrar Información </h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+             
+
+                <div class="row">
+
+
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <textarea tabindex="12" id="txtInfoBitacoraModal" name="txtInfoBitacoraModal"
+                                      placeholder="Digite Información"
+                                      class="form-control InputPading" rows="6"
+                                      style="resize: vertical; min-height: 150px;"></textarea>
+                            <label class="Labels">Información:</label>
+                        </div>
+                    </div>
+
+                </div>
+
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnAddInfoBitacora" onclick="P_InsInfoAdicionalModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Crear Resultados Expendios -->
+
+<div class="modal fade" id="Modal_InsResultadosExendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Nuevo Ingrante</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+
+
+                <div class="row">
+                   
+                        <div class="col-md-3 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                @Html.DropDownList("ddlTipoResultado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoResultado", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Tipo:</label>
+                            </div>
+                        </div>
+                 
+
+
+                    
+                    <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlSubTipoResultado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlSubTipoResultado", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Subtipo:</label>
+                        </div>
+                    </div>
+                   
+
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" id="txtCantidadModal" name="txtCantidadModal" type="number" autocomplete="off" placeholder="Digite la cantidad" class="form-control InputPading">
+                            <label class="Labels">Cantidad:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" type="date" id="txtFecha" style="width:100%" placeholder="Fecha" class="CalendarioHora" value="@ViewBag.FechaAd" />
+                            <label class="Labels">Fecha:</label>
+                        </div>
+                    </div>
+                    
+
+                </div>
+
+
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnAddResultadoExpendio" onclick="InsIntegrantesExpendiosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 

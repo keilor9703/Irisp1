@@ -5,11 +5,17 @@ namespace Comun.Areas.Integrantes
 {
     public class DtoIntegrantes
     {
+        [JsonPropertyName("INTEGRANTE_DIREC_ID")]
+        public string INTEGRANTE_DIREC_ID { get; set; } 
+        
         [JsonPropertyName("INTEGRANTE_ID")]
         public string INTEGRANTE_ID { get; set; }
 
         [JsonPropertyName("CRIMINALIDAD_ID")]
-        public string? CRIMINALIDAD_ID { get; set; }
+        public string? CRIMINALIDAD_ID { get; set; } 
+        
+        [JsonPropertyName("CRIMINALIDAD_DIREC_ID")]
+        public string? CRIMINALIDAD_DIREC_ID { get; set; }
 
         [JsonPropertyName("ALIAS")]
         public string? ALIAS { get; set; }

@@ -37,6 +37,10 @@ window.AppRoutes = Object.freeze({
     RegistroExpendio: {
         // Controlador Seguimiento
         UrlGetInfoGrillas: '/Expendios/Registros/F_GetInfoGrillas',
+        UrlGetIntegrantes: '/Expendios/Registros/F_GetIntegrantes',
+        UrlGetDelitosIris: '/Expendios/Registros/F_GetDelitosIris',
+        UrlGetBitacora: '/Expendios/Registros/F_GetBitacora',
+        UrlGetResultados: '/Expendios/Registros/F_GetResultados'
      
     }
 

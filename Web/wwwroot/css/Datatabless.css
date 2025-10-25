@@ -235,3 +235,103 @@ div.table-responsive > div.dataTables_wrapper > div.row {
     div.table-responsive > div.dataTables_wrapper > div.row > div[class^="col-"]:last-child {
         padding-right: 0;
     }
+
+
+
+
+
+/* Mantener fija la primera columna (acciones) en scroll horizontal */
+#tbGrillaExpendios {
+    position: relative;
+    border-collapse: separate;
+}
+
+    #tbGrillaExpendios th:first-child,
+    #tbGrillaExpendios td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        background-color: #fff; /* o el color de fondo de tu tabla */
+    }
+
+    /* Si deseas fijar también la segunda columna (Estado): */
+    /*#tbGrillaExpendios th:nth-child(2),
+    #tbGrillaExpendios td:nth-child(2) {
+        position: sticky;
+        left: 100px;*/ /* ancho aproximado de la primera columna */
+        /*z-index: 2;
+        background-color: #fff;
+    }*/
+
+/* Evitar que el encabezado o contenido se superpongan */
+.dataTables_scrollHead {
+    z-index: 5 !important;
+}
+
+
+#tbGrillaExpendios th:first-child,
+#tbGrillaExpendios td:first-child {
+    box-shadow: 2px 0 3px rgba(0,0,0,0.1);
+}
+
+
+#tbGrilla th,
+#tbGrilla td,
+#tbGrillaInvestigacion th,
+#tbGrillaInvestigacion td,
+#tbGrillaFinalizacion th,
+#tbGrillaFinalizacion td,
+#tbGrillaExpendios th,
+#tbGrillaExpendios td,
+#tbGrillaResultdos th,
+#tbGrillaResultdos td {
+    white-space: nowrap; /* Evita que el texto se corte en varias líneas */
+}
+
+.no-wrap {
+    white-space: nowrap;
+}
+
+
+.no-wrap {
+    white-space: nowrap !important;
+}
+
+table.dataTable {
+    width: 100% !important;
+}
+
+
+
+/*#tbGrillaResponsablesVerificacion td ul {
+    list-style: none;
+    padding-left: 10px;
+    margin: 0;
+}*/
+
+#tbGrillaResponsablesVerificacion td li {
+    margin-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 5px;
+}
+
+/*#tbGrillaResponsablesVerificacion td span {
+    display: inline-block;
+    margin-right: 6px;
+}
+
+#tbGrillaResponsablesVerificacion td a {
+    text-decoration: none;
+    color: #fff;
+}
+
+#tbGrillaResponsablesVerificacion td {
+    vertical-align: top;
+}*/
+
+
+.dataTables_wrapper .DTFC_LeftBodyLiner,
+.dataTables_wrapper .DTFC_LeftHeadWrapper {
+    background-color: #fff !important;
+    z-index: 3;
+}

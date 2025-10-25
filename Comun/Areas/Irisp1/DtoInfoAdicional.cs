@@ -11,10 +11,16 @@ namespace Comun.Areas.Irisp1
     {
 
         [JsonPropertyName("InfoId")]
-        public string? InfoId { get; set; }
+        public string? InfoId { get; set; } 
+        
+        [JsonPropertyName("INFORMACION_DIREC_ID")]
+        public string? InfINFORMACION_DIREC_IDoId { get; set; }
 
         [JsonPropertyName("CriminalidadId")]
         public string? CriminalidadId { get; set; }
+        
+        [JsonPropertyName("CRIMINALIDAD_DIREC_ID")]
+        public string? CRIMINALIDAD_DIREC_ID { get; set; }
 
         [JsonPropertyName("Descripcion")]
         public string? Descripcion { get; set; }
