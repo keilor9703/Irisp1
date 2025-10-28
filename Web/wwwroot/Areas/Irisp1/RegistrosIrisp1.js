@@ -16,7 +16,7 @@ $(document).ready(function () {
     });    
 
 
-    F_GetInfoGrillas($('#ddlAnioIris').val());
+   // F_GetInfoGrillas($('#ddlAnioIris').val());
 
     $('#chkRegFoto').change(function () {
         if ($(this).is(':checked')) {
@@ -687,9 +687,6 @@ function Resultados() {
 //Eventos
 
 
-$('#myModal2').on('shown.bs.modal', function () {
-    inicializarMapa('mapaDiv2');
-});
 
 
 
@@ -1921,14 +1918,23 @@ function OpenInsIntegrantesModal() {
 function OpenInsUbicacionModal() {
     $('#myModal2').modal("show");
 
-    //$('#myModal2').on('shown.bs.modal', function () {
-    //    if (typeof map !== "undefined") {
-    //        map.resize();
-    //        map.reposition();
-    //    }
-    //});
 }
 
+$('#myModal2').on('shown.bs.modal', function () {
+    inicializarMapa('mapaDiv2');
+});
+
+
+$(function () {
+    $("#btnMapa").click(function () {
+        $('#myModal').modal("show");
+    });
+});
+
+
+$('#myModal').on('shown.bs.modal', function () {
+    inicializarMapa('mapaDiv');
+});
 
 
 
@@ -1942,30 +1948,7 @@ function OpenInsInfoadiconalModal() {
     $('#Modal_InsInfoAdicional').modal("show");
 }
 
-//var modalIns = document.getElementById('Modal_InsIntegrantes');
-//modalIns.addEventListener('hidden.bs.modal', function () {
-//    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
-//});
 
-//var modalIns = document.getElementById('Modal_InsDelitos');
-//modalIns.addEventListener('hidden.bs.modal', function () {
-//    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
-//});
-
-
-//var modalIns = document.getElementById('Modal_InsInfoAdicional');
-//modalIns.addEventListener('hidden.bs.modal', function () {
-//    document.body.classList.add('modal-open'); // vuelve a habilitar la modal de abajo
-//});
-
-
-//var modalIns = document.getElementById('Modal_InsInfoAdicional');
-//modalIns.addEventListener('hidden.bs.modal', function () {
-//    // Solo si queda alguna otra modal visible, mantener el bloqueo del scroll
-//    if (document.querySelectorAll('.modal.show').length > 0) {
-//        document.body.classList.add('modal-open');
-//    }
-//});
 
 function InsIntegrantesModal() {
     // Obtener valores de los campos y limpiar espacios

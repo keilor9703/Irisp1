@@ -17,6 +17,7 @@ using System.Security.Claims;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Policy;
 using System.Threading;
+using Negocio.Gestion.General;
 
 namespace Web.Areas.Irisp1.Controllers
 {

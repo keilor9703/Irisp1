@@ -13,6 +13,12 @@ namespace Comun.Areas.Irisp1
 
         [JsonPropertyName("DelitoId")]
         public string? DelitoId { get; set; }
+        
+        [JsonPropertyName("CRIMINALIDAD_DIREC_ID")]
+        public string? CRIMINALIDAD_DIREC_ID { get; set; } 
+        
+        [JsonPropertyName("DELITO_DIREC_ID")]
+        public string? DELITO_DIREC_ID { get; set; }
 
         [JsonPropertyName("CriminalidadId")]
         public string? CriminalidadId { get; set; } 

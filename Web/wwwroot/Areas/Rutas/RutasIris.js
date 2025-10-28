@@ -17,7 +17,7 @@ window.AppRoutes = Object.freeze({
         UrlEvaltarea: '/Irisp1/Seguimiento/P_EvalTarea',
 
         // Controlador Verificación
-        UrlGetResponsablesTareasIris: '/Irisp1/Verificacion/F_GetResponsablesTareasIris',
+        UrlGetResponsablesTareasIris: '/Irisp1/Seguimiento/F_GetResponsablesTareasIris',
         UrlGetResultadosIris: '/Irisp1/Verificacion/F_GetResultados',
 
         // Controlador Empleados
@@ -40,7 +40,15 @@ window.AppRoutes = Object.freeze({
         UrlGetIntegrantes: '/Expendios/Registros/F_GetIntegrantes',
         UrlGetDelitosIris: '/Expendios/Registros/F_GetDelitosIris',
         UrlGetBitacora: '/Expendios/Registros/F_GetBitacora',
-        UrlGetResultados: '/Expendios/Registros/F_GetResultados'
+        UrlGetResultados: '/Expendios/Registros/F_GetResultados',
+        UrlGetIntegrantesAll: '/Expendios/Registros/F_GetIntegranteAll',
+        UrlInsIntgrante: '/Expendios/Registros/P_InsIntegrante',
+        UrlInsDelito: '/Expendios/Registros/P_InsDelito',
+        UrlInsBitacora: '/Expendios/Registros/P_InsBitacora',
+        UrlInsResultados: '/Expendios/Registros/P_InsResultados',
+        UrlUpdExpendio: '/Expendios/Registros/P_UpdExpendio',
+        UrlUpdIntegrante: '/Expendios/Registros/P_UpdIntegrante',
+        UrlInsExpendio: '/Expendios/Registros/P_UpdIntegrante'
      
     }
 

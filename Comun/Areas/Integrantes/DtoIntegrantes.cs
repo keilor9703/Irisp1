@@ -61,6 +61,9 @@ namespace Comun.Areas.Integrantes
 
         [JsonPropertyName("DIRECCION")]
         public string? DIRECCION { get; set; }
+       
+        [JsonPropertyName("origen")]
+        public string? origen { get; set; }
 
         [JsonPropertyName("ID_INTEGRANTE")]
         public long? ID_INTEGRANTE { get; set; }

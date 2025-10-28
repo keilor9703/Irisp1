@@ -23,6 +23,8 @@ namespace Negocio.Interfaz.Irisp1
 
         Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesSeguimiento();
 
+        public Task<DtoResultado<List<DtoTareasIris>>> F_GetResponsablesTareasIris(string V_Criminalidad);
+
         #region Métodos de Insersión  
 
         Task<DtoResultado<Int32>> P_InsResponsable(DtoIrispCriminalidad Obj_Responsable, string usuario, string maquina);

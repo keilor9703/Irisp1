@@ -14,7 +14,7 @@ namespace Comun.Areas.Irisp1
         public string? InfoId { get; set; } 
         
         [JsonPropertyName("INFORMACION_DIREC_ID")]
-        public string? InfINFORMACION_DIREC_IDoId { get; set; }
+        public string? INFORMACION_DIREC_ID { get; set; }
 
         [JsonPropertyName("CriminalidadId")]
         public string? CriminalidadId { get; set; }

@@ -7,25 +7,16 @@
 @section scripts {
 
 
-    <!-- XLSX: CDN principal -->
-    @* <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script> *@
-
-    
-
-    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
-    <script src="~/areas/rutas/RutasIris.js"></script>
-    <script src="~/areas/expendios/registroexpendio.js"></script>
-
-
     <!-- Carga la API de ArcGIS -->
     <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
+    
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="~/areas/rutas/RutasIris.js"></script>
+    <script src="~/areas/expendios/registroexpendio.js"></script>
     <script src="~/areas/irisp1/CrearUbicacion.js"></script>
-
-
-
-       
+   
 }
 
 <section class="content-header"></section>
@@ -63,7 +54,7 @@
                 </div>
             </div>
             <div class="col-md-2 ">
-                <button tabindex="1002" id="btnLimpiar" onclick="AbrirModalNuevoIris();" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo Expendio">
+                <button tabindex="1002" id="btnNuevoExpendio" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo Expendio">
                     <span class="fa ico_limpiar faa-ring animated"></span> Nuevo
                 </button>
             </div>
@@ -210,16 +201,14 @@
                 
                     <div class="row mt-3">
 
-                        
-
-                            <section id="TabGrillas" style="margin-top:10px;">
-                                <div class="col-md-12">
-                                    <section id="PnTabularesTipo1" style="margin-top:1px;">
+                       <section id="TabGrillas" style="margin-top:10px;">
+                           <div class="col-md-12">
+                              <section id="PnTabularesTipo1" style="margin-top:1px;">
                                         <!-- tabs -->
                                         <div class="pcss3t pcss3t-effect-scale pcss3t-theme-1" style="margin-bottom: 21px;">
 
                                             <!-- Tabs encabezado -->
-                                            <input type="radio" name="pcss3t" id="Tab_Integrantes" class="tab-content-2">
+                                        <input type="radio" name="pcss3t" id="Tab_Integrantes" class="tab-content-2" checked>
                                             <label for="Tab_Integrantes"><i class="fas fa-users Azul"></i> Integrantes</label>
 
                                             <input type="radio" name="pcss3t" id="Tab_Delito" class="tab-content-3">
@@ -348,21 +337,13 @@
                                         </div>
                                         <!--/ tabs -->
                                     </section>
-                                </div>
-                            </section>
+                           </div>
+                       </section>
                        
-
-
                     </div>
 
                 
-                
-                
-                
                 </div>
-
-
-
 
             </div>
             @*  <div class="modal-footer" style="justify-content:center;">
@@ -375,30 +356,10 @@
 <!-- FINAL DE MODAL DETALLE IRIS-->
 
 
-<!-- INICIO DE MODAL VER UBICACION EXPENDIO-->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="mapModalLabel">Mapa de Ubicación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="col-12 mb-2">
-                    <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
-                </div>
-
-                <!-- Aquí irá el mapa -->
-                <div id="mapaDiv" style="width: 100%; height: 600px;"></div>
-            </div>
-
-        </div>
-    </div>
-</div>
 
 
 
-<!-- /.modal-Crear Integrante IRISP1 -->
+<!-- Crear Integrante Expendio -->
 
 <div class="modal fade" id="Modal_InsIntegrantesExendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
     <div class="modal-dialog" style="max-width: 900px;">
@@ -418,10 +379,10 @@
                     <div class="col-md-4 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <div class="input-group">
-                                <input tabindex="1" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <input tabindex="1" name="txtIdentificacion" type="number" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <span class="input-group-btn">
-                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl" onclick="F_GetFuncionarios ($('#txtIdentificacion').val()); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
-                                    <button tabindex="3" class="btn btn-warning" id="BtnLimpiarEmpl" onclick="Limpiar(); return false;" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarIntegrante" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    <button tabindex="3" class="btn btn-warning" id="btnLimpiarIntegExpendio" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
                                 </span>
                             </div>
                             <label class="Labels">Identificación:</label>
@@ -458,7 +419,7 @@
             </div>
             <div class="modal-footer" style="justify-content:center;">
 
-                <button tabindex="14" type="button" id="btnAddIntegranteExpendio" onclick="InsIntegrantesExpendiosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                <button tabindex="14" type="button" id="btnAddIntegranteExpendio" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
             </div>
         </div>
     </div>
@@ -469,7 +430,7 @@
 @* Modal para insertar delitos  *@
 
 <div class="modal fade" id="Modal_InsDelitosExpendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
-    <div class="modal-dialog" style="max-width: 900px;">
+    <div class="modal-dialog" style="width: auto;">
 
         <div class="modal-content">
             <div class="modal-header d-flex align-items-center">
@@ -482,7 +443,7 @@
 
              
                 <div class="row">
-                    <div class="col-md-6 MargFloatBoos">
+                    <div class="col-md-12 MargFloatBoos">
                         <div class="form-group has-float-label">
                             @Html.DropDownList("ddlDelitoModal", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitoModal", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Delito:</label>
@@ -494,7 +455,7 @@
             </div>
             <div class="modal-footer" style="justify-content:center;">
 
-                <button tabindex="14" type="button" id="btnAddDelitosExpendios" onclick="P_InsDelitosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                <button tabindex="14" type="button" id="btnAddDelitosExpendios"  style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
             </div>
         </div>
     </div>
@@ -512,31 +473,26 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-
             <div class="modal-body">
 
-             
-
                 <div class="row">
-
 
                     <div class="col-md-12 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <textarea tabindex="12" id="txtInfoBitacoraModal" name="txtInfoBitacoraModal"
                                       placeholder="Digite Información"
                                       class="form-control InputPading" rows="6"
-                                      style="resize: vertical; min-height: 150px;"></textarea>
+                                      style="resize: vertical; min-height: 100px;"></textarea>
                             <label class="Labels">Información:</label>
                         </div>
                     </div>
 
                 </div>
 
-
             </div>
             <div class="modal-footer" style="justify-content:center;">
 
-                <button tabindex="14" type="button" id="btnAddInfoBitacora" onclick="P_InsInfoAdicionalModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                <button tabindex="14" type="button" id="btnAddInfoBitacora" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
             </div>
         </div>
     </div>
@@ -545,56 +501,211 @@
 <!-- Crear Resultados Expendios -->
 
 <div class="modal fade" id="Modal_InsResultadosExendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
-    <div class="modal-dialog" style="max-width: 900px;">
+    <div class="modal-dialog" style="width: auto;">
 
         <div class="modal-content">
             <div class="modal-header d-flex align-items-center">
-                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Ingresar Nuevo Ingrante</h3>
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Registrar resultado</h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-
             <div class="modal-body">
-
-
 
                 <div class="row">
                    
-                        <div class="col-md-3 MargFloatBoos">
-                            <div class="form-group has-float-label">
-                                @Html.DropDownList("ddlTipoResultado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoResultado", @class = "form-control select2", style = "width: 100%;" })
-                                <label class="Labels">Tipo:</label>
-                            </div>
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoResultado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoResultado", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Tipo:</label>
                         </div>
+                    </div>
                  
-
-
                     
-                    <div class="col-md-4 MargFloatBoos">
+                    <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
                             @Html.DropDownList("ddlSubTipoResultado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlSubTipoResultado", @class = "form-control select2", style = "width: 100%;" })
                             <label class="Labels">Subtipo:</label>
                         </div>
                     </div>
                    
-
                 </div>
 
                 <div class="row">
-                    <div class="col-md-3 MargFloatBoos">
+                    <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <input tabindex="12" id="txtCantidadModal" name="txtCantidadModal" type="number" autocomplete="off" placeholder="Digite la cantidad" class="form-control InputPading">
                             <label class="Labels">Cantidad:</label>
                         </div>
                     </div>
 
-                    <div class="col-md-4 MargFloatBoos">
+                    <div class="col-md-6 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <input tabindex="12" type="date" id="txtFecha" style="width:100%" placeholder="Fecha" class="CalendarioHora" value="@ViewBag.FechaAd" />
                             <label class="Labels">Fecha:</label>
                         </div>
                     </div>
                     
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnAddResultadoExpendio"  style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ACTUALIZAR ESTADO EXPENDIO -->
+
+<div class="modal fade" id="Modal_UpdEstadoExendio" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Estado</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+                <div class="row">
+
+                    
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoEstado", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoEstado", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Tipo:</label>
+                        </div>
+                    </div>
+                  
+
+                    <div class="col-md-6 hidden">
+                        <div class="form-group has-float-label">
+                            <input tabindex="13" id="txtNUNC2" name="txtNUNC2" type="text" autocomplete="off" placeholder="Digite el Número Único de Noticia Criminal" class=" form-control InputPading">
+                            <label class="Labels">NUNC:</label>
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6 hidden">
+                        <div class="form-group has-float-label">
+                            <input tabindex="13" id="txtSIEDCO2" name="txtSIEDCO2" type="text" autocomplete="off" placeholder="Digite el Número SIEDCO" class=" form-control InputPading">
+                            <label class="Labels">SIEDCO:</label>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-6 hidden">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" id="txtCodigoOperacion2" name="txtCodigoOperacion2" type="text" autocomplete="off" placeholder="Digite el codigo de operación" class=" form-control InputPading">
+                            <label class="Labels">Código Operación:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 hidden">
+                        <div class="form-group has-float-label">
+                            <input tabindex="11" id="txtNombreOperacion2" name="txtNombreOperacion2" type="text" autocomplete="off" placeholder="Digite el nombre de operación" class=" form-control InputPading">
+                            <label class="Labels">Nombre Operación:</label>
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6 hidden">
+                        <div class="form-group has-float-label">
+                            <select tabindex="12" id="ddlErradicado2" name="ddlErradicado2" class="form-control InputPading">
+                                <option value="">Seleccione...</option>
+                                <option value="1">Sí</option>
+                                <option value="0">No</option>
+                            </select>
+                            <label class="Labels">Erradicado?:</label>
+                        </div>
+                    </div>
+
+
+
+                    <div class="col-md-12 hidden">
+                        <div class="form-group has-float-label">
+                            <textarea tabindex="12" id="txtObservaciones2" name="txtObservaciones2"
+                                      placeholder="Observaciones descartado - (Max 255 caracteres)"
+                                      class="form-control InputPading" rows="6"
+                                      style="resize: vertical; min-height: 70px;"></textarea>
+                            <label class="Labels">Observaciones:</label>
+                        </div>
+                    </div>
+
+
+                </div>
+
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnUpdExpendio" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!--Actualizar Integrante Expendio -->
+
+<div class="modal fade" id="Modal_UpdIntegrantesExendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar integrante</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <input type="text" id="txtIntegranteIdModal" class="d-none" value="@ViewBag.txtIntegranteIdModal" />
+
+            <div class="modal-body">
+
+                <div class="row">
+                    <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <div class="input-group">
+                                <input tabindex="1" name="txtIdentificacionUpd" type="number" id="txtIdentificacionUpd" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <span class="input-group-btn">
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarIntegranteUpd" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    <button tabindex="3" class="btn btn-warning" id="btnLimpiarIntegExpendioUpd" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                </span>
+                            </div>
+                            <label class="Labels">Identificación:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="13" id="txtAliasModalUpd" name="txtAliasModalUpd" type="text" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                            <label class="Labels">Alias:</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" id="txtNombreIntegModalUpd" name="txtNombreIntegModalUpd" type="text" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                            <label class="Labels">Nombres:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="11" id="txtApellidosIntegModalUpd" name="txtApellidosIntegModalUpd" type="text" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                            <label class="Labels">Apellidos:</label>
+                        </div>
+                    </div>
+
 
                 </div>
 
@@ -603,10 +714,305 @@
             </div>
             <div class="modal-footer" style="justify-content:center;">
 
-                <button tabindex="14" type="button" id="btnAddResultadoExpendio" onclick="InsIntegrantesExpendiosModal(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                <button tabindex="14" type="button" id="btnUpdIntegranteExpendio" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
             </div>
         </div>
     </div>
 </div>
 
 
+
+<!-- INICIO DE MODAL REGISTRO EXPENDIO-->
+
+<div class="modal fade" id="Modal_RegistroEpendio" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+   <div class="modal-dialog" style="max-width: 70%;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Registrar Nuevo Expendio</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                @* Datos basicos *@
+                <div class="card border-success" id="pn_GrillaDatosBasicos">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Datos básicos</h4>
+
+                        <div class="card-actions ms-auto d-flex button-group">
+
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                            
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+
+                        <div class="row ">
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlUnidadExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlUnidadExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Unidad:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlEstacionExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlEstacionExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">
+                                        Estación de Policía:
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlunidadInformaExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlunidadInformaExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">
+                                        Unidad Informa:
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlZonaExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlZonaExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Zona:</label>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="row mt-1">
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Expendio:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlTipoExpendio", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoExpendio", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">
+                                        Tipo expendio:
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlFuente", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlFuente", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Fuente:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlCategoria", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlCategoria", @class = "form-control select2", style = "width: 100%;" })
+                                    <label class="Labels">Categoria:</label>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <div class="row mt-1">
+
+                            <div class="col-md-3 MargFloatBoos hidden">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="13" id="txtOtraCategoriaExpendio" name="v" type="text" autocomplete="off" placeholder="Digite otra categoría" class="form-control InputPading">
+                                    <label class="Labels">Otra categoria:</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="12" type="date" id="txtFechaExpendio" style="width:100%" placeholder="Fecha" class="CalendarioHora" value="@ViewBag.FechaAd" />
+                                    <label class="Labels">Fecha inicio existencia:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <textarea tabindex="12" id="txtObservacionesExpendio" name="txtObservacionesExpendio"
+                                              placeholder="Características Generales - (Max 255 caracteres)"
+                                              class="form-control InputPading" rows="6"
+                                              style="resize: vertical; min-height: 60px;"></textarea>
+                                    <label class="Labels">Observaciones:</label>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                    </div>
+                </div>
+
+                @* Integrantes *@
+                <div class="card border-success" id="pn_GrillaIntegrantes">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Integrantes</h4>
+
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+
+                        <div class="row ">
+
+                            <div class="col-md-6 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <div class="input-group">
+                                        <input tabindex="1" name="txtIdentificacionExpendio" type="number" id="txtIdentificacionExpendio" autocomplete="off" placeholder="Digite el N° de identificación para busqueda automatica" class="form-control InputPading" />
+                                        <span class="input-group-btn">
+                                            <button tabindex="2" class="btn btn-success" id="btnConsultarIntegranteExpendio" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                            <button tabindex="3" class="btn btn-warning" id="btnLimpiarIntegNuevoExpendio"  style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                        </span>
+                                    </div>
+                                    <label class="Labels">Identificación:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="13" id="txtAliasModalExpendio" name="txtAliasModalExpendio" type="text" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                    <label class="Labels">Alias:</label>
+                                </div>
+                            </div>
+                           
+                           
+                            <div class="col-md-6 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="12" id="txtNombreIntegModalExpendio" name="txtNombreIntegModalExpendio" type="text" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                                    <label class="Labels">Nombres:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="11" id="txtApellidosIntegModalExpendio" name="txtApellidosIntegModalExpendio" type="text" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                                    <label class="Labels">Apellidos:</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="justify-content:center;">
+
+                            <button tabindex="14" type="button" id="btnInsIntegranteExpendio"
+                                    style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                                <span class="fa fa-user-plus faa-pulse animated"></span> Agregar Integrante
+                            </button>
+                        </div>
+
+                        <div class="row">
+
+                            <div class="card border-success" id="pn_GrillaListaIntegrantes">
+                                <div class="card-header d-flex align-items-center">
+                                    <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Consolidado de Integrantes</h4>
+
+                                    <div class="card-actions ms-auto d-flex button-group">
+                                        <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                                    </div>
+                                </div>
+                                <div class="card-body collapse show">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                                                <table id="tbGrillaListaIntegrantes" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                   
+                </div>
+
+                @* Delitos relacionados *@
+                <div class="card border-success" id="pn_GrillaDelitosRelacionados">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Datos básicos</h4>
+
+                        <div class="card-actions ms-auto d-flex button-group">
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+
+                        <div class="row ">
+                            <div class="col-md-12 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    @Html.DropDownList("ddlDelitosRelacionados", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlDelitosRelacionados", @class = "form-control select2", style = "width: 100%;", multiple = "multiple" })
+                                    <label class="Labels">Delito:</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Ubicación *@
+                <div class="card border-success" id="pn_GrillaUbicacionExpendio">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Datos básicos</h4>
+
+                        <div class="card-actions ms-auto d-flex button-group">
+
+
+
+                            <!-- Botón Nuevo -->
+                            <button type="button"
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center"
+                                    id="btnAbrirMapa"
+                                    style="line-height:1.2; font-size: 0.8rem;">
+                                <i class="fas fa-plus"></i> Nuevo
+                            </button>
+
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+                        </div>
+                    </div>
+                    <div class="card-body collapse show">
+
+                       
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
+                <button tabindex="1001" type="button" id="btnGrabar" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar "><span class="fa ico_grabar faa-wrench animated"></span> Guardar Iris p1</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+   
+</div>
+
+<!-- FIN  DE MODAL REGISTRO EXPENDIO-->
+<!-- INICIO DE MODAL VER UBICACION EXPENDIO-->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mapModalLabel">Mapa de Ubicación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-12 mb-2">
+                    <input id="direccionmapa" type="text" class="form-control" placeholder="Buscar dirección..." />
+                </div>
+
+                <!-- Aquí irá el mapa -->
+                <div id="mapaDiv" style="width: 100%; height: 600px;"></div>
+            </div>
+
+        </div>
+    </div>
+</div>

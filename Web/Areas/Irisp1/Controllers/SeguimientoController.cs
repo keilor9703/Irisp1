@@ -56,38 +56,13 @@ namespace Web.Areas.Irisp1.Controllers
             //  Crea el SelectList con el año actual seleccionado por defecto
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
 
-            ViewBag.ddlClase = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlModExpendio = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlClasiNarcotrafico = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlActividad = new SelectList((await _IDbDominios.F_GetDominiosIris(127)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlFuente = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlFuenteModal = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlEntono = new SelectList((await _IDbDominios.F_GetDominiosIris(155)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlZona = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoPrincipalModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoSecundarioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlTipoServicio = new SelectList((await _IDbDominios.F_GetDominiosIris(9)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlExistenciaIrisP1 = new SelectList((await _IDbDominios.F_GetDominiosIris(63)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlEstadosIrisP1 = new SelectList((await _IDbDominios.F_GetDominiosIris(1)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlEspecialidad = new SelectList((await _IDbDominios.F_GetDominiosIris(160)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlCuadrante = new SelectList(Enumerable.Empty<SelectListItem>());
-
-            ViewBag.ddlClaseModal = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-
-            ViewBag.ddlModExpendioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-
-            ViewBag.ddlClasiNarcotraficoModal = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlTipoUnidad = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
             ViewBag.ddlTipoUnidad2 = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
             ViewBag.ddlTipoDependencia = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlTipoDependencia2 = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlTipoTarea = new SelectList((await _IDbDominios.F_GetDominiosIris(51)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            var dominios = (await _IDbDominios.F_GetDominiosIris(58)).Data?
-                             .Where(x => x.Descripcion == "Aceptada" || x.Descripcion == "Rechazada")
-                             .OrderBy(x => x.Descripcion)
-                             .ToList();
+            var dominios = (await _IDbDominios.F_GetDominiosIris(58)).Data?.Where(x => x.Descripcion == "Aceptada" || x.Descripcion == "Rechazada").OrderBy(x => x.Descripcion).ToList();
+            
 
             ViewBag.ddlTipoEvalTarea = new SelectList(dominios, "IdDominio", "Descripcion");
 
@@ -212,6 +187,23 @@ namespace Web.Areas.Irisp1.Controllers
                 return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
             }
 
+        }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetResponsablesTareasIris(string V_Criminalidad)
+        {
+            var resultado = await _iDbSeguimientoIris.F_GetResponsablesTareasIris(V_Criminalidad);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return Json(new { success = false, data = resultado.Data });
+            }
         }
 
 

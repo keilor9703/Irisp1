@@ -18,6 +18,7 @@ using System.Data;
 using System.Diagnostics;
 using Comun.Areas.Irisp1;
 using Microsoft.Extensions.Logging;
+using Oracle.ManagedDataAccess.Types;
 
 namespace Negocio.Gestion.Irisp1
 {
@@ -200,6 +201,102 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
+
+        public async Task<DtoResultado<List<DtoTareasIris>>> F_GetResponsablesTareasIris(string V_Criminalidad)
+        {
+            DataTable resultado = new();
+            List<DtoTareasIris> retorno = new();
+            DtoResultado<List<DtoTareasIris>> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_VERIFICACION_IRIS.F_GetResponsablesTareasIris"; // Ajusta si tu SP tiene otro nombre
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+                objCommand.Parameters.Add("P_Criminalidad_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Criminalidad;
+                // objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.ReturnValue);
+                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.Output);
+
+                if (Conexion.State == ConnectionState.Open)
+                {
+                    //resultado.Load(await objCommand.ExecuteReaderAsync());
+
+                    //retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoTareasIris>(resultado);
+
+
+
+                    using var reader = await objCommand.ExecuteReaderAsync();
+
+                    while (await reader.ReadAsync())
+                    {
+                        var dto = new DtoTareasIris
+                        {
+                            ResponValidacionId = reader["IDRESPONSABLE"]?.ToString(),
+                            IdUnidadResponsable = reader["IDUNIDADRESPONSABLE"]?.ToString(),
+                            DescUnidad = reader["DESCUNIDAD"]?.ToString(),
+                            UnidadCompleta = reader["UNIDADCOMPLETA"]?.ToString(),
+                            Aceptada = reader["ACEPTADA"]?.ToString(),
+                        };
+
+                        // 👇 Aquí manejamos correctamente el CLOB:
+                        if (reader["SEGUIMIENTO"] is OracleClob clob && !clob.IsNull)
+                            dto.Seguimiento = clob.Value; // ← Extrae el texto completo del CLOB
+                        else
+                            dto.Seguimiento = reader["SEGUIMIENTO"]?.ToString();
+
+                        retorno.Add(dto);
+                    }
+
+                    if (retorno.Count > 0)
+                    {
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "F_GetResponsablesTareasIris";
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                    }
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "Error conexión base de datos";
+                    resp.Operacion = "0";
+                }
+            }
+            catch (Exception e)
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Connection.Close();
+                _logger.LogError("Creacion de log");
+                _logger.LogWarning("Error Ejecutando PK_VERIFICACION_IRIS.F_GetResponsables " + e);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"{e.Message} - {e.InnerException}";
+                resp.Operacion = "0";
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+                objCommand.Connection.Close();
+                resultado.Dispose();
+            }
+            return resp;
+        }
 
         //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
         //{

@@ -7,6 +7,9 @@ namespace Comun.Areas.Expendios
     {
         [JsonPropertyName("AnoIrisp1")]
         public Int32 AnoIrisp1 { get; set; }
+        
+        [JsonPropertyName("IdEstado")]
+        public Int32 IdEstado { get; set; }
 
         [JsonPropertyName("CriminalidadDirecId")]
         public string CriminalidadDirecId { get; set; }

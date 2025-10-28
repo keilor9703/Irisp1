@@ -2199,14 +2199,29 @@ function GetGrillaResponsablesTareas(Datos) {
         responsive: true,
         columns: [
             { title: "Unidad", data: "DescUnidad", className: "celdaJust" },
-            {
-                title: "Seguimiento Tareas",
+            //{
+            //    title: "Seguimiento Tareas",
+            //    data: "Seguimiento",
+            //    className: "celdaJust",
+            //    render: function (data) {
+            //        return data ?? '';
+            //    }
+            //}
+
+             {
                 data: "Seguimiento",
-                className: "celdaJust",
-                render: function (data) {
-                    return data ?? '';
+                title: "Seguimiento Tareas",
+                className: "text-start align-top",
+                render: function (data, type, row) {
+                    if (type === 'display' && data) {
+                        return decodeHtmlEntities(data);
+                    }
+                    return data;
                 }
             }
+
+
+
         ],
         lengthMenu: [
             [5, 10, 25, 50, -1],
@@ -2219,4 +2234,12 @@ function GetGrillaResponsablesTareas(Datos) {
         paging: true,
         info: true
     });
+}
+
+
+function decodeHtmlEntities(text) {
+    if (!text) return "";
+    var textarea = document.createElement("textarea");
+    textarea.innerHTML = text;
+    return textarea.value;
 }

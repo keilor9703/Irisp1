@@ -29,7 +29,7 @@ function inicializarMapa(idMapa) {
             basemap: "osm" // OpenStreetMap
         });
 
-      
+
 
 
         // Capa de municipios
@@ -52,6 +52,21 @@ function inicializarMapa(idMapa) {
             outFields: ["*"]
         }
         );
+         var capaBarrios = new FeatureLayer(
+            "https://services3.arcgis.com/8cBoM4o6pnuUb1z1/ArcGIS/rest/services/SIDENCO_SinMalla/FeatureServer/4", {
+            mode: FeatureLayer.MODE_ONDEMAND,
+            outFields: ["*"]
+        }
+        );
+         var capaRurales = new FeatureLayer(
+            "https://services3.arcgis.com/8cBoM4o6pnuUb1z1/ArcGIS/rest/services/SIDENCO_SinMalla/FeatureServer/12", {
+            mode: FeatureLayer.MODE_ONDEMAND,
+            outFields: ["*"]
+        }
+        );
+
+
+      
 
         // Símbolo de línea roja para los cuadrantes
         var cuadranteLineSymbol = new SimpleLineSymbol(
@@ -346,10 +361,13 @@ function inicializarMapa(idMapa) {
         // --- Agrega las capas al mapa ---
         map.addLayer(mpioLayer);
         map.addLayer(cuadrantesLayer); // <--- ¡Aquí agregas la capa de cuadrantes!
+        map.addLayer(capaEstaciones);
+        map.addLayer(capaBarrios);
+        map.addLayer(capaRurales);
 
 
 
 
-       
+
     })
 };
