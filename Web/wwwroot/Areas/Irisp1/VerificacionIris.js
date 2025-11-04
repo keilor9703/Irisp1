@@ -127,7 +127,7 @@ function renderDataTable(selector, datosFiltrados, columnas) {
             [10, 25, 50, 100],
             ['10 registros', '25 registros', '50 registros', '100 registros']
         ],
-        pageLength: 25,
+        pageLength: 10,
         ordering: true,
         searching: true,
         paging: true,
@@ -1906,7 +1906,7 @@ function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
         }
     });
 }
-function GetGrillaTareasIris(Datos) {
+function GetGrillaTareasIris(Datos){
     if ($.fn.dataTable.isDataTable("#tbGrillaRelacionTareas")) {
         $("#tbGrillaRelacionTareas").DataTable().destroy();
     }

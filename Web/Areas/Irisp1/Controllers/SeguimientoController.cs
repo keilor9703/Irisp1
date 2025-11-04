@@ -260,5 +260,31 @@ namespace Web.Areas.Irisp1.Controllers
             }
 
         }
+
+
+        [HttpPost]
+        public async Task<IActionResult> P_ReasignarTarea(DtoTareasIris obj_ReasignarTarea)
+        {
+
+
+            try
+            {
+                var Resultado = await _iDbSeguimientoIris.P_ReasignarTarea(obj_ReasignarTarea, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
     }
 }

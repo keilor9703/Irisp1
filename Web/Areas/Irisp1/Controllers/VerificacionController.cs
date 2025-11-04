@@ -171,10 +171,6 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
-        #endregion
-
-
-
         [HttpGet]
         [Route("Irisp1/Verificacion/descargar")]
         public IActionResult DescargarArchivo(string ruta)
@@ -188,6 +184,12 @@ namespace Web.Areas.Irisp1.Controllers
             var bytes = System.IO.File.ReadAllBytes(ruta);
             return File(bytes, "application/octet-stream", nombreArchivo);
         }
+
+
+        #endregion
+
+
+
 
 
         #region Métodos de Insersión

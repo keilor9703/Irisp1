@@ -46,8 +46,9 @@ namespace Web.Areas.Expendios.Controllers
             ViewBag.ddlUnidadExpendio = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
 
             var ddlAnioIris = (await _iDbRegistroExpendio.F_GetAniosIrisP1()).Data.ToList();
-            var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
-            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+           // var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
+           // ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
             ViewBag.ddlDelitoModal = new SelectList((await _iDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlTipoResultado = new SelectList((await _iDbDominios.F_GetDominiosIris(76)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");           
             ViewBag.ddlZonaExpendio = new SelectList((await _iDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");           

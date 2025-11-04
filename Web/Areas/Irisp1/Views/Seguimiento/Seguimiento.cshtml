@@ -580,6 +580,43 @@
 
 
 
+<div class="modal fade" id="Modal_ReasignarTarea" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 500px;">
+
+        <input type="text" id="txtTareaId" class="d-none" value="@ViewBag.txtTareaId" />
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Reasignar Tarea</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group has-float-label">
+                                <textarea id="txtObservacionesReasig" name="txtObservacionesReasig" rows="3" class="form-control InputPading" placeholder="Digite una observación (campo opcional)"></textarea>
+                                <label class="Labels">Observaciones:</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+            </div>
+
+            <div class="modal-footer" style="justify-content:center;">
+                <button type="button" id="btnReasignarTarea" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                    <span class="fa ico_grabar faa-wrench animated"></span>Reasignar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 
 

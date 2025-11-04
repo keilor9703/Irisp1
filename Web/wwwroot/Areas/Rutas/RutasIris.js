@@ -14,7 +14,8 @@ window.AppRoutes = Object.freeze({
         UrlInsResponsable: '/Irisp1/Seguimiento/P_InsResponsable',
         UrlUpdResponsable: '/Irisp1/Seguimiento/P_UpdUnidadResponsable',
         UrlDelResponsable: '/Irisp1/Seguimiento/P_DelUnidadResponsable',
-        UrlEvaltarea: '/Irisp1/Seguimiento/P_EvalTarea',
+        UrlEvalTarea: '/Irisp1/Seguimiento/P_EvalTarea',
+        UrlReasignarTarea: '/Irisp1/Seguimiento/P_ReasignarTarea',
 
         // Controlador Verificación
         UrlGetResponsablesTareasIris: '/Irisp1/Seguimiento/F_GetResponsablesTareasIris',

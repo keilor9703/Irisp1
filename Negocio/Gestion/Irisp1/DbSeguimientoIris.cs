@@ -215,7 +215,7 @@ namespace Negocio.Gestion.Irisp1
             {
                 objCommand.Connection = Conexion;
                 objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_VERIFICACION_IRIS.F_GetResponsablesTareasIris"; // Ajusta si tu SP tiene otro nombre
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris"; // Ajusta si tu SP tiene otro nombre
                 objCommand.BindByName = true;
                 Conexion.Open();
 
@@ -281,7 +281,7 @@ namespace Negocio.Gestion.Irisp1
                 Conexion.Dispose();
                 objCommand.Connection.Close();
                 _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_VERIFICACION_IRIS.F_GetResponsables " + e);
+                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris " + e);
 
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"{e.Message} - {e.InnerException}";
@@ -834,6 +834,61 @@ namespace Negocio.Gestion.Irisp1
 
             return resp;
         }
+
+
+        public async Task<DtoResultado<Int32>> P_ReasignarTarea(DtoTareasIris obj_ReasignarTarea, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_ReasignarTarea";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("p_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = obj_ReasignarTarea.CriminalidadId;
+                objCommand.Parameters.Add("p_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_ReasignarTarea.ResponValidacionId;
+                objCommand.Parameters.Add("p_OBSERVACION", OracleDbType.Varchar2).Value = obj_ReasignarTarea.Observacion ?? "";
+
+                objCommand.Parameters.Add("p_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("p_MAQUINA_CREACION", OracleDbType.Varchar2).Value = maquina;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
 
 
 

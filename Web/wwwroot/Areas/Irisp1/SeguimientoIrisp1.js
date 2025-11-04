@@ -55,6 +55,10 @@ $(document).ready(function () {
         e.preventDefault();
         P_EvalTarea();
     });
+    $("#btnReasignarTarea").on("click", function (e) {
+        e.preventDefault();
+        P_ReasignarTarea();
+    });
 
 
 
@@ -173,10 +177,11 @@ function F_GetInfoGrillas() {
 // 🔧 Función utilitaria para inicializar o refrescar tablas
 function renderDataTable(selector, datosFiltrados, columnas) {
     if ($.fn.dataTable.isDataTable(selector)) {
+        // actualizar data en vez de recrear
         const table = $(selector).DataTable();
         table.clear();
         table.rows.add(datosFiltrados);
-        table.draw(false);
+        table.draw();
         return;
     }
 
@@ -184,9 +189,9 @@ function renderDataTable(selector, datosFiltrados, columnas) {
         data: datosFiltrados,
         language: glOpcionesIdioma,
         scrollX: true,
-        scrollY: 400,      // altura fija con scroll
-        scroller: true,    // virtualización (solo renderiza lo visible)
-        deferRender: true, // retrasar render hasta que se vea
+        // scrollY: 400,          // alto fijo para habilitar virtualización
+        scroller: true,        // solo renderiza las filas visibles
+        deferRender: true,     // retrasa render hasta que sean visibles
         autoWidth: false,
         responsive: false,
 
@@ -200,8 +205,8 @@ function renderDataTable(selector, datosFiltrados, columnas) {
             [10, 25, 50, 100],
             ['10 registros', '25 registros', '50 registros', '100 registros']
         ],
-        pageLength: 25,
-        ordering: false,
+        pageLength: 10,
+        ordering: true,
         searching: true,
         paging: true,
         info: true
@@ -392,6 +397,7 @@ function columnaAcciones(datosFiltrados) {
             var Finalizar = `<li style="padding-left: 15px;">
                                     <a style="color: #102717;" href="javascript:Finalizar('${row.CriminalidadId}')">
                                         <i class="fa fa-retweet green"></i>&nbsp;Finalizar
+                                        
                                     </a>
                                   </li>`;
          
@@ -1249,7 +1255,7 @@ function GetGrillaResponsablesTareas(Datos) {
                     var CambiarUnidad =
                         `<li style="padding-left: 17px;">` +
                         `<a style="color: #102717;" href="javascript:OpenUpdResponsableValModal('${row.ResponValidacionId}')">` +
-                        `<i class="fa fa-exchange-alt"></i>&nbsp;Cambiar Unidad</a></li>`;
+                        `<i class="fas fa-exchange-alt"></i>&nbsp;Cambiar Unidad</a></li>`;
 
                     var EliminarUnidad =
                         `<li style="padding-left: 17px;">` +
@@ -1725,6 +1731,15 @@ function AbrirModalEvaluarTarea(V_IdResponsable) {
 
 }
 
+function AbrirModalReasignarTarea(V_IdResponsable) {
+
+    $("#txtTareaId").val(V_IdResponsable);
+
+    $("#Modal_ReasignarTarea").modal("show");
+
+
+}
+
 function P_EvalTarea() {
 
     const obj_EvalTarea = {
@@ -1732,8 +1747,27 @@ function P_EvalTarea() {
         IdEstado: $('#ddlTipoEvalTarea').val()
     }
 
+
+
+    // 🔹 Validar campos obligatorios (excepto Observacion)
+    for (let key in obj_EvalTarea) {
+        //if (key !== 'Observacion') {
+        const val = obj_EvalTarea[key];
+            if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Valide todos los campos para completar el registro.'
+                });
+                return;
+            }
+        //}
+    }
+
+
+
     $.ajax({
-        url: AppRoutes.Seguimiento.UrlEvaltarea,
+        url: AppRoutes.Seguimiento.UrlEvalTarea,
         type: 'POST',
         data: obj_EvalTarea,
         success: function (resp) {
@@ -1747,6 +1781,62 @@ function P_EvalTarea() {
                     $('#ddlTipoEvalTarea').val('').trigger('change');
 
                     $("#Modal_EvaluarTarea").modal('hide');
+
+                    // Refrescar la grilla
+                    F_GetTareas($("#txtCriminalidadIdModal").val());
+                });
+            } else {
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            Swal.fire('Error', 'Fallo en la llamada AJAX: ' + error, 'error');
+        }
+    });
+
+
+}
+
+function P_ReasignarTarea() {
+
+    const obj_ReasignarTarea = {
+        ResponValidacionId: $("#txtTareaId").val(),
+        CriminalidadId: $("#txtCriminalidadIdModal").val(),
+        Observacion: $('#txtObservacionesReasig').val()
+    }
+
+
+    // 🔹 Validar campos obligatorios (excepto Observacion)
+    for (let key in obj_ReasignarTarea) {
+        if (key !== 'Observacion') {
+            const val = obj_ReasignarTarea[key];
+            if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Valide todos los campos para completar el registro.'
+                });
+                return;
+            }
+        }
+    }
+
+
+    $.ajax({
+        url: AppRoutes.Seguimiento.UrlReasignarTarea,
+        type: 'POST',
+        data: obj_ReasignarTarea,
+        success: function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: resp.message
+                }).then(() => {
+                    // Limpieza del formulario
+                    $('#txtObservacionesReasig').val("");
+
+                    $("#Modal_ReasignarTarea").modal('hide');
 
                     // Refrescar la grilla
                     F_GetTareas($("#txtCriminalidadIdModal").val());

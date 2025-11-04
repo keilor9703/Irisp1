@@ -31,6 +31,7 @@ namespace Negocio.Interfaz.Irisp1
         Task<DtoResultado<Int32>> P_UpdUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina);
         Task<DtoResultado<Int32>> P_DelUnidadResponsable(DtoIrispCriminalidad obj_DelResponsable, string usuario, string maquina);
         Task<DtoResultado<Int32>> P_EvalTarea(DtoIrispCriminalidad obj_EvalTarea, string usuario, string maquina);
+        Task<DtoResultado<Int32>> P_ReasignarTarea(DtoTareasIris obj_ReasignarTarea, string usuario, string maquina);
         
 
 

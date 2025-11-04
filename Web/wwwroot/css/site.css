@@ -8,8 +8,8 @@
 }
 
 .page-item.active .page-link {
-    color: #fff !important;
-    /*background-color: #25817d !important;
+   /* color: #fff !important;*/
+   /* background-color: #25817d !important;
     border-color: #7dc111 !important;*/
     background-image: linear-gradient(to right, #005478, #0e1f38);
     border-color: #008d4c !important;
@@ -36,8 +36,8 @@
 }
 
 .dropdown-item {
-    padding: 0.40rem 1rem !important;
-    /*width: 100%;
+   /* padding: 0.40rem 1rem !important;
+    width: 100%;
     padding: 0.65rem 1rem;
     clear: both;
     font-weight: 400;
@@ -61,7 +61,7 @@
 }
 
 .dropdown-menu {
-    /*background-color: hsl(177.75deg 19.19% 83.62%);
+   /* background-color: hsl(177.75deg 19.19% 83.62%);
     background-image: radial-gradient(at 92% 27%, hsl(181.41deg 58.26% 35.92%) 0px, transparent 50%), radial-gradient(at 100% 29%, hsl(178.72deg 100% 36.86%) 0px, transparent 50%), radial-gradient(at 25% 14%, hsl(0deg 0% 100%) 0px, transparent 50%), radial-gradient(at 70% 51%, hsl(180deg 60.24% 70.67%) 0px, transparent 50%), radial-gradient(at 48% 57%, hsl(188.83deg 58.9% 48.07%) 0px, transparent 50%), radial-gradient(at 79% 78%, hsl(186.1deg 60.45% 46.71%) 0px, transparent 50%), radial-gradient(at 0% 0%, hsl(0deg 0% 86.76%) 0px, transparent 50%);
     line-height: 12px;*/
     background-color: hsl(177.75deg 19.19% 83.62%);
@@ -118,7 +118,7 @@
     background-image: url('../img/background/brillant.png') !important;
 }
 #main-wrapper[data-layout=horizontal] .topbar .navbar-collapse[data-navbarbg=skin1], #main-wrapper[data-layout=horizontal] .topbar[data-navbarbg=skin1], #main-wrapper[data-layout=vertical] .topbar .navbar-collapse[data-navbarbg=skin1], #main-wrapper[data-layout=vertical] .topbar[data-navbarbg=skin1], .theme-color .theme-item .theme-link[data-navbarbg=skin1] {
-    /*background-image: url(../img/background/circuit_trans.png) !important;
+   /* background-image: url(../img/background/circuit_trans.png) !important;
     background-color: #082b0d !important;*/
     background-image: repeating-linear-gradient( 45deg, rgba(0, 255, 255, 0.1) 0px, rgba(0, 255, 255, 0.1) 1px, transparent 1px, transparent 6px ), repeating-linear-gradient( -45deg, rgba(0, 255, 255, 0.05) 0px, rgba(0, 255, 255, 0.05) 1px, transparent 1px, transparent 6px ) !important;
     background-color: #151b3b !important;
@@ -128,7 +128,7 @@
 
 .BarraPieDameroForms {
     /*cambia color verde*/
-    /*background: linear-gradient(124deg, #082b09, #7cd387, #006937, #175624b8, #6cbf37, #1a670c, #39a22e, #006937, #7cd387, #082b09) !important; 
+   /* background: linear-gradient(124deg, #082b09, #7cd387, #006937, #175624b8, #6cbf37, #1a670c, #39a22e, #006937, #7cd387, #082b09) !important; 
     background-size: 1800% 1800%;
     box-shadow: 1px 3px 2px #48a262;*/
     background-image: linear-gradient( #151b3b, #151b3b ) !important;
