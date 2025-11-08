@@ -55,7 +55,7 @@ namespace Gepad.Controllers
                 return View(SlidersView);
 
             }
-            catch (Exception )
+            catch (Exception)
             {
                 var SlidersView = new List<DtoSlider>();
                 var SliderView = new DtoSlider
@@ -69,6 +69,39 @@ namespace Gepad.Controllers
             }
             //Immplementar con microservicio
         }
+
+
+        //public async Task<IActionResult> Index()
+        //{
+        //    try
+        //    {
+        //        // ?? 1. Intentar primero cargar desde el microservicio
+        //        var ImagenesSlider = await _DbAdministracion.F_GetSliderSuperiorApi();
+
+        //        if (ImagenesSlider.IdRespuesta != 1 || ImagenesSlider.Data == null || ImagenesSlider.Data.Count == 0)
+        //        {
+        //            // ?? 2. Si falla o no hay datos, usar la versión local de Oracle
+        //            ImagenesSlider = await _DbAdministracion.F_GetSilerSuperior();
+        //        }
+
+        //        return View(ImagenesSlider.Data);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError($"Error en Index Carrusel: {ex.Message}");
+        //        var fallback = new List<DtoSlider>
+        //{
+        //    new DtoSlider
+        //    {
+        //        IMAGENES_CONSECUTIVO = "19957",
+        //        FILENAME = "ARTE4_polired.jpg",
+        //        RUTA = "~/img/Carrusel/19957.jpg"
+        //    }
+        //};
+        //        return View(fallback);
+        //    }
+        //}
+
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

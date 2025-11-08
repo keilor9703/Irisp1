@@ -579,7 +579,7 @@ function F_GetDetalleExpendio(registro) {   // 👈 ahora recibe directamente el
    // $("#txtConsecutivoIris").val(registro.CriminalidadId);
 
     var FechaInicio = moment(registro.FechaInicioExistencia).format('DD/MM/YYYY hh:mm:ss a');
-    var FechaCreacion = moment(registro.FechaCreacion).format('DD/MM/YYYY hh:mm:ss a');
+    //var FechaCreacion = moment(registro.FechaCreacion).format('DD/MM/YYYY hh:mm:ss a');
 
     $("#txtClaseHeader").text(registro.Clase);
     $("#txtCodigoHeader").text(registro.Codigo);

@@ -57,8 +57,9 @@ builder.Logging.AddSerilog(logger);
 builder.Services.AddHttpContextAccessor();
 
 // Seguridad
-builder.Services.AddScoped<IGestionToken, GestionToken>();
-builder.Services.AddScoped<IGestionOUD, GestionOUD>();
+builder.Services.AddScoped<IDbConsultasPIP, DbConsultasPIP>();
+//builder.Services.AddScoped<IGestionOUD, GestionOUD>();
+builder.Services.AddScoped<IPipWebServices, PipWebServices>();
 
 //Áreas
 builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
@@ -70,9 +71,12 @@ builder.Services.AddScoped<IUnidades, Unidades>();
 builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
 builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
+
+
 // httpClient
-builder.Services.AddHttpClient<IApiWebOud, ApiWebOud>();
-builder.Services.AddHttpClient<IApiWebToken, ApiWebToken>();
+builder.Services.AddHttpClient<IPipWebServices, PipWebServices>();
+//builder.Services.AddHttpClient<IApiWebToken, ApiWebToken>();
+//builder.Services.AddHttpClient<IApiWebFuncionariosIdPIP, ApiWebFuncionariosIdPIP>();
 
 //Variables de Sesión
 builder.Services.AddMvc();
@@ -87,6 +91,7 @@ builder.Services.AddSession(options =>
 //AppSettings
 builder.Services.AddOptions();
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+builder.Services.Configure<CredencialesPipOptions>(builder.Configuration.GetSection("CredencialesPip"));
 
 
 

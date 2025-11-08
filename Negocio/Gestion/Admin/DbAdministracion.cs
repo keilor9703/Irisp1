@@ -15,22 +15,29 @@ namespace Negocio.Gestion.Admin
         private readonly IConfiguration _iConfiguration;
         private readonly string strConexionIris_Test;
         private readonly string _strConexionTelepol;
+        private readonly string _strConexionIris_Disec;
         private readonly ILogger _logger;
+        private readonly IDbConsultasPIP _iDbConsultasPIP;
         #endregion
 
         #region Constructor
         public DbAdministracion(IConfiguration iConfiguration,
+                                IDbConsultasPIP dbConsultasPIP,
                                 ILogger<DbAdministracion> logger
                                 )
         {
             _iConfiguration = iConfiguration;
+            _iDbConsultasPIP = dbConsultasPIP;
             strConexionIris_Test = _iConfiguration.GetConnectionString("strConexionIris_Test");
             _strConexionTelepol = _iConfiguration.GetConnectionString("strConexionTelepol");
+            _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }
         #endregion
 
-        #region Metodos de Consulta        
+        #region Metodos de Consulta     
+        
+
         public DataTable F_GetImagenes(int Consecutivo)
         {
             DataTable objRetorno = new();
@@ -83,7 +90,7 @@ namespace Negocio.Gestion.Admin
             List<DtoMenu> retorno = new();
             DtoResultado<List<DtoMenu>> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -226,7 +233,7 @@ namespace Negocio.Gestion.Admin
             List<DtoUsuario> retorno = new();
             DtoResultado<List<DtoUsuario>> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
             try
             {
@@ -307,7 +314,7 @@ namespace Negocio.Gestion.Admin
             DtoUsuario retorno = new();
             DtoResultado<DtoUsuario> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
             try
             {
@@ -321,71 +328,90 @@ namespace Negocio.Gestion.Admin
 
                 objCommand.Parameters.Add("P_Usuario", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Usuario;
                 objCommand.Parameters.Add("P_Maquina", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Maquina;
-
-
+               
                 objCommand.Parameters.Add("Out_Identificacion", OracleDbType.Int64).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_GradAlfabetico", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_NombreGrado", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_ApellidosNombres", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Funcionario", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_EmplConsecutivo", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_EmplUndeConsecutivo", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_EmplUndeFuerza", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_IdCargo", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Cargo", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
                 objCommand.Parameters.Add("Out_IdUsuario", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Usuario", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_IdUndeLaborando", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Fisica", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Dependencia", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Correo", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_SituacionLaboral", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
                 objCommand.Parameters.Add("Out_Bloqueado", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("Out_Celular", OracleDbType.Int64).Direction = ParameterDirection.Output;
                 objCommand.Parameters.Add("CursorRoles", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
                 objCommand.Parameters.Add("P_Resultado", OracleDbType.Int32).Direction = ParameterDirection.Output;
 
+                
+
                 if (Conexion.State == ConnectionState.Open)
+                {
+
                     resultado.Load(await objCommand.ExecuteReaderAsync());
 
-                retorno.Identificacion = Convert.ToInt64(objCommand.Parameters["Out_Identificacion"].Value.ToString());
-                retorno.GradAlfabetico = objCommand.Parameters["Out_GradAlfabetico"].Value.ToString();
-                retorno.NombreGrado = objCommand.Parameters["Out_NombreGrado"].Value.ToString();
-                retorno.ApellidosNombres = objCommand.Parameters["Out_ApellidosNombres"].Value.ToString();
-                retorno.Funcionario = objCommand.Parameters["Out_Funcionario"].Value.ToString();
+                    retorno.Identificacion = Convert.ToInt64(objCommand.Parameters["Out_Identificacion"].Value.ToString());
 
-                retorno.EmplConsecutivo = Convert.ToInt32(objCommand.Parameters["Out_EmplConsecutivo"].Value.ToString());
-                retorno.EmplUndeConsecutivo = Convert.ToInt32(objCommand.Parameters["Out_EmplUndeConsecutivo"].Value.ToString());
-                retorno.EmplUndeFuerza = Convert.ToInt32(objCommand.Parameters["Out_EmplUndeFuerza"].Value.ToString());
-                retorno.IdCargo = Convert.ToInt32(objCommand.Parameters["Out_IdCargo"].Value.ToString());
-                retorno.Cargo = objCommand.Parameters["Out_Cargo"].Value.ToString();
-                retorno.IdUsuario = Convert.ToInt32(objCommand.Parameters["Out_IdUsuario"].Value.ToString());
-                retorno.Usuario = objCommand.Parameters["Out_Usuario"].Value.ToString();
-                retorno.IdUndeLaborando = Convert.ToInt32(objCommand.Parameters["Out_IdUndeLaborando"].Value.ToString());
-                retorno.Fisica = objCommand.Parameters["Out_Fisica"].Value.ToString();
-                retorno.Dependencia = objCommand.Parameters["Out_Dependencia"].Value.ToString();
-                retorno.Correo = objCommand.Parameters["Out_Correo"].Value.ToString();
-                retorno.SituacionLaboral = objCommand.Parameters["Out_SituacionLaboral"].Value.ToString();
-                retorno.Bloqueado = Convert.ToInt32(objCommand.Parameters["Out_Bloqueado"].Value.ToString());
-                retorno.Celular = Convert.ToInt64(objCommand.Parameters["Out_Celular"].Value.ToString());
 
-                retorno.DtoUserRoles = new List<DtoUserRoles>();
+                    var respuestaPIP = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(retorno.Identificacion);
 
-                if (resultado.Rows.Count > 0)
-                {
-                    foreach (DataRow fila in resultado.Rows)
+                    if (respuestaPIP.Estado)
                     {
-                        DtoUserRoles ObjR = new DtoUserRoles
-                        {
-                            IdRol = Convert.ToInt32(fila["IdRol"].ToString()),
-                            Descripcion = fila["Descripcion"].ToString()
-                        };
-                        retorno.DtoUserRoles.Add(ObjR);
+                        retorno.GradAlfabetico = respuestaPIP.Respuesta.GradAlfabetico;
+                        retorno.NombreGrado = respuestaPIP.Respuesta.NombreGrado;
+                        retorno.EmplUndeFuerza = respuestaPIP.Respuesta.UndeFuerza;
+                        retorno.EmplConsecutivo = respuestaPIP.Respuesta.Consecutivo;
+                        retorno.Funcionario = respuestaPIP.Respuesta.Funcionario;
+                        retorno.EmplUndeConsecutivo = respuestaPIP.Respuesta.UndeConsecutivo;
+                        retorno.EmplUndeFuerza = respuestaPIP.Respuesta.UndeFuerza;
+                        retorno.Cargo = respuestaPIP.Respuesta.Cargo;
+                        retorno.Usuario = respuestaPIP.Respuesta.UsuarioEmpresarial;
+                        retorno.IdUndeLaborando = respuestaPIP.Respuesta.UndeConsecutivoLaborando;
+                        retorno.Fisica = respuestaPIP.Respuesta.SiglaFisica;
+                        retorno.Dependencia = respuestaPIP.Respuesta.DescripcionDependencia;
+                        retorno.Correo = respuestaPIP.Respuesta.CorreoElectronico;
+                        retorno.SituacionLaboral = respuestaPIP.Respuesta.SituacionLaboral;
+                        retorno.Celular = (long)respuestaPIP.Respuesta.NumeroCelular;
+                      
                     }
-                }
 
-                resp.Data = retorno;
+                    
+                    //retorno.IdCargo = Convert.ToInt32(objCommand.Parameters["Out_IdCargo"].Value.ToString()); //no 
+                   
+                    retorno.IdUsuario = Convert.ToInt32(objCommand.Parameters["Out_IdUsuario"].Value.ToString()); // tabla usuarios
+                    retorno.Bloqueado = Convert.ToInt32(objCommand.Parameters["Out_Bloqueado"].Value.ToString()); // no tabla usuarios
+                    
+
+                    retorno.DtoUserRoles = new List<DtoUserRoles>();
+
+                    if (resultado.Rows.Count > 0)
+                    {
+                        foreach (DataRow fila in resultado.Rows)
+                        {
+                            DtoUserRoles ObjR = new DtoUserRoles
+                            {
+                                IdRol = Convert.ToInt32(fila["IdRol"].ToString()),
+                                Descripcion = fila["Descripcion"].ToString()
+                            };
+                            retorno.DtoUserRoles.Add(ObjR);
+                        }
+
+                        resp.IdRespuesta = 1;
+                        resp.Mensaje = "Consulta Exitosa";
+                        resp.Operacion = "P_GetValidaUser";
+
+                        resp.Data = retorno;
+                    }
+                    else
+                    {
+                        resp.IdRespuesta = 0;
+                        resp.Mensaje = "No se encontraron datos";
+                        resp.Operacion = "0";
+                    }
+
+                    Conexion.Close();
+                    Conexion.Dispose();
+                    objCommand.Connection.Close();
+                   
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "No se pudo realizar la conexión a la base de datos";
+                    resp.Operacion = "0";
+                }
             }
             catch (Exception e)
             {
@@ -414,7 +440,7 @@ namespace Negocio.Gestion.Admin
             List<DtoRoles> retorno = new();
             DtoResultado<List<DtoRoles>> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
             try
             {
@@ -496,7 +522,7 @@ namespace Negocio.Gestion.Admin
             List<DtoUserRoles> Retorno = new();
             DtoResultado<List<DtoUserRoles>> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -586,7 +612,7 @@ namespace Negocio.Gestion.Admin
         {
             DtoResultado<Int32> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -652,7 +678,7 @@ namespace Negocio.Gestion.Admin
         {
             DtoResultado<Int32> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -720,7 +746,7 @@ namespace Negocio.Gestion.Admin
         {
             DtoResultado<Int32> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
@@ -789,7 +815,7 @@ namespace Negocio.Gestion.Admin
         {
             DtoResultado<Int32> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try

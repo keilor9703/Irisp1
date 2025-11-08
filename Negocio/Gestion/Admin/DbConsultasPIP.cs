@@ -1,0 +1,62 @@
+﻿using Comun.Areas.Admin;
+using Comun.General;
+using Microsoft.Extensions.Options;
+using Negocio.Interfaz.Admin;
+using Servicios.ApiInterfaz;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Negocio.Gestion.Admin
+{
+    public class DbConsultasPIP: IDbConsultasPIP
+    {
+
+        private readonly IPipWebServices _iPipWebServices;
+        
+       
+        private readonly CredencialesPipOptions _credenciales;
+
+        public DbConsultasPIP(IPipWebServices pipWebServices, IOptions<CredencialesPipOptions> opciones)
+                             
+        {
+            _iPipWebServices = pipWebServices;
+            _credenciales = opciones.Value;
+            
+
+        }
+
+        public async Task<DtoRespuesta<string>> ObtenerTokenAsync()
+        {
+
+            return await _iPipWebServices.ObtenerTokenSeviciosAsync(new DtoUsuarioPip
+            {
+                Usuario = _credenciales.Usuario,
+                Clave = _credenciales.Clave
+
+            });
+        }
+
+        public async Task<DtoRespuesta<bool>> ObtenerOudAsync(DtoCredenciales _credenciales)
+        {
+            
+            var token = await ObtenerTokenAsync();
+            return await _iPipWebServices.ObtenerOudSeviciosAsync(_credenciales, token.Respuesta);
+        }
+
+        public async Task<DtoRespuesta<DtoFuncionariosPIP>> ObtenerDatosFuncionarioIdAsync(long identificacion)
+        {
+            var token = await ObtenerTokenAsync();
+            return await _iPipWebServices.ObtenerFuncionariosIdSeviciosAsync(identificacion, token.Respuesta);
+        }
+
+        //public async Task<DtoRespuesta<DtoFuncionariosPIP>> ObtenerCarruselImgAsync()
+        //{
+        //    var token = await ObtenerTokenAsync();
+        //    return await _iPipWebServices.ObtenerCarruselImgSeviciosAsync(identificacion, token.Respuesta);
+        //}
+
+    }
+}

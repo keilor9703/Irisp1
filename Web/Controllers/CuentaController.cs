@@ -14,21 +14,21 @@ namespace Gepad.Controllers
     public class CuentaController : Controller
     {
         private readonly IHttpContextAccessor _iHttpContextAccessor;
-        private readonly IGestionToken _iGestionToken;
-        private readonly IGestionOUD _iGestionOUD;
+       
         private readonly IDbAdministracion _iDbAdministracion;
+        private readonly IDbConsultasPIP _iDbConsultasPIP;
 
         bool cotiene = false;
-        public CuentaController(IGestionToken iGestionToken,
-                                IGestionOUD iGestionOUD,
+        public CuentaController(
                                 IHttpContextAccessor iHttpContextAccessor,
-                                IDbAdministracion iDbAdministracion
+                                IDbAdministracion iDbAdministracion,
+                                IDbConsultasPIP idbConsultasPIP
                                 )
         {
-            _iGestionToken = iGestionToken;
-            _iGestionOUD = iGestionOUD;
+           
             _iHttpContextAccessor = iHttpContextAccessor;
             _iDbAdministracion = iDbAdministracion;
+            _iDbConsultasPIP = idbConsultasPIP;
         }
 
 
@@ -54,14 +54,14 @@ namespace Gepad.Controllers
              if (!ModelState.IsValid)
                 return View(loginUsuario);
 
-             //Deshabilitar el OUD 
-          //var respuestaOud = await _iGestionOUD.ObtenerOudAsync(loginUsuario);
+            //Deshabilitar el OUD 
+            var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
 
-          //  if (!respuestaOud.Respuesta)
-          //  {
-          //      ModelState.AddModelError("", "Usuario o Contraseña incorrecta, revise");
-          //      return View();
-          //  }
+            if (!respuestaOud.Respuesta)
+            {
+                ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
+                return View();
+            }
 
             //Obtener IP
             var Ip = _iHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();

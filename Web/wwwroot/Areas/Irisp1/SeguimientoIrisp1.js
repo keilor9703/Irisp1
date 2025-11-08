@@ -98,58 +98,102 @@ function formatDate(dateStr) {
     });
 }
 
-// 📥 Descargar todas las grillas en un solo archivo Excel
+
+
+
+/// Evento al hacer clic en el botón de descarga
 $('#btnDescargarExcel').on('click', function () {
-    try {
-        // ✅ Obtiene los DataTables ya inicializados
-        const tablaVerificacion = $('#tbGrilla').DataTable();
-        const tablaInvestigacion = $('#tbGrillaInvestigacion').DataTable();
-        const tablaFinalizacion = $('#tbGrillaFinalizacion').DataTable();
+    Swal.fire({
+        title: 'Confirmación de descarga',
+        text: 'Este archivo contiene información confidencial. Su descarga será registrada.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Aceptar y descargar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
 
-        // 🔄 Convierte cada tabla a un array de objetos JSON
-        const dataVerificacion = tablaVerificacion.rows().data().toArray();
-        const dataInvestigacion = tablaInvestigacion.rows().data().toArray();
-        const dataFinalizacion = tablaFinalizacion.rows().data().toArray();
+      console.log(result);
+        // ✅ Asegúrate de que el bloque esté bien indentado y contenido
+        if (result.isConfirmed) {
 
-        // 📘 Crea el libro Excel
-        const wb = XLSX.utils.book_new();
 
-        // 🧾 Crea las hojas de Excel
-        if (dataVerificacion.length > 0) {
-            const ws1 = XLSX.utils.json_to_sheet(dataVerificacion);
-            XLSX.utils.book_append_sheet(wb, ws1, 'Verificación');
+            try {
+                const tablas = [
+                    { id: '#tbGrilla', nombre: 'Verificación' },
+                    { id: '#tbGrillaInvestigacion', nombre: 'Investigación' },
+                    { id: '#tbGrillaFinalizacion', nombre: 'Finalización' }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                let hayDatos = false;
+
+                tablas.forEach(t => {
+                    const table = $(t.id).DataTable();
+                    if (!table) return;
+
+                    const datosFiltrados = table.rows({ search: 'applied' }).data().toArray();
+                    const columnasVisibles = table.columns().indexes().filter(idx => table.column(idx).visible());
+
+                    if (datosFiltrados.length > 0 && columnasVisibles.length > 0) {
+                        hayDatos = true;
+
+                        const datosVisibles = datosFiltrados.map(row => {
+                            const fila = {};
+                            columnasVisibles.each(idx => {
+                                const nombreColumna = table.column(idx).header().textContent.trim();
+                                const propiedad = table.column(idx).dataSrc();
+                                let valor = row[propiedad];
+
+                                if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(valor)) {
+                                    const fecha = new Date(valor);
+                                    valor = fecha.toLocaleString('es-CO', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        hour12: true
+                                    });
+                                }
+
+                                fila[nombreColumna] = valor;
+                            });
+                            return fila;
+                        });
+
+                        const hoja = XLSX.utils.json_to_sheet(datosVisibles);
+                        XLSX.utils.book_append_sheet(wb, hoja, t.nombre);
+                    }
+                });
+
+                if (!hayDatos) {
+                    Swal.fire('Sin datos', 'No hay registros filtrados para exportar.', 'warning');
+                    return;
+                }
+
+                const anio = $('#ddlAnioIris').val() || new Date().getFullYear();
+                const nombreArchivo = `Reporte_IrisP1_Seguimiento_${anio}_Filtrado.xlsx`;
+                XLSX.writeFile(wb, nombreArchivo);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Descarga completa',
+                    text: 'El archivo Excel se ha generado exitosamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (e) {
+                console.error(e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al generar Excel',
+                    text: 'Hubo un problema al generar el archivo.'
+                });
+            }
         }
-        if (dataInvestigacion.length > 0) {
-            const ws2 = XLSX.utils.json_to_sheet(dataInvestigacion);
-            XLSX.utils.book_append_sheet(wb, ws2, 'Investigación');
-        }
-        if (dataFinalizacion.length > 0) {
-            const ws3 = XLSX.utils.json_to_sheet(dataFinalizacion);
-            XLSX.utils.book_append_sheet(wb, ws3, 'Finalización');
-        }
-
-        // 💾 Descarga el archivo
-        XLSX.writeFile(wb, 'Reporte_IrisP1.xlsx');
-
-        Swal.fire({
-            icon: 'success',
-            title: 'Descarga completa',
-            text: 'El archivo Excel se ha generado exitosamente.',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    } catch (e) {
-        console.error(e);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error al generar Excel',
-            text: 'Hubo un problema al generar el archivo.'
-        });
-    }
+    });
 });
-
-
-
 
 function F_GetInfoGrillas() {
     $.ajax({
@@ -225,7 +269,7 @@ function GetGrillaVerificacion(Datos) {
         { title: "Unidad Verificación", data: "UnidadResponsable" },
         { title: "Dependencia", data: "Dependencia" },
         { title: "Municipio", data: "Municipio" },
-        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia" },
+        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", render: formatDate},
         { title: "Clase", data: "Clase" },
         { title: "Nombre", data: "NombreClase" },
         { title: "Cantidad", data: "CantidadIntegrantes" },
@@ -234,7 +278,7 @@ function GetGrillaVerificacion(Datos) {
         { title: "Zona", data: "Zona" },
         { title: "Tipo Servicio", data: "TipoServicio" },
         { title: "Fuente", data: "Fuente" },
-        { title: "Fecha de Creacion", data: "FechaCreacion" },
+        { title: "Fecha de Creacion", data: "FechaCreacion",render: formatDate },
         Resultados(),
         { title: "CriminalidadId", data: "CriminalidadId", visible: false }
     ]);
@@ -252,7 +296,7 @@ function GetGrillaInvestigacion(Datos) {
         { title: "Unidad Verificación", data: "UnidadResponsable" },
         { title: "Dependencia", data: "Dependencia" },
         { title: "Municipio", data: "Municipio" },
-        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia" },
+        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", render: formatDate },
         { title: "Clase", data: "Clase" },
         { title: "Nombre", data: "NombreClase" },
         { title: "Cantidad", data: "CantidadIntegrantes" },
@@ -261,7 +305,7 @@ function GetGrillaInvestigacion(Datos) {
         { title: "Zona", data: "Zona" },
         { title: "Tipo Servicio", data: "TipoServicio" },
         { title: "Fuente", data: "Fuente" },
-        { title: "Fecha de Creacion", data: "FechaCreacion" },
+        { title: "Fecha de Creacion", data: "FechaCreacion", render: formatDate },
         Resultados(),
         { title: "CriminalidadId", data: "CriminalidadId", visible: false }
     ]);
@@ -279,7 +323,7 @@ function GetGrillaFinalizacion(Datos) {
         { title: "Unidad Verificación", data: "UnidadResponsable" },
         { title: "Dependencia", data: "Dependencia" },
         { title: "Municipio", data: "Municipio" },
-        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia" },
+        { title: "Fecha Inicio Actividad", data: "FechaInicioExistencia", render: formatDate },
         { title: "Clase", data: "Clase" },
         { title: "Nombre", data: "NombreClase" },
         { title: "Cantidad", data: "CantidadIntegrantes" },
@@ -288,11 +332,14 @@ function GetGrillaFinalizacion(Datos) {
         { title: "Zona", data: "Zona" },
         { title: "Tipo Servicio", data: "TipoServicio" },
         { title: "Fuente", data: "Fuente" },
-        { title: "Fecha de Creacion", data: "FechaCreacion" },
+        { title: "Fecha de Creacion", data: "FechaCreacion", render: formatDate },
         Resultados(),
         { title: "CriminalidadId", data: "CriminalidadId", visible: false }
     ]);
 }
+
+
+
 
 
 function Estados() {
@@ -1695,6 +1742,8 @@ function P_DelUnidadResponsable(V_ResposablId, V_IdUnidadResponsable) {
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
     }).then((result) => {
+
+
         if (result.isConfirmed) {
             $.ajax({
                 url: AppRoutes.Seguimiento.UrlDelResponsable,
