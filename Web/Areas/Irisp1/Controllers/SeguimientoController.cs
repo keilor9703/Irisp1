@@ -13,6 +13,7 @@ using Negocio.Interfaz.Irisp1;
 
 using System.Data;
 using System.Security.Claims;
+using Negocio.Gestion.Irisp1;
 
 
 namespace Web.Areas.Irisp1.Controllers
@@ -76,17 +77,22 @@ namespace Web.Areas.Irisp1.Controllers
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
-            var resultado = await _iDbSeguimientoIris.F_GetInfoGrillas(V_Anio);
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLaborando"));
+
+            // 🔹 Obtener todos los roles del usuario separados por coma
+            var rolesUsuario = string.Join(",",
+                User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+            );
+
+            var resultado = await _iDbSeguimientoIris.F_GetInfoGrillas(V_Anio, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta > 0)
-            {
                 return Json(new { success = true, data = resultado.Data });
-            }
             else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-
-            }
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { success = false, message = resultado.Mensaje });
         }
 
 

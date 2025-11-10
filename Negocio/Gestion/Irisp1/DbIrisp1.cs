@@ -192,8 +192,7 @@ namespace Negocio.Gestion.Irisp1
         //    return resp;
         //}
 
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(
-     Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas( Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
         {
             DataTable resultado = new();
             List<DtoIrispCriminalidad> retorno = new();

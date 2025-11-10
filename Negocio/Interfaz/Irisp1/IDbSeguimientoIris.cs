@@ -15,8 +15,9 @@ namespace Negocio.Interfaz.Irisp1
       
         Task<DtoResultado<List<SeguimientoIrisDto>>> F_GetAniosIrisP1();
 
-      
-        Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
+
+        //Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
+        public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolUsuario, Int64 CodigoUnidad);
 
         Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId);
         Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesPorSigla(string V_Sigla);
