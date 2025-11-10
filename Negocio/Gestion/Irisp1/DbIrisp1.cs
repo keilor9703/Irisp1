@@ -119,7 +119,81 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
+        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
+        //{
+        //    DataTable resultado = new();
+        //    List<DtoIrispCriminalidad> retorno = new();
+        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
+
+        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
+        //    using var objCommand = new OracleCommand();
+
+        //    try
+        //    {
+        //        objCommand.Connection = Conexion;
+        //        objCommand.CommandType = CommandType.StoredProcedure;
+        //        objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
+        //        objCommand.BindByName = true;
+        //        Conexion.Open();
+
+        //        objCommand.Parameters.Clear();
+        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+
+        //        if (Conexion.State == ConnectionState.Open)
+        //        {
+        //            resultado.Load(await objCommand.ExecuteReaderAsync());
+
+        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
+
+        //            if (retorno.Count > 0)
+        //            {
+        //                resp.IdRespuesta = 1;
+        //                resp.Mensaje = "Consulta Exitosa";
+        //                resp.Operacion = "F_GetInfoGrillas";
+        //                resp.Data = retorno;
+        //            }
+        //            else
+        //            {
+        //                resp.IdRespuesta = 0;
+        //                resp.Mensaje = "No se encontraron datos";
+        //                resp.Operacion = "0";
+        //            }
+        //        }
+        //        else
+        //        {
+        //            resp.IdRespuesta = 0;
+        //            resp.Mensaje = "Error conexión base de datos";
+        //            resp.Operacion = "0";
+        //        }
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Conexion.Close();
+        //        Conexion.Dispose();
+        //        objCommand.Connection.Close();
+        //        _logger.LogError("Creacion de log");
+        //        _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas " + e);
+
+        //        resp.IdRespuesta = 0;
+        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
+        //        resp.Operacion = "0";
+
+        //    }
+        //    finally
+        //    {
+        //        Conexion.Close();
+        //        Conexion.Dispose();
+        //        objCommand.Dispose();
+        //        objCommand.Connection.Close();
+        //        resultado.Dispose();
+        //    }
+        //    return resp;
+        //}
+
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(
+     Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
         {
             DataTable resultado = new();
             List<DtoIrispCriminalidad> retorno = new();
@@ -138,60 +212,40 @@ namespace Negocio.Gestion.Irisp1
 
                 objCommand.Parameters.Clear();
                 objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+                objCommand.Parameters.Add("P_Roles", OracleDbType.Varchar2, ParameterDirection.Input).Value = RolesUsuario;
+                objCommand.Parameters.Add("P_CodigoUnidad", OracleDbType.Int64, ParameterDirection.Input).Value = CodigoUnidad;
                 objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
 
                 if (Conexion.State == ConnectionState.Open)
                 {
                     resultado.Load(await objCommand.ExecuteReaderAsync());
-
                     retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
 
-                    if (retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetInfoGrillas";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
+                    resp.IdRespuesta = retorno.Count > 0 ? 1 : 0;
+                    resp.Mensaje = retorno.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+                    resp.Data = retorno;
+                    resp.Operacion = "F_GetInfoGrillas";
                 }
                 else
                 {
                     resp.IdRespuesta = 0;
                     resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
                 }
-
             }
             catch (Exception e)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas " + e);
-
+                _logger.LogError(e, "Error ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas");
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
+                resp.Mensaje = e.Message;
             }
             finally
             {
                 Conexion.Close();
-                Conexion.Dispose();
                 objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
             }
+
             return resp;
         }
-
 
 
         //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
@@ -308,7 +362,7 @@ namespace Negocio.Gestion.Irisp1
         //}
 
 
-       
+
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
         {
             DataTable resultado = new();

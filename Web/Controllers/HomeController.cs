@@ -1,12 +1,12 @@
 using Comun.Areas.Admin;
-using Gepad.Models;
+using Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Negocio.Interfaz.Admin;
 using System.Data;
 using System.Diagnostics;
 
-namespace Gepad.Controllers
+namespace Web.Controllers
 {
     [Authorize]
     public class HomeController : Controller

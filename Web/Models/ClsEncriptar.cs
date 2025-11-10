@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace Gepad.Models
+namespace Web.Models
 {
     public class ClsEncriptar
     {

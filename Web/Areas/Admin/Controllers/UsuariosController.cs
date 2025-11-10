@@ -10,7 +10,7 @@ namespace Web.Areas.Admin.Controllers
 
 
     [Area("Admin")]
-    [Authorize(Roles = "1,2")]
+    [Authorize(Roles = "1,2")]//Super Usuario -- Admnistrador
     public class UsuariosController : Controller
     {
         #region Propiedades

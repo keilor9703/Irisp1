@@ -1,7 +1,7 @@
 ﻿using Comun.Areas.AplicacionDTO;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
-using Gepad.Models;
+using Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,12 +16,13 @@ using System;
 using System.Data;
 using System.Net;
 using System.Security.Claims;
+using Web.Models;
 
 
 namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
-    [Authorize(Roles = "1,2")]
+    [Authorize(Roles = "1,2,3")]
     public class RegistrosIrisp1Controller : Controller
     {
         #region Propiedades
@@ -54,7 +55,11 @@ namespace Web.Areas.Irisp1.Controllers
 
         public async Task<ActionResult> RegistrosIrisp1()
         {
-            var ddlAnioIris = (await _iDbIrisp1.F_GetAniosIrisP1()).Data.ToList();
+
+
+			var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "VwRegistrosIrisp1", "Ingreso Módulo", "0", HttpContext.Session.GetString("IpMaquina"));
+
+			var ddlAnioIris = (await _iDbIrisp1.F_GetAniosIrisP1()).Data.ToList();
           
 
             //  var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
@@ -91,29 +96,55 @@ namespace Web.Areas.Irisp1.Controllers
             return View();
         }
 
-        #region Métodos de Consulta
-
-    
-
-        [HttpGet]
-        public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
-        {
-            var resultado = await _iDbIrisp1.F_GetInfoGrillas(V_Anio);
-
-            if (resultado.IdRespuesta > 0)
-            {
-                return Json(new { success = true, data = resultado.Data });
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-
-            }
-        }
+		#region Métodos de Consulta
 
 
 
-        [HttpGet]
+		//[HttpGet]
+		//public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
+		//{
+
+
+		//    var resultado = await _iDbIrisp1.F_GetInfoGrillas(V_Anio);
+
+		//    if (resultado.IdRespuesta > 0)
+		//    {
+		//        return Json(new { success = true, data = resultado.Data });
+		//    }
+		//    else
+		//    {
+		//        return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+
+		//    }
+		//}
+
+
+
+		[HttpGet]
+		public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
+		{
+			var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLaborando"));
+
+			// 🔹 Obtener todos los roles del usuario separados por coma
+			var rolesUsuario = string.Join(",",
+				User.Claims
+					.Where(c => c.Type == ClaimTypes.Role)
+					.Select(c => c.Value)
+			);
+
+			var resultado = await _iDbIrisp1.F_GetInfoGrillas(V_Anio, rolesUsuario, codigoUnidad);
+
+			if (resultado.IdRespuesta > 0)
+				return Json(new { success = true, data = resultado.Data });
+			else
+				return StatusCode(StatusCodes.Status500InternalServerError,
+					new { success = false, message = resultado.Mensaje });
+		}
+
+
+
+
+		[HttpGet]
         public async Task<IActionResult> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
         {
             var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora, V_unidadLabora2);

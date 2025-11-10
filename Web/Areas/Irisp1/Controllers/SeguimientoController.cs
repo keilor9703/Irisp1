@@ -1,7 +1,7 @@
 ﻿
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
-using Gepad.Models;
+using Web.Models;
 using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;

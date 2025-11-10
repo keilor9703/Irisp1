@@ -12,8 +12,9 @@ namespace Negocio.Interfaz.Irisp1
         #region Métodos de Consulta        
 
         public Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1();
-        public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
-      
+        //public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
+        public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolUsuario, Int64 CodigoUnidad);
+
 
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2); // NUEVO MÉTODO
 

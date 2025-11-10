@@ -343,7 +343,9 @@ namespace Negocio.Gestion.Admin
                     resultado.Load(await objCommand.ExecuteReaderAsync());
 
                     retorno.Identificacion = Convert.ToInt64(objCommand.Parameters["Out_Identificacion"].Value.ToString());
-
+                    //retorno.IdCargo = Convert.ToInt32(objCommand.Parameters["Out_IdCargo"].Value.ToString()); //no 
+                    retorno.IdUsuario = Convert.ToInt32(objCommand.Parameters["Out_IdUsuario"].Value.ToString()); // tabla usuarios
+                    retorno.Bloqueado = Convert.ToInt32(objCommand.Parameters["Out_Bloqueado"].Value.ToString()); // no tabla
 
                     var respuestaPIP = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(retorno.Identificacion);
 
@@ -355,7 +357,7 @@ namespace Negocio.Gestion.Admin
                         retorno.EmplConsecutivo = respuestaPIP.Respuesta.Consecutivo;
                         retorno.Funcionario = respuestaPIP.Respuesta.Funcionario;
                         retorno.EmplUndeConsecutivo = respuestaPIP.Respuesta.UndeConsecutivo;
-                        retorno.EmplUndeFuerza = respuestaPIP.Respuesta.UndeFuerza;
+                        //retorno.EmplUndeFuerza = respuestaPIP.Respuesta.UndeFuerza;
                         retorno.Cargo = respuestaPIP.Respuesta.Cargo;
                         retorno.Usuario = respuestaPIP.Respuesta.UsuarioEmpresarial;
                         retorno.IdUndeLaborando = respuestaPIP.Respuesta.UndeConsecutivoLaborando;
@@ -367,12 +369,7 @@ namespace Negocio.Gestion.Admin
                       
                     }
 
-                    
-                    //retorno.IdCargo = Convert.ToInt32(objCommand.Parameters["Out_IdCargo"].Value.ToString()); //no 
-                   
-                    retorno.IdUsuario = Convert.ToInt32(objCommand.Parameters["Out_IdUsuario"].Value.ToString()); // tabla usuarios
-                    retorno.Bloqueado = Convert.ToInt32(objCommand.Parameters["Out_Bloqueado"].Value.ToString()); // no tabla usuarios
-                    
+
 
                     retorno.DtoUserRoles = new List<DtoUserRoles>();
 
@@ -399,6 +396,7 @@ namespace Negocio.Gestion.Admin
                         resp.IdRespuesta = 0;
                         resp.Mensaje = "No se encontraron datos";
                         resp.Operacion = "0";
+                        resp.Data = retorno;
                     }
 
                     Conexion.Close();
@@ -440,7 +438,7 @@ namespace Negocio.Gestion.Admin
             List<DtoRoles> retorno = new();
             DtoResultado<List<DtoRoles>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var Conexion = new OracleConnection(strConexionIris_Test);
             using var objCommand = new OracleCommand();
             try
             {
@@ -522,7 +520,7 @@ namespace Negocio.Gestion.Admin
             List<DtoUserRoles> Retorno = new();
             DtoResultado<List<DtoUserRoles>> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var Conexion = new OracleConnection(strConexionIris_Test);
             using var objCommand = new OracleCommand();
 
             try

@@ -17,22 +17,24 @@ namespace Web.Areas.Expendios.Controllers
 {
 
     [Area("Expendios")]
-    [Authorize(Roles = "1,2")]
+    [Authorize(Roles = "1,2,11")]
     public class RegistrosController : Controller
     {
 
-
+    
         private readonly IConfiguration _iConfiguration;
+        private readonly IDbAdministracion _iDbAdministracion;
         private readonly IDbRegistroExpendio _iDbRegistroExpendio;
         private readonly IDbSeguimientoIris _iDbSeguimientoIris;
 
         private readonly IDbDominios _iDbDominios;
 
 
-        public RegistrosController(IConfiguration iConfiguration,  IDbDominios iDbDominios, IDbRegistroExpendio iRegistroExpendio, IDbSeguimientoIris iSegimientoIris)
+        public RegistrosController(IConfiguration iConfiguration, IDbAdministracion dbAdministracion , IDbDominios iDbDominios, IDbRegistroExpendio iRegistroExpendio, IDbSeguimientoIris iSegimientoIris)
         {
 
             _iConfiguration = iConfiguration;
+            _iDbAdministracion = dbAdministracion;
             _iDbDominios = iDbDominios;
             _iDbRegistroExpendio = iRegistroExpendio;
             _iDbSeguimientoIris = iSegimientoIris;
@@ -41,7 +43,7 @@ namespace Web.Areas.Expendios.Controllers
         public async Task<ActionResult> Registros()
         {
 
-            
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "VwRegistrosExpendios", "Ingreso Módulo", "0", HttpContext.Session.GetString("IpMaquina"));
 
             ViewBag.ddlUnidadExpendio = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
 
@@ -71,26 +73,6 @@ namespace Web.Areas.Expendios.Controllers
 
 
         #region Métodos de Consulta
-
-
-
-
-        [HttpGet]
-        public async Task<IActionResult> F_GetDominiosIris(Int32 V_id)
-        {
-            var resultado = await _iDbDominios.F_GetDominiosIris(V_id);
-
-            if (resultado.IdRespuesta > 0)
-            {
-                return Json(new { success = true, data = resultado.Data });
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-
-            }
-        }
-
 
 
         [HttpGet]
@@ -236,7 +218,7 @@ namespace Web.Areas.Expendios.Controllers
 
 
 
-
+        #region Métodos de Insersión
 
         [HttpPost]
         public async Task<IActionResult> P_InsIntegrante(DtoIntegrantes Obj_Integrante)
@@ -261,7 +243,6 @@ namespace Web.Areas.Expendios.Controllers
             }
         }
 
-
         [HttpPost]
         public async Task<IActionResult> P_InsDelito(DtoDelitosIris Obj_Delito)
         {
@@ -285,7 +266,6 @@ namespace Web.Areas.Expendios.Controllers
             }
         }
 
-
         [HttpPost]
         public async Task<IActionResult> P_InsBitacora(DtoInfoAdicional Obj_Bitacora)
         {
@@ -308,7 +288,6 @@ namespace Web.Areas.Expendios.Controllers
                 return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
             }
         }
-
 
         [HttpPost]
         public async Task<IActionResult> P_InsResultados(DtoResultadosExpendio Obj_Resultados)
@@ -334,6 +313,10 @@ namespace Web.Areas.Expendios.Controllers
         }
 
 
+        #endregion
+
+
+        #region Métodos de Actualización
 
         [HttpPost]
         public async Task<IActionResult> P_UpdExpendio(DtoExpendios Obj_UpdExpendio)
@@ -358,8 +341,6 @@ namespace Web.Areas.Expendios.Controllers
             }
         }
 
-
-
         [HttpPost]
         public async Task<IActionResult> P_UpdIntegrante(DtoIntegrantes Obj_Integrante)
         {
@@ -383,6 +364,8 @@ namespace Web.Areas.Expendios.Controllers
             }
         }
 
+
+        #endregion
     }
 }
 

@@ -1,5 +1,6 @@
 ﻿using Comun.Areas.Admin;
 using Comun.General;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Negocio.Interfaz.Admin;
 using Servicios.ApiInterfaz;
@@ -15,16 +16,16 @@ namespace Negocio.Gestion.Admin
     {
 
         private readonly IPipWebServices _iPipWebServices;
-        
-       
         private readonly CredencialesPipOptions _credenciales;
+        private readonly ILogger _logger;
 
-        public DbConsultasPIP(IPipWebServices pipWebServices, IOptions<CredencialesPipOptions> opciones)
+        public DbConsultasPIP(IPipWebServices pipWebServices, IOptions<CredencialesPipOptions> opciones, ILogger<DbAdministracion> logger)
                              
         {
             _iPipWebServices = pipWebServices;
             _credenciales = opciones.Value;
-            
+            _logger = logger;
+
 
         }
 

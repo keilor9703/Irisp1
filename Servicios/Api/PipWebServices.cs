@@ -8,6 +8,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+
 
 namespace Servicios.Api
 {
@@ -16,11 +18,13 @@ namespace Servicios.Api
 
         private readonly ApiGatewayUrl _apiGatewayUrl;
         private readonly HttpClient _httpClient;
+        
 
         public PipWebServices(HttpClient httpClient, ApiGatewayUrl apiGatewayUrl)
         {
             _httpClient = httpClient;
             _apiGatewayUrl = apiGatewayUrl;
+            
         }
 
 

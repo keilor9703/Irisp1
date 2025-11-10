@@ -1,4 +1,4 @@
-namespace Gepad.Models
+namespace Web.Models
 {
     public class ErrorViewModel
     {

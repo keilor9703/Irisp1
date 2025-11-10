@@ -1,5 +1,5 @@
 ﻿using Comun.Areas.Admin;
-using Gepad.Models;
+using Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -7,23 +7,20 @@ using Microsoft.AspNetCore.Mvc;
 using Negocio.Interfaz.Admin;
 using System.Security.Claims;
 using Web;
+using Web.Models;
 
-namespace Gepad.Controllers
+namespace Web.Controllers
 {
     [Authorize]
     public class CuentaController : Controller
     {
         private readonly IHttpContextAccessor _iHttpContextAccessor;
-       
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IDbConsultasPIP _iDbConsultasPIP;
-
-        bool cotiene = false;
-        public CuentaController(
-                                IHttpContextAccessor iHttpContextAccessor,
+        bool Admin = false;
+        public CuentaController(IHttpContextAccessor iHttpContextAccessor,
                                 IDbAdministracion iDbAdministracion,
-                                IDbConsultasPIP idbConsultasPIP
-                                )
+                                IDbConsultasPIP idbConsultasPIP)
         {
            
             _iHttpContextAccessor = iHttpContextAccessor;
@@ -90,11 +87,11 @@ namespace Gepad.Controllers
                     return View();
                 }
 
-                cotiene = Usuario != null ? Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1) : false;
+                Admin = Usuario != null ? Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1) : false;
 
-                if (cotiene)
+                if (Admin)
                 {
-                    //Generamos el Menú Administrador
+                    //Generamos el Menú Super usuario
                     var Menu = await _iDbAdministracion.F_GetMenu("1", Usuario.Data.Identificacion);
                     HttpContext.Session.SetObject("ListaMenu", Menu.Data);
                 }

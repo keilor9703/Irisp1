@@ -2249,7 +2249,7 @@
     };
   }
 
-  function mergePaddingObject(paddingObject) {
+  function merWebdingObject(paddingObject) {
     return Object.assign({}, getFreshSideObject(), paddingObject);
   }
 
@@ -2264,7 +2264,7 @@
     padding = typeof padding === 'function' ? padding(Object.assign({}, state.rects, {
       placement: state.placement
     })) : padding;
-    return mergePaddingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements));
+    return merWebdingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements));
   };
 
   function arrow(_ref) {
@@ -2832,7 +2832,7 @@
         altBoundary = _options$altBoundary === void 0 ? false : _options$altBoundary,
         _options$padding = _options.padding,
         padding = _options$padding === void 0 ? 0 : _options$padding;
-    var paddingObject = mergePaddingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements));
+    var paddingObject = merWebdingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements));
     var altContext = elementContext === popper ? reference : popper;
     var referenceElement = state.elements.reference;
     var popperRect = state.rects.popper;
