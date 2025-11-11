@@ -3,6 +3,31 @@
 window.AppRoutes = Object.freeze({ 
     //Object.freeze() sirve para proteger el objeto contra modificaciones accidentales o maliciosas en tiempo de ejecución. el objeto AppRoutes queda inmutable:
 
+
+    // Rutas para módulo ADMINISTRACIÓN
+   
+    
+
+
+
+    Administracion: {
+        // Controlador Emppleados
+        UrlGetFuncionarios: '/Empleados/F_GetFuncionarios',
+        UrlGetEmpleadoIntel: '/Empleados/F_GetEmpleadoIntel',
+        // Controlador Usuarios
+        UrlInsUdpUsuarios: '/Admin/Usuarios/P_InsUdpUsuarios',
+        UrlGetUserRoles: '/Admin/Usuarios/F_GetUserRoles',
+        UrlInsRoles: '/Admin/Usuarios/P_InsRoles',
+        UrlDelRoles: '/Admin/Usuarios/P_DelRoles',
+        UrlGetListUsuarios: '/Admin/Usuarios/F_GetListUsuarios'
+    },
+
+
+
+
+
+
+
     // Rutas para módulo IRISP1 / Seguimiento
     Seguimiento: {
         // Controlador Seguimiento

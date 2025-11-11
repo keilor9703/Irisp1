@@ -3,16 +3,9 @@
 }
 
 @section scripts {
+    <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/admin/VwUsuarios.js?v=1"></script>
-    <script type='text/javascript'>
-        var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
-        var UrlGetEmpleadoIntel = "@Url.Action("F_GetEmpleadoIntel", "Empleados", new { Area = "" })";
-        var UrlInsUdpUsuarios = "@Url.Action("P_InsUdpUsuarios", "Usuarios", new { Area = "Admin" })";
-        var UrlGetUserRoles = "@Url.Action("F_GetUserRoles", "Usuarios", new { Area = "Admin" })";
-        var UrlInsRoles = "@Url.Action("P_InsRoles", "Usuarios", new { Area = "Admin" })";
-        var UrlDelRoles = "@Url.Action("P_DelRoles", "Usuarios", new { Area = "Admin" })";
-         var UrlGetListUsuarios = "@Url.Action("F_GetListUsuarios", "Usuarios", new { Area = "Admin" })";
-    </script>
+   
 }
 <input type="text" id="txtIdUsuario" class="hidden" />
 <section class="content-header"></section>
@@ -49,8 +42,8 @@
                             <div class="input-group">
                                 <input tabindex="1" name="txtIdentificacion" type="text" id="txtIdentificacion" autocomplete="off" placeholder=" " class="form-control InputPading" />
                                 <span class="input-group-btn">
-                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl" onclick="F_GetFuncionarios ($('#txtIdentificacion').val()); return false;" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
-                                    <button tabindex="3" class="btn btn-warning" id="BtnLimpiarEmpl" onclick="Limpiar(); return false;" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarEmpl"  style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    <button tabindex="3" class="btn btn-warning" id="BtnLimpiarEmpl"  style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
                                 </span>
                             </div>
                             <label class="Labels">Identificación:</label>
@@ -120,11 +113,11 @@
         <div class="card-footer" style="margin-bottom: 10px;">
             <div class="row">
                 <div class="col-md-6 text-left">
-                    <button tabindex="1003" type="button" id="btnListaUsuarios" onclick="GetGrillaUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important; " class="btn btn-eliminar" title="Listado Usuarios"><span class="fas fa-trash-alt faa-ring animated"></span> Listado Usuarios</button>
+                    <button tabindex="1003" type="button" id="btnListaUsuarios"  style="border-radius: 0px 16px 0px 16px !important; " class="btn btn-eliminar" title="Listado Usuarios"><span class="fas fa-trash-alt faa-ring animated"></span> Listado Usuarios</button>
                  </div>
                  <div class="col-md-6 text-right">
-                 <button tabindex="1001" type="button" id="btnGrabar" onclick="P_InsUdpUsuarios(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar"><span class="fa ico_grabar faa-wrench animated"></span> Guardar</button>
-                 <button tabindex="1002" type="button" id="btnLimpiar" onclick="Limpiar(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo"><span class="fa ico_limpiar faa-ring animated"></span> Nuevo</button>
+                 <button tabindex="1001" type="button" id="btnGrabar" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar"><span class="fa ico_grabar faa-wrench animated"></span> Guardar</button>
+                 <button tabindex="1002" type="button" id="btnLimpiar"  style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-limpiar" title="Nuevo"><span class="fa ico_limpiar faa-ring animated"></span> Nuevo</button>
                </div>
             </div>
         </div>
@@ -191,7 +184,7 @@
         </div>
         <div class="card-footer" style="margin-bottom: 10px;">
             <div class="col-md-12 text-right">
-                <button tabindex="14" type="button" id="btnGrabarRol" onclick="P_InsRoles(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span> Guardar Rol</button>
+                <button tabindex="14" type="button" id="btnGrabarRol"style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span> Guardar Rol</button>
             </div>
         </div>
     </div>

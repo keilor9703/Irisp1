@@ -759,6 +759,7 @@ namespace Negocio.Gestion.Admin
                 objCommand.Parameters.Add("P_Identificacion", OracleDbType.Int64, ParameterDirection.Input).Value = V_Identificacion;
                 objCommand.Parameters.Add("P_Bloqueado", OracleDbType.Int32, ParameterDirection.Input).Value = V_Bloqueado;
 
+
                 objCommand.Parameters.Add("P_Usuario", OracleDbType.Int64, ParameterDirection.Input).Value = V_Usuario;
                 objCommand.Parameters.Add("P_Maquina", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Maquina;
 

@@ -15,6 +15,44 @@
         }
     });
     //Fin Manejo de fechas Kendo
+
+
+
+    $("#btnConsultarEmpl").on("click", function (e) {
+        e.preventDefault();
+
+        F_GetFuncionarios($('#txtIdentificacion').val());
+    });
+
+
+    $("#BtnLimpiarEmpl").on("click", function (e) {
+        e.preventDefault();
+
+        Limpiar();
+    });
+
+    $("#btnGrabar").on("click", function (e) {
+        e.preventDefault();
+
+        P_InsUdpUsuarios();
+    });
+    $("#btnListaUsuarios").on("click", function (e) {
+        e.preventDefault();
+
+        GetGrillaUsuarios();
+    });
+    $("#btnLimpiar").on("click", function (e) {
+        e.preventDefault();
+
+        Limpiar();
+    }); $("#btnGrabarRol").on("click", function (e) {
+        e.preventDefault();
+
+        P_InsRoles();
+    });
+
+
+
 });
 
 //Eventos
@@ -26,7 +64,7 @@ $("#txtIdentificacion").keyup(function (event) {
 $("#txtFuncionario").autocomplete({
     source: function (request, response) {
         $.ajax({
-            url: UrlGetEmpleadoIntel,
+            url: AppRoutes.Administracion.UrlGetEmpleadoIntel,
             type: "POST",
             dataType: "json",
             data: { V_Busqueda: $("#txtFuncionario").val() },
@@ -56,7 +94,7 @@ function GetGrillaUsuarios() {
     $("#tbGrillaUsuarios").DataTable({
         "ajax": {
             type: "POST",
-            url: UrlGetListUsuarios,
+            url: AppRoutes.Administracion.UrlGetListUsuarios,
             async: true,
             datatype: "json",
             cache: false
@@ -73,10 +111,10 @@ function GetGrillaUsuarios() {
         responsive: true,
         "columns": [
           
-            { "title": "Grado", "data": "GradAlfabetico", "name": "GradAlfabetico", className: "celdaJust celda2" },
-            { "title": "Funcionario", "data": "Funcionario", "name": "Funcionario", className: "celdaJust celda30" },
-            { "title": "Identificación", "data": "Identificacion", "name": "Identificacion", className: "celdaJust celda5" },
-            { "title": "Cargo", "data": "Cargo", "name": "Cargo", className: "celdaJust" },
+            { "title": "Grado", "data": "GradAlfabetico", "name": "GradAlfabetico", className: "celdaCenter celda2" },
+            { "title": "Funcionario", "data": "Funcionario", "name": "Funcionario", className: "celdaCenter celda30" },
+            { "title": "Identificación", "data": "Identificacion", "name": "Identificacion", className: "celdaCenter celda5" },
+            { "title": "Cargo", "data": "Cargo", "name": "Cargo", className: "celdaCenter" },
         ],
         lengthMenu: [
             [10, 25, 50, -1],
@@ -104,7 +142,7 @@ function F_GetFuncionarios(V_Identificacion){
 
     $.ajax({
         type: "POST",
-        url: UrlGetFuncionarios,
+        url: AppRoutes.Administracion.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: $("#txtIdentificacion").val() },
         dataType: 'json',
@@ -142,7 +180,7 @@ function F_GetFuncionarios(V_Identificacion){
 function F_GetUserRoles(P_Identificacion) {
     $.ajax({
         type: "POST",
-        url: UrlGetUserRoles,
+        url: AppRoutes.Administracion.UrlGetUserRoles,
         async: true,
         data: { V_Identificacion: P_Identificacion },
         dataType: 'json',
@@ -213,7 +251,7 @@ function P_InsRoles() {
 
     $.ajax({
         type: 'POST',
-        url: UrlInsRoles,
+        url: AppRoutes.Administracion.UrlInsRoles,
         async: true,
         dataType: 'json',
         data: { obj: DtoInsUserRoles },
@@ -261,7 +299,7 @@ function P_InsUdpUsuarios() {
 
     $.ajax({
         type: 'POST',
-        url: UrlInsUdpUsuarios,
+        url: AppRoutes.Administracion.UrlInsUdpUsuarios,
         async: true,
         dataType: 'json',
         data: { obj: DtoUsuario },
@@ -367,7 +405,7 @@ function P_DelRoles(P_IdUserRol, P_Justificacion) {
 
     $.ajax({
         type: 'POST',
-        url: UrlDelRoles,
+        url: AppRoutes.Administracion.UrlDelRoles,
         async: true,
         dataType: 'json',
         data: { obj: DtoInsUserRoles },
