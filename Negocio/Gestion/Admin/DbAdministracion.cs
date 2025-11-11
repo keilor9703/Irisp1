@@ -438,7 +438,7 @@ namespace Negocio.Gestion.Admin
             List<DtoRoles> retorno = new();
             DtoResultado<List<DtoRoles>> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
             try
             {
@@ -520,7 +520,7 @@ namespace Negocio.Gestion.Admin
             List<DtoUserRoles> Retorno = new();
             DtoResultado<List<DtoUserRoles>> resp = new();
 
-            using var Conexion = new OracleConnection(strConexionIris_Test);
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
             using var objCommand = new OracleCommand();
 
             try
