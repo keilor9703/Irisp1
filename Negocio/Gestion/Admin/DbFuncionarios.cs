@@ -15,53 +15,45 @@ namespace Negocio.Gestion.Admin
         private readonly IConfiguration _iConfiguration;
         private readonly string _strConexionTelepol;
         private readonly ILogger _logger;
+        private readonly IDbConsultasPIP _iDbConsultasPIP;
         #endregion
 
         #region Constructor
         public DbFuncionarios(IConfiguration iConfiguration,
+                IDbConsultasPIP dbConsultasPIP,
                                 ILogger<DbAdministracion> logger
                                 )
         {
             _iConfiguration = iConfiguration;
             _strConexionTelepol = _iConfiguration.GetConnectionString("strConexionTelepol");
             _logger = logger;
+            _iDbConsultasPIP = dbConsultasPIP;
         }
         #endregion
 
         #region Métodos de Consulta
-        public async Task<DtoResultado<List<DtoFuncionarios>>> F_GetFuncionarios(Int64 V_Identificacion)
+        public async Task<DtoResultado<DtoUsuario>> F_GetFuncionarios(Int64 V_Identificacion)
         {
             DataTable resultado = new();
-            List<DtoFuncionarios> retorno = new();
-            DtoResultado<List<DtoFuncionarios>> resp = new();
+            DtoUsuario retorno = new();
+            DtoResultado<DtoUsuario> resp = new();
 
-            using var Conexion = new OracleConnection(_strConexionTelepol);
-            using var objCommand = new OracleCommand();
+            var respuestaPIP = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(V_Identificacion);
+
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "USR_MATERIALIZADAS.PK_FUNCIONARIOS.F_GetFuncionarioId";
-                objCommand.BindByName = true;
-                Conexion.Open();
-
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
-                objCommand.Parameters.Add("P_Identificacion", OracleDbType.Int64, ParameterDirection.Input).Value = V_Identificacion;
-
-                if (Conexion.State == ConnectionState.Open)
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
-
-                retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoFuncionarios>(resultado);
-
-                if (retorno.Count > 0)
+               
+                if (respuestaPIP.Estado)
                 {
-                    decimal identificacion = retorno[0].IDENTIFICACION;
 
-                    var datosDireccion = await F_GetDatosAdicionalesPorIdentificacion(identificacion);
-                    retorno[0].DIRECCION = datosDireccion.DIRECCION;
-                    retorno[0].UNDELABORANDO = datosDireccion.UNDELABORANDO; 
-                    retorno[0].ESTACION = datosDireccion.ESTACION; 
+                    retorno.SituacionLaboral = respuestaPIP.Respuesta.SituacionLaboral;
+                    retorno.Funcionario = respuestaPIP.Respuesta.Funcionario;
+                    retorno.Correo = respuestaPIP.Respuesta.CorreoElectronico;
+                    retorno.Usuario = respuestaPIP.Respuesta.UsuarioEmpresarial;
+                    retorno.Celular = (long)respuestaPIP.Respuesta.NumeroCelular;
+                    retorno.Dependencia = respuestaPIP.Respuesta.DescripcionDependencia;
+                    retorno.Cargo = respuestaPIP.Respuesta.Cargo;
+                    retorno.Fisica = respuestaPIP.Respuesta.SiglaFisica;
 
                     resp.IdRespuesta = 1;
                     resp.Mensaje = "Consulta Exitosa";
@@ -85,17 +77,11 @@ namespace Negocio.Gestion.Admin
             }
             finally
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                resultado.Dispose();
+               
             }
 
             return resp;
         }
-
-
-
 
 
         public async Task<DtoFuncionarios> F_GetDatosAdicionalesPorIdentificacion(decimal identificacion)

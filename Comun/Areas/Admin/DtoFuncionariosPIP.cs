@@ -10,7 +10,7 @@ namespace Comun.Areas.Admin
     {
 
        
-            public int Ordenamiento { get; set; }
+            public int? Ordenamiento { get; set; }
             public string GradAlfabetico { get; set; }
             public string NombreGrado { get; set; }
             public int UndeFuerza { get; set; }

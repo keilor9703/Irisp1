@@ -132,10 +132,10 @@ function GetGrillaUsuarios() {
 
 
 
-function F_GetFuncionarios(V_Identificacion){
+function F_GetFuncionarios(V_IdentificacionB){
 
-    let Identificación = Number(V_Identificacion);
-    if (Identificación < 1) {
+    let Identificacion = Number(V_IdentificacionB);
+    if (Identificacion < 1) {
         create('error', 'Debe digitar número de Identificación', '../../img/AlertError.png');
         return;
     }
@@ -144,21 +144,21 @@ function F_GetFuncionarios(V_Identificacion){
         type: "POST",
         url: AppRoutes.Administracion.UrlGetFuncionarios,
         async: true,
-        data: { V_Identificacion: $("#txtIdentificacion").val() },
+        data: { V_Identificacion: V_IdentificacionB },
         dataType: 'json',
         cache: false,
         success: function (respuesta) {
             if (respuesta.success) {
                 $("#imgFoto")[0].src = "https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=" + respuesta.idEncry + "&Token=Mxl7995Julabdfjughyts1*_58$$";
-                $("#txtSituacionLab").val(respuesta.data[0].SituacionLaboral);
-                $("#txtFuncionario").val(respuesta.data[0].Funcionario);
-                $("#txtCorreo").val(respuesta.data[0].Correo);
-                $("#txtUserName").val(respuesta.data[0].Usuario);
-                $("#txtCelular").val(respuesta.data[0].Celular);
-                $("#txtDependencia").val(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtCargo").val(respuesta.data[0].CargoActual);
+                $("#txtSituacionLab").val(respuesta.data.SituacionLaboral);
+                $("#txtFuncionario").val(respuesta.data.Funcionario);
+                $("#txtCorreo").val(respuesta.data.Correo);
+                $("#txtUserName").val(respuesta.data.Usuario);
+                $("#txtCelular").val(respuesta.data.Celular);
+                $("#txtDependencia").val(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                $("#txtCargo").val(respuesta.data.Cargo);
 
-                F_GetUserRoles(V_Identificacion);
+                F_GetUserRoles(V_IdentificacionB);
             } else {
                 Limpiar();
                 Swal.fire({

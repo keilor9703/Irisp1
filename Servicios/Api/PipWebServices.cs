@@ -88,19 +88,52 @@ namespace Servicios.Api
                     Estado = false,
                     Mensaje = $"Error al consultar el servicio: {response.StatusCode}",
                     Respuesta = null!
-
                 };
             }
 
             var contenido = await response.Content.ReadAsStringAsync();
-            var resultado = JsonSerializer.Deserialize<DtoRespuesta<DtoFuncionariosPIP>>(contenido, new JsonSerializerOptions
+
+            try
             {
-                PropertyNameCaseInsensitive = true
-            });
+                var resultado = JsonSerializer.Deserialize<DtoRespuesta<DtoFuncionariosPIP>>(contenido, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
-            return resultado!;
+                if (resultado == null)
+                {
+                    return new DtoRespuesta<DtoFuncionariosPIP>
+                    {
+                        Codigo = EstadoOperacion.Excepcion,
+                        Estado = false,
+                        Mensaje = "La respuesta del servicio no pudo ser deserializada.",
+                        Respuesta = null!
+                    };
+                }
+
+                return resultado;
+            }
+            catch (JsonException ex)
+            {
+                return new DtoRespuesta<DtoFuncionariosPIP>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = $"Error al deserializar la respuesta JSON: {ex.Message}",
+                    Respuesta = null!
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DtoRespuesta<DtoFuncionariosPIP>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = $"Error inesperado al procesar la respuesta: {ex.Message}",
+                    Respuesta = null!
+                };
+            }
         }
-
 
     }
 }
