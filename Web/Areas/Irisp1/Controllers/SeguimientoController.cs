@@ -19,7 +19,7 @@ using Negocio.Gestion.Irisp1;
 namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
-    [Authorize(Roles = "1,2")]
+    [Authorize(Roles = "1,2,7")]
     public class SeguimientoController : Controller
     {
         #region Propiedades
@@ -77,7 +77,7 @@ namespace Web.Areas.Irisp1.Controllers
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
-            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLaborando"));
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
             // 🔹 Obtener todos los roles del usuario separados por coma
             var rolesUsuario = string.Join(",",

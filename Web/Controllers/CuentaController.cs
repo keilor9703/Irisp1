@@ -54,11 +54,11 @@ namespace Web.Controllers
             //Deshabilitar el OUD 
             var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
 
-            if (!respuestaOud.Respuesta)
-            {
-                ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
-                return View();
-            }
+            //if (!respuestaOud.Respuesta)
+            //{
+            //    ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
+            //    return View();
+            //}
 
             //Obtener IP
             var Ip = _iHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();

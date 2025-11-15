@@ -45,10 +45,10 @@ namespace Comun.Areas.Admin
             public string Direccion { get; set; }
             public string LugarResidencia { get; set; }
             public string DeptoResidencia { get; set; }
-            public string Telefono { get; set; }
+            public int? Telefono { get; set; }
             public long? NumeroCelular { get; set; }
             public string CargVigente { get; set; }
-            public string Placa { get; set; }
+            public int? Placa { get; set; }
             public int? PlacaChip { get; set; }
             public int IdRaza { get; set; }
             public string DescRaza { get; set; }

@@ -22,7 +22,7 @@ using Web.Models;
 namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
-    [Authorize(Roles = "1,2,3")]
+    [Authorize(Roles = "1,2,3,7")]
     public class RegistrosIrisp1Controller : Controller
     {
         #region Propiedades
@@ -123,7 +123,7 @@ namespace Web.Areas.Irisp1.Controllers
 		[HttpGet]
 		public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
 		{
-			var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLaborando"));
+			var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
 			// 🔹 Obtener todos los roles del usuario separados por coma
 			var rolesUsuario = string.Join(",",
@@ -216,6 +216,8 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetIntegrantes( string V_CriminalidadId)
         {
@@ -233,6 +235,7 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetDelitosIris(string V_CriminalidadId)
         {
@@ -248,8 +251,9 @@ namespace Web.Areas.Irisp1.Controllers
 
             }
         }
-            
-        
+
+
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetInfoAdicional(string V_CriminalidadId)
         {
@@ -266,6 +270,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetDocIris(string V_CriminalidadId)
         {
@@ -283,6 +288,7 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> f_GetFotosCriminalidad(string V_CriminalidadId)
         {
@@ -302,7 +308,7 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetUbicacionIris(string V_CriminalidadId)
         {

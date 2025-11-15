@@ -22,7 +22,7 @@ using Negocio.Gestion.General;
 namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
-    [Authorize(Roles = "1,2")]
+    [Authorize(Roles = "1,2,8")]
     public class VerificacionController : Controller
     {
 
@@ -102,20 +102,42 @@ namespace Web.Areas.Irisp1.Controllers
         #region Métodos de Consulta
 
 
+        //[HttpGet]
+        //public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
+        //{
+        //    var resultado = await _iDbVerificacionIris.F_GetInfoGrillas(V_Anio);
+
+        //    if (resultado.IdRespuesta > 0)
+        //    {
+        //        return Json(new { success = true, data = resultado.Data });
+        //    }
+        //    else
+        //    {
+        //        // return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+        //        return Json(new { success = false, data = resultado.Data });
+        //    }
+        //}
+
+
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
-            var resultado = await _iDbVerificacionIris.F_GetInfoGrillas(V_Anio);
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            // 🔹 Obtener todos los roles del usuario separados por coma
+            var rolesUsuario = string.Join(",",
+                User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+            );
+
+            var resultado = await _iDbVerificacionIris.F_GetInfoGrillas(V_Anio, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta > 0)
-            {
                 return Json(new { success = true, data = resultado.Data });
-            }
             else
-            {
-                // return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-                return Json(new { success = false, data = resultado.Data });
-            }
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { success = false, message = resultado.Mensaje });
         }
 
 
@@ -137,7 +159,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetResultados(string V_Criminalidad)//, string V_ResponsableId)
         {

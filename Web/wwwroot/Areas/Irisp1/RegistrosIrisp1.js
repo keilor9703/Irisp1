@@ -1313,11 +1313,11 @@ function F_GetDetalleIris(registro) {
         cache: false,
         success: function (respuesta) {
             if (respuesta.success) {
-                $("#txtFuncionarioDetalle").text(respuesta.data[0].Funcionario);
-                $("#txtUnidadDetalle").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtUnidadDetalle2").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtCorreo").text(respuesta.data[0].Correo);
-                $("#txtCelularSiath").text(respuesta.data[0].Celular);
+                $("#txtFuncionarioDetalle").text(respuesta.data.Funcionario);
+                $("#txtUnidadDetalle").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                $("#txtUnidadDetalle2").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                $("#txtCorreo").text(respuesta.data.Correo);
+                $("#txtCelularSiath").text(respuesta.data.Celular);
 
                 $('#Modal_DetalleIris').modal("show");
 

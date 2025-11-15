@@ -499,10 +499,10 @@ function F_GetDetalleIris(registro) {   // 👈 ahora recibe directamente el obj
 
             if (respuesta.success) {
 
-                $("#txtFuncionarioDetalle").text(respuesta.data[0].Funcionario);
-                $("#txtUnidadDetalle").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtCorreo").text(respuesta.data[0].Correo);
-                $("#txtCelularSiath").text(respuesta.data[0].Celular);
+                $("#txtFuncionarioDetalle").text(respuesta.data.Funcionario);
+                $("#txtUnidadDetalle").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                $("#txtCorreo").text(respuesta.data.Correo);
+                $("#txtCelularSiath").text(respuesta.data.Celular);
 
                 $('#Modal_DetalleIris').modal("show");
                // F_GetRelacionIris();
@@ -1938,8 +1938,8 @@ function GetGrillaTareasIris(Datos){
             
             {
                 title: "Fecha respuesta",
-                data: "FechaModifica",
-                name: "FechaModifica",
+                data: "FechaVerifica",
+                name: "FechaVerifica",
                 className: "celdaCenter celda12",
                 render: function (data) {
                     if (!data) return "";

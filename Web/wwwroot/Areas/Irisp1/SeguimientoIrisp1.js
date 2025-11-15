@@ -706,11 +706,11 @@ function F_GetDetalleIris(registro) {
         cache: false,
         success: function (respuesta) {
             if (respuesta.success) {
-                $("#txtFuncionarioDetalle").text(respuesta.data[0].Funcionario);
-                $("#txtUnidadDetalle").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtUnidadDetalle2").text(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
-                $("#txtCorreo").text(respuesta.data[0].Correo);
-                $("#txtCelularSiath").text(respuesta.data[0].Celular);
+                $("#txtFuncionarioDetalle").text(respuesta.data.Funcionario);
+                $("#txtUnidadDetalle").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                $("#txtUnidadDetalle2").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                $("#txtCorreo").text(respuesta.data.Correo);
+                $("#txtCelularSiath").text(respuesta.data.Celular);
 
                 $('#Modal_AsignarIris').modal("show");
 
@@ -1693,6 +1693,23 @@ function P_UpdUnidadResponsable() {
         IdResponsable: $("#txtResponsableId").val(),
         IdUnidad: $('#ddlTipoDependencia2').data('idSeleccionado')
     }
+
+
+    // 🔹 Validar campos obligatorios (excepto Observacion)
+    for (let key in obj_responsableUpd) {
+        //if (key !== 'Observacion') {
+        const val = obj_responsableUpd[key];
+        if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Señor(a) Funcionario(a):',
+                text: 'Valide todos los campos para completar la actualización.'
+            });
+            return;
+        }
+        //}
+    }
+
        
     $.ajax({
         url: AppRoutes.Seguimiento.UrlUpdResponsable,
@@ -1727,6 +1744,7 @@ function P_UpdUnidadResponsable() {
 
 
 function P_DelUnidadResponsable(V_ResposablId, V_IdUnidadResponsable) {
+
     const obj_DelResponsable = {
         IdResponsable: V_ResposablId,
         IdUnidad: V_IdUnidadResponsable
