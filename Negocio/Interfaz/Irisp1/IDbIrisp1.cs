@@ -21,6 +21,7 @@ namespace Negocio.Interfaz.Irisp1
         public Task<DtoResultado<long>> F_ConsultarSeqIris();
         public Task<DtoResultado<long>> F_ConsultarSeqIntegrante();
         public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId);
         public Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId);
         public Task<DtoResultado<List<DtoInfoAdicional>>> F_GetInfoAdicional(string V_CriminalidadId);
         public Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string V_CriminalidadId);

@@ -2,50 +2,24 @@
     ViewData["Title"] = "Registros Irisp1";
 }
 @section scripts {
-        <script src="~/areas/irisp1/registrosirisp1.js"></script>
-        <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
 
 
          <!-- Carga la API de ArcGIS -->
     <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
-      
+
+   <script src="~/areas/rutas/RutasIris.js"></script>
    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
+   <script src="~/areas/irisp1/registrosirisp1.js"></script>
 
 
 
         <script type='text/javascript'>
             var codigoDaneInicial = 11001;
-            var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "RegistrosIrisp1", new { Area = "Irisp1" })";
            
-            var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
-            var UrlInsIntegrantes = "@Url.Action("P_InsIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetConsecutivoIris= "@Url.Action("F_ConsultarSeqIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetConsecutivoIntegrante= "@Url.Action("F_ConsultarSeqIntegrante", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetIntegrantes= "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsRegistroIrisP1= "@Url.Action("P_InsRegistroIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetDelitosIris= "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetInfoAdicional= "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetDocIris= "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetFotosIris= "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetUbicacion= "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsDelitos= "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsUbicacion= "@Url.Action("P_InsUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsInfoAdicional= "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlUpdCriminalidad= "@Url.Action("P_UpdCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlUpdEstadoCriminalidad= "@Url.Action("P_UpdEstadoCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlUpdExistenciaCriminalidad= "@Url.Action("P_UpdExistenciaCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelIris= "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelIntegrante= "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelDelitos= "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelInfoAdicionalIris= "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelUbiacionIris= "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelDocumentoIris= "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-             
-
-
         </script>
 }
 
@@ -479,7 +453,7 @@
                                     <input tabindex="10" name="txtIdentificacionInteg" type="text" id="txtIdentificacionInteg" autocomplete="off" placeholder=" " class="form-control InputPading" >
                                    
                                 </div>
-                                <label class="Labels">No. Identificación:</label>
+                                <label class="Labels">No. Identificación:*</label>
                             </div>
                         </div>
                         <div class="col-md-3 MargFloatBoos">
@@ -1312,7 +1286,7 @@
                     <div class="col-12">
                         <div class="form-group has-float-label">
                             @Html.DropDownList("ddlEstadosIrisP1", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlEstadosIrisP1", @class = "form-control select2", style = "width: 100%;" })
-                            <label class="Labels">Delito Principal:</label>
+                            <label class="Labels">Estado IRISP1:</label>
                         </div>
                     </div>
                 </div>

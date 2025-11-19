@@ -585,7 +585,74 @@ namespace Negocio.Gestion.Irisp1
 
             return respuesta;
         }
-    
+
+
+
+        public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId)
+        {
+            var respuesta = new DtoResultado<List<DtoIntegrantes>>();
+
+            try
+            {
+                using (var conn = new OracleConnection(_strConexionIris_Disec))
+                {
+                    await conn.OpenAsync();
+
+                    using (var cmd = new OracleCommand("PK_REGISTRO_IRIS.F_GetIntegrantesPreliminar", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+
+                        cmd.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, 40).Value = V_CriminalidadId;
+                        cmd.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            var lista = new List<DtoIntegrantes>();
+
+                            while (await reader.ReadAsync())
+                            {
+                                lista.Add(new DtoIntegrantes
+                                {
+                                    INTEGRANTE_ID = reader["INTEGRANTE_ID"]?.ToString(),
+                                    CRIMINALIDAD_ID = reader["CRIMINALIDAD_ID"]?.ToString(),
+                                    ALIAS = reader["ALIAS"]?.ToString(),
+                                    NOMBRE = reader["NOMBRE"]?.ToString(),
+                                    APELLIDO = reader["APELLIDO"]?.ToString(),
+                                    CEDULA = reader["CEDULA"] as long?,
+                                    ID_TIPO_INFO = reader["ID_TIPO_INFO"] as int?,
+                                    VIGENTE = reader["VIGENTE"] as int?,
+                                    FECHA_CREACION = reader["FECHA_CREACION"] as DateTime?,
+                                    IDENTIFICACION_CREACION = reader["IDENTIFICACION_CREACION"] as long?,
+                                    MAQUINA_CREACION = reader["MAQUINA_CREACION"]?.ToString(),
+                                    FECHA_MODIFICA = reader["FECHA_MODIFICA"] as DateTime?,
+                                    IDENTIFICACION_MODIFICA = reader["IDENTIFICACION_MODIFICA"] as long?,
+                                    MAQUINA_MODIFICA = reader["MAQUINA_MODIFICA"]?.ToString(),
+                                    TIPO_DOCUMENTO = reader["TIPO_DOCUMENTO"] as int?,
+                                    CELULAR = reader["CELULAR"] as long?,
+                                    DIRECCION = reader["DIRECCION"]?.ToString(),
+                                    //ID_INTEGRANTE = reader["ID_INTEGRANTE"] as long?,
+                                    //ID_CRIMINALIDAD = reader["ID_CRIMINALIDAD"] as long?
+                                });
+                            }
+
+                            respuesta.Data = lista;
+                            respuesta.IdRespuesta = 1;
+                            respuesta.Mensaje = "Consulta exitosa";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.IdRespuesta = 0;
+                respuesta.Mensaje = $"Error: {ex.Message}";
+                respuesta.Data = new List<DtoIntegrantes>();
+            }
+
+            return respuesta;
+        }
+
         public async Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId)
         {
             DataTable resultado = new();
@@ -958,25 +1025,25 @@ namespace Negocio.Gestion.Irisp1
 
                 objCommand.Parameters.Clear();
 
-                objCommand.Parameters.Add("P_INTEGRANTE_ID", OracleDbType.Varchar2).Value = Obj_Integrante.INTEGRANTE_ID;
+               //objCommand.Parameters.Add("P_INTEGRANTE_ID", OracleDbType.Varchar2).Value = Obj_Integrante.INTEGRANTE_ID;
                 objCommand.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = Obj_Integrante.CRIMINALIDAD_ID;
                 objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Integrante.ALIAS;
                 objCommand.Parameters.Add("P_NOMBRE", OracleDbType.Varchar2).Value = Obj_Integrante.NOMBRE;
                 objCommand.Parameters.Add("P_APELLIDO", OracleDbType.Varchar2).Value = Obj_Integrante.APELLIDO;
                 objCommand.Parameters.Add("P_CEDULA", OracleDbType.Int64).Value = Obj_Integrante.CEDULA ?? 0;
                 objCommand.Parameters.Add("P_ID_TIPO_INFO", OracleDbType.Int32).Value = Obj_Integrante.ID_TIPO_INFO ?? 0;
-                objCommand.Parameters.Add("P_VIGENTE", OracleDbType.Int32).Value = Obj_Integrante.VIGENTE ?? 1;
+               // objCommand.Parameters.Add("P_VIGENTE", OracleDbType.Int32).Value = Obj_Integrante.VIGENTE ?? 1;
      
                 objCommand.Parameters.Add("P_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
                 objCommand.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.Varchar2).Value = maquina;
-                objCommand.Parameters.Add("P_FECHA_MODIFICA", OracleDbType.Date).Value = Obj_Integrante.FECHA_MODIFICA;
-                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = Obj_Integrante.IDENTIFICACION_MODIFICA;
-                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = Obj_Integrante.MAQUINA_MODIFICA;
+                //objCommand.Parameters.Add("P_FECHA_MODIFICA", OracleDbType.Date).Value = Obj_Integrante.FECHA_MODIFICA;
+                //objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = Obj_Integrante.IDENTIFICACION_MODIFICA;
+                //objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = Obj_Integrante.MAQUINA_MODIFICA;
                 objCommand.Parameters.Add("P_TIPO_DOCUMENTO", OracleDbType.Int32).Value = Obj_Integrante.TIPO_DOCUMENTO;
                 objCommand.Parameters.Add("P_CELULAR", OracleDbType.Int64).Value = Obj_Integrante.CELULAR;
                 objCommand.Parameters.Add("P_DIRECCION", OracleDbType.Varchar2).Value = Obj_Integrante.DIRECCION;
-                objCommand.Parameters.Add("P_ID_INTEGRANTE", OracleDbType.Int32).Value = Obj_Integrante.ID_INTEGRANTE;
-                objCommand.Parameters.Add("P_ID_CRIMINALIDAD", OracleDbType.Int32).Value = Obj_Integrante.ID_CRIMINALIDAD;
+               // objCommand.Parameters.Add("P_ID_INTEGRANTE", OracleDbType.Int32).Value = Obj_Integrante.ID_INTEGRANTE;
+                //objCommand.Parameters.Add("P_ID_CRIMINALIDAD", OracleDbType.Int32).Value = Obj_Integrante.ID_CRIMINALIDAD;
 
                 objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
                 objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;

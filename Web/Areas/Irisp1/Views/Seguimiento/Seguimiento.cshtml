@@ -12,21 +12,24 @@
    @*  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script> *@
 
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+
 
 
     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
 
-    <!-- Tus rutas y tu JS principal (después de XLSX) -->
-    <script src="~/areas/rutas/RutasIris.js"></script>
-    <script src="~/areas/irisp1/seguimientoirisp1.js"></script>
 
-    <!-- ArcGIS y otros al final -->
+    <!-- Carga la API de ArcGIS -->
     <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
+
+    <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/irisp1/CrearUbicacion.js"></script>
+    <script src="~/areas/irisp1/seguimientoirisp1.js"></script>
+
+
 }
 
 
@@ -63,7 +66,7 @@
     <div class="card-body collapse show">
         <div class="row align-items-end g-3">
             <!-- Select -->
-            <div class="col-md-1">
+            <div class="col-md-2">
                 <div class="form-group has-float-label">
                     @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
                              htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
@@ -623,9 +626,6 @@
 
 
 
-
-
-
  <div class="modal fade" id="Modal_VisualizarTexto" aria-labelledby="bs-example-modal-lg" aria-hidden="true"> 
     <div class="modal-dialog modal-l" role="document">
         <div class="modal-content">
@@ -667,3 +667,5 @@
         </div>
     </div>
 </div>
+
+

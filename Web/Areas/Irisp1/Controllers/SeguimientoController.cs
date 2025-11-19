@@ -196,6 +196,25 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
+        [HttpPost]
+        public async Task<IActionResult> P_FinalizarIris(DtoIrispCriminalidad obj)
+        {
+            try
+            {
+                var resultado = await _iDbSeguimientoIris.P_FinalizarIris(obj, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (resultado.IdRespuesta > 0)
+                    return Json(new { success = true, message = resultado.Mensaje });
+                else
+                    return Json(new { success = false, message = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+            }
+        }
+
+
 
         [HttpGet]
         public async Task<IActionResult> F_GetResponsablesTareasIris(string V_Criminalidad)

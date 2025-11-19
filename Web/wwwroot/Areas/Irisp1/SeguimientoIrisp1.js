@@ -442,11 +442,10 @@ function columnaAcciones(datosFiltrados) {
                                 </li>`;
 
             var Finalizar = `<li style="padding-left: 15px;">
-                                    <a style="color: #102717;" href="javascript:Finalizar('${row.CriminalidadId}')">
-                                        <i class="fa fa-retweet green"></i>&nbsp;Finalizar
-                                        
-                                    </a>
-                                  </li>`;
+                    <a style="color: #102717;" href="javascript:FinalizarIris('${row.CriminalidadId}')">
+                        <i class="fa fa-times-circle" style="color:red;"></i>&nbsp;Finalizar
+                    </a>
+                 </li>`;
          
 
             var finBoton = '</ul></div>';
@@ -1918,4 +1917,219 @@ function P_ReasignarTarea() {
     });
 
 
+}
+
+
+function DellIris(CriminalidadId) {
+
+    bootbox.confirm({
+        message: "¿Está seguro de finalizar el registro seleccionado?",
+        buttons: {
+            confirm: {
+                label: '<i class="fa fa-check"></i> Sí',
+                className: 'btn-success'
+            },
+            cancel: {
+                label: '<i class="fa fa-times"></i> No',
+                className: 'btn-danger'
+            }
+        },
+        callback: function (result) {
+            if (result) {
+                // Llamar directamente a la función de eliminación sin pedir motivo
+
+                $.ajax({
+                    type: 'POST',
+                    url: AppRoutes.RegistroIrisP1.UrlDelIris
+                    ,
+                    async: true,
+                    dataType: 'json',
+                    data: { CriminalidadId: CriminalidadId },
+                    success: function (result) {
+                        if (result.success) {
+
+                            var fecha = $('#ddlAnioIris').val(); // obtengo valor actual
+                            $('#ddlAnioIris').val(fecha).trigger('change'); // lo reasigno para refrescar
+                            F_GetInfoGrillas();
+                            Swal.fire({
+                                type: 'success',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+
+                        } else {
+                            Swal.fire({
+                                type: 'error',
+                                title: 'Señor(a) Funcionario(a:)',
+                                text: result.message
+                            });
+                        }
+                    },
+                    error: function (ex) {
+                        Swal.fire({
+                            type: 'error',
+                            title: 'Señor(a) Funcionario(a:)',
+                            text: "No es posible grabar, revise"
+                        });
+                    }
+                });
+            }
+        }
+    });
+}
+
+
+
+function FinalizarIris(CriminalidadId) {
+
+    bootbox.confirm({
+        message: "Está seguro de finalizar el registro seleccionado?",
+        buttons: {
+            confirm: {
+                label: '<i class="fa fa-check"></i> Si',
+                className: 'btn-success'
+            },
+            cancel: {
+                label: '<i class="fa fa-times"></i> No',
+                className: 'btn-danger'
+            }
+        },
+        callback: function a(result) {
+            if (result) {
+                var t = result;
+                bootbox.prompt({
+                    title: "Digite el No. Comunicación Oficial o No. Mored con el cual se le realizo el tramite",
+                    inputType: 'text',
+                    placeholder: "Si no hubo resultado, Justifique las razones de su finalización",
+                    buttons: {
+                        confirm: {
+                            label: '<i class="fa fa-check"></i> Aceptar',
+                            className: "btn-success",
+                        },
+                        cancel: {
+                            label: '<i class="fa fa-times"></i> Cancelar',
+                            className: "btn btn-warning",
+                        }
+                    },
+                    callback: function (resulta) {
+                        if (resulta == null) {
+
+                        }
+                        else if (resulta == "") {
+                            bootbox.alert({
+                                message: "Debe Justificar las razones de su finalización",
+                                buttons: {
+                                    ok: {
+                                        label: '<i class="fa fa-check"></i> Aceptar',
+                                        className: 'btn-success',
+                                    }
+                                },
+                                callback: function () { a(t); }
+                            });
+                        }
+                        else {
+                            var resu = resulta.replace(/>|<|&|=|#|\?/gi, "");
+                            P_FinalizarIris(CriminalidadId, resu);
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
+
+
+
+function P_FinalizarIris(P_CriminalidadId, P_Justificacion) {
+
+    var DtoFinalizar = {
+        CriminalidadId: P_CriminalidadId,
+        Justificacion: P_Justificacion
+    }
+
+
+    // Validación de campos obligatorios
+    if (!DtoFinalizar.CriminalidadId ||
+        !DtoFinalizar.Justificacion) {
+
+        Swal.fire("Atención", "Todos los campos son obligatorios. Por favor complete la información.", "warning");
+        return; // Detener ejecución
+    }
+
+    $.ajax({
+        type: 'POST',
+        url: AppRoutes.Seguimiento.UrlFinalizarIris,
+        async: true,
+        dataType: 'json',
+        data: { obj: DtoFinalizar },
+        success: function (result) {
+            if (result.success) {
+               
+                Swal.fire({
+                    type: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+
+                F_GetInfoGrillas();
+
+            } else {
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: result.message
+                });
+            }
+        },
+        error: function (ex) {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "No es posible grabar, revise"
+            });
+        }
+    });
+}
+
+
+function actualizarEstadoCriminalidad() {
+
+    var data = {
+        CriminalidadId: $("#txtCriminalidadIdUpd").text(),
+        IdEstado: $("#ddlEstadosIrisP1").val(),
+
+    };
+
+    // Validación de campos obligatorios
+    if (!data.CriminalidadId ||
+        !data.IdEstado) {
+
+        Swal.fire("Atención", "Todos los campos son obligatorios. Por favor complete la información.", "warning");
+        return; // Detener ejecución
+    }
+
+    $.ajax({
+        url: AppRoutes.RegistroIrisP1.UrlUpdEstadoCriminalidad
+        ,
+        type: 'POST',
+        data: data,
+        success: function (response) {
+            if (response.success) {
+                Swal.fire("Éxito", response.message, "success");
+                $("#Modal_UpdEstadoRegistroIris").modal("hide");
+                $("#ddlEstadosIrisP1").val('').trigger('change');
+
+                var fecha = $('#ddlAnioIris').val(); // obtengo valor actual
+                $('#ddlAnioIris').val(fecha).trigger('change'); // lo reasigno para refrescar
+                F_GetInfoGrillas();
+
+
+            } else {
+                Swal.fire("Atención", response.message, "warning");
+            }
+        },
+        error: function (xhr, status, error) {
+            Swal.fire("Error", "Ocurrió un error al intentar actualizar", "error");
+        }
+    });
 }

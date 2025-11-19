@@ -187,7 +187,7 @@ function F_GetInfoGrillas() {
    // console.log("✅ año:", $('#ddlAnioIris').val());
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoGrillas,
+        url: AppRoutes.RegistroIrisP1.UrlGetInfoGrillas,
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
@@ -688,71 +688,67 @@ function Resultados() {
 
 
 
-
-
 function InsIntegrantes() {
+    // Obtener valores y limpiar espacios
+    const criminalidadId = $("#txtConsecutivoIris").val().trim();
+    const alias = $("#txtAlias").val().trim();
+    const nombres = $("#txtNombreInteg").val().trim();
+    const apellidos = $("#txtApellidosInteg").val().trim();
+    const identificacion = $("#txtIdentificacionInteg").val().trim();
+    const celular = $("#txtCelularInteg").val().trim();
+    const direccion = $("#txtDirecciónInteg").val().trim();
+
+    // Validación de campos obligatorios:
+    // 1. Identificación siempre requerida
+    // 2. Al menos uno entre Nombre o Alias
+    if (!criminalidadId || !identificacion || (!nombres && !alias)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Debe diligenciar Identificación y al menos Nombre o Alias.'
+        });
+        return; // Detener ejecución si faltan campos
+    }
+
+    // Construir objeto de integrante sin consecutivo (lo asigna la BD)
+    const Obj_Integrante = {
+        CRIMINALIDAD_ID: criminalidadId,
+        ALIAS: alias,
+        NOMBRE: nombres,
+        APELLIDO: apellidos,
+        CEDULA: parseInt(identificacion),
+        ID_TIPO_INFO: 30,
+      
+        TIPO_DOCUMENTO: 1,
+        CELULAR: celular ? parseInt(celular) : null,
+        DIRECCION: direccion
+    };
 
     $.ajax({
-        url: UrlGetConsecutivoIntegrante,
+        url: AppRoutes.RegistroIrisP1.UrlInsIntegrantes,
         type: 'POST',
-        dataType: 'json',
-        success: function (response) {
-            if (response.success) {
-                $("#txtConsecutivoIntegrante").val(response.data);
-
-                const Obj_Integrante = {
-                    INTEGRANTE_ID: response.data,
-                    CRIMINALIDAD_ID: $("#txtConsecutivoIris").val(),
-                    ALIAS: $("#txtAlias").val(),
-                    NOMBRE: $("#txtNombreInteg").val(),
-                    APELLIDO: $("#txtApellidosInteg").val(),
-                    CEDULA: parseInt($("#txtIdentificacionInteg").val()),
-                    ID_TIPO_INFO: 30,
-                    VIGENTE: 1,
-                    FECHA_MODIFICA: null,
-                    IDENTIFICACION_MODIFICA: null,
-                    MAQUINA_MODIFICA: null,
-                    TIPO_DOCUMENTO: 1,
-                    CELULAR: parseInt($("#txtCelularInteg").val()),
-                    DIRECCION: $("#txtDirecciónInteg").val()
-                };
-
-                $.ajax({
-                    url: UrlInsIntegrantes,
-                    type: 'POST',
-                    data: Obj_Integrante,
-                    success: function (resp) {
-                        if (resp.success) {
-                            $('#pn_GrillaIntegantes').removeClass('hidden').addClass('show');
-                            F_GetIntegrantes();
-                            limpiarFormularioIntegrantes();
-                        } else {
-                            Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
-                        }
-                    },
-                    error: function () {
-                        Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
-                    }
-                });
-
+        data: Obj_Integrante,
+        success: function (resp) {
+            if (resp.success) {
+                $('#pn_GrillaIntegantes').removeClass('hidden').addClass('show');
+                F_GetIntegrantes();
+                limpiarFormularioIntegrantes();
             } else {
-                $("#txtConsecutivoIntegrante").val('');
-                Swal.fire('Error', "No se pudo obtener el consecutivo.", 'info');
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
             }
         },
         error: function () {
-            $("#txtConsecutivoIntegrante").val('');
-            Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
         }
     });
 }
-
 function F_GetIntegrantes() {
 
     var V_CriminalidadId = $("#txtConsecutivoIris").val()
     $.ajax({
         type: 'GET',
-        url: UrlGetIntegrantes, 
+        url: AppRoutes.RegistroIrisP1.UrlGetIntegrantesPreliminar
+, 
         async: true,
         data: { V_CriminalidadId: V_CriminalidadId },
         dataType: 'json',
@@ -826,7 +822,7 @@ function F_GetFuncionariosIris(V_Identificacion) {
 
     $.ajax({
         type: "POST",
-        url: UrlGetFuncionarios,
+        url: AppRoutes.RegistroIrisP1.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: $("#txtIdentificacion").val() },
         dataType: 'json',
@@ -835,17 +831,17 @@ function F_GetFuncionariosIris(V_Identificacion) {
 
             if (respuesta.success) {
              
-                $("#txtFuncionario").val(respuesta.data[0].Funcionario);
+                $("#txtFuncionario").val(respuesta.data.Funcionario);
               
-                $("#txtDependencia2").val(respuesta.data[0].Estacion);
-                $("#txtTelefono").val(respuesta.data[0].Celular);
-                $("#txtDependencia").val(respuesta.data[0].Dependencia).trigger('change');
+                $("#txtDependencia2").val(respuesta.data.Estacion);
+                $("#txtTelefono").val(respuesta.data.Celular);
+                $("#txtDependencia").val(respuesta.data.Dependencia).trigger('change');
                
 
-                $("#txtUnidad").val(respuesta.data[0].Fisica + " - " + respuesta.data[0].Dependencia);
+                $("#txtUnidad").val(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
              
-                $("#txtUndeLabora").val(respuesta.data[0].UndeLaborando);
-                $("#txtSiglaUnidad").val(respuesta.data[0].Fisica);
+                $("#txtUndeLabora").val(respuesta.data.UndeLaborando);
+                $("#txtSiglaUnidad").val(respuesta.data.Fisica);
 
                 
                 
@@ -1001,7 +997,8 @@ function handleDropdownChange(url, params, dropdownSelector, callback) {
 
 function consultarConsecutivoIris() {
     $.ajax({
-        url: UrlGetConsecutivoIris,
+        url: AppRoutes.RegistroIrisP1.UrlGetConsecutivoIris
+,
         type: 'POST',
         dataType: 'json',
         success: function (response) {
@@ -1135,7 +1132,8 @@ function P_InsRegistroIrisP1() {
 
     // --- Enviar solicitud ---
     $.ajax({
-        url: UrlInsRegistroIrisP1,
+        url: AppRoutes.RegistroIrisP1.UrlInsRegistroIrisP1
+,
         type: 'POST',
         data: Obj_NuevoIrisP1,
         success: function (resp) {
@@ -1306,7 +1304,7 @@ function F_GetDetalleIris(registro) {
 
     $.ajax({
         type: "POST",
-        url: UrlGetFuncionarios,
+        url: AppRoutes.RegistroIrisP1.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: IdenInforma },
         dataType: 'json',
@@ -1348,7 +1346,8 @@ function F_GetDetalleIris(registro) {
 function F_GetRelacionIris() {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
+        url: AppRoutes.RegistroIrisP1.UrlGetInfoGrillas
+, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
@@ -1409,7 +1408,7 @@ function F_GetIntegrantesIris(CriminalidadId) {
 
     $.ajax({
         type: 'GET',
-        url: UrlGetIntegrantes,
+        url: AppRoutes.RegistroIrisP1.UrlGetIntegrantes,
         async: true,
         data: { V_CriminalidadId: CriminalidadId },
         dataType: 'json',
@@ -1509,7 +1508,8 @@ function P_InsUbicacionModal() {
 
 
     $.ajax({
-        url: UrlInsUbicacion,
+        url: AppRoutes.RegistroIrisP1.UrlInsUbicacion
+,
         type: 'POST',
         data: Obj_Ubicacion,
         success: function (resp) {
@@ -1540,7 +1540,8 @@ function F_GetUbicacionIris(CrininalidadId) {
 
     $.ajax({
         type: 'GET',
-        url: UrlGetUbicacion,
+        url: AppRoutes.RegistroIrisP1.UrlGetUbicacion
+,
         async: true,
         data: { V_CriminalidadId: CrininalidadId },
         dataType: 'json',
@@ -1603,7 +1604,8 @@ function GetGrillaUbicacionIris(Datos) {
 function F_GetDelitosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetDelitosIris, // URL del endpoint que devuelve los datos
+        url: AppRoutes.RegistroIrisP1.UrlGetDelitosIris
+, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1661,7 +1663,8 @@ function GetGrillaDelitosIris(Datos) {
 function F_GetInfoAdiconalIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
+        url: AppRoutes.RegistroIrisP1.UrlGetInfoAdicional
+, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1778,7 +1781,8 @@ function GetGrillaResponsableIris(Datos) {
 function F_GetDocumentosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetDocIris, // URL del endpoint que devuelve los datos
+        url: AppRoutes.RegistroIrisP1.UrlGetDocIris
+, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1849,7 +1853,8 @@ function GetGrillaDocumentosIris(Datos) {
 function F_GetFotosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetFotosIris, // Endpoint del backend
+        url: AppRoutes.RegistroIrisP1.UrlGetFotosIris
+, // Endpoint del backend
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1914,7 +1919,6 @@ function OpenInsIntegrantesModal() {
     $('#Modal_InsIntegrantes').modal("show");
 }
 
-
 function OpenInsUbicacionModal() {
     $('#myModal2').modal("show");
 
@@ -1936,8 +1940,6 @@ $('#myModal').on('shown.bs.modal', function () {
     inicializarMapa('mapaDiv');
 });
 
-
-
 function OpenInsDelitosModal() {
 
     $('#Modal_InsDelitos').modal("show");
@@ -1947,8 +1949,6 @@ function OpenInsInfoadiconalModal() {
 
     $('#Modal_InsInfoAdicional').modal("show");
 }
-
-
 
 function InsIntegrantesModal() {
     // Obtener valores de los campos y limpiar espacios
@@ -1969,61 +1969,42 @@ function InsIntegrantesModal() {
         return; // Detener la ejecución si faltan campos
     }
 
+    // Objeto de integrante (sin consecutivo, lo calcula la BD)
+    const Obj_Integrante = {
+        CRIMINALIDAD_ID: $("#txtCriminalidadIdModal").val(),
+        ALIAS: alias,
+        NOMBRE: nombres,
+        APELLIDO: apellidos,
+        CEDULA: parseInt(identificacion),
+        ID_TIPO_INFO: 30,
+        VIGENTE: 1,
+        FECHA_MODIFICA: null,
+        IDENTIFICACION_MODIFICA: null,
+        MAQUINA_MODIFICA: null,
+        TIPO_DOCUMENTO: 1,
+        CELULAR: celular ? parseInt(celular) : null,
+        DIRECCION: direccion
+    };
+
     $.ajax({
-        url: UrlGetConsecutivoIntegrante,
+        url: AppRoutes.RegistroIrisP1.UrlInsIntegrantes,
         type: 'POST',
-        dataType: 'json',
-        success: function (response) {
-            if (response.success) {
-                $("#txtConsecutivoIntegrante").val(response.data);
-
-                const Obj_Integrante = {
-                    INTEGRANTE_ID: response.data,
-                    CRIMINALIDAD_ID: $("#txtCriminalidadIdModal").val(),
-                    ALIAS: alias,
-                    NOMBRE: nombres,
-                    APELLIDO: apellidos,
-                    CEDULA: parseInt(identificacion),
-                    ID_TIPO_INFO: 30,
-                    VIGENTE: 1,
-                    FECHA_MODIFICA: null,
-                    IDENTIFICACION_MODIFICA: null,
-                    MAQUINA_MODIFICA: null,
-                    TIPO_DOCUMENTO: 1,
-                    CELULAR: parseInt(celular),
-                    DIRECCION: direccion
-                };
-
-                $.ajax({
-                    url: UrlInsIntegrantes,
-                    type: 'POST',
-                    data: Obj_Integrante,
-                    success: function (resp) {
-                        if (resp.success) {
-                            F_GetIntegrantesIris($("#txtCriminalidadIdModal").val());
-                            $('#Modal_InsIntegrantes').modal('hide');
-                            limpiarFormularioIntegrantes();
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Señor(a) Funcionario(a):',
-                                text: 'Error al insertar: ' + resp.message
-                            });
-                        }
-                    },
-                    error: function () {
-                        Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
-                    }
-                });
-
+        data: Obj_Integrante,
+        success: function (resp) {
+            if (resp.success) {
+                F_GetIntegrantesIris($("#txtCriminalidadIdModal").val());
+                $('#Modal_InsIntegrantes').modal('hide');
+                limpiarFormularioIntegrantes();
             } else {
-                $("#txtConsecutivoIntegrante").val('');
-                Swal.fire('Error', "No se pudo obtener el consecutivo.", 'info');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Error al insertar: ' + resp.message
+                });
             }
         },
         error: function () {
-            $("#txtConsecutivoIntegrante").val('');
-            Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
         }
     });
 }
@@ -2043,7 +2024,8 @@ function P_InsDelitosModal() {
 
 
     $.ajax({
-        url: UrlInsDelitos,
+        url: AppRoutes.RegistroIrisP1.UrlInsDelitos
+,
         type: 'POST',
         data: Obj_DelitosIris,
         success: function (resp) {
@@ -2068,7 +2050,6 @@ function P_InsDelitosModal() {
 
 }
 
-
 function P_InsInfoAdicionalModal() {
 
     const criminalidadId = $("#txtCriminalidadIdModal").val().trim();
@@ -2090,7 +2071,8 @@ function P_InsInfoAdicionalModal() {
     };
 
     $.ajax({
-        url: UrlInsInfoAdicional,
+        url: AppRoutes.RegistroIrisP1.UrlInsInfoAdicional
+,
         type: 'POST',
         data: Obj_InfoAdicional,
         success: function (resp) {
@@ -2186,7 +2168,8 @@ function actualizarCriminalidad() {
     }
 
     $.ajax({
-        url: UrlUpdCriminalidad,
+        url: AppRoutes.RegistroIrisP1.UrlUpdCriminalidad
+,
         type: 'POST',
         data: data,
         success: function (response) {
@@ -2236,7 +2219,8 @@ function actualizarEstadoCriminalidad() {
     }
 
     $.ajax({
-        url: UrlUpdEstadoCriminalidad,
+        url: AppRoutes.RegistroIrisP1.UrlUpdEstadoCriminalidad
+,
         type: 'POST',
         data: data,
         success: function (response) {
@@ -2277,7 +2261,8 @@ function actualizarExistenciaCriminalidad() {
     }
 
     $.ajax({
-        url: UrlUpdExistenciaCriminalidad,
+        url: AppRoutes.RegistroIrisP1.UrlUpdExistenciaCriminalidad
+,
         type: 'POST',
         data: data,
         success: function (response) {
@@ -2322,7 +2307,8 @@ function DellIris(CriminalidadId) {
               
                 $.ajax({
                     type: 'POST',
-                    url: UrlDelIris,
+                    url: AppRoutes.RegistroIrisP1.UrlDelIris
+,
                     async: true,
                     dataType: 'json',
                     data: { CriminalidadId: CriminalidadId },
@@ -2363,7 +2349,8 @@ function P_DelIntegranteIris(IntegranteId) {
     
                 $.ajax({
                     type: 'POST',
-                    url: UrlDelIntegrante,
+                    url: AppRoutes.RegistroIrisP1.UrlDelIntegrante
+,
                     async: true,
                     dataType: 'json',
                     data: { IntegranteId: IntegranteId },
@@ -2401,7 +2388,8 @@ function P_DelDelitosIris(DelitoId) {
    
                 $.ajax({
                     type: 'POST',
-                    url: UrlDelDelitos,
+                    url: AppRoutes.RegistroIrisP1.UrlDelDelitos
+,
                     async: true,
                     dataType: 'json',
                     data: { DelitoId: DelitoId },
@@ -2439,7 +2427,8 @@ function P_DelDelInfoAdicionalIris(InfoId) {
    
                 $.ajax({
                     type: 'POST',
-                    url: UrlDelInfoAdicionalIris,
+                    url: AppRoutes.RegistroIrisP1.UrlDelInfoAdicionalIris
+,
                     async: true,
                     dataType: 'json',
                     data: { InfoId: InfoId },
@@ -2478,7 +2467,8 @@ function P_DelUbicacionIris(UbicacionId) {
 
         $.ajax({
             type: 'POST',
-            url: UrlDelUbiacionIris,
+            url: AppRoutes.RegistroIrisP1.UrlDelUbiacionIris
+,
             async: true,
             dataType: 'json',
             data: { UbicacionId: UbicacionId },
@@ -2517,7 +2507,8 @@ function P_DelDocumentoIris(DocumentoId) {
 
     $.ajax({
         type: 'POST',
-        url: UrlDelDocumentoIris,
+        url: AppRoutes.RegistroIrisP1.UrlDelDocumentoIris
+,
         async: true,
         dataType: 'json',
         data: { DocumentoId: DocumentoId },

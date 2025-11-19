@@ -71,6 +71,12 @@ $(document).ready(function () {
         F_GetIntegranteAll($('#txtIdentificacionUpd').val());
     });
 
+    $("#btnConsultarIntegranteExpendio").on("click", function (e) {
+        e.preventDefault();
+
+        F_GetIntegranteAll2($('#txtIdentificacionExpendio').val());
+    });
+
     $("#btnAddIntegranteExpendio").on("click", function (e) {
         e.preventDefault();
 
@@ -84,6 +90,12 @@ $(document).ready(function () {
     });
 
     $("#btnLimpiarIntegExpendioUpd").on("click", function (e) {
+        e.preventDefault();
+
+        Limpiar();
+    });
+
+    $("#btnLimpiarIntegNuevoExpendio").on("click", function (e) {
         e.preventDefault();
 
         Limpiar();
@@ -157,10 +169,22 @@ $("#txtIdentificacion" ).keyup(function (event) {
     if (event.keyCode === 13) {
         $("#btnConsultarIntegrante").click();
     }
-}); $("#txtIdentificacionUpd" ).keyup(function (event) {
+
+ 
+});
+
+$("#txtIdentificacionExpendio").keyup(function (event) {
     if (event.keyCode === 13) {
-        $("#btnConsultarIntegranteUpd").click();
+        $("#btnConsultarIntegranteExpendio").click();
     }
+
+
+});
+
+$("#txtIdentificacionUpd").keyup(function (event) {
+if (event.keyCode === 13) {
+    $("#btnConsultarIntegranteUpd").click();
+}
 });
 
 
@@ -422,7 +446,7 @@ function GetGrillaExpendios(Datos) {
             [15, 25, 50, -1],
             ['15 registros', '25 registros', '50 registros', 'Todos']
         ],
-        ordering: false,
+        ordering: true,
         pageLength: 15,
         bLengthChange: true,
         searching: true,
@@ -574,6 +598,12 @@ function AbrirModalVisualizarTexto(Texto) {
 function F_GetDetalleExpendio(registro) {   // 👈 ahora recibe directamente el objeto
     console.log("✅ Registro recibido:", registro);
 
+
+    $("#btnNuevoIntegrante").addClass("hidden");
+    $("#btnNuevoDelito").addClass("hidden");
+    $("#btnNuevoBitacora").addClass("hidden");
+    $("#btnNuevoResultado").addClass("hidden");
+
     // Ya no se hace JSON.parse de nuevo
     $("#txtCriminalidadIdModal").val(registro.CriminalidadDirecId);
    // $("#txtConsecutivoIris").val(registro.CriminalidadId);
@@ -622,7 +652,7 @@ function F_GetDetalleExpendio(registro) {   // 👈 ahora recibe directamente el
 
 
     var Estado = $("#txtEstado").text().trim();
-    if  (Estado !== "Finalizado") 
+    if (Estado == "Investigación" || Estado == "Verificación") 
     
     {
 
@@ -1067,6 +1097,83 @@ function F_GetIntegranteAll(P_Identificacion) {
     });
 }
 
+
+
+function F_GetIntegranteAll2(P_Identificacion) {
+    $.ajax({
+        type: 'GET',
+        url: AppRoutes.RegistroExpendio.UrlGetIntegrantesAll, // Endpoint que devuelve los datos
+        dataType: 'json',
+        data: { V_Identificacion: P_Identificacion },
+        success: function (response) {
+            if (response.success) {
+                let data = response.data || [];
+
+                // $("#txtFuncionario").val(respuesta.data[0].Funcionario);
+                $("#txtAliasModalExpendio").val(data[0].ALIAS);
+                $("#txtNombreIntegModalExpendio").val(data[0].NOMBRE);
+                $("#txtApellidosIntegModalExpendio").val(data[0].APELLIDO);
+                   
+
+                $("#txtAliasModalExpendio")
+                    .addClass("readonly")
+                    .prop("readonly", true);
+
+                $("#txtNombreIntegModalExpendio")
+                    .addClass("readonly")
+                    .prop("readonly", true);
+
+                $("#txtApellidosIntegModalExpendio")
+                    .addClass("readonly")
+                    .prop("readonly", true);
+
+
+
+            } else {
+
+
+                $("#txtAliasModalExpendio").val('');
+                $("#txtNombreIntegModalExpendio").val('');
+                $("#txtApellidosIntegModalExpendio").val('');
+
+                    
+                $("#txtAliasModalExpendio")
+                    .removeClass("readonly")
+                    .prop("readonly", false);
+
+                $("#txtNombreIntegModalExpendio")
+                    .removeClass("readonly")
+                    .prop("readonly", false);
+
+
+                $("#txtApellidosIntegModalExpendio")
+                    .removeClass("readonly")
+                    .prop("readonly", false);
+
+
+
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: (response.message ? response.message + ' - ' : '') + 'La identificación suministrada no se encuentra relacionada en algún IRISP1 !!!'
+                });
+
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error en la solicitud AJAX:", status, error);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'Ocurrió un error al intentar obtener los datos del integrante.'
+            });
+        }
+    });
+}
+
+
 function P_InsIntegranteExpendio() {
 
     const Obj_Integrante = {
@@ -1487,7 +1594,45 @@ function Limpiar() {
     $("#txtAliasModal").val("");
     $("#txtNombreIntegModal").val("");
     $("#txtApellidosIntegModal").val("");
-    
+
+    $("#txtAliasModal")
+        .removeClass("readonly")
+        .prop("readonly", false);
+
+    $("#txtNombreIntegModal")
+        .removeClass("readonly")
+        .prop("readonly", false);
+
+
+    $("#txtApellidosIntegModal")
+        .removeClass("readonly")
+        .prop("readonly", false);
+
+
+    $("#txtIdentificacionExpendio").val("");
+    $("#txtAliasModalExpendio").val("");
+    $("#txtNombreIntegModalExpendio").val("");
+    $("#txtApellidosIntegModalExpendio").val("");
+
+
+    $("#txtAliasModalExpendio")
+        .removeClass("readonly")
+        .prop("readonly", false);
+
+    $("#txtNombreIntegModalExpendio")
+        .removeClass("readonly")
+        .prop("readonly", false);
+
+
+    $("#txtApellidosIntegModalExpendio")
+        .removeClass("readonly")
+        .prop("readonly", false);
+
+
+
+
+
+
 }
 function F_AbrirMdodalActualizarIntegrante(DatosInegrante) {
 
@@ -1519,6 +1664,140 @@ function obtenerDelitosSeleccionados() {
     return delitos;
 }
 
+/// Evento al hacer clic en el botón de descarga
+$('#btnDescargarExcel').on('click', function () {
+    Swal.fire({
+        title: 'Confirmación de descarga',
+        text: 'Este archivo contiene información confidencial. Su descarga será registrada.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Aceptar y descargar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        console.log(result);
+        // ✅ Asegúrate de que el bloque esté bien indentado y contenido
+        if (result.isConfirmed) {
+
+
+            try {
+                const tablas = [
+                    { id: '#tbGrillaExpendios', nombre: 'Expendios' },
+                   // { id: '#tbGrillaInvestigacion', nombre: 'Investigación' },
+                   // { id: '#tbGrillaFinalizacion', nombre: 'Finalización' }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                let hayDatos = false;
+
+                tablas.forEach(t => {
+                    const table = $(t.id).DataTable();
+                    if (!table) return;
+
+                    const datosFiltrados = table.rows({ search: 'applied' }).data().toArray();
+                    const columnasVisibles = table.columns().indexes().filter(idx => table.column(idx).visible());
+
+                    if (datosFiltrados.length > 0 && columnasVisibles.length > 0) {
+                        hayDatos = true;
+
+                        const datosVisibles = datosFiltrados.map(row => {
+                            const fila = {};
+                            columnasVisibles.each(idx => {
+                                const nombreColumna = table.column(idx).header().textContent.trim();
+                                const propiedad = table.column(idx).dataSrc();
+                                let valor = row[propiedad];
+
+                                if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(valor)) {
+                                    const fecha = new Date(valor);
+                                    valor = fecha.toLocaleString('es-CO', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        hour12: true
+                                    });
+                                }
+
+                                fila[nombreColumna] = valor;
+                            });
+                            return fila;
+                        });
+
+                        const hoja = XLSX.utils.json_to_sheet(datosVisibles);
+                        XLSX.utils.book_append_sheet(wb, hoja, t.nombre);
+                    }
+                });
+
+                if (!hayDatos) {
+                    Swal.fire('Sin datos', 'No hay registros filtrados para exportar.', 'warning');
+                    return;
+                }
+
+                const anio = $('#ddlAnioIris').val() || new Date().getFullYear();
+                const nombreArchivo = `Reporte_IrisP1_Expendios_${anio}_Filtrado.xlsx`;
+                XLSX.writeFile(wb, nombreArchivo);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Descarga completa',
+                    text: 'El archivo Excel se ha generado exitosamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (e) {
+                console.error(e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al generar Excel',
+                    text: 'Hubo un problema al generar el archivo.'
+                });
+            }
+        }
+    });
+});
 
 
 
+function Grillantegrantes(Datos) {
+    if ($.fn.dataTable.isDataTable("#tbGrillaIntegantes")) {
+        $("#tbGrillaIntegantes").DataTable().destroy();
+    }
+
+    $("#tbGrillaIntegantes").DataTable({
+        destroy: true,
+        data: Datos,
+        language: glOpcionesIdioma,
+        responsive: true,
+        columns: [
+            { title: "Alias", data: "ALIAS", className: "celdaCenter" },
+            { title: "Nombre", data: "NOMBRE", className: "celdaCenter" },
+            { title: "Apellido", data: "APELLIDO", className: "celdaCenter" },
+            { title: "Cédula", data: "CEDULA", className: "celdaCenter" },
+            { title: "Dirección", data: "DIRECCION", className: "celdaCenter" },
+            {
+                title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaJust",
+
+
+                render: function (data) {
+                    if (!data) return "";
+                    const fecha = moment(data).format('DD/MM/YYYY');
+                    const hora = moment(data).format('hh:mm:ss a');
+                    return `${fecha} - ${hora}`;
+
+                }
+            }
+        ],
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            ['5 registros', '10 registros', '25 registros', '50 registros', 'Todos']
+        ],
+        ordering: false,
+        pageLength: 10,
+        bLengthChange: true,
+        searching: true,
+        paging: true,
+        info: true
+    });
+}

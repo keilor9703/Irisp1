@@ -235,6 +235,24 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
+
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> F_GetIntegrantesPreliminar(string V_CriminalidadId)
+        {
+            var resultado = await _iDbIrisp1.F_GetIntegrantesPreliminar(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = new List<DtoIntegrantes>(), message = resultado.Mensaje });
+            }
+        }
+
+
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetDelitosIris(string V_CriminalidadId)
@@ -502,8 +520,8 @@ namespace Web.Areas.Irisp1.Controllers
         public async Task<IActionResult> P_InsIntegrantes(DtoIntegrantes Obj_Integrante)
         {
 
-            Obj_Integrante.ID_CRIMINALIDAD = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.CRIMINALIDAD_ID));
-            Obj_Integrante.ID_INTEGRANTE = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.INTEGRANTE_ID));
+            //Obj_Integrante.ID_CRIMINALIDAD = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.CRIMINALIDAD_ID));
+           // Obj_Integrante.ID_INTEGRANTE = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.INTEGRANTE_ID));
             try
             {
                 var Resultado = await _iDbIrisp1.P_InsIntegrantes(Obj_Integrante, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));

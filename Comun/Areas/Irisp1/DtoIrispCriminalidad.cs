@@ -195,7 +195,10 @@ namespace Comun.Areas.Irisp1
         public string? IdTipo { get; set; }
 
         [JsonPropertyName("IdTipoInfo")]
-        public string? IdTipoInfo { get; set; }
+        public string? IdTipoInfo { get; set; }  
+        
+        [JsonPropertyName("Justificacion")]
+        public string? Justificacion { get; set; }
 
         // ---------- Nuevas cadenas para datos de tareas ----------
         [JsonPropertyName("IdTarea")]
