@@ -1,6 +1,7 @@
 ﻿using Comun.Areas.Expendios;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
+using Comun.General;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -18,7 +19,7 @@ namespace Web.Areas.Expendios.Controllers
 {
 
     [Area("Expendios")]
-    [Authorize(Roles = "1,2,11")]
+    [Authorize(Roles = "1,2,3,4,8,11")]
     public class RegistrosController : Controller
     {
 
@@ -46,7 +47,37 @@ namespace Web.Areas.Expendios.Controllers
 
             var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "VwRegistrosExpendios", "Ingreso Módulo", "0", HttpContext.Session.GetString("IpMaquina"));
 
-            ViewBag.ddlUnidadExpendio = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
+            //ViewBag.ddlUnidadExpendio = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
+
+            // Obtener todos los roles del usuario desde los claims
+            var rolesUsuario = User.Claims
+                                   .Where(c => c.Type == ClaimTypes.Role)
+                                   .Select(c => c.Value)
+                                   .ToList();
+
+            // Obtener la sigla física del usuario desde los claims
+            var siglaFisicaUsuario = User.Claims.FirstOrDefault(c => c.Type == "Fisica")?.Value;
+
+            IEnumerable<DtoDominios> unidades;
+
+            // 🔑 Si el usuario tiene el rol 8, aplica el filtro
+            if (rolesUsuario.Contains("8"))
+            {
+                unidades = (await _iDbSeguimientoIris.F_GetUnidadesSeguimiento())
+                                .Data?
+                                .Where(x => x.SIGLA == siglaFisicaUsuario)
+                                .OrderBy(x => x.DESCRIPCION_DEPENDENCIA);
+            }
+            else
+            {
+                // 🔑 Si no tiene el rol 8, carga todos los registros
+                unidades = (await _iDbSeguimientoIris.F_GetUnidadesSeguimiento())
+                                .Data?
+                                .OrderBy(x => x.DESCRIPCION_DEPENDENCIA);
+            }
+
+            // Asignar al ViewBag
+            ViewBag.ddlUnidadExpendio = new SelectList(unidades, "SIGLA", "DESCRIPCION_DEPENDENCIA");
 
             var ddlAnioIris = (await _iDbRegistroExpendio.F_GetAniosIrisP1()).Data.ToList();
            // var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
@@ -85,10 +116,10 @@ namespace Web.Areas.Expendios.Controllers
 
             if (resultado.IdRespuesta > 0)
             {
-                var consecutivo = resultado.Data.ToString();
+                //var consecutivo = resultado.Data.ToString();
 
-                consecutivo = ClsEncriptar.Encriptar(consecutivo);
-                return Json(new { success = true, data = resultado, message = resultado.Mensaje });
+                //consecutivo = ClsEncriptar.Encriptar(consecutivo);
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
             }
             else
             {
@@ -102,18 +133,24 @@ namespace Web.Areas.Expendios.Controllers
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
         {
-            var resultado = await _iDbRegistroExpendio.F_GetInfoGrillas(V_Anio);
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            // 🔹 Obtener todos los roles del usuario separados por coma
+            var rolesUsuario = string.Join(",",
+                User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+            );
+
+            var resultado = await _iDbRegistroExpendio.F_GetInfoGrillas(V_Anio, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta > 0)
-            {
                 return Json(new { success = true, data = resultado.Data });
-            }
             else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-
-            }
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { success = false, message = resultado.Mensaje });
         }
+
 
 
         [HttpGet]

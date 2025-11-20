@@ -1809,7 +1809,7 @@ function AbrirModalNuevoExpendio() {
 
 function consultarConsecutivoIris() {
     $.ajax({
-        url: AppRoutes.RegistroIrisP1.UrlGetConsecutivoIris
+        url: AppRoutes.RegistroExpendio.UrlGetConsecutivoIris
         ,
         type: 'POST',
         dataType: 'json',

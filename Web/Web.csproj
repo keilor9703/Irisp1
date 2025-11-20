@@ -35,9 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Integrantes\" />
-    <Folder Include="Areas\Listas\" />
-    <Folder Include="Areas\Reportes\" />
+    <Folder Include="Areas\Expendios\" />
   </ItemGroup>
 
 </Project>

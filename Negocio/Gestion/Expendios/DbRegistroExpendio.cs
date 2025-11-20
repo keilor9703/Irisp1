@@ -120,7 +120,84 @@ namespace Negocio.Gestion.Expendios
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoExpendios>>> F_GetInfoGrillas(Int32 V_Anio)
+        //public async Task<DtoResultado<List<DtoExpendios>>> F_GetInfoGrillas(Int32 V_Anio)
+        //{
+        //    DataTable resultado = new();
+        //    List<DtoExpendios> retorno = new();
+        //    DtoResultado<List<DtoExpendios>> resp = new();
+
+        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
+        //    using var objCommand = new OracleCommand();
+
+        //    try
+        //    {
+        //        objCommand.Connection = Conexion;
+        //        objCommand.CommandType = CommandType.StoredProcedure;
+        //        objCommand.CommandText = "PK_EXPENDIOS_IRIS.F_GetInfoGrillas";
+        //        objCommand.BindByName = true;
+        //        Conexion.Open();
+
+        //        objCommand.Parameters.Clear();
+        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+
+        //        if (Conexion.State == ConnectionState.Open)
+        //        {
+        //            resultado.Load(await objCommand.ExecuteReaderAsync());
+
+        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoExpendios>(resultado)
+        //                    .OrderByDescending(x => x.FechaCreacion)
+        //                    .ToList();
+
+
+        //            if (retorno.Count > 0)
+        //            {
+        //                resp.IdRespuesta = 1;
+        //                resp.Mensaje = "Consulta Exitosa";
+        //                resp.Operacion = "F_GetInfoGrillas";
+        //                resp.Data = retorno;
+        //            }
+        //            else
+        //            {
+        //                resp.IdRespuesta = 0;
+        //                resp.Mensaje = "No se encontraron datos";
+        //                resp.Operacion = "0";
+        //            }
+        //        }
+        //        else
+        //        {
+        //            resp.IdRespuesta = 0;
+        //            resp.Mensaje = "Error conexión base de datos";
+        //            resp.Operacion = "0";
+        //        }
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Conexion.Close();
+        //        Conexion.Dispose();
+        //        objCommand.Connection.Close();
+        //        _logger.LogError("Creacion de log");
+        //        _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas " + e);
+
+        //        resp.IdRespuesta = 0;
+        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
+        //        resp.Operacion = "0";
+
+        //    }
+        //    finally
+        //    {
+        //        Conexion.Close();
+        //        Conexion.Dispose();
+        //        objCommand.Dispose();
+        //        objCommand.Connection.Close();
+        //        resultado.Dispose();
+        //    }
+        //    return resp;
+        //}
+
+
+        public async Task<DtoResultado<List<DtoExpendios>>> F_GetInfoGrillas(Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
         {
             DataTable resultado = new();
             List<DtoExpendios> retorno = new();
@@ -139,68 +216,46 @@ namespace Negocio.Gestion.Expendios
 
                 objCommand.Parameters.Clear();
                 objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
+                objCommand.Parameters.Add("P_Roles", OracleDbType.Varchar2, ParameterDirection.Input).Value = RolesUsuario;
+                objCommand.Parameters.Add("P_CodigoUnidad", OracleDbType.Int64, ParameterDirection.Input).Value = CodigoUnidad;
                 objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
 
                 if (Conexion.State == ConnectionState.Open)
                 {
                     resultado.Load(await objCommand.ExecuteReaderAsync());
+                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoExpendios>(resultado);
 
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoExpendios>(resultado)
-                            .OrderByDescending(x => x.FechaCreacion)
-                            .ToList();
-
-
-                    if (retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetInfoGrillas";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
+                    resp.IdRespuesta = retorno.Count > 0 ? 1 : 0;
+                    resp.Mensaje = retorno.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+                    resp.Data = retorno;
+                    resp.Operacion = "F_GetInfoGrillas";
                 }
                 else
                 {
                     resp.IdRespuesta = 0;
                     resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
                 }
-
             }
             catch (Exception e)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas " + e);
-
+                _logger.LogError(e, "Error ejecutando PK_EXPENDIOS_IRIS.F_GetInfoGrillas");
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
+                resp.Mensaje = e.Message;
             }
             finally
             {
                 Conexion.Close();
-                Conexion.Dispose();
                 objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
             }
+
             return resp;
         }
 
 
 
-        public async Task<DtoResultado<long>> F_ConsultarSeqIris()
+        public async Task<DtoResultado<string>> F_ConsultarSeqIris()
         {
-            var resp = new DtoResultado<long>();
+            var resp = new DtoResultado<string>();
 
             try
             {
@@ -213,9 +268,11 @@ namespace Negocio.Gestion.Expendios
                 await conexion.OpenAsync();
 
                 var result = await command.ExecuteScalarAsync();
-                long consecutivo = result == null ? 0 : Convert.ToInt64(result);
 
-                if (consecutivo > 0)
+                // Convertir el resultado a string
+                string consecutivo = result?.ToString() ?? string.Empty;
+
+                if (!string.IsNullOrEmpty(consecutivo))
                 {
                     resp.IdRespuesta = 1;
                     resp.Mensaje = "Consulta exitosa";
@@ -225,14 +282,14 @@ namespace Negocio.Gestion.Expendios
                 {
                     resp.IdRespuesta = 0;
                     resp.Mensaje = "No se pudo obtener el consecutivo";
-                    resp.Data = 0;
+                    resp.Data = string.Empty;
                 }
             }
             catch (Exception e)
             {
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"Error en consulta: {e.Message} {(e.InnerException?.Message ?? string.Empty)}";
-                resp.Data = 0;
+                resp.Data = string.Empty;
             }
 
             return resp;
