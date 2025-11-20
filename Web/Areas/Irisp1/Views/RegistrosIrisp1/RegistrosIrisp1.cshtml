@@ -482,7 +482,7 @@
                         </div>
                          <div class="col-md-3 MargFloatBoos">
                             <div class="form-group has-float-label">
-                                <input tabindex="14" id="txtDirecciónInteg" name="txtDirecciónInteg" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                                <input tabindex="14" id="txtDireccionInteg" name="txtDireccionInteg" type="text" value="" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
                                 <label class="Labels">Dirección:</label>
                             </div>
                         </div>
@@ -541,7 +541,7 @@
                          <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <input tabindex="5" name="txtCuadrante" type="text" id="txtCuadrante" autocomplete="off" placeholder=" " class="form-control InputPading" />
-                                <label class="Labels">Cuadrante:</label>
+                                <label class="Labels">Zona de atención:</label>
                             </div>
                         </div>
                         
@@ -606,7 +606,14 @@
                
             </div>
             <div class="modal-footer">
-                <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
+                @* <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button> *@
+                <button type="button"
+                        id="btnCerrarVerRegistro"
+                        data-bs-dismiss="modal"
+                        class="btn btn-cerrar"
+                        style="border-radius: 0px 16px 0px 16px !important;">
+                    <span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar
+                </button>
                 <button tabindex="1001" type="button" id="btnGrabar" onclick="P_InsRegistroIrisP1(); return false;" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar "><span class="fa ico_grabar faa-wrench animated"></span> Guardar Iris p1</button>
             </div>
         </div>

@@ -35,6 +35,15 @@ $(document).ready(function () {
     });
 
 
+
+    // Manejo genérico para cualquier modal secundaria
+    $(document).on('hidden.bs.modal', '.modal', function () {
+        // Verifica si todavía hay alguna modal abierta
+        if ($('.modal.show').length > 0) {
+            $('body').addClass('modal-open');
+        }
+    });
+
    
     //F_GetInfoGrillas($('#ddlAnioIris').val());
 
@@ -83,6 +92,13 @@ $(document).ready(function () {
         P_InsIntegranteExpendio();
     });
 
+
+    $("#btnInsIntegranteExpendioPreliminar").on("click", function (e) {
+        e.preventDefault();
+
+        P_InsIntegranteExpendioPrelminar();
+    });
+
     $("#btnLimpiarIntegExpendio").on("click", function (e) {
         e.preventDefault();
 
@@ -129,6 +145,14 @@ $(document).ready(function () {
         e.preventDefault();
 
         AbrirModalNuevoExpendio();
+    });
+
+
+
+    $("#btnGrabar").on("click", function (e) {
+        e.preventDefault();
+
+        P_InsExpendio();
     });
 
     $("#btnUpdIntegranteExpendio").on("click", function (e) {
@@ -446,7 +470,7 @@ function GetGrillaExpendios(Datos) {
             [15, 25, 50, -1],
             ['15 registros', '25 registros', '50 registros', 'Todos']
         ],
-        ordering: true,
+        ordering: false,
         pageLength: 15,
         bLengthChange: true,
         searching: true,
@@ -763,6 +787,35 @@ function OpenUbicacionModal(latitud, longitud) {
         window.map = undefined;
     });
 }
+
+
+
+
+
+$('#btnCerrarExpendio').on('click', function () {
+    // 1. Destruir DataTable si existe
+    if ($.fn.DataTable.isDataTable('#tbGrillaListaIntegrantes')) {
+        $('#tbGrillaListaIntegrantes').DataTable().clear().destroy();
+    }
+
+    // 2. Limpiar HTML de la tabla
+    $('#tbGrillaListaIntegrantes').empty();
+
+    // 3. Ocultar el panel
+    $('#pn_GrillaListaIntegrantes')
+        .removeClass('show')
+        .addClass('hidden');
+
+    // 4. Limpiar inputs
+    $('#Modal_RegistroEpendio').find('input[type=text], input[type=number], textarea').val('');
+
+    // 5. Resetear selects con Select2
+    $('#Modal_RegistroEpendio').find('select.select2').val(null).trigger('change');
+
+    // 6. Resetear clases de error
+    $('#Modal_RegistroEpendio').find('.form-group').removeClass('has-error');
+});
+
 
 function F_GetIntegrantesIris(CriminalidadId) {
 
@@ -1238,6 +1291,88 @@ function P_InsIntegranteExpendio() {
     });
 
 }
+
+
+
+function P_InsIntegranteExpendioPrelminar() {
+
+    const Obj_Integrante = {
+
+        CRIMINALIDAD_DIREC_ID: $("#txtConsecutivoRegistroIris").val(),
+        CEDULA: $("#txtIdentificacionExpendio").val(),
+        ALIAS: $("#txtAliasModalExpendio").val(),
+        NOMBRE: $("#txtNombreIntegModalExpendio").val(),
+        APELLIDO: $("#txtApellidosIntegModalExpendio").val(),
+    }
+
+    //// 🔹 Validar campos obligatorios (excepto Observacion)
+    //for (let key in Obj_Integrante) {
+    //    if (key !== 'ALIAS' || key !== 'CEDULA' || key !== 'APELLIDO') {
+    //        const val = Obj_Integrante[key];
+    //        if (!val || val === '' || val === undefined || (typeof val === 'number' && isNaN(val))) {
+    //            Swal.fire({
+    //                icon: 'warning',
+    //                title: 'Señor(a) Funcionario(a):',
+    //                text: 'Valide todos los campos para completar el registro.'
+    //            });
+    //            return;
+    //        }
+    //    }
+    //}
+
+
+
+    // Validación de campos obligatorios:
+    // 1. Identificación siempre requerida
+    // 2. Al menos uno entre Nombre o Alias
+    if (!Obj_Integrante.CRIMINALIDAD_DIREC_ID || (!Obj_Integrante.NOMBRE && !Obj_Integrante.ALIAS)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Debe diligenciar al menos Nombre o Alias.'
+        });
+        return; // Detener ejecución si faltan campos
+    }
+
+    $.ajax({
+        url: AppRoutes.RegistroExpendio.UrlInsIntgrantePreliminar,
+        type: 'POST',
+        data: Obj_Integrante,
+        success: function (resp) {
+            if (resp.success) {
+
+                Swal.fire({
+                    type: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: resp.message
+                });
+                // $('#Modal_InsIntegrantesExendios').modal('hide');
+                $('#pn_GrillaListaIntegrantes').removeClass('hidden').addClass('show');
+
+                $("#txtIdentificacionExpendio").val('');
+                $("#txtAliasModalExpendio").val('');
+                $("#txtNombreIntegModalExpendio").val('');
+                $("#txtApellidosIntegModalExpendio").val('');
+
+                F_GetIntegrantesPreliminar($("#txtConsecutivoRegistroIris").val());
+
+
+            } else {
+
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: 'Error al insertar: ' + resp.message
+                });
+            }
+        },
+        error: function () {
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+        }
+    });
+
+}
+
 function P_InsInsDelitoExpendio() {
 
     const Obj_Delito = {
@@ -1634,6 +1769,7 @@ function Limpiar() {
 
 
 }
+
 function F_AbrirMdodalActualizarIntegrante(DatosInegrante) {
 
     $("#txtIntegranteIdModal").val(DatosInegrante.INTEGRANTE_DIREC_ID);
@@ -1651,8 +1787,56 @@ function F_AbrirMdodalActualizarIntegrante(DatosInegrante) {
 
 function AbrirModalNuevoExpendio() {
 
-    $('#Modal_RegistroEpendio').modal("show");
+    
+    const modalElement = document.getElementById('Modal_RegistroEpendio');
 
+    const modalInstance = new bootstrap.Modal(modalElement, {
+
+        backdrop: 'static',
+
+        keyboard: false,
+
+        focus: false  // Desactiva focus automático de Bootstrap
+
+    });
+
+    modalInstance.show();
+ 
+    consultarConsecutivoIris();
+   
+}
+
+
+function consultarConsecutivoIris() {
+    $.ajax({
+        url: AppRoutes.RegistroIrisP1.UrlGetConsecutivoIris
+        ,
+        type: 'POST',
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                $("#txtConsecutivoRegistroIris").val(response.data);
+                
+            } else {
+                $("#txtConsecutivoRegistroIris").val('');
+                // alert(response.message || "Error al obtener consecutivo.");
+                Swal.fire({
+                    type: 'info',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: "Error al obtener consecutivo."
+                });
+            }
+        },
+        error: function () {
+            $("#txtConsecutivoRegistroIris").val('');
+            //  alert("Error de comunicación con el servidor.");
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'Error de comunicación con el servidor.'
+            });
+        }
+    });
 }
 
 function obtenerDelitosSeleccionados() {
@@ -1758,14 +1942,40 @@ $('#btnDescargarExcel').on('click', function () {
     });
 });
 
+function F_GetIntegrantesPreliminar(IdCriminalidad) {
 
+    
+    $.ajax({
+        type: 'GET',
+        url: AppRoutes.RegistroExpendio.UrlGetIntegrantesPreliminar
+        ,
+        async: true,
+        data: { V_CriminalidadId: IdCriminalidad },
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                
+
+
+                Grillantegrantes(response.data);
+            } else {
+                Grillantegrantes([]);
+                Swal.fire('Error', response.message, 'error');
+            }
+        },
+        error: function () {
+            Grillantegrantes([]);
+            Swal.fire('Error', 'No se pudo obtener la lista de integrantes.', 'error');
+        }
+    });
+}
 
 function Grillantegrantes(Datos) {
-    if ($.fn.dataTable.isDataTable("#tbGrillaIntegantes")) {
-        $("#tbGrillaIntegantes").DataTable().destroy();
+    if ($.fn.dataTable.isDataTable("#tbGrillaListaIntegrantes")) {
+        $("#tbGrillaListaIntegrantes").DataTable().destroy();
     }
 
-    $("#tbGrillaIntegantes").DataTable({
+    $("#tbGrillaListaIntegrantes").DataTable({
         destroy: true,
         data: Datos,
         language: glOpcionesIdioma,
@@ -1775,19 +1985,18 @@ function Grillantegrantes(Datos) {
             { title: "Nombre", data: "NOMBRE", className: "celdaCenter" },
             { title: "Apellido", data: "APELLIDO", className: "celdaCenter" },
             { title: "Cédula", data: "CEDULA", className: "celdaCenter" },
-            { title: "Dirección", data: "DIRECCION", className: "celdaCenter" },
-            {
-                title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaJust",
+          //  { title: "Dirección", data: "DIRECCION", className: "celdaCenter" },
+            //{ title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaJust",
 
 
-                render: function (data) {
-                    if (!data) return "";
-                    const fecha = moment(data).format('DD/MM/YYYY');
-                    const hora = moment(data).format('hh:mm:ss a');
-                    return `${fecha} - ${hora}`;
+            //    render: function (data) {
+            //        if (!data) return "";
+            //        const fecha = moment(data).format('DD/MM/YYYY');
+            //        const hora = moment(data).format('hh:mm:ss a');
+            //        return `${fecha} - ${hora}`;
 
-                }
-            }
+            //    }
+            //}
         ],
         lengthMenu: [
             [5, 10, 25, 50, -1],
@@ -1799,5 +2008,108 @@ function Grillantegrantes(Datos) {
         searching: true,
         paging: true,
         info: true
+    });
+}
+
+function obtenerDelitosSecundariosSeleccionados() {
+    const delitos = [];
+    $('#ddlDelitosRelacionados option:selected').each(function () {
+        delitos.push($(this).val());
+    });
+    console.log("Delitos seleccionados: ", delitos);
+    return delitos;
+}
+
+
+function P_InsExpendio() {
+ 
+
+    var Obj_Delitos = obtenerDelitosSecundariosSeleccionados();
+
+    const Obj_NuevoExpendio = {
+        CRIMINALIDAD_ID: $("#txtConsecutivoRegistroIris").val(),
+        ID_UNIDAD: $("#ddlEstacionExpendio").val(),
+        BARRIO: $("#txtBarrioN").val(),
+        DIRECCION: $("#txtDireccionN").val(),
+        LATITUD: $("#LATITUD_CASO").val(),
+        LONGITUD: $("#LONGITUD_CASO").val(),
+        CUADRANTE: $("#txtCuadranteN").val(),
+        CATEGORIA: $("#ddlCategoria").val(),
+        OTRA_CATEGORIA: $("#txtOtraCategoriaExpendio").val(),
+        MUNICIPIO: $("#txtMunicipioN").val(),
+        ID_UNIDAD_INFORMA: $("#ddlunidadInformaExpendio").val(),
+        ID_ZONA: $("#ddlZonaExpendio").val(),
+        ID_CLASE: $("#ddlExpendio").val(), 
+        ID_EXPENDIO: $("#ddlTipoExpendio").val(), 
+        ID_ESTADO: 106,
+        ID_FUENTE: $("#ddlFuente").val(), 
+        FECHA_INICIO_EXISTENCIA: $("#txtFechaExpendio").val(), 
+        CARACTERISTICAS_GENERALES: $("#txtObservacionesExpendio").val(),
+
+        ID_DELITOS: Obj_Delitos,
+       
+    };
+
+    // --- Validación de campos obligatorios ---
+    //for (let key in Obj_NuevoExpendio) {
+    //    if  (key !== 'OTRA_CATEGORIA'  &&// puede venir vacío
+    //        (Obj_NuevoExpendio[key] === null || Obj_NuevoExpendio[key] === '' || Obj_NuevoExpendio[key] === undefined || (typeof Obj_NuevoExpendio[key] === 'number' && isNaN(Obj_NuevoExpendio[key])))) {
+    //        Swal.fire('Advertencia', `El campo "${key}" es obligatorio y no puede estar vacío.`, 'warning');
+
+    //        Swal.fire({
+    //            type: 'warning',
+    //            title: 'Señor(a) Funcionario(a:)',
+    //            text: "Valide todos los campos para completar el presente registro"
+    //        });
+    //        return; // detener ejecución
+    //    }
+    //}
+
+    // --- Enviar solicitud ---
+    $.ajax({
+        url: AppRoutes.RegistroExpendio.UrlInsRegistroExpendio,
+        type: 'POST',
+        data: Obj_NuevoExpendio,
+        success: function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: resp.message,
+                    timer: 2000,
+                    showConfirmButton: false
+
+                })
+
+                // Cerrar la modal
+                $('#Modal_RegistroEpendio').modal('hide');
+
+                // Obtener todas las opciones y convertir a número
+                var opciones = $('#ddlAnioIris option').map(function () {
+                    return parseInt($(this).val(), 10);
+                }).get();
+
+                // Filtrar solo los valores numéricos válidos
+                var opcionesValidas = opciones.filter(function (v) {
+                    return !isNaN(v);
+                });
+
+                // Calcular el máximo año
+                var maxAnio = Math.max.apply(null, opcionesValidas);
+
+                // Asignar el máximo año como valor seleccionado
+                $('#ddlAnioIris').val(maxAnio).trigger('change');
+
+                // Refrescar la grilla
+                F_GetInfoGrillas();
+               
+
+            } else {
+                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
+            }
+        },
+        error: function () {
+            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
+        }
     });
 }

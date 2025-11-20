@@ -24,6 +24,7 @@ window.AppRoutes = Object.freeze({
         UrlGetAniosIrisp1: '/Irisp1/RegistrosIrisp1/F_GetAniosIrisP1',
         UrlGetInfoGrillas: '/Irisp1/RegistrosIrisp1/F_GetInfoGrillas',
         UrlGetFuncionarios: '/Empleados/F_GetFuncionarios',
+        UrlInsIntegrantesPreliminar: '/Irisp1/RegistrosIrisp1/P_InsIntegrantesPreliminar',
         UrlInsIntegrantes: '/Irisp1/RegistrosIrisp1/P_InsIntegrantes',
         UrlGetConsecutivoIris: '/Irisp1/RegistrosIrisp1/F_ConsultarSeqIris',
         UrlGetConsecutivoIntegrante: '/Irisp1/RegistrosIrisp1/F_ConsultarSeqIntegrante',
@@ -87,12 +88,16 @@ window.AppRoutes = Object.freeze({
         UrlGetResultados: '/Expendios/Registros/F_GetResultados',
         UrlGetIntegrantesAll: '/Expendios/Registros/F_GetIntegranteAll',
         UrlInsIntgrante: '/Expendios/Registros/P_InsIntegrante',
+        UrlInsIntgrantePreliminar: '/Expendios/Registros/P_InsIntegrantePreliminar',
         UrlInsDelito: '/Expendios/Registros/P_InsDelito',
         UrlInsBitacora: '/Expendios/Registros/P_InsBitacora',
         UrlInsResultados: '/Expendios/Registros/P_InsResultados',
         UrlUpdExpendio: '/Expendios/Registros/P_UpdExpendio',
         UrlUpdIntegrante: '/Expendios/Registros/P_UpdIntegrante',
-        UrlInsExpendio: '/Expendios/Registros/P_UpdIntegrante'
+        UrlInsExpendio: '/Expendios/Registros/P_UpdIntegrante',
+        UrlGetIntegrantesPreliminar: '/Expendios/Registros/F_GetIntegrantesPreliminar',
+        UrlGetConsecutivoIris: '/Expendios/Registros/F_ConsultarSeqIris',
+        UrlInsRegistroExpendio: '/Expendios/Registros/P_InsRegistroExpendio'
      
     }
 

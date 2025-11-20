@@ -1030,8 +1030,8 @@ namespace Negocio.Gestion.Irisp1
                 objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Integrante.ALIAS;
                 objCommand.Parameters.Add("P_NOMBRE", OracleDbType.Varchar2).Value = Obj_Integrante.NOMBRE;
                 objCommand.Parameters.Add("P_APELLIDO", OracleDbType.Varchar2).Value = Obj_Integrante.APELLIDO;
-                objCommand.Parameters.Add("P_CEDULA", OracleDbType.Int64).Value = Obj_Integrante.CEDULA ?? 0;
-                objCommand.Parameters.Add("P_ID_TIPO_INFO", OracleDbType.Int32).Value = Obj_Integrante.ID_TIPO_INFO ?? 0;
+                objCommand.Parameters.Add("P_CEDULA", OracleDbType.Int64).Value = Obj_Integrante.CEDULA;
+                objCommand.Parameters.Add("P_ID_TIPO_INFO", OracleDbType.Int32).Value = Obj_Integrante.ID_TIPO_INFO;
                // objCommand.Parameters.Add("P_VIGENTE", OracleDbType.Int32).Value = Obj_Integrante.VIGENTE ?? 1;
      
                 objCommand.Parameters.Add("P_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
@@ -1043,6 +1043,73 @@ namespace Negocio.Gestion.Irisp1
                 objCommand.Parameters.Add("P_CELULAR", OracleDbType.Int64).Value = Obj_Integrante.CELULAR;
                 objCommand.Parameters.Add("P_DIRECCION", OracleDbType.Varchar2).Value = Obj_Integrante.DIRECCION;
                // objCommand.Parameters.Add("P_ID_INTEGRANTE", OracleDbType.Int32).Value = Obj_Integrante.ID_INTEGRANTE;
+                //objCommand.Parameters.Add("P_ID_CRIMINALIDAD", OracleDbType.Int32).Value = Obj_Integrante.ID_CRIMINALIDAD;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
+
+        public async Task<DtoResultado<Int32>> P_InsIntegrantesPreliminar(DtoIntegrantes Obj_Integrante, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_REGISTRO_IRIS.P_InsIntegrantesPreliminar";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                //objCommand.Parameters.Add("P_INTEGRANTE_ID", OracleDbType.Varchar2).Value = Obj_Integrante.INTEGRANTE_ID;
+                objCommand.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = Obj_Integrante.CRIMINALIDAD_ID;
+                objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Integrante.ALIAS;
+                objCommand.Parameters.Add("P_NOMBRE", OracleDbType.Varchar2).Value = Obj_Integrante.NOMBRE;
+                objCommand.Parameters.Add("P_APELLIDO", OracleDbType.Varchar2).Value = Obj_Integrante.APELLIDO;
+                objCommand.Parameters.Add("P_CEDULA", OracleDbType.Int64).Value = Obj_Integrante.CEDULA;
+                objCommand.Parameters.Add("P_ID_TIPO_INFO", OracleDbType.Int32).Value = Obj_Integrante.ID_TIPO_INFO;
+                // objCommand.Parameters.Add("P_VIGENTE", OracleDbType.Int32).Value = Obj_Integrante.VIGENTE ?? 1;
+
+                objCommand.Parameters.Add("P_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.Varchar2).Value = maquina;
+                //objCommand.Parameters.Add("P_FECHA_MODIFICA", OracleDbType.Date).Value = Obj_Integrante.FECHA_MODIFICA;
+                //objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = Obj_Integrante.IDENTIFICACION_MODIFICA;
+                //objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = Obj_Integrante.MAQUINA_MODIFICA;
+                objCommand.Parameters.Add("P_TIPO_DOCUMENTO", OracleDbType.Int32).Value = Obj_Integrante.TIPO_DOCUMENTO;
+                objCommand.Parameters.Add("P_CELULAR", OracleDbType.Int64).Value = Obj_Integrante.CELULAR;
+                objCommand.Parameters.Add("P_DIRECCION", OracleDbType.Varchar2).Value = Obj_Integrante.DIRECCION;
+                // objCommand.Parameters.Add("P_ID_INTEGRANTE", OracleDbType.Int32).Value = Obj_Integrante.ID_INTEGRANTE;
                 //objCommand.Parameters.Add("P_ID_CRIMINALIDAD", OracleDbType.Int32).Value = Obj_Integrante.ID_CRIMINALIDAD;
 
                 objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;

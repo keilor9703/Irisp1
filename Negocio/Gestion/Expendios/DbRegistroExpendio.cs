@@ -14,6 +14,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Negocio.Gestion.Expendios
 {
@@ -196,6 +197,48 @@ namespace Negocio.Gestion.Expendios
         }
 
 
+
+        public async Task<DtoResultado<long>> F_ConsultarSeqIris()
+        {
+            var resp = new DtoResultado<long>();
+
+            try
+            {
+                using var conexion = new OracleConnection(_strConexionIris_Disec);
+                using var command = new OracleCommand("SELECT PK_EXPENDIOS_IRIS.f_consultar_seq_Iris FROM dual", conexion)
+                {
+                    CommandType = CommandType.Text
+                };
+
+                await conexion.OpenAsync();
+
+                var result = await command.ExecuteScalarAsync();
+                long consecutivo = result == null ? 0 : Convert.ToInt64(result);
+
+                if (consecutivo > 0)
+                {
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = "Consulta exitosa";
+                    resp.Data = consecutivo;
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "No se pudo obtener el consecutivo";
+                    resp.Data = 0;
+                }
+            }
+            catch (Exception e)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error en consulta: {e.Message} {(e.InnerException?.Message ?? string.Empty)}";
+                resp.Data = 0;
+            }
+
+            return resp;
+        }
+
+
         public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId)
         {
             var respuesta = new DtoResultado<List<DtoIntegrantes>>();
@@ -211,7 +254,7 @@ namespace Negocio.Gestion.Expendios
                         cmd.CommandType = CommandType.StoredProcedure;
 
 
-                        cmd.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, 40).Value = V_CriminalidadId;
+                        cmd.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, 100).Value = V_CriminalidadId;
                         cmd.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                         using (var reader = await cmd.ExecuteReaderAsync())
@@ -335,6 +378,70 @@ namespace Negocio.Gestion.Expendios
             return resp;
         }
 
+        public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId)
+        {
+            var respuesta = new DtoResultado<List<DtoIntegrantes>>();
+
+            try
+            {
+                using (var conn = new OracleConnection(_strConexionIris_Disec))
+                {
+                    await conn.OpenAsync();
+
+                    using (var cmd = new OracleCommand("PK_EXPENDIOS_IRIS.F_GetIntegrantesPreliminar", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+
+                        cmd.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, 40).Value = V_CriminalidadId;
+                        cmd.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            var lista = new List<DtoIntegrantes>();
+
+                            while (await reader.ReadAsync())
+                            {
+                                lista.Add(new DtoIntegrantes
+                                {
+                                    INTEGRANTE_DIREC_ID = reader["INTEGRANTE_DIREC_ID"]?.ToString(),
+                                    CRIMINALIDAD_DIREC_ID = reader["CRIMINALIDAD_DIREC_ID"]?.ToString(),
+                                    ALIAS = reader["ALIAS"]?.ToString(),
+                                    NOMBRE = reader["NOMBRE"]?.ToString(),
+                                    APELLIDO = reader["APELLIDO"]?.ToString(),
+                                    CEDULA = reader["CEDULA"] as long?,
+                                    //ID_TIPO_INFO = reader["ID_TIPO_INFO"] as int?,
+                                    VIGENTE = reader["VIGENTE"] as int?,
+                                    FECHA_CREACION = reader["FECHA_CREACION"] as DateTime?,
+                                    IDENTIFICACION_CREACION = reader["IDENTIFICACION_CREACION"] as long?,
+                                    MAQUINA_CREACION = reader["MAQUINA_CREACION"]?.ToString(),
+                                    FECHA_MODIFICA = reader["FECHA_MODIFICA"] as DateTime?,
+                                    IDENTIFICACION_MODIFICA = reader["IDENTIFICACION_MODIFICA"] as long?,
+                                    MAQUINA_MODIFICA = reader["MAQUINA_MODIFICA"]?.ToString(),
+                                    //TIPO_DOCUMENTO = reader["TIPO_DOCUMENTO"] as int?,
+                                    //CELULAR = reader["CELULAR"] as long?,
+                                    //DIRECCION = reader["DIRECCION"]?.ToString(),
+                                    // ID_INTEGRANTE = reader["ID_INTEGRANTE"] as long?,
+                                    //ID_CRIMINALIDAD = reader["ID_CRIMINALIDAD"] as long?
+                                });
+                            }
+
+                            respuesta.Data = lista;
+                            respuesta.IdRespuesta = 1;
+                            respuesta.Mensaje = "Consulta exitosa";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.IdRespuesta = 0;
+                respuesta.Mensaje = $"Error: {ex.Message}";
+                respuesta.Data = new List<DtoIntegrantes>();
+            }
+
+            return respuesta;
+        }
 
 
         public async Task<DtoResultado<List<DtoInfoAdicional>>> F_GetBitacora(string V_CriminalidadId)
@@ -558,6 +665,92 @@ namespace Negocio.Gestion.Expendios
 
 
 
+        public async Task<DtoResultado<string>> P_InsRegistroExpendio(DtoInsExpendios Obj_NuevoExpendio, string usuario, string maquina)
+        {
+            DtoResultado<string> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_EXPENDIOS_IRIS.P_InsCriminalidad_Direc";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+
+                // Parámetros de entrada
+                objCommand.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.CRIMINALIDAD_ID;
+                objCommand.Parameters.Add("P_ID_UNIDAD", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_UNIDAD;
+                objCommand.Parameters.Add("P_BARRIO", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.BARRIO;
+                objCommand.Parameters.Add("P_DIRECCION", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.DIRECCION;
+                objCommand.Parameters.Add("P_LONGITUD", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.LONGITUD;
+                objCommand.Parameters.Add("P_LATITUD", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.LATITUD;
+                objCommand.Parameters.Add("P_CUADRANTE", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.CUADRANTE;
+                objCommand.Parameters.Add("P_CATEGORIA", OracleDbType.Int32).Value = Obj_NuevoExpendio.CATEGORIA;
+                objCommand.Parameters.Add("P_OTRA_CATEGORIA", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.OTRA_CATEGORIA;
+                objCommand.Parameters.Add("P_MUNICIPIO", OracleDbType.Varchar2).Value = Obj_NuevoExpendio.MUNICIPIO;
+                objCommand.Parameters.Add("P_ID_UNIDAD_INFORMA", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_UNIDAD_INFORMA;
+                objCommand.Parameters.Add("P_ID_ZONA", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_ZONA;
+                objCommand.Parameters.Add("P_ID_CLASE", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_CLASE;
+                objCommand.Parameters.Add("P_ID_EXPENDIO", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_EXPENDIO;
+                objCommand.Parameters.Add("P_ID_ESTADO", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_ESTADO;
+                objCommand.Parameters.Add("P_ID_FUENTE", OracleDbType.Int32).Value = Obj_NuevoExpendio.ID_FUENTE;
+                objCommand.Parameters.Add("P_FECHA_INICIO_EXISTENCIA", OracleDbType.Date).Value = Obj_NuevoExpendio.FECHA_INICIO_EXISTENCIA;
+                objCommand.Parameters.Add("P_CARACTERISTICAS_GENERALES", OracleDbType.NVarchar2).Value = Obj_NuevoExpendio.CARACTERISTICAS_GENERALES;
+
+                // Auditoría
+                objCommand.Parameters.Add("P_IDENTIFICACION_CREA", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.Varchar2).Value = maquina;
+
+                // Delitos (cadena separada por comas normalmente)
+
+                objCommand.Parameters.Add("P_ID_DELITOS", OracleDbType.NVarchar2).Value = string.Join(",", Obj_NuevoExpendio.ID_DELITOS);
+
+                // Parámetros de salida
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                if (Conexion.State == ConnectionState.Open)
+                    await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value?.ToString() ?? "0");
+                string mensaje = objCommand.Parameters["SRV_Message"].Value?.ToString() ?? "";
+
+                if (resultado > 0)
+                {
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = mensaje;
+                    resp.Data = "OK";
+                }
+                else
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = mensaje;
+                    resp.Data = "";
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error ejecutando PK_REGISTRO_IRIS.P_InsCriminalidad");
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {e.Message}";
+                resp.Data = "";
+            }
+            finally
+            {
+                if (Conexion.State == ConnectionState.Open)
+                    Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
         public async Task<DtoResultado<Int32>> P_InsIntegrante(DtoIntegrantes Obj_Integrante, string usuario, string maquina)
         {
             DtoResultado<Int32> resp = new();
@@ -578,6 +771,61 @@ namespace Negocio.Gestion.Expendios
                 objCommand.Parameters.Add("P_CRIMINALIDAD_DIREC_ID", OracleDbType.Varchar2).Value = Obj_Integrante.CRIMINALIDAD_DIREC_ID;
                 objCommand.Parameters.Add("P_CEDULA", OracleDbType.Int64).Value = Obj_Integrante.CEDULA ;
                 objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Integrante.ALIAS ;
+                objCommand.Parameters.Add("P_NOMBRE", OracleDbType.Varchar2).Value = Obj_Integrante.NOMBRE;
+                objCommand.Parameters.Add("P_APELLIDO", OracleDbType.Varchar2).Value = Obj_Integrante.APELLIDO;
+                objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;
+                objCommand.Parameters.Add("P_MAQUINA", OracleDbType.Varchar2).Value = maquina;
+
+                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+
+                await objCommand.ExecuteNonQueryAsync();
+
+                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
+                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? 1 : 0;
+
+            }
+            catch (Exception ex)
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = 0;
+            }
+            finally
+            {
+                Conexion.Close();
+                Conexion.Dispose();
+                objCommand.Dispose();
+            }
+
+            return resp;
+        }
+
+
+        public async Task<DtoResultado<Int32>> P_InsIntegrantePreliminar(DtoIntegrantes Obj_Integrante, string usuario, string maquina)
+        {
+            DtoResultado<Int32> resp = new();
+
+            using var Conexion = new OracleConnection(_strConexionIris_Disec);
+            using var objCommand = new OracleCommand();
+
+            try
+            {
+                objCommand.Connection = Conexion;
+                objCommand.CommandType = CommandType.StoredProcedure;
+                objCommand.CommandText = "PK_EXPENDIOS_IRIS.P_InsIntegrantePreliminar";
+                objCommand.BindByName = true;
+                Conexion.Open();
+
+                objCommand.Parameters.Clear();
+
+                objCommand.Parameters.Add("P_CRIMINALIDAD_DIREC_ID", OracleDbType.Varchar2).Value = Obj_Integrante.CRIMINALIDAD_DIREC_ID;
+                objCommand.Parameters.Add("P_CEDULA", OracleDbType.Int64).Value = Obj_Integrante.CEDULA;
+                objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Integrante.ALIAS;
                 objCommand.Parameters.Add("P_NOMBRE", OracleDbType.Varchar2).Value = Obj_Integrante.NOMBRE;
                 objCommand.Parameters.Add("P_APELLIDO", OracleDbType.Varchar2).Value = Obj_Integrante.APELLIDO;
                 objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;

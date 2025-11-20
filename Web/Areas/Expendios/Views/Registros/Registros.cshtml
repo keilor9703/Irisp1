@@ -19,8 +19,12 @@
    
     <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/expendios/RegistroExpendio.js"></script>
-    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
-   
+    
+    <script src="~/areas/expendios/crearubicacion.js"></script>
+    <script type='text/javascript'>
+        var codigoDaneInicial = 11001;
+
+    </script>
 }
 
 <section class="content-header"></section>
@@ -367,7 +371,7 @@
 
 
 
-<!-- Crear Integrante Expendio -->
+<!-- En modal DETALLE, modal para Crear Integrante Expendio  -->
 
 <div class="modal fade" id="Modal_InsIntegrantesExendios" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
     <div class="modal-dialog" style="max-width: 900px;">
@@ -722,7 +726,7 @@
             </div>
             <div class="modal-footer" style="justify-content:center;">
 
-                <button tabindex="14" type="button" id="btnUpdIntegranteExpendio" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+                <button tabindex="14" type="button" id="btnUpdIntegranteExpendio" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Actualizar</button>
             </div>
         </div>
     </div>
@@ -741,6 +745,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+
+                <input type="text" id="txtConsecutivoRegistroIris" class="hidden" value="" />
 
                 @* Datos basicos *@
                 <div class="card border-success" id="pn_GrillaDatosBasicos">
@@ -910,7 +916,7 @@
                         </div>
                         <div class="modal-footer" style="justify-content:center;">
 
-                            <button tabindex="14" type="button" id="btnInsIntegranteExpendio"
+                            <button tabindex="14" type="button" id="btnInsIntegranteExpendioPreliminar"
                                     style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
                                 <span class="fa fa-user-plus faa-pulse animated"></span> Agregar Integrante
                             </button>
@@ -958,7 +964,7 @@
                 @* Delitos relacionados *@
                 <div class="card border-success" id="pn_GrillaDelitosRelacionados">
                     <div class="card-header d-flex align-items-center">
-                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Datos básicos</h4>
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Delitos relacionados</h4>
 
                         <div class="card-actions ms-auto d-flex button-group">
                             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
@@ -980,7 +986,7 @@
                 @* Ubicación *@
                 <div class="card border-success" id="pn_GrillaUbicacionExpendio">
                     <div class="card-header d-flex align-items-center">
-                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i>Datos básicos</h4>
+                        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Ubicación</h4>
 
                         <div class="card-actions ms-auto d-flex button-group">
 
@@ -1000,14 +1006,66 @@
                     </div>
                     <div class="card-body collapse show">
 
-                       
+                        <div class="row">
+                            <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtMunicipioN" type="text" id="txtMunicipioN" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Municipio:</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtBarrioN" type="text" id="txtBarrioN" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Barrio:</label>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtDireccionN" type="text" id="txtDireccionN" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Dirección:</label>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="txtCuadranteN" type="text" id="txtCuadranteN" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Zona de atención:</label>
+                                </div>
+                            </div>
+
+                            
+
+                            <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="LONGITUD_CASO" type="text" id="LONGITUD_CASO" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Longitud:</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 MargFloatBoos">
+                                <div class="form-group has-float-label">
+                                    <input tabindex="5" name="LATITUD_CASO" type="text" id="LATITUD_CASO" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                    <label class="Labels">Latitud:</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
             </div>
             <div class="modal-footer">
-                <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button>
-                <button tabindex="1001" type="button" id="btnGrabar" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar "><span class="fa ico_grabar faa-wrench animated"></span> Guardar Iris p1</button>
+               @*  <button type="button" data-bs-dismiss="modal" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-cerrar"><span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar</button> *@
+                <button type="button"
+                        id="btnCerrarExpendio"
+                        data-bs-dismiss="modal"
+                        class="btn btn-cerrar"
+                        style="border-radius: 0px 16px 0px 16px !important;">
+                    <span class="fas fa-sign-out-alt faa-horizontal animated"></span> Cerrar
+                </button>
+                <button tabindex="1001" type="button" id="btnGrabar" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar "><span class="fa ico_grabar faa-wrench animated"></span> Guardar Expendio</button>
             </div>
         </div>
         <!-- /.modal-content -->
@@ -1016,6 +1074,9 @@
 </div>
 
 <!-- FIN  DE MODAL REGISTRO EXPENDIO-->
+
+
+
 <!-- INICIO DE MODAL VER UBICACION EXPENDIO-->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">

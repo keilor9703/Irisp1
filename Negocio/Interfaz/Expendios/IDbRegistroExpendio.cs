@@ -12,7 +12,7 @@ namespace Negocio.Interfaz.Expendios
 {
     public interface IDbRegistroExpendio
     {
-
+        public Task<DtoResultado<long>> F_ConsultarSeqIris();
         Task<DtoResultado<List<DtoExpendios>>> F_GetAniosIrisP1();
         Task<DtoResultado<List<DtoExpendios>>> F_GetInfoGrillas(Int32 V_Anio);
         Task<DtoResultado<List<DtoDominios>>> F_GetEstaciones(string V_Sigla);
@@ -24,9 +24,12 @@ namespace Negocio.Interfaz.Expendios
         Task<DtoResultado<List<DtoResultadosExpendio>>> F_GetResultados(string V_CriminalidadId);
         Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegranteAll(Int64 V_Identificacion);
 
-     
+        public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId);
+
+        public Task<DtoResultado<string>> P_InsRegistroExpendio(DtoInsExpendios Obj_NuevoExpendio, string usuario, string maquina);
 
         Task<DtoResultado<Int32>> P_InsIntegrante(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
+        Task<DtoResultado<Int32>> P_InsIntegrantePreliminar(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
         Task<DtoResultado<Int32>> P_InsDelito(DtoDelitosIris Obj_Delito, string usuario, string maquina);
         Task<DtoResultado<Int32>> P_InsBitacora(DtoInfoAdicional Obj_Bitacora, string usuario, string maquina);
         Task<DtoResultado<Int32>> P_InsResultados(DtoResultadosExpendio Obj_Resultados, string usuario, string maquina);

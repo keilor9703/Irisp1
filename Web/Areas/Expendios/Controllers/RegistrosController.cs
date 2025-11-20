@@ -12,6 +12,7 @@ using Negocio.Interfaz.Expendios;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
 using System.Security.Claims;
+using Web.Models;
 
 namespace Web.Areas.Expendios.Controllers
 {
@@ -73,6 +74,29 @@ namespace Web.Areas.Expendios.Controllers
 
 
         #region Métodos de Consulta
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> F_ConsultarSeqIris()
+        {
+            var resultado = await _iDbRegistroExpendio.F_ConsultarSeqIris();
+
+
+            if (resultado.IdRespuesta > 0)
+            {
+                var consecutivo = resultado.Data.ToString();
+
+                consecutivo = ClsEncriptar.Encriptar(consecutivo);
+                return Json(new { success = true, data = resultado, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = resultado.Data, message = resultado.Mensaje });
+            }
+        }
+
+
 
 
         [HttpGet]
@@ -141,6 +165,24 @@ namespace Web.Areas.Expendios.Controllers
                 return Json(new { success = false, data = new List<DtoIntegrantes>(), message = resultado.Mensaje });
             }
         }
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetIntegrantesPreliminar(string V_CriminalidadId)
+        {
+            var resultado = await _iDbRegistroExpendio.F_GetIntegrantesPreliminar(V_CriminalidadId);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data, message = resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = new List<DtoIntegrantes>(), message = resultado.Mensaje });
+            }
+        }
+
+
 
 
 
@@ -221,6 +263,34 @@ namespace Web.Areas.Expendios.Controllers
         #region Métodos de Insersión
 
         [HttpPost]
+        public async Task<IActionResult> P_InsRegistroExpendio(DtoInsExpendios Obj_NuevoExpendio)
+        {
+
+            
+            try
+            {
+                var Resultado = await _iDbRegistroExpendio.P_InsRegistroExpendio(Obj_NuevoExpendio, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+
+        }
+
+
+
+
+        [HttpPost]
         public async Task<IActionResult> P_InsIntegrante(DtoIntegrantes Obj_Integrante)
         {
             try
@@ -242,6 +312,30 @@ namespace Web.Areas.Expendios.Controllers
                 return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> P_InsIntegrantePreliminar(DtoIntegrantes Obj_Integrante)
+        {
+            try
+            {
+                var Resultado = await _iDbRegistroExpendio.P_InsIntegrantePreliminar(Obj_Integrante, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina")
+                );
+
+                if (Resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+                else
+                {
+                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+            }
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> P_InsDelito(DtoDelitosIris Obj_Delito)

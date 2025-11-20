@@ -48,6 +48,31 @@ $(document).on('hidden.bs.modal', '.modal', function () {
     }
 });
 
+$('#btnCerrarVerRegistro').on('click', function () {
+    // 1. Destruir DataTable si existe
+    if ($.fn.DataTable.isDataTable('#tbGrillaIntegantes')) {
+        $('#tbGrillaIntegantes').DataTable().clear().destroy();
+    }
+
+    // 2. Limpiar HTML de la tabla
+    $('#tbGrillaIntegantes').empty();
+
+    // 3. Ocultar el panel
+    $('#pn_GrillaIntegantes')
+        .removeClass('show')
+        .addClass('hidden');
+
+    // 4. Limpiar inputs
+    $('#Modal_VerRegistro').find('input[type=text], input[type=number], textarea').val('');
+
+    // 5. Resetear selects con Select2
+    $('#Modal_VerRegistro').find('select.select2').val(null).trigger('change');
+
+    // 6. Resetear clases de error
+    $('#Modal_VerRegistro').find('.form-group').removeClass('has-error');
+});
+
+
 function SubirFoto() {
 
         var fileInput = $('#fileAnexoFotografico')[0];
@@ -679,38 +704,31 @@ function Resultados() {
     };
 }
 
-// FIN Grillas /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////nuevo//////////////////////////////////////////
-
-
-//Eventos
 
 
 
+// Insertar integrantes en la modal para crear un nuevo Iris
 function InsIntegrantes() {
-    // Obtener valores y limpiar espacios
     const criminalidadId = $("#txtConsecutivoIris").val().trim();
     const alias = $("#txtAlias").val().trim();
     const nombres = $("#txtNombreInteg").val().trim();
     const apellidos = $("#txtApellidosInteg").val().trim();
     const identificacion = $("#txtIdentificacionInteg").val().trim();
     const celular = $("#txtCelularInteg").val().trim();
-    const direccion = $("#txtDirecciónInteg").val().trim();
+    const direccion = $("#txtDireccionInteg").val();
 
-    // Validación de campos obligatorios:
-    // 1. Identificación siempre requerida
-    // 2. Al menos uno entre Nombre o Alias
-    if (!criminalidadId || !identificacion || (!nombres && !alias)) {
+    // Validaciones
+    if (!criminalidadId || (!nombres && !alias)) {
         Swal.fire({
             icon: 'warning',
             title: 'Campos obligatorios',
-            text: 'Debe diligenciar Identificación y al menos Nombre o Alias.'
+            text: 'Debe diligenciar al menos Nombre o Alias.'
         });
-        return; // Detener ejecución si faltan campos
+        return;
     }
 
-    // Construir objeto de integrante sin consecutivo (lo asigna la BD)
+   
+
     const Obj_Integrante = {
         CRIMINALIDAD_ID: criminalidadId,
         ALIAS: alias,
@@ -718,20 +736,19 @@ function InsIntegrantes() {
         APELLIDO: apellidos,
         CEDULA: parseInt(identificacion),
         ID_TIPO_INFO: 30,
-      
         TIPO_DOCUMENTO: 1,
         CELULAR: celular ? parseInt(celular) : null,
         DIRECCION: direccion
     };
 
     $.ajax({
-        url: AppRoutes.RegistroIrisP1.UrlInsIntegrantes,
+        url: AppRoutes.RegistroIrisP1.UrlInsIntegrantesPreliminar,
         type: 'POST',
-        data: Obj_Integrante,
+        data: Obj_Integrante,  // ← Envío normal
         success: function (resp) {
             if (resp.success) {
                 $('#pn_GrillaIntegantes').removeClass('hidden').addClass('show');
-                F_GetIntegrantes();
+                F_GetIntegrantesPreliminar();
                 limpiarFormularioIntegrantes();
             } else {
                 Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
@@ -741,20 +758,21 @@ function InsIntegrantes() {
             Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
         }
     });
+
 }
-function F_GetIntegrantes() {
+
+function F_GetIntegrantesPreliminar() {
 
     var V_CriminalidadId = $("#txtConsecutivoIris").val()
     $.ajax({
         type: 'GET',
-        url: AppRoutes.RegistroIrisP1.UrlGetIntegrantesPreliminar
-, 
+        url: AppRoutes.RegistroIrisP1.UrlGetIntegrantesPreliminar, 
         async: true,
         data: { V_CriminalidadId: V_CriminalidadId },
         dataType: 'json',
         success: function (response) {
             if (response.success) {
-                $("#pn_GrillaIntegantes").removeClass('hidden');
+               // $("#pn_GrillaIntegantes").removeClass('hidden');
 
                
                 Grillantegrantes(response.data);
@@ -1142,12 +1160,33 @@ function P_InsRegistroIrisP1() {
                     icon: 'success',
                     title: 'Señor(a) Funcionario(a):',
                     text: resp.message
-                }).then(() => {
-                    var fecha = $('#ddlAnioIris').val(); // obtengo valor actual
-                    $('#ddlAnioIris').val(fecha).trigger('change'); // lo reasigno para refrescar
-                    F_GetInfoGrillas();
-                    limpiarFormularioIrisP1();
+                })
+                  
+                // Cerrar la modal
+                $('#Modal_VerRegistro').modal('hide');
+
+                // Obtener todas las opciones y convertir a número
+                var opciones = $('#ddlAnioIris option').map(function () {
+                    return parseInt($(this).val(), 10);
+                }).get();
+
+                // Filtrar solo los valores numéricos válidos
+                var opcionesValidas = opciones.filter(function (v) {
+                    return !isNaN(v);
                 });
+
+                // Calcular el máximo año
+                var maxAnio = Math.max.apply(null, opcionesValidas);
+
+                // Asignar el máximo año como valor seleccionado
+                $('#ddlAnioIris').val(maxAnio).trigger('change');
+
+                // Refrescar la grilla
+                F_GetInfoGrillas();
+                limpiarFormularioIrisP1
+
+
+                
             } else {
                 Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
             }
@@ -1950,6 +1989,8 @@ function OpenInsInfoadiconalModal() {
     $('#Modal_InsInfoAdicional').modal("show");
 }
 
+
+// Insertar integrantes en la modal ver detalle
 function InsIntegrantesModal() {
     // Obtener valores de los campos y limpiar espacios
     const identificacion = $("#txtIdentificacionIntegModal").val().trim();
@@ -1959,14 +2000,16 @@ function InsIntegrantesModal() {
     const direccion = $("#txtDirecciónIntegModal").val().trim();
     const alias = $("#txtAliasModal").val().trim();
 
-    // Validar campos obligatorios
-    if (!identificacion || !alias) {
+    // Validación de campos obligatorios:
+    // 1. Identificación siempre requerida
+    // 2. Al menos uno entre Nombre o Alias
+    if (!criminalidadId || (!nombres && !alias)) {
         Swal.fire({
             icon: 'warning',
             title: 'Campos obligatorios',
-            text: 'Por favor complete todos los campos antes de guardar.'
+            text: 'Debe diligenciar al menos Nombre o Alias.'
         });
-        return; // Detener la ejecución si faltan campos
+        return; // Detener ejecución si faltan campos
     }
 
     // Objeto de integrante (sin consecutivo, lo calcula la BD)

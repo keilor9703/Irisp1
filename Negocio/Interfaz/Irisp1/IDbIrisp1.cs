@@ -35,7 +35,8 @@ namespace Negocio.Interfaz.Irisp1
         #region Métodos de Insersión
 
         public Task<DtoResultado<Int32>> P_InsIntegrantes(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
-      
+        public Task<DtoResultado<Int32>> P_InsIntegrantesPreliminar(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
+
 
         public Task<DtoResultado<string>> P_InsRegistroIrisP1(DtoIrispCriminalidad Obj_NuevoIrisP1, string usuario, string maquina);
         public Task<DtoResultado<string>> P_InsDelitosIris(DtoIrispCriminalidad Obj_DelitosIris, string usuario, string maquina);
