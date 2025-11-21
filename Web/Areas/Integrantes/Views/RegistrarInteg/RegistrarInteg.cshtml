@@ -1,5 +1,188 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "Registrar Integrantes";
+
 }
+
+@section scripts {
+
+
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+   
+    <script src="~/areas/rutas/RutasIris.js"></script>
+    <script src="~/areas/integrantes/registrarintegrantes.js"></script>
+
+ 
+    <script type='text/javascript'>
+       
+
+    </script>
+}
+
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio </span></a></li>
+            <li class="active">Instrumento de Recoleccion de Informacion del Servicio de Policía / Registro de Integrantes</li>
+        </ul>
+    </div>
+</div>
+
+
+
+@* GRILLA INTEGRANTES  - REINCIDENTES*@
+<div class="card border-success hidden" id="pn_GrillaReincidentes">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fa fa-street-view"></i>Lista de Personas Reincidentes en Delitos DIPOL - DIJIN</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+
+            @* <button type="button"
+                    class="btn btn-green btn-sm py-0 px-2 align-self-center"
+                    id="btnNuevoReincidente"
+                    style="line-height:1.2; font-size: 0.8rem;" >
+                <i class="fas fa-plus"></i> Nuevo
+            </button> *@
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+           
+        </div>
+    </div>
+    <div class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-12">
+
+                <div class="text-end mb-3">
+                    <!-- 👈 margen inferior -->
+                    <button tabindex="1002" id="btnNuevoReincidente"
+                            style="border-radius: 0px 16px 0px 16px !important;"
+                            class="btn btn-limpiar" title="Nuevo">
+                        <span class="fa ico_limpiar faa-ring animated"></span> Nuevo Reincidente
+                    </button>
+                </div>
+
+                <!-- Evitamos table-responsive para no interferir con scrollX -->
+                <div class="dt-container" style="width:100%;">
+                    <table id="tbGrillaReincidentes"
+                           class="table table-bordered table-striped"
+                           width="100%"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* Modal para visualizar texto *@
+<div class="modal fade" id="Modal_VisualizarTexto" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog modal-l" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel2">Observaciones</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" width="100%" height="2000px">
+                <div class="row">
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label d-flex align-items-center">
+                            <textarea style="height: 95px !important; text-align:justify; margin-bottom: 0px;" name="txtObservacion" type="text" id="txtDescripcion" value="" autocomplete="off" class="form-control InputPading" readonly></textarea>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* Modal para crear un nuevo reincidente *@
+<div class="modal fade" id="Modal_InsReincidente" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Registrar Reincidente</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+                <input type="text" id="txtReincidenteID" class="hidden" value="" />
+
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoReincidencia", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoReincidencia", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Tipo Reincidencia:</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <div class="input-group">
+                                <input tabindex="1" name="txtIdentificacionReinc" type="number" id="txtIdentificacionReinc" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                                <span class="input-group-btn">
+                                    <button tabindex="2" class="btn btn-success" id="btnConsultarReincidente" style="height:34px; border-radius: 0px 0px 0px 0px !important;" type="button" title="Buscar..."><b><i class="fas fa-search"></i></b></button>
+                                    <button tabindex="3" class="btn btn-warning" id="btnLimpiarInteg" style="height:34px; border-radius: 0px 5px 5px 0px !important; margin-left: -5px;" type="button" title="Limpiar Consulta"><b><i class="fa fa-eraser"></i></b></button>
+                                </span>
+                            </div>
+                            <label class="Labels">Identificación:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="13" id="txtAliasReinc" name="txtAliasReinc" type="text" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                            <label class="Labels">Alias:</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" id="txtNombreReinc" name="txtNombreReinc" type="text" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                            <label class="Labels">Nombres:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="11" id="txtApellidosReinc" name="txtApellidosReinc" type="text" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                            <label class="Labels">Apellidos:</label>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <textarea tabindex="12" id="txtObservacionesReinc" name="txtObservacionesReinc"
+                                      placeholder="Digite Información"
+                                      class="form-control InputPading" rows="6"
+                                      style="resize: vertical; min-height: 100px;"></textarea>
+                            <label class="Labels">Información:</label>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnAddReincidente" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>

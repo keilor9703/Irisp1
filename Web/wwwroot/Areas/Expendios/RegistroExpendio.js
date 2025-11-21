@@ -1651,13 +1651,10 @@ function P_UpdExpendio() {
 
 function P_UpdIntegrante(INTEGRANTE_ID) {
 
-
-
     const Obj_Integrante = {
 
         CRIMINALIDAD_DIREC_ID: $("#txtCriminalidadIdModal").val(),
         INTEGRANTE_DIREC_ID: INTEGRANTE_ID,
-       // CEDULA: $("#txtIdentificacion").val(),
         ALIAS: $("#txtAliasModalUpd").val(),
         NOMBRE: $("#txtNombreIntegModalUpd").val(),
         APELLIDO: $("#txtApellidosIntegModalUpd").val(),
@@ -1718,7 +1715,6 @@ function P_UpdIntegrante(INTEGRANTE_ID) {
 
 }
 
-
 function Limpiar() {
    
     $("#txtIdentificacionUpd").val("");
@@ -1765,9 +1761,6 @@ function Limpiar() {
 
 
 
-
-
-
 }
 
 function F_AbrirMdodalActualizarIntegrante(DatosInegrante) {
@@ -1777,13 +1770,10 @@ function F_AbrirMdodalActualizarIntegrante(DatosInegrante) {
     $("#txtNombreIntegModalUpd").val(DatosInegrante.NOMBRE);
     $("#txtApellidosIntegModalUpd").val(DatosInegrante.APELLIDO);
     $("#txtIdentificacionUpd").val(DatosInegrante.CEDULA);
-
-
     $('#Modal_UpdIntegrantesExendios').modal("show");
 
 
 }
-
 
 function AbrirModalNuevoExpendio() {
 
@@ -1985,18 +1975,7 @@ function Grillantegrantes(Datos) {
             { title: "Nombre", data: "NOMBRE", className: "celdaCenter" },
             { title: "Apellido", data: "APELLIDO", className: "celdaCenter" },
             { title: "Cédula", data: "CEDULA", className: "celdaCenter" },
-          //  { title: "Dirección", data: "DIRECCION", className: "celdaCenter" },
-            //{ title: "Fecha Creación", data: "FECHA_CREACION", className: "celdaJust",
-
-
-            //    render: function (data) {
-            //        if (!data) return "";
-            //        const fecha = moment(data).format('DD/MM/YYYY');
-            //        const hora = moment(data).format('hh:mm:ss a');
-            //        return `${fecha} - ${hora}`;
-
-            //    }
-            //}
+          
         ],
         lengthMenu: [
             [5, 10, 25, 50, -1],
@@ -2023,7 +2002,6 @@ function obtenerDelitosSecundariosSeleccionados() {
 
 function P_InsExpendio() {
  
-
     var Obj_Delitos = obtenerDelitosSecundariosSeleccionados();
 
     const Obj_NuevoExpendio = {
@@ -2051,19 +2029,19 @@ function P_InsExpendio() {
     };
 
     // --- Validación de campos obligatorios ---
-    //for (let key in Obj_NuevoExpendio) {
-    //    if  (key !== 'OTRA_CATEGORIA'  &&// puede venir vacío
-    //        (Obj_NuevoExpendio[key] === null || Obj_NuevoExpendio[key] === '' || Obj_NuevoExpendio[key] === undefined || (typeof Obj_NuevoExpendio[key] === 'number' && isNaN(Obj_NuevoExpendio[key])))) {
-    //        Swal.fire('Advertencia', `El campo "${key}" es obligatorio y no puede estar vacío.`, 'warning');
+    for (let key in Obj_NuevoExpendio) {
+        if  (key !== 'OTRA_CATEGORIA'  &&// puede venir vacío
+            (Obj_NuevoExpendio[key] === null || Obj_NuevoExpendio[key] === '' || Obj_NuevoExpendio[key] === undefined || (typeof Obj_NuevoExpendio[key] === 'number' && isNaN(Obj_NuevoExpendio[key])))) {
+            Swal.fire('Advertencia', `El campo "${key}" es obligatorio y no puede estar vacío.`, 'warning');
 
-    //        Swal.fire({
-    //            type: 'warning',
-    //            title: 'Señor(a) Funcionario(a:)',
-    //            text: "Valide todos los campos para completar el presente registro"
-    //        });
-    //        return; // detener ejecución
-    //    }
-    //}
+            Swal.fire({
+                type: 'warning',
+                title: 'Señor(a) Funcionario(a:)',
+                text: "Valide todos los campos para completar el presente registro"
+            });
+            return; // detener ejecución
+        }
+    }
 
     // --- Enviar solicitud ---
     $.ajax({

@@ -283,14 +283,13 @@ div.table-responsive > div.dataTables_wrapper > div.row {
 #tbGrillaFinalizacion td,
 #tbGrillaExpendios th,
 #tbGrillaExpendios td,
+#tbGrillaReincidentes th,
+#tbGrillaReincidentes td,
 #tbGrillaResultdos th,
 #tbGrillaResultdos td {
     white-space: nowrap; /* Evita que el texto se corte en varias líneas */
 }
 
-.no-wrap {
-    white-space: nowrap;
-}
 
 
 .no-wrap {
@@ -303,31 +302,11 @@ table.dataTable {
 
 
 
-/*#tbGrillaResponsablesVerificacion td ul {
-    list-style: none;
-    padding-left: 10px;
-    margin: 0;
-}*/
-
 #tbGrillaResponsablesVerificacion td li {
     margin-bottom: 8px;
     border-bottom: 1px solid #e0e0e0;
     padding-bottom: 5px;
 }
-
-/*#tbGrillaResponsablesVerificacion td span {
-    display: inline-block;
-    margin-right: 6px;
-}
-
-#tbGrillaResponsablesVerificacion td a {
-    text-decoration: none;
-    color: #fff;
-}
-
-#tbGrillaResponsablesVerificacion td {
-    vertical-align: top;
-}*/
 
 
 .dataTables_wrapper .DTFC_LeftBodyLiner,

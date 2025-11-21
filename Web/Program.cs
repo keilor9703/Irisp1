@@ -1,21 +1,23 @@
 using Comun.Areas.Admin;
 using Comun.General;
+using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Negocio.Gestion.Admin;
 using Negocio.Gestion.Clientes;
 using Negocio.Gestion.Expendios;
 using Negocio.Gestion.General;
+using Negocio.Gestion.Integrantes;
 using Negocio.Gestion.Irisp1;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Clientes;
 using Negocio.Interfaz.Expendios;
 using Negocio.Interfaz.General;
+using Negocio.Interfaz.Integrantes;
 using Negocio.Interfaz.Irisp1;
 using Serilog;
 using Servicios.Api;
 using Servicios.ApiInterfaz;
 using Web;
-
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +40,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         // ReturnUrlParameter requires 
         options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
     });
+
+
+DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 //cadena conexión
 builder.Services.AddHttpClient();
@@ -71,6 +76,7 @@ builder.Services.AddScoped<IUnidades, Unidades>();
 builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
 builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
+builder.Services.AddScoped<IDbRegistroInteg, DbRegistroInteg>();
 
 
 // httpClient

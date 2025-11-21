@@ -99,6 +99,17 @@ window.AppRoutes = Object.freeze({
         UrlGetConsecutivoIris: '/Expendios/Registros/F_ConsultarSeqIris',
         UrlInsRegistroExpendio: '/Expendios/Registros/P_InsRegistroExpendio'
      
+    },
+
+
+    // Rutas para módulo Integrantes 
+    RegistroReincidentes: {
+        // Controlador ReagistrarInteg
+        UrlGetInfoGrila: '/Integrantes/RegistrarInteg/F_GetReincidentes',
+        UrlGetReincidentes: '/Integrantes/RegistrarInteg/F_GetReincidentesPorId',
+        UrlInsOrUpdReincidente: '/Integrantes/RegistrarInteg/P_InsOrUpdReincidente',
+      
+
     }
 
 });

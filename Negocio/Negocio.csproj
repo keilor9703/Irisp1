@@ -13,12 +13,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Gestion\Integrantes\" />
     <Folder Include="Gestion\Listas\" />
     <Folder Include="Gestion\Reportes\" />
-    <Folder Include="Interfaz\Integrantes\" />
     <Folder Include="Interfaz\Listas\" />
     <Folder Include="Interfaz\Reportes\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="Dapper.Oracle" Version="2.0.2" />
   </ItemGroup>
 
 </Project>

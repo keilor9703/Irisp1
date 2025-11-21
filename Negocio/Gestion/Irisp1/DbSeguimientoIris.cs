@@ -1,24 +1,26 @@
 ﻿using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
+using Comun.Areas.Irisp1;
 using Comun.General;
+using Dapper;
+using Dapper.Oracle;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging;
 using Negocio.Gestion.Utilidades;
 using Negocio.Interfaz.Irisp1;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data;
+using System.Diagnostics;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Oracle.ManagedDataAccess.Client;
-using System.Data;
-using System.Diagnostics;
-using Comun.Areas.Irisp1;
-using Microsoft.Extensions.Logging;
-using Oracle.ManagedDataAccess.Types;
 
 namespace Negocio.Gestion.Irisp1
 {
@@ -127,55 +129,53 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(
+      Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
         {
-            DataTable resultado = new();
-            List<DtoIrispCriminalidad> retorno = new();
-            DtoResultado<List<DtoIrispCriminalidad>> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
-                objCommand.Parameters.Add("P_Roles", OracleDbType.Varchar2, ParameterDirection.Input).Value = RolesUsuario;
-                objCommand.Parameters.Add("P_CodigoUnidad", OracleDbType.Int64, ParameterDirection.Input).Value = CodigoUnidad;
-                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+                var parametros = new OracleDynamicParameters();
 
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
+                parametros.Add("P_Anio", V_Anio, OracleMappingType.Int32, ParameterDirection.Input);
+                parametros.Add("P_Roles", RolesUsuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                parametros.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
 
-                    resp.IdRespuesta = retorno.Count > 0 ? 1 : 0;
-                    resp.Mensaje = retorno.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
-                    resp.Data = retorno;
-                    resp.Operacion = "F_GetInfoGrillas";
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                }
+                // Cursor de salida
+                parametros.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+
+                string sql = @"
+        BEGIN
+            :RESULT := PK_CONSULTA_IRISP.F_GetInfoGrillas(
+                :P_Anio,
+                :P_Roles,
+                :P_CodigoUnidad
+            );
+        END;";
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>(
+                    sql,
+                    parametros,
+                    commandType: CommandType.Text
+                )).ToList();
+
+                // respuesta final
+                resp.IdRespuesta = lista.Count > 0 ? 1 : 0;
+                resp.Mensaje = lista.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+                resp.Data = lista;
+                resp.Operacion = "F_GetInfoGrillas";
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas");
+                _logger.LogError(ex, "Error ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas");
                 resp.IdRespuesta = 0;
-                resp.Mensaje = e.Message;
-            }
-            finally
-            {
-                Conexion.Close();
-                objCommand.Dispose();
+                resp.Mensaje = ex.Message;
+                resp.Data = null;
             }
 
             return resp;
