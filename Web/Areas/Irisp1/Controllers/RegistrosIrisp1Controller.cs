@@ -57,9 +57,9 @@ namespace Web.Areas.Irisp1.Controllers
         {
 
 
-			var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "VwRegistrosIrisp1", "Ingreso Módulo", "0", HttpContext.Session.GetString("IpMaquina"));
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo IrisP1/Registros", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
-			var ddlAnioIris = (await _iDbIrisp1.F_GetAniosIrisP1()).Data.ToList();
+            var ddlAnioIris = (await _iDbIrisp1.F_GetAniosIrisP1()).Data.ToList();
           
 
             //  var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
@@ -283,7 +283,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
             else
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+                return Json(new { success = true, data = resultado.Data });
 
             }
         }
@@ -300,7 +300,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
             else
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+                return Json(new { success = false, message = resultado.Mensaje });
 
             }
         }
@@ -320,7 +320,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             else
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+              //  return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+                return Json(new { success = false, message = resultado.Mensaje });
 
             }
         }

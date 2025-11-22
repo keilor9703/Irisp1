@@ -6,12 +6,13 @@
 @section scripts {
 
 
-    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
 
-
-   
     <script src="~/areas/rutas/RutasIris.js"></script>
     <script src="~/areas/integrantes/registrarintegrantes.js"></script>
 
@@ -51,17 +52,29 @@
            
         </div>
     </div>
+
+
     <div class="card-body collapse show">
         <div class="row">
             <div class="col-md-12">
 
-                <div class="text-end mb-3">
-                    <!-- 👈 margen inferior -->
+                <div class="text-start mb-3">
+                   
+           
                     <button tabindex="1002" id="btnNuevoReincidente"
                             style="border-radius: 0px 16px 0px 16px !important;"
-                            class="btn btn-limpiar" title="Nuevo">
+                            class="btn btn-limpiar me-2" title="Nuevo">
                         <span class="fa ico_limpiar faa-ring animated"></span> Nuevo Reincidente
                     </button>
+
+                    <button id="btnExcel" class="btn btn-success btn-sm me-2">
+                        <i class="fa fa-file-excel"></i> Excel
+                    </button>
+
+                    <button id="btnPdf" class="btn btn-danger btn-sm me-2">
+                        <i class="fa fa-file-pdf"></i> PDF
+                    </button>
+
                 </div>
 
                 <!-- Evitamos table-responsive para no interferir con scrollX -->
@@ -167,10 +180,10 @@
                     <div class="col-md-12 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <textarea tabindex="12" id="txtObservacionesReinc" name="txtObservacionesReinc"
-                                      placeholder="Digite Información"
+                                      placeholder="(Opcional) Digite una observación"
                                       class="form-control InputPading" rows="6"
                                       style="resize: vertical; min-height: 100px;"></textarea>
-                            <label class="Labels">Información:</label>
+                            <label class="Labels">Observaciones:</label>
                         </div>
                     </div>
 
@@ -182,6 +195,92 @@
             <div class="modal-footer" style="justify-content:center;">
 
                 <button tabindex="14" type="button" id="btnAddReincidente" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@* Modal para actualizar  reincidente *@
+<div class="modal fade" id="Modal_UpdReincidente" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 900px;">
+
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel" style="font-weight: bold;">Actualizar Reincidente</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+                <input type="text" id="txtReincidenteIDUpd" class="hidden" value="" />
+
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoReincidencia2", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 7, id = "ddlTipoReincidencia2", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Tipo Reincidencia:</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 MargFloatBoos hidden">
+                        <div class="form-group has-float-label">
+                            <div class="input-group">
+                                <input tabindex="1" name="txtIdentificacionReincUpd" type="number" id="txtIdentificacionReincUpd" autocomplete="off" placeholder=" " class="form-control InputPading" />
+                            </div>
+                            <label class="Labels">Identificación:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input tabindex="13" id="txtAliasReincUpd" name="txtAliasReincUpd" type="text" autocomplete="off" placeholder="Digite el alias si aplica" class="form-control InputPading">
+                            <label class="Labels">Alias:</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos hidden">
+                        <div class="form-group has-float-label">
+                            <input tabindex="12" id="txtNombreReincUpd" name="txtNombreReincUpd" type="text" autocomplete="off" placeholder="Digite los nombres" class="form-control InputPading">
+                            <label class="Labels">Nombres:</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 MargFloatBoos hidden">
+                        <div class="form-group has-float-label">
+                            <input tabindex="11" id="txtApellidosReincUpd" name="txtApellidosReincUpd" type="text" autocomplete="off" placeholder="Digite los apellidos" class="form-control InputPading">
+                            <label class="Labels">Apellidos:</label>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <textarea tabindex="12" id="txtObservacionesReincUpd" name="txtObservacionesReincUpd"
+                                      placeholder="(Opcional) Digite una observación"
+                                      class="form-control InputPading" rows="6"
+                                      style="resize: vertical; min-height: 100px;"></textarea>
+                            <label class="Labels">Observaciones:</label>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+
+                <button tabindex="14" type="button" id="btnUpdReincidente" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span>Actualizar</button>
             </div>
         </div>
     </div>

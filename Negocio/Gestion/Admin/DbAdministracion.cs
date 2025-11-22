@@ -606,7 +606,7 @@ namespace Negocio.Gestion.Admin
         #endregion
 
         #region Métodos de Inserción y Actualización
-        public async Task<DtoResultado<Int32>> P_InsAuditoria(Int64 V_Identificacion, string V_Evento, string V_Descripcion, string V_Identificador, string V_Maquina)
+        public async Task<DtoResultado<Int32>> P_InsAuditoria(Int64 V_Identificacion, string V_Evento, string V_Descripcion, Int64 V_Identificador, string V_Maquina)
         {
             DtoResultado<Int32> resp = new();
 
@@ -624,7 +624,7 @@ namespace Negocio.Gestion.Admin
                 objCommand.Parameters.Clear();
                 objCommand.Parameters.Add("P_Evento", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Evento;
                 objCommand.Parameters.Add("P_Descripcion", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Descripcion;
-                objCommand.Parameters.Add("P_Identificador", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Identificador;
+                objCommand.Parameters.Add("P_Identificador", OracleDbType.Int64, ParameterDirection.Input).Value = V_Identificador;
 
                 objCommand.Parameters.Add("P_Usuario", OracleDbType.Int64, ParameterDirection.Input).Value = V_Identificacion;
                 objCommand.Parameters.Add("P_Maquina", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Maquina;

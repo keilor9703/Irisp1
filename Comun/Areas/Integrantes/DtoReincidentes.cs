@@ -15,13 +15,13 @@ namespace Comun.Areas.Integrantes
         public string ReincidenteId { get; set; }
 
         [JsonPropertyName("alias")]
-        public string Alias { get; set; }
+        public string? Alias { get; set; }
 
         [JsonPropertyName("nombre")]
-        public string Nombre { get; set; }
+        public string? Nombre { get; set; }
 
         [JsonPropertyName("apellido")]
-        public string Apellido { get; set; }
+        public string? Apellido { get; set; }
 
         [JsonPropertyName("identificacion")]
         public long Identificacion { get; set; }
@@ -48,7 +48,7 @@ namespace Comun.Areas.Integrantes
         //public string MaquinaModifica { get; set; }
 
         [JsonPropertyName("observacion")]
-        public string Observacion { get; set; }
+        public string? Observacion { get; set; }
 
         [JsonPropertyName("idTipo")]
         public int IdTipo { get; set; }

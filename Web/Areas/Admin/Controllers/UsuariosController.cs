@@ -25,7 +25,7 @@ namespace Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> VwUsuarios()
         {
-            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "VwUsuarios", "Ingreso Módulo", "0", HttpContext.Session.GetString("IpMaquina"));
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Administracion/Usuarios", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
             ViewBag.ddlRol = new SelectList((await _iDbAdministracion.F_GetRoles()).Data.ToList().OrderBy(x => x.DESCRIPCION).ToList(), "IDROL", "DESCRIPCION");
             return View();
         }

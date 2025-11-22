@@ -578,7 +578,7 @@ namespace Negocio.Gestion.Irisp1
 
 
         public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId)
-        {
+            {
             var respuesta = new DtoResultado<List<DtoIntegrantes>>();
 
             try
@@ -620,8 +620,8 @@ namespace Negocio.Gestion.Irisp1
                                     TIPO_DOCUMENTO = reader["TIPO_DOCUMENTO"] as int?,
                                     CELULAR = reader["CELULAR"] as long?,
                                     DIRECCION = reader["DIRECCION"]?.ToString(),
-                                    ID_INTEGRANTE = reader["ID_INTEGRANTE"] as long?,
-                                    ID_CRIMINALIDAD = reader["ID_CRIMINALIDAD"] as long?
+                                   // ID_INTEGRANTE = reader["ID_INTEGRANTE"] as long?,
+                                    //ID_CRIMINALIDAD = reader["ID_CRIMINALIDAD"] as long?
                                 });
                             }
 

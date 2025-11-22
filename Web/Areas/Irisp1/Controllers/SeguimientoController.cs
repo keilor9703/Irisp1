@@ -49,9 +49,9 @@ namespace Web.Areas.Irisp1.Controllers
         #endregion
         public async Task<ActionResult> Seguimiento()
         {
-            var ddlAnioIris = (await _iDbSeguimientoIris.F_GetAniosIrisP1()).Data.ToList();
 
-         
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo IrisP1/Seguimiento", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+            var ddlAnioIris = (await _iDbSeguimientoIris.F_GetAniosIrisP1()).Data.ToList();
             var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
 
             //  Crea el SelectList con el año actual seleccionado por defecto

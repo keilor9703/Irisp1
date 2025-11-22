@@ -44,9 +44,15 @@ $(document).ready(function () {
         }
     });
 
-   
-    //F_GetInfoGrillas($('#ddlAnioIris').val());
 
+    $("#btnExcel").on("click", function () {
+        let filtro = $(".dataTables_filter input").val() || "";
+        let anio = $("#ddlAnioIris").val();
+
+        window.location.href = `/Expendios/Registros/ExportarExcel?filtro=${encodeURIComponent(filtro)}&anio=${anio}`;
+
+    });
+   
 
     $("#btnVisualizarFuncionario").on("click", function (e) {
         e.preventDefault();
@@ -167,7 +173,7 @@ $(document).ready(function () {
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, eliminar',
+            confirmButtonText: 'Sí, Actualizar',
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -2091,3 +2097,5 @@ function P_InsExpendio() {
         }
     });
 }
+
+

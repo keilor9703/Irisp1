@@ -77,6 +77,7 @@ builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
 builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
 builder.Services.AddScoped<IDbRegistroInteg, DbRegistroInteg>();
+builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
 
 
 // httpClient

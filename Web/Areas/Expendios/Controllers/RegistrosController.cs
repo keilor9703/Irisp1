@@ -1,4 +1,5 @@
-﻿using Comun.Areas.Expendios;
+﻿using ClosedXML.Excel;
+using Comun.Areas.Expendios;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
 using Comun.General;
@@ -45,7 +46,7 @@ namespace Web.Areas.Expendios.Controllers
         public async Task<ActionResult> Registros()
         {
 
-            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "VwRegistrosExpendios", "Ingreso Módulo", "0", HttpContext.Session.GetString("IpMaquina"));
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Expendios/Registros", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
             //ViewBag.ddlUnidadExpendio = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
 
@@ -150,6 +151,153 @@ namespace Web.Areas.Expendios.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { success = false, message = resultado.Mensaje });
         }
+
+
+        [HttpGet]
+        public async Task<IActionResult> ExportarExcel(string filtro, int anio)
+        {
+
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Descargar Reporte", "Excel Expendios", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+
+
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            // Obtener roles del usuario
+            var rolesUsuario = string.Join(",",
+                User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+            );
+
+            // Obtener datos desde la BD
+            var resultado = await _iDbRegistroExpendio.F_GetInfoGrillas(anio, rolesUsuario, codigoUnidad);
+
+            if (resultado.IdRespuesta == 0)
+                return StatusCode(500, new { success = false, message = resultado.Mensaje });
+
+            var lista = resultado.Data;
+
+            // Aplicar filtro si existe
+            if (!string.IsNullOrWhiteSpace(filtro))
+            {
+                filtro = filtro.ToUpper().Trim();
+
+                lista = lista.Where(x =>
+                    (x.Estado?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Codigo?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.UnidadInformaDescripcion?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.SiglaUnidadInforma?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.RegionDescripcion?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Unidad?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Zona?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Clase?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Expendio?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Fuente?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Categoria?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.OtraCategoria?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.NombreMored?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Barrio?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Direccion?.ToUpper().Contains(filtro) ?? false) ||
+                    (x.Municipio?.ToUpper().Contains(filtro) ?? false)
+                ).ToList();
+            }
+
+
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Expendios");
+
+            // ------------------------------------------
+            // ENCABEZADO INSTITUCIONAL
+            // ------------------------------------------
+            ws.Cell(1, 1).Value = "POLICÍA NACIONAL DE COLOMBIA";
+            ws.Cell(1, 1).Style.Font.Bold = true;
+            ws.Cell(1, 1).Style.Font.FontSize = 16;
+            ws.Range(1, 1, 1, 26).Merge().Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+            ws.Cell(2, 1).Value = "Reporte de Expendios";
+            ws.Cell(2, 1).Style.Font.Bold = true;
+            ws.Cell(2, 1).Style.Font.FontSize = 14;
+            ws.Range(2, 1, 2, 26).Merge().Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+            ws.Cell(3, 1).Value = $"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}";
+            ws.Range(3, 1, 3, 26).Merge().Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+            ws.Range(4, 1, 4, 26).Merge(); // Fila vacía estética
+
+
+            // ------------------------------------------
+            // ENCABEZADOS DE LA TABLA
+            // ------------------------------------------
+            string[] headers = new[]
+            {
+        "Estado", "Codigo", "Unidad Informa", "Sigla", "Region", "Unidad Hecho", "Zona", "Clase",
+        "Tipo Expendio", "Fuente", "Fecha Inicio Existencia", "Características Generales",
+        "Categoría", "Otra Categoría", "Código Operación", "Nombre Operación",
+        "NUNC", "SIEDCO", "Erradicado ?", "Barrio", "Direccion",
+        "Latitud", "Longitud", "Cuadrante", "Municipio", "Fecha Creacion"
+    };
+
+            for (int i = 0; i < headers.Length; i++)
+                ws.Cell(5, i + 1).Value = headers[i];
+
+            ws.Range(5, 1, 5, headers.Length).Style.Font.Bold = true;
+
+
+            // ------------------------------------------
+            // ESCRIBIR DATOS
+            // ------------------------------------------
+            int fila = 6; // datos comienzan aquí
+
+            foreach (var item in lista)
+            {
+                ws.Cell(fila, 1).Value = item.Estado;
+                ws.Cell(fila, 2).Value = item.Codigo;
+                ws.Cell(fila, 3).Value = item.UnidadInformaDescripcion;
+                ws.Cell(fila, 4).Value = item.SiglaUnidadInforma;
+                ws.Cell(fila, 5).Value = item.RegionDescripcion;
+                ws.Cell(fila, 6).Value = item.Unidad;
+                ws.Cell(fila, 7).Value = item.Zona;
+                ws.Cell(fila, 8).Value = item.Clase;
+                ws.Cell(fila, 9).Value = item.Expendio;
+                ws.Cell(fila, 10).Value = item.Fuente;
+                ws.Cell(fila, 11).Value = item.FechaInicioExistencia.ToString("dd/MM/yyyy HH:mm");
+                ws.Cell(fila, 12).Value = item.CaracteristicasGenerales;
+                ws.Cell(fila, 13).Value = item.Categoria;
+                ws.Cell(fila, 14).Value = item.OtraCategoria;
+                ws.Cell(fila, 15).Value = item.CodigoMored;
+                ws.Cell(fila, 16).Value = item.NombreMored;
+                ws.Cell(fila, 17).Value = item.Nunc;
+                ws.Cell(fila, 18).Value = item.Siedco;
+                ws.Cell(fila, 19).Value = item.Erradicado;
+                ws.Cell(fila, 20).Value = item.Barrio;
+                ws.Cell(fila, 21).Value = item.Direccion;
+                ws.Cell(fila, 22).Value = item.Latitud;
+                ws.Cell(fila, 23).Value = item.Longitud;
+                ws.Cell(fila, 24).Value = item.Cuadrante;
+                ws.Cell(fila, 25).Value = item.Municipio;
+                ws.Cell(fila, 26).Value = item.FechaCreacion.ToString("dd/MM/yyyy HH:mm");
+
+                fila++;
+            }
+
+
+            // ------------------------------------------
+            // AJUSTE DE ANCHO COLUMNAS
+            // ------------------------------------------
+            ws.Columns().AdjustToContents();
+
+
+            // ------------------------------------------
+            // RETORNO
+            // ------------------------------------------
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Expendios_{anio}.xlsx");
+        }
+
 
 
 
@@ -446,6 +594,10 @@ namespace Web.Areas.Expendios.Controllers
 
         #endregion
 
+
+
+
+      
 
         #region Métodos de Actualización
 

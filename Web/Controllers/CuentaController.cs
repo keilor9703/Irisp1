@@ -130,7 +130,7 @@ namespace Web.Controllers
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
                 //Auditoria Inicio de Sesion
-                var Auditoria = _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(Usuario.Data.Identificacion), "InicioSesion", "Inicio sesion Sistema", Convert.ToString(Usuario.Data.Identificacion), HttpContext.Session.GetString("IpMaquina"));
+                var Auditoria = _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(Usuario.Data.Identificacion), "Inicio Sesion", "Inicio sesion Sistema", Convert.ToInt64(Usuario.Data.Identificacion), HttpContext.Session.GetString("IpMaquina"));
 
                 return RedirectToAction("Index", "Home");
             }
@@ -144,6 +144,9 @@ namespace Web.Controllers
         [HttpGet]
         public async Task<IActionResult> CerrarSesion()
         {
+
+            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Cierre Sesión", "Cierre Sesión Sistema", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(InicioSesion));
