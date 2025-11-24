@@ -549,6 +549,7 @@ function columnaCaracteristicasGenerales() {
     };
 }
 
+
 function columnaDescripcionTramite() {
     return {
         title: "Descripcion del Tramite",

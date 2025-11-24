@@ -117,6 +117,7 @@ window.AppRoutes = Object.freeze({
         // Controlador BuscarInteg
         UrlGetListaIris: '/Integrantes/BuscarInteg/F_GetListaIris',
         UrlGetintegrantesPorId: '/Integrantes/BuscarInteg/F_GetIntegrantesPorId',
+        UrlGetLogPorIdentificacion: '/Integrantes/BuscarInteg/F_GetLogPorIdentificacion',
        
 
 

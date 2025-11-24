@@ -176,6 +176,18 @@ function GetGrillaReincidentes(Datos) {
 }
 
 
+
+$("#btnExcel").on("click", function () {
+    let filtro = $(".dataTables_filter input").val() || "";
+    window.location.href = "/Integrantes/RegistrarInteg/ExportarExcel?filtro=" + encodeURIComponent(filtro);
+});
+
+$("#btnPdf").on("click", function () {
+    let filtro = $(".dataTables_filter input").val() || "";
+    window.open("/Integrantes/RegistrarInteg/ExportarPdf?filtro=" + encodeURIComponent(filtro), "_blank");
+});
+
+
 //function GetGrillaReincidentes(Datos) {
 
 
@@ -516,15 +528,6 @@ function Limpiar() {
 
 
 
-$("#btnExcel").on("click", function () {
-    let filtro = $(".dataTables_filter input").val() || "";
-    window.location.href = "/Integrantes/RegistrarInteg/ExportarExcel?filtro=" + encodeURIComponent(filtro);
-});
-
-$("#btnPdf").on("click", function () {
-    let filtro = $(".dataTables_filter input").val() || "";
-    window.open("/Integrantes/RegistrarInteg/ExportarPdf?filtro=" + encodeURIComponent(filtro), "_blank");
-});
 
 //$("#btnPrint").on("click", function () {
 //    let filtro = $(".dataTables_filter input").val() || "";

@@ -17,6 +17,7 @@ using Negocio.Interfaz.Irisp1;
 using Serilog;
 using Servicios.Api;
 using Servicios.ApiInterfaz;
+using QuestPDF.Infrastructure;
 using Web;
 
 
@@ -43,6 +44,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 //cadena conexión
 builder.Services.AddHttpClient();

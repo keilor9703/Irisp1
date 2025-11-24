@@ -10,20 +10,17 @@ namespace Comun.Areas.Integrantes
     public class DtoListaIrisGeneral
     {
 
-        [JsonPropertyName("criminalidadId")]
-        public string? CriminalidadId { get; set; }
+        [JsonPropertyName("estadoDescripcion")]
+        public string? EstadoDescripcion { get; set; }
 
-        [JsonPropertyName("estado")]
-        public string? Estado { get; set; }
+        [JsonPropertyName("estadoExistenciaDescripcion")]
+        public string? EstadoExistenciaDescripcion { get; set; }
 
-        [JsonPropertyName("estadoExistencia")]
-        public string? EstadoExistencia { get; set; }
+        [JsonPropertyName("codigo")]
+        public string? Codigo { get; set; }
 
-        [JsonPropertyName("codigoIrisp")]
-        public string? CodigoIrisp { get; set; }
-
-        [JsonPropertyName("unidad")]
-        public string? Unidad { get; set; }
+        [JsonPropertyName("dependencia")]
+        public string? Dependencia { get; set; }
 
         [JsonPropertyName("municipio")]
         public string? Municipio { get; set; }
@@ -43,59 +40,47 @@ namespace Comun.Areas.Integrantes
         [JsonPropertyName("fechaInicioExistencia")]
         public DateTime? FechaInicioExistencia { get; set; }
 
-        [JsonPropertyName("cantidadIntegrante")]
-        public int? CantidadIntegrante { get; set; }
+        [JsonPropertyName("cantidadIntegrantes")]
+        public int? CantidadIntegrantes { get; set; }
 
         [JsonPropertyName("caracteristicasGenerales")]
         public string? CaracteristicasGenerales { get; set; }
 
-        [JsonPropertyName("descripcionTramite")]
-        public string? DescripcionTramite { get; set; }
+        [JsonPropertyName("tipoServicio")]
+        public string? TipoServicio { get; set; }
 
-        [JsonPropertyName("alias")]
-        public string? Alias { get; set; }
+        [JsonPropertyName("unidadResponsable")]
+        public string? UnidadResponsable { get; set; }
 
-        [JsonPropertyName("nombre")]
-        public string? Nombre { get; set; }
+        [JsonPropertyName("fechaVerificacionExistencia")]
+        public DateTime? FechaVerificacionExistencia { get; set; }
 
-        [JsonPropertyName("apellido")]
-        public string? Apellido { get; set; }
+        [JsonPropertyName("fechaRespuestaVerificacion")]
+        public DateTime? FechaRespuestaVerificacion { get; set; }
 
-        [JsonPropertyName("cedula")]
-        public long? Cedula { get; set; }
+        [JsonPropertyName("contadorVerificacionExistencia")]
+        public string? ContadorVerificacionExistencia { get; set; }
 
-        [JsonPropertyName("tipoInfo")]
-        public string? TipoInfo { get; set; }
+        [JsonPropertyName("unidadProcesoInvestigativo")]
+        public string? UnidadProcesoInvestigativo { get; set; }
 
-        [JsonPropertyName("integranteId")]
-        public string? IntegranteId { get; set; }
+        [JsonPropertyName("fechaProcesoInvestigativo")]
+        public DateTime? FechaProcesoInvestigativo { get; set; }
 
-        [JsonPropertyName("idTipoInfo")]
-        public int? IdTipoInfo { get; set; }
+        [JsonPropertyName("fechaRespuestaInvestigativo")]
+        public DateTime? FechaRespuestaInvestigativo { get; set; }
 
-        [JsonPropertyName("fechaCreacion")]
-        public DateTime? FechaCreacion { get; set; }
+        [JsonPropertyName("contadorProcesoInvestigativo")]
+        public string? ContadorProcesoInvestigativo { get; set; }
 
-        [JsonPropertyName("fechaModifica")]
-        public DateTime? FechaModifica { get; set; }
+        [JsonPropertyName("numeroSiedco")]
+        public string? NumeroSiedco { get; set; }
 
-        [JsonPropertyName("identificacionCreacion")]
-        public long? IdentificacionCreacion { get; set; }
+        [JsonPropertyName("numeroSpoa")]
+        public string? NumeroSpoa { get; set; }
 
-        [JsonPropertyName("identificacionModifica")]
-        public long? IdentificacionModifica { get; set; }
-
-        [JsonPropertyName("maquinaCreacion")]
-        public string? MaquinaCreacion { get; set; }
-
-        [JsonPropertyName("maquinaModifica")]
-        public string? MaquinaModifica { get; set; }
-
-        [JsonPropertyName("vigente")]
-        public int? Vigente { get; set; }
-
-        [JsonPropertyName("observacion")]
-        public string? Observacion { get; set; }
+        [JsonPropertyName("resultados")]
+        public string? Resultados { get; set; }
 
     }
 }

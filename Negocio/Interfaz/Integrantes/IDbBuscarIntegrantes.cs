@@ -12,5 +12,7 @@ namespace Negocio.Interfaz.Integrantes
     {
 
         Task<DtoResultado<List<DtoDatosBasicos>>> F_GetIntegrantesPorId(long identificacion);
+        Task<DtoResultado<List<DtoListaIrisGeneral>>> F_GetListaIris(long identificacion);
+        Task<DtoResultado<List<DtoAntecedentesLogs>>> F_GetLogPorIdentificacion(long identificacion);
     }
 }
