@@ -112,15 +112,19 @@ window.AppRoutes = Object.freeze({
         UrlDellReincidente: '/Integrantes/RegistrarInteg/P_DellReincidente',
     },
 
-       // Rutas para módulo Integrantes / Buscar
+       // Rutas para módulo Integrantes
     BuscarIntegrantes: {
         // Controlador BuscarInteg
         UrlGetListaIris: '/Integrantes/BuscarInteg/F_GetListaIris',
         UrlGetintegrantesPorId: '/Integrantes/BuscarInteg/F_GetIntegrantesPorId',
         UrlGetLogPorIdentificacion: '/Integrantes/BuscarInteg/F_GetLogPorIdentificacion',
-       
+    },
 
-
+       // Rutas para módulo Reportes
+    ReportesGeneral: {
+        // Controlador BuscarInteg
+        UrlGetInfoGrillas: '/Reportes/ReporteGeneral/F_GetReporteGeneral',
+        
     }
 
 });

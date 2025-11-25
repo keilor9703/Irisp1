@@ -1,0 +1,100 @@
+﻿@{
+    ViewData["Title"] = "Reporte General";
+}
+
+
+
+@section scripts {
+
+    <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="~/areas/rutas/RutasIris.js"></script>
+    <script src="~/areas/reportes/reportesgeneral.js"></script>
+
+
+
+    <script type='text/javascript'>
+        var codigoDaneInicial = 11001;
+
+    </script>
+}
+@*
+   BUSQUEDA POR AÑOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*@
+<div class="card border-success">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class=" fas fa-clipboard-list  "></i> Consulta IRIS</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+    <div class="card-body collapse show">
+        <div class="row">
+            <!-- Se agrega margen superior aquí -->
+            <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
+                    htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
+                    <label class="Labels">Ver IRIS-P1 por año</label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@* GRILLA  *@
+<div class="card border-success hidden" id="pn_GrillaGeneral">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Lista - Reporte General</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+           
+        </div>
+    </div>
+    <div class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-12">
+
+                <button id="btnExcel" class="btn btn-success btn-sm me-2">
+                    <i class="fa fa-file-excel"></i> Excel
+                </button>
+
+                <button id="btnPdf" class="btn btn-danger btn-sm me-2">
+                    <i class="fa fa-file-pdf"></i> PDF
+                </button>
+
+                <div class="dt-container" style="width:100%; margin-top:0;">
+                    <table id="tbGrillaGeneral" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal para visualizar texto *@
+<div class="modal fade" id="Modal_VisualizarTexto" aria-labelledby="bs-example-modal-lg" aria-hidden="true">
+    <div class="modal-dialog modal-l" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h3 class="modal-title" id="myLargeModalLabel2">Descripción</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" width="100%" height="2000px">
+                <div class="row">
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label d-flex align-items-center">
+                            <textarea style="height: 95px !important; text-align:justify; margin-bottom: 0px;" name="txtDescripcion" type="text" id="txtDescripcion" value="" autocomplete="off" class="form-control InputPading" readonly></textarea>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

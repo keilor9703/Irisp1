@@ -8,16 +8,18 @@ using Negocio.Gestion.Expendios;
 using Negocio.Gestion.General;
 using Negocio.Gestion.Integrantes;
 using Negocio.Gestion.Irisp1;
+using Negocio.Gestion.Reportes;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Clientes;
 using Negocio.Interfaz.Expendios;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Integrantes;
 using Negocio.Interfaz.Irisp1;
+using Negocio.Interfaz.Reportes;
+using QuestPDF.Infrastructure;
 using Serilog;
 using Servicios.Api;
 using Servicios.ApiInterfaz;
-using QuestPDF.Infrastructure;
 using Web;
 
 
@@ -81,6 +83,7 @@ builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
 builder.Services.AddScoped<IDbRegistroInteg, DbRegistroInteg>();
 builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
+builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
 
 
 // httpClient
