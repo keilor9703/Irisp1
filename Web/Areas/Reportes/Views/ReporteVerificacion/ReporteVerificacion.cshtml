@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Reporte General";
+    ViewData["Title"] = "Reporte Verificación";
 }
 
 
@@ -8,7 +8,10 @@
 
     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
     <script src="~/areas/rutas/RutasIris.js"></script>
-    <script src="~/areas/reportes/reportesgeneral.js"></script>
+    <script src="~/areas/reportes/reporteverificacion.js"></script>
+
+
+
 
 
 
@@ -18,57 +21,25 @@
     </script>
 }
 
-
-
 <section class="content-header"></section>
 <div class="page-titles">
     <div class="breadcrumb-line">
         <ul class="breadcrumb">
             <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio </span></a></li>
-            <li class="active">Instrumento de Recoleccion de Informacion del Servicio de Policía / Reporte General</li>
+            <li class="active">Instrumento de Recoleccion de Informacion del Servicio de Policía / Reporte Verificacion de información completa de los IRISP1 </li>
         </ul>
     </div>
 </div>
 
 
-@*
-   BUSQUEDA POR AÑOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-*@
-<div class="card border-success">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="fa fa-search"></i> Consulta IRIS</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                <i data-feather="x" class="feather-sm"></i>
-            </a>
-        </div>
-    </div>
-    <div class="card-body collapse show">
-        <div class="row">
-            <!-- Se agrega margen superior aquí -->
-            <div class="col-md-2 MargFloatBoos">
-                <div class="form-group has-float-label">
-                    @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
-                    htmlAttributes: new { @tabindex = 12, id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
-                    <label class="Labels">Ver IRIS-P1 por año</label>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-
 @* GRILLA  *@
-<div class="card border-success hidden" id="pn_GrillaGeneral">
+<div class="card border-success hidden" id="pn_GrillaVerificacionRep">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Lista - Reporte General</h4>
         <div class="card-actions ms-auto d-flex button-group">
 
             <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-           
+
         </div>
     </div>
     <div class="card-body collapse show">
@@ -79,9 +50,12 @@
                     <i class="fa fa-file-excel"></i> Excel
                 </button>
 
+                <button id="btnPdf" class="btn btn-danger btn-sm me-2">
+                    <i class="fa fa-file-pdf"></i> PDF
+                </button>
 
                 <div class="dt-container" style="width:100%; margin-top:0;">
-                    <table id="tbGrillaGeneral" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
+                    <table id="tbGrillaVerificacionRep" class="table table-bordered table-striped" width="100%" style="margin-top:-1px;"></table>
                 </div>
             </div>
         </div>

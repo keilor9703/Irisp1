@@ -1,4 +1,5 @@
 using Comun.Areas.Admin;
+using Comun.Areas.Reportes;
 using Comun.General;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -84,6 +85,7 @@ builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
 builder.Services.AddScoped<IDbRegistroInteg, DbRegistroInteg>();
 builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
 builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
+builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
 
 
 // httpClient

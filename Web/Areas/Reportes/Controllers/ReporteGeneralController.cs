@@ -21,19 +21,17 @@ namespace Web.Areas.Reportes.Controllers
 
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IConfiguration _configuration;
-        private readonly IDbDominios _IDbDominios;
+   
         private readonly IDbReportesGeneral _IDbReportesGeneral;
 
 
 
 
-        public ReporteGeneralController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbVerificacionIris iDbVerificacionIris, IDbDominios idbDominios, IDbReportesGeneral dbReportesGeneral)
+        public ReporteGeneralController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion,  IDbReportesGeneral dbReportesGeneral)
         {
             _iDbAdministracion = iDbAdministracion;
             _configuration = iConfiguration;
-            _IDbDominios = idbDominios;
-            _IDbDominios = idbDominios;
-            _IDbReportesGeneral  = dbReportesGeneral;
+             _IDbReportesGeneral  = dbReportesGeneral;
 
 
         }
@@ -203,231 +201,7 @@ namespace Web.Areas.Reportes.Controllers
         }
 
 
-        [HttpGet]
-        public async Task<IActionResult> ExportarPdfReporteGeneral(int anio)
-        {
-            await _iDbAdministracion.P_InsAuditoria(
-                Convert.ToInt64(User.FindFirstValue("Identificacion")),
-                "Exportar Reporte",
-                "PDF Reporte General IRIS-P1",
-                Convert.ToInt64(User.FindFirstValue("Identificacion")),
-                HttpContext.Session.GetString("IpMaquina")
-            );
-
-            var codigoUnidad = Convert.ToInt32(User.FindFirstValue("IdUndeLabora"));
-
-            var rolesUsuario = string.Join(",",
-                User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value)
-            );
-
-            var resultado = await _IDbReportesGeneral.F_GetReporteGeneral(rolesUsuario, codigoUnidad, anio);
-
-            if (resultado.IdRespuesta == 0)
-                return StatusCode(500, new { success = false, message = resultado.Mensaje });
-
-            byte[] pdf = GeneratePdfReporteGeneral(resultado.Data);
-
-            return File(pdf, "application/pdf", "Reporte_General_IRISP1.pdf");
-        }
-
-        private string CleanText(string? input)
-        {
-            if (string.IsNullOrWhiteSpace(input))
-                return string.Empty;
-
-            return input
-                .Replace("•", "-")
-                .Replace("●", "-")
-                .Replace("▪", "-")
-                .Replace("", "-")
-                .Replace("\uF0B7", "-")
-                .Replace("\u2022", "-") // bullet unicode
-                .Trim();
-        }
-
-        private byte[] GeneratePdfReporteGeneral(List<DtoGeneralIrisp> data)
-        {
-            // Permite que QuestPDF no falle cuando el contenido se sale del ancho
-            QuestPDF.Settings.CheckIfAllTextGlyphsAreAvailable = false;
-            QuestPDF.Settings.DocumentLayoutExceptionThreshold = 0;
-
-            var document = Document.Create(container =>
-            {
-                container.Page(page =>
-                {
-                    // Página horizontal con márgenes pequeños
-                    page.Size(PageSizes.Letter.Landscape());
-                    page.Margin(10);
-
-                    // --------- ENCABEZADO ---------
-                    page.Header().Column(col =>
-                    {
-                        col.Item().AlignCenter()
-                            .Text("POLICÍA NACIONAL DE COLOMBIA")
-                            .FontSize(14).Bold();
-
-                        col.Item().AlignCenter()
-                            .Text("Reporte General – IRIS-P1")
-                            .FontSize(10).Bold();
-
-                        col.Item().AlignLeft()
-                            .Text($"Fecha: {DateTime.Now:dd/MM/yyyy HH:mm}");
-                    });
-
-                    // --------- TABLA PRINCIPAL ---------
-                    page.Content().Padding(2).Table(table =>
-                    {
-                        // Para evitar el error de overflow
-                        table.ExtendHorizontal();
-
-                        // Definir ancho fijo de columnas (ajustado para que TODO quepa)
-                        table.ColumnsDefinition(columns =>
-                        {
-                            columns.ConstantColumn(55);  // Estado
-                            columns.ConstantColumn(55);  // Estado Existencia
-                            columns.ConstantColumn(60);  // Código
-                            columns.ConstantColumn(60);  // Delito
-                            columns.ConstantColumn(50);  // Región
-                            columns.ConstantColumn(65);  // Unidad
-                            columns.ConstantColumn(70);  // Dependencia
-                            columns.ConstantColumn(50);  // Cuadrante
-                            columns.ConstantColumn(60);  // Municipio
-                            columns.ConstantColumn(50);  // Zona
-                            columns.ConstantColumn(55);  // Clase
-                            columns.ConstantColumn(55);  // Fuente
-                            columns.ConstantColumn(55);  // Tipo servicio
-                            columns.ConstantColumn(70);  // Nombre clase
-                            columns.ConstantColumn(70);  // Fecha inicio
-                            columns.ConstantColumn(50);  // Integrantes
-                            columns.ConstantColumn(120); // Características
-                            columns.ConstantColumn(70);  // Fecha creación
-                            columns.ConstantColumn(80);  // Funcionario informa
-                            columns.ConstantColumn(70);  // Unidad funcionario
-                            columns.ConstantColumn(70);  // Identificación
-                            columns.ConstantColumn(90);  // Descripción trámite
-                            columns.ConstantColumn(80);  // Unidad Verificación
-                            columns.ConstantColumn(80);  // Asig Verifica
-                            columns.ConstantColumn(90);  // Resp Verifica
-                            columns.ConstantColumn(85);  // Unidad investigativa
-                            columns.ConstantColumn(80);  // Asig inves
-                            columns.ConstantColumn(90);  // Resp inves
-                            columns.ConstantColumn(60);  // Longitud
-                            columns.ConstantColumn(60);  // Latitud
-                            columns.ConstantColumn(60);  // Municipio 2
-                            columns.ConstantColumn(60);  // Barrio
-                            columns.ConstantColumn(90);  // Dirección
-                            columns.ConstantColumn(60);  // SPOA
-                            columns.ConstantColumn(60);  // NUNC
-                            columns.ConstantColumn(60);  // Siedco
-                        });
-
-                        // --------- ENCABEZADOS ---------
-                        table.Header(header =>
-                        {
-                            void Cell(string t) =>
-                                header.Cell().Background("#D9E1F2").Padding(2).Text(t).FontSize(8).Bold();
-
-                            Cell("Estado");
-                            Cell("Exist.");
-                            Cell("Código");
-                            Cell("Delito");
-                            Cell("Región");
-                            Cell("Unidad");
-                            Cell("Dependencia");
-                            Cell("Cuadrante");
-                            Cell("Municipio");
-                            Cell("Zona");
-                            Cell("Clase");
-                            Cell("Fuente");
-                            Cell("Tipo Serv.");
-                            Cell("Nombre Clase");
-                            Cell("Fecha Activ.");
-                            Cell("Integrantes");
-                            Cell("Características");
-                            Cell("Fecha Creación");
-                            Cell("Funcionario");
-                            Cell("Unidad Func.");
-                            Cell("Identificación");
-                            Cell("Trámite");
-                            Cell("Unidad Verifica");
-                            Cell("Asig Ver.");
-                            Cell("Resp Ver.");
-                            Cell("Unidad Inves");
-                            Cell("Asig Inv.");
-                            Cell("Resp Inv.");
-                            Cell("Long.");
-                            Cell("Lat.");
-                            Cell("Municipio 2");
-                            Cell("Barrio");
-                            Cell("Dirección");
-                            Cell("SPOA");
-                            Cell("NUNC");
-                            Cell("SIEDCO");
-                        });
-
-                        // --------- CONTENIDO ---------
-                        foreach (var x in data)
-                        {
-                            void C(object v) =>
-                                table.Cell().Padding(1).Text(v?.ToString() ?? "").FontSize(7);
-
-                            C(x.Estado);
-                            C(x.EstadoExistencia);
-                            C(x.Codigo);
-                            C(x.DelitoPrincipal);
-                            C(x.RegionP);
-                            C(x.SiglaUnidad);
-                            C(x.Dependencia);
-                            C(x.NroCuadrante);
-                            C(x.Municipio);
-                            C(x.Zona);
-                            C(x.Clase);
-                            C(x.Fuente);
-                            C(x.TipoServicio);
-                            C(x.NombreClase);
-                            C(x.FechaInicioExistenciaStr);
-                            C(x.CantidadIntegrante);
-                            C(x.CaracteristicasGenerales);
-                            C(x.FechaCreacionIrisp1Str);
-                            C(x.FuncionarioInforma);
-                            C(x.UnidadFuncionarioInforma);
-                            C(x.IdentificacionInforma);
-                            C(x.DescripcionTramite);
-                            C(x.UnidadVerifica);
-                            C(x.FechaAsigVerificaStr);
-                            C(x.FechaRespVerificaStr);
-                            C(x.UnidadAsignacionInves);
-                            C(x.FechaAsigInvesStr);
-                            C(x.FechaRespInvesStr);
-                            C(x.Longitud);
-                            C(x.Latitud);
-                            C(x.Municipio2);
-                            C(x.Barrio);
-                            C(x.Direccion);
-                            C(x.CantidadSpoa);
-                            C(x.Nunc);
-                            C(x.CantidadSiedco);
-                        }
-                    });
-
-                    // Pie de página
-                    page.Footer()
-                        .AlignCenter()
-                        .Text(x =>
-                        {
-                            x.Span("Página ").FontSize(8);
-                            x.CurrentPageNumber().FontSize(8);
-                            x.Span(" de ").FontSize(8);
-                            x.TotalPages().FontSize(8);
-                        });
-                });
-            });
-
-            return document.GeneratePdf();
-        }
-
-
-
+       
 
     }
 }

@@ -291,15 +291,3 @@ $("#btnExcel").on("click", function () {
         encodeURIComponent(anio);
 });
 
-// ------------------------
-// EXPORTAR REPORTE GENERAL (PDF)
-// ------------------------
-$("#btnPdf").on("click", function () {
-    let anio = $("#ddlAnioIris").val();
-
-    window.open(
-        "/Reportes/ReporteGeneral/ExportarPdfReporteGeneral?anio=" +
-        encodeURIComponent(anio),
-        "_blank"
-    );
-});

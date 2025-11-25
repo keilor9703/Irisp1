@@ -124,6 +124,7 @@ window.AppRoutes = Object.freeze({
     ReportesGeneral: {
         // Controlador BuscarInteg
         UrlGetInfoGrillas: '/Reportes/ReporteGeneral/F_GetReporteGeneral',
+        UrlGetReporteVerificacion: '/Reportes/ReporteVerificacion/F_GetReporteVerificacion',
         
     }
 
