@@ -60,13 +60,24 @@
                             <form class="form-horizontal mt-3 form-material" id="loginform" asp-action="InicioSesion" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]">
                                 <div class="form-group mb-3">
                                     <div class="col-xs-12">
-                                        <input asp-for="UsuarioEmpresarial" class="form-control" required placeholder="Usuario Empresarial" style="border:none; width:100%;border-block-color:#ffffff; color: white;" />
+                                        <input asp-for="UsuarioEmpresarial"
+                                               class="form-control"
+                                               required
+                                               placeholder="Usuario Empresarial"
+                                               autocomplete="off"
+                                               style="border:none; width:100%; border-block-color:#ffffff; color: white;" />
                                         <span asp-validation-for="UsuarioEmpresarial" class="text-yellow"></span>
                                     </div>
                                 </div>
+
                                 <div class="form-group mb-3">
                                     <div class="col-xs-12">
-                                        <input asp-for="ClaveEmpresarial" class="form-control" required placeholder="Contraseña" style="border:none; width:100%;color: white;" />
+                                        <input asp-for="ClaveEmpresarial"
+                                               class="form-control"
+                                               required
+                                               placeholder="Contraseña"
+                                               autocomplete="new-password"
+                                               style="border:none; width:100%; color: white;" />
                                         <span asp-validation-for="ClaveEmpresarial" class="text-yellow"></span>
                                     </div>
                                 </div>

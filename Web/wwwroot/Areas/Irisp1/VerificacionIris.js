@@ -77,7 +77,7 @@ function formatDate(dateStr) {
 function F_GetInfoGrillas() {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoGrillas,
+        url: AppRoutes.Verificacion.UrlGetInfoGrillas,
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
@@ -490,7 +490,7 @@ function F_GetDetalleIris(registro) {   // 👈 ahora recibe directamente el obj
 
     $.ajax({
         type: "POST",
-        url: UrlGetFuncionarios,
+        url: AppRoutes.Verificacion.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: IdenInforma },
         dataType: 'json',
@@ -536,7 +536,8 @@ function F_GetDetalleIris(registro) {   // 👈 ahora recibe directamente el obj
 function F_GetRelacionIris() {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoGrillas, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Verificacion.UrlGetInfoGrillas
+, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
@@ -597,7 +598,7 @@ function F_GetIntegrantesIris(CriminalidadId) {
 
     $.ajax({
         type: 'GET',
-        url: UrlGetIntegrantes,
+        url: AppRoutes.Verificacion.UrlGetIntegrantes,
         async: true,
         data: { V_CriminalidadId: CriminalidadId },
         dataType: 'json',
@@ -679,7 +680,7 @@ function F_GetUbicacionIris(CrininalidadId) {
 
     $.ajax({
         type: 'GET',
-        url: UrlGetUbicacion,
+        url: AppRoutes.Verificacion.UrlGetUbicacion,
         async: true,
         data: { V_CriminalidadId: CrininalidadId },
         dataType: 'json',
@@ -739,7 +740,7 @@ function GetGrillaUbicacionIris(Datos) {
 function F_GetDelitosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetDelitosIris, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Verificacion.UrlGetDelitosIris, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -794,7 +795,7 @@ function GetGrillaDelitosIris(Datos) {
 function F_GetInfoAdiconalIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Verificacion.UrlGetInfoAdicional, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -948,7 +949,7 @@ function GetGrillaResponsableIris(Datos) {
 function F_GetDocumentosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetDocIris, // URL del endpoint que devuelve los datos
+        url: AppRoutes.Verificacion.UrlGetDocIris, // URL del endpoint que devuelve los datos
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1016,7 +1017,7 @@ function GetGrillaDocumentosIris(Datos) {
 function F_GetFotosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: UrlGetFotosIris, // Endpoint del backend
+        url: AppRoutes.Verificacion.UrlGetFotosIris, // Endpoint del backend
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
@@ -1167,7 +1168,7 @@ function InsIntegrantesModal() {
     }
 
     $.ajax({
-        url: UrlGetConsecutivoIntegrante,
+        url: AppRoutes.Verificacion.UrlGetConsecutivoIntegrante,
         type: 'POST',
         dataType: 'json',
         success: function (response) {
@@ -1192,7 +1193,7 @@ function InsIntegrantesModal() {
                 };
 
                 $.ajax({
-                    url: UrlInsIntegrantes,
+                    url: AppRoutes.Verificacion.UrlInsIntegrantes,
                     type: 'POST',
                     data: Obj_Integrante,
                     success: function (resp) {
@@ -1250,7 +1251,7 @@ function P_InsDelitosModal() {
     }
 
     $.ajax({
-        url: UrlInsDelitos,
+        url: AppRoutes.Verificacion.UrlInsDelitos,
         type: 'POST',
         data: Obj_DelitosIris,
         success: function (resp) {
@@ -1303,7 +1304,7 @@ function InsRespuestaTareaModal() {
     }
 
     $.ajax({
-        url: UrlInsRespuestaTarea,
+        url: AppRoutes.Verificacion.UrlInsRespuestaTarea,
         type: 'POST',
         data: Obj_RespuestaTarea,
         success: function (resp) {
@@ -1368,7 +1369,7 @@ function P_InsResultadoTareaModal() {
     }
 
     $.ajax({
-        url: UrlInsResultadoTareas, // Ojo: endpoint correcto
+        url: AppRoutes.Verificacion.UrlInsResultadoTareas, // Ojo: endpoint correcto
         type: 'POST',
         data: Obj_Resultado,
         success: function (resp) {
@@ -1418,7 +1419,7 @@ function P_InsInfoAdicionalModal() {
     };
 
     $.ajax({
-        url: UrlInsInfoAdicional,
+        url: AppRoutes.Verificacion.UrlInsInfoAdicional,
         type: 'POST',
         data: Obj_InfoAdicional,
         success: function (resp) {
@@ -1516,7 +1517,7 @@ function DellIris(CriminalidadId) {
 
                 $.ajax({
                     type: 'POST',
-                    url: UrlDelIris,
+                    url: AppRoutes.Verificacion.UrlDelIris,
                     async: true,
                     dataType: 'json',
                     data: { CriminalidadId: CriminalidadId },
@@ -1556,7 +1557,7 @@ function P_DelIntegranteIris(IntegranteId) {
 
     $.ajax({
         type: 'POST',
-        url: UrlDelIntegrante,
+        url: AppRoutes.Verificacion.UrlDelIntegrante,
         async: true,
         dataType: 'json',
         data: { IntegranteId: IntegranteId },
@@ -1593,7 +1594,7 @@ function P_DelDelitosIris(DelitoId) {
 
     $.ajax({
         type: 'POST',
-        url: UrlDelDelitos,
+        url: AppRoutes.Verificacion.UrlDelDelitos,
         async: true,
         dataType: 'json',
         data: { DelitoId: DelitoId },
@@ -1630,7 +1631,7 @@ function P_DelDelInfoAdicionalIris(InfoId) {
 
     $.ajax({
         type: 'POST',
-        url: UrlDelInfoAdicionalIris,
+        url: AppRoutes.Verificacion.UrlDelInfoAdicionalIris,
         async: true,
         dataType: 'json',
         data: { InfoId: InfoId },
@@ -1664,49 +1665,69 @@ function P_DelDelInfoAdicionalIris(InfoId) {
 }
 function P_DelUbicacionIris(UbicacionId) {
 
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción eliminará la ubicación seleccionada.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
 
+        if (!result.isConfirmed) {
+            return; // ❌ El usuario canceló
+        }
 
-    $.ajax({
-        type: 'POST',
-        url: UrlDelUbiacionIris,
-        async: true,
-        dataType: 'json',
-        data: { UbicacionId: UbicacionId },
-        success: function (result) {
-            if (result.success) {
+        // ✔ Usuario confirmó → proceder con el AJAX
+        $.ajax({
+            type: 'POST',
+            url: AppRoutes.Verificacion.UrlDelUbiacionIris,
+            async: true,
+            dataType: 'json',
+            data: { UbicacionId: UbicacionId },
 
-                F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+            success: function (result) {
+                if (result.success) {
+
+                    // Recargar listado de ubicaciones
+                    F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+
+                } else {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+                }
+            },
+
+            error: function () {
                 Swal.fire({
-                    type: 'success',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-
-            } else {
-                Swal.fire({
-                    type: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a)',
+                    text: "No es posible eliminar la ubicación. Por favor revise."
                 });
             }
-        },
-        error: function (ex) {
-            Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: "No es posible grabar, revise"
-            });
-        }
-    });
+        });
 
+    });
 }
+
+
 function P_DelDocumentoIris(DocumentoId) {
 
 
 
     $.ajax({
         type: 'POST',
-        url: UrlDelDocumentoIris,
+        url: AppRoutes.Verificacion.UrlDelDocumentoIris,
         async: true,
         dataType: 'json',
         data: { DocumentoId: DocumentoId },
@@ -1790,7 +1811,7 @@ function P_InsUbicacionModal() {
 
 
     $.ajax({
-        url: UrlInsUbicacion,
+        url: AppRoutes.Verificacion.UrlInsUbicacion,
         type: 'POST',
         data: Obj_Ubicacion,
         success: function (resp) {
@@ -1816,31 +1837,40 @@ function P_InsUbicacionModal() {
 }
 function F_GetTareas(IdCriminalidad, IdResponsable) {
 
-    
     $("#txtResponsableIdModal").val(IdResponsable);
     $("#txtCriminalidadIdModal").val(IdCriminalidad);
 
     $.ajax({
         type: "GET",
-        url: UrlGetTareasIris,
-        data: { V_ResponsableId: IdCriminalidad },
+        url: AppRoutes.Verificacion.UrlGetTareasIris,
+        data: { V_Criminalidad: IdCriminalidad }, // ✔ CORRECTO
         dataType: 'json',
         cache: false,
+
         success: function (respuesta) {
-            if (respuesta?.success && Array.isArray(respuesta.data) && respuesta.data.length > 0) {
+
+            const tieneDatos = respuesta?.success === true &&
+                Array.isArray(respuesta.data) &&
+                respuesta.data.length > 0;
+
+            if (tieneDatos) {
+
                 $('#Modal_TareasIris').modal("show");
+
                 GetGrillaTareasIris(respuesta.data);
+
                 F_GetResultados(IdCriminalidad, IdResponsable);
 
-                // 🔹 NUEVO: Obtener responsables
+                // Obtener responsables
                 $.ajax({
                     type: "GET",
-                    url: UrlGetResponsablesTareasIris, // crea este endpoint en backend
-                    data: { V_Criminalidad: IdCriminalidad },
+                    url: AppRoutes.Verificacion.UrlGetResponsablesTareasIris,
+                    data: { V_Criminalidad: IdCriminalidad }, // ✔ este SÍ recibe criminalidad
                     dataType: 'json',
                     cache: false,
+
                     success: function (resp) {
-                        if (resp?.success && Array.isArray(resp.data)) {
+                        if (resp?.success === true && Array.isArray(resp.data)) {
                             GetGrillaResponsablesTareas(resp.data);
                         }
                     }
@@ -1854,6 +1884,7 @@ function F_GetTareas(IdCriminalidad, IdResponsable) {
                 });
             }
         },
+
         error: function () {
             Swal.fire({
                 icon: 'error',
@@ -1865,10 +1896,11 @@ function F_GetTareas(IdCriminalidad, IdResponsable) {
 }
 
 
+
 function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
     $.ajax({
         type: "GET",
-        url: UrlGetResultadosIris,
+        url: AppRoutes.Verificacion.UrlGetResultadosIris,
         data: { V_Criminalidad: IdCriminalidad },//, V_ResponsableId: IdResponsable },
         dataType: 'json',
         cache: false,
@@ -1901,7 +1933,7 @@ function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
             Swal.fire({
                 icon: 'error',
                 title: 'Señor(a) Funcionario(a)',
-                text: 'No es posible consultar las tareas. Por favor, revise la conexión o contacte al administrador.'
+                text: 'No es posible consultar resultados. Por favor, revise la conexión o contacte al administrador.'
             });
         }
     });

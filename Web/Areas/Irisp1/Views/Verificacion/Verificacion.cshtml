@@ -2,7 +2,7 @@
     ViewData["Title"] = "Verificación Irisp1";
 }
 @section scripts {
-        <script src="~/areas/irisp1/VerificacionIris.js"></script>
+   
     @* <script src="~/areas/irisp1/registrosirisp1.js"></script> *@
         <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
 
@@ -12,44 +12,45 @@
     <script src="https://js.arcgis.com/3.44/"></script>
       
    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
-
+    <script src="~/areas/rutas/rutasiris.js"></script>
+    <script src="~/areas/irisp1/VerificacionIris.js"></script>
 
 
     <script type='text/javascript'>
             var codigoDaneInicial = 11001;
 
       
-            var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "Verificacion", new { Area = "Irisp1" })";
-            var UrlGetTareasIris = "@Url.Action("F_GetTareas", "Verificacion", new { Area = "Irisp1" })";
-            var UrlGetResultadosIris = "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })";
-            var UrlGetEstadosIrisP1 = "@Url.Action("F_GetEstadosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
-            var UrlInsIntegrantes = "@Url.Action("P_InsIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetConsecutivoIris= "@Url.Action("F_ConsultarSeqIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetConsecutivoIntegrante= "@Url.Action("F_ConsultarSeqIntegrante", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetIntegrantes= "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsRegistroIrisP1= "@Url.Action("P_InsRegistroIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetDelitosIris= "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetInfoAdicional= "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetDocIris= "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetFotosIris= "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetUbicacion= "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsDelitos= "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsUbicacion= "@Url.Action("P_InsUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlInsInfoAdicional= "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlUpdCriminalidad= "@Url.Action("P_UpdCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlUpdEstadoCriminalidad= "@Url.Action("P_UpdEstadoCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlUpdExistenciaCriminalidad= "@Url.Action("P_UpdExistenciaCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelIris= "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelIntegrante= "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelDelitos= "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelInfoAdicionalIris= "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelUbiacionIris= "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlDelDocumentoIris= "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
-            var UrlGetResponsablesTareasIris= "@Url.Action("F_GetResponsablesTareasIris", "Verificacion", new { Area = "Irisp1" })";
-            var UrlInsResultadoTareas= "@Url.Action("P_InsResultadoTareasIris", "Verificacion", new { Area = "Irisp1" })";
-            var UrlInsRespuestaTarea= "@Url.Action("P_InsTareaRespuesta", "Verificacion", new { Area = "Irisp1" })";
+            // var UrlGetAniosIrisp1 = "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetInfoGrillas = "@Url.Action("F_GetInfoGrillas", "Verificacion", new { Area = "Irisp1" })";
+            // var UrlGetTareasIris = "@Url.Action("F_GetTareas", "Verificacion", new { Area = "Irisp1" })";
+            // var UrlGetResultadosIris = "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })";
+            // var UrlGetEstadosIrisP1 = "@Url.Action("F_GetEstadosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetFuncionarios = "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })";
+            // var UrlInsIntegrantes = "@Url.Action("P_InsIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetConsecutivoIris= "@Url.Action("F_ConsultarSeqIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetConsecutivoIntegrante= "@Url.Action("F_ConsultarSeqIntegrante", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetIntegrantes= "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlInsRegistroIrisP1= "@Url.Action("P_InsRegistroIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetDelitosIris= "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetInfoAdicional= "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetDocIris= "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetFotosIris= "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetUbicacion= "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlInsDelitos= "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlInsUbicacion= "@Url.Action("P_InsUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlInsInfoAdicional= "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlUpdCriminalidad= "@Url.Action("P_UpdCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlUpdEstadoCriminalidad= "@Url.Action("P_UpdEstadoCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlUpdExistenciaCriminalidad= "@Url.Action("P_UpdExistenciaCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlDelIris= "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlDelIntegrante= "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlDelDelitos= "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlDelInfoAdicionalIris= "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlDelUbiacionIris= "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlDelDocumentoIris= "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })";
+            // var UrlGetResponsablesTareasIris= "@Url.Action("F_GetResponsablesTareasIris", "Verificacion", new { Area = "Irisp1" })";
+            // var UrlInsResultadoTareas= "@Url.Action("P_InsResultadoTareasIris", "Verificacion", new { Area = "Irisp1" })";
+            // var UrlInsRespuestaTarea= "@Url.Action("P_InsTareaRespuesta", "Verificacion", new { Area = "Irisp1" })";
 
     </script>
 }

@@ -36,6 +36,9 @@ namespace Comun.Areas.Admin
         [JsonPropertyName("ApellidosNombres")]
         public string? ApellidosNombres { get; set; }
 
+        [JsonPropertyName("Nombres")]
+        public string? Nombres { get; set; }
+
         [JsonPropertyName("Cargo")]
         public string? Cargo { get; set; }
 

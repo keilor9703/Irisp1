@@ -143,9 +143,9 @@ namespace Web.Areas.Irisp1.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> F_GetTareas(string V_ResponsableId)
+        public async Task<IActionResult> F_GetTareas(string V_Criminalidad)
         {
-            var resultado = await _iDbVerificacionIris.F_GetTareas(V_ResponsableId);
+            var resultado = await _iDbVerificacionIris.F_GetTareas(V_Criminalidad);
 
             if (resultado.IdRespuesta > 0)
             {

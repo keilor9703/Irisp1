@@ -18,6 +18,10 @@ window.AppRoutes = Object.freeze({
     },
 
 
+
+
+
+
     // Rutas para módulo IRISP1 / Registro
     RegistroIrisP1: {
         // Controlador Registros IRISP1
@@ -49,6 +53,57 @@ window.AppRoutes = Object.freeze({
         UrlDelUbiacionIris: '/Irisp1/RegistrosIrisp1/P_DelUbicacionIris',
         UrlDelDocumentoIris: '/Irisp1/RegistrosIrisp1/P_DelDocumentoIris'
     },
+
+
+
+    // Rutas para módulo IRISP1 / Verificación
+    
+        // Rutas para módulo IRISP1 / Verificación (TODAS LAS RUTAS AQUÍ)
+    Verificacion: {
+
+        // ======= Verificación =======
+        UrlGetInfoGrillas: '/Irisp1/Verificacion/F_GetInfoGrillas',
+        UrlGetTareasIris: '/Irisp1/Verificacion/F_GetTareas',
+        UrlGetResultadosIris: '/Irisp1/Verificacion/F_GetResultados',
+        UrlGetResponsablesTareasIris: '/Irisp1/Verificacion/F_GetResponsablesTareasIris',
+        UrlInsResultadoTareas: '/Irisp1/Verificacion/P_InsResultadoTareasIris',
+        UrlInsRespuestaTarea: '/Irisp1/Verificacion/P_InsTareaRespuesta',
+
+        // ======= Registros IRISP1 =======
+        //UrlGetAniosIrisp1: '/Irisp1/RegistrosIrisp1/F_GetAniosIrisP1',
+        UrlGetEstadosIrisP1: '/Irisp1/RegistrosIrisp1/F_GetEstadosIrisP1',
+        UrlInsIntegrantes: '/Irisp1/RegistrosIrisp1/P_InsIntegrantes',
+       // UrlGetConsecutivoIris: '/Irisp1/RegistrosIrisp1/F_ConsultarSeqIris',
+        UrlGetConsecutivoIntegrante: '/Irisp1/RegistrosIrisp1/F_ConsultarSeqIntegrante',
+        UrlGetIntegrantes: '/Irisp1/RegistrosIrisp1/F_GetIntegrantes',
+        //UrlInsRegistroIrisP1: '/Irisp1/RegistrosIrisp1/P_InsRegistroIrisP1',
+        UrlGetDelitosIris: '/Irisp1/RegistrosIrisp1/F_GetDelitosIris',
+        UrlGetInfoAdicional: '/Irisp1/RegistrosIrisp1/F_GetInfoAdicional',
+        UrlGetDocIris: '/Irisp1/RegistrosIrisp1/F_GetDocIris',
+        UrlGetFotosIris: '/Irisp1/RegistrosIrisp1/f_GetFotosCriminalidad',
+        UrlGetUbicacion: '/Irisp1/RegistrosIrisp1/F_GetUbicacionIris',
+
+        UrlInsDelitos: '/Irisp1/RegistrosIrisp1/P_InsDelitosIris',
+        UrlInsUbicacion: '/Irisp1/RegistrosIrisp1/P_InsUbicacionIris',
+        UrlInsInfoAdicional: '/Irisp1/RegistrosIrisp1/P_InsInfoAdicionalIris',
+
+       // UrlUpdCriminalidad: '/Irisp1/RegistrosIrisp1/P_UpdCriminalidad',
+        //UrlUpdEstadoCriminalidad: '/Irisp1/RegistrosIrisp1/P_UpdEstadoCriminalidad',
+       // UrlUpdExistenciaCriminalidad: '/Irisp1/RegistrosIrisp1/P_UpdExistenciaCriminalidad',
+
+        UrlDelIris: '/Irisp1/RegistrosIrisp1/P_DellIris',
+        UrlDelIntegrante: '/Irisp1/RegistrosIrisp1/P_DelIntegranteIris',
+        UrlDelDelitos: '/Irisp1/RegistrosIrisp1/P_DelDelitosIris',
+        UrlDelInfoAdicionalIris: '/Irisp1/RegistrosIrisp1/P_DelDelInfoAdicionalIris',
+        UrlDelUbiacionIris: '/Irisp1/RegistrosIrisp1/P_DelUbicacionIris',
+        UrlDelDocumentoIris: '/Irisp1/RegistrosIrisp1/P_DelDocumentoIris',
+
+        // ======= Empleados =======
+        UrlGetFuncionarios: '/Empleados/F_GetFuncionarios'
+    },
+
+       
+    
 
     // Rutas para módulo IRISP1 / Seguimiento
     Seguimiento: {

@@ -16,7 +16,7 @@ namespace Negocio.Interfaz.Irisp1
         //public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio);
 
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolUsuario, Int64 CodigoUnidad);
-        public Task<DtoResultado<List<DtoTareasIris>>> F_GetTareas(string V_ResponsableId);
+        public Task<DtoResultado<List<DtoTareasIris>>> F_GetTareas(string V_Criminalidad);
         public Task<DtoResultado<List<DtoTareasIris>>> F_GetResultados(string V_Criminalidad);//, string V_ResponsableId);
         public Task<DtoResultado<List<DtoTareasIris>>> F_GetResponsablesTareasIris(string V_Criminalidad);
 

@@ -250,7 +250,7 @@ namespace Negocio.Gestion.Irisp1
 
 
 
-        public async Task<DtoResultado<List<DtoTareasIris>>> F_GetTareas(string V_ResponsableId)
+        public async Task<DtoResultado<List<DtoTareasIris>>> F_GetTareas(string V_Criminalidad)
         {
             DataTable resultado = new();
             List<DtoTareasIris> retorno = new();
@@ -269,7 +269,7 @@ namespace Negocio.Gestion.Irisp1
 
                 objCommand.Parameters.Clear();
             
-                objCommand.Parameters.Add("P_Criminalidad_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_ResponsableId;
+                objCommand.Parameters.Add("P_Criminalidad_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Criminalidad;
           
                 objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.Output);
 

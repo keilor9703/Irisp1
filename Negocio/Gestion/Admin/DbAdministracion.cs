@@ -366,7 +366,9 @@ namespace Negocio.Gestion.Admin
                         retorno.Correo = respuestaPIP.Respuesta.CorreoElectronico;
                         retorno.SituacionLaboral = respuestaPIP.Respuesta.SituacionLaboral;
                         retorno.Celular = (long)respuestaPIP.Respuesta.NumeroCelular;
-                      
+                        retorno.Nombres = respuestaPIP.Respuesta.Nombres;
+                        retorno.ApellidosNombres = respuestaPIP.Respuesta.Apellidos;
+
                     }
 
 

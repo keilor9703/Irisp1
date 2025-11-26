@@ -106,7 +106,8 @@ namespace Web.Controllers
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, Usuario.Data.Usuario),
-                    new Claim("Funcionario", Usuario.Data.Funcionario),
+                    new Claim("Funcionario", Usuario.Data.Funcionario), 
+                    new Claim("GradoNombre", Usuario.Data.GradAlfabetico + " " + Usuario.Data.Nombres + " " + Usuario.Data.ApellidosNombres),
                     new Claim("Identificacion", Convert.ToString(Usuario.Data.Identificacion)),
                     new Claim("IdUsuario", Convert.ToString(Usuario.Data.IdUsuario)),
                     new Claim("Cargo", Convert.ToString(Usuario.Data.Cargo)),
