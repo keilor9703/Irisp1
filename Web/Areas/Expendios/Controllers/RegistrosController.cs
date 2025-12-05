@@ -300,7 +300,7 @@ namespace Web.Areas.Expendios.Controllers
 
 
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetEstaciones(string V_Sigla)
         {
@@ -318,7 +318,7 @@ namespace Web.Areas.Expendios.Controllers
         }
 
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetEspecialidad(string V_Sigla)
         {
@@ -427,6 +427,26 @@ namespace Web.Areas.Expendios.Controllers
         public async Task<IActionResult> F_GetIntegranteAll(Int64 V_Identificacion)
         {
             var resultado = await _iDbRegistroExpendio.F_GetIntegranteAll(V_Identificacion);
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = resultado.Data });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultado.Mensaje });
+
+
+            }
+        }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetDominiosIris(Int32 V_Id)
+        {
+            //var resultado = await _iDbRegistroExpendio.F_GetIntegranteAll(V_Identificacion);
+            var resultado = await _iDbDominios.F_GetDominiosIris(V_Id);
 
             if (resultado.IdRespuesta > 0)
             {

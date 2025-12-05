@@ -202,7 +202,7 @@ function F_GetInfoGrillas() {
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
-            console.log("✅ Respuesta exitosa:", response);
+            //console.log("✅ Respuesta exitosa:", response);
             let data = response.data || [];
             GetGrillaVerificacion(data);
             GetGrillaInvestigacion(data);
@@ -863,7 +863,7 @@ function OpenInsUbicacionModal(latitud, longitud) {
 
     // Evento al mostrarse completamente
     $('#myModal').off('shown.bs.modal').on('shown.bs.modal', function () {
-        console.log("✅ Modal visible, inicializando mapa...");
+        //console.log("✅ Modal visible, inicializando mapa...");
 
         // Inicializa el mapa
         inicializarMapa('mapaDiv');
@@ -878,15 +878,15 @@ function OpenInsUbicacionModal(latitud, longitud) {
 
     // 🧹 Evento al cerrar completamente el modal: destruir mapa
     $('#myModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
-        console.log("🧹 Modal cerrado, destruyendo mapa...");
+       // console.log("🧹 Modal cerrado, destruyendo mapa...");
 
         // Si existe un mapa, destrúyelo correctamente
         if (typeof map !== "undefined" && map) {
             try {
                 map.destroy();   // Libera memoria del objeto ArcGIS
-                console.log("🧭 Mapa destruido correctamente");
+               // console.log("🧭 Mapa destruido correctamente");
             } catch (err) {
-                console.warn("⚠️ Error al destruir mapa:", err);
+               // console.warn("⚠️ Error al destruir mapa:", err);
             }
         }
 
@@ -1361,9 +1361,9 @@ function F_GetResultados(IdCriminalidad) {//, IdResponsable) {
                 GetGrillaResultados(respuesta.data);
             } else {
 
-                $('#pn_GrillaResultados').removeClass('hidden');
+              
                 // Ocultar la grilla si está visible
-                //$('#pn_GrillaResultados').addClass('hidden');
+               $('#pn_GrillaResultados').addClass('hidden');
 
                 //Swal.fire({
                 //    icon: 'info',
@@ -1510,13 +1510,13 @@ function OpenInsResponsableValModal() {
 
 
 $(document).on('change', '#ddlTipoUnidad', function () {
-    handleDropdownChange('/Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia');
+    handleDropdownChange('Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia');
    
 });
 
 $(document).on('change', '#ddlTipoUnidad2', function () {
   
-    handleDropdownChange('/Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia2');
+    handleDropdownChange('Irisp1/Seguimiento/F_GetUnidadesPorSigla', 'V_Sigla', $(this).val(), '#ddlTipoDependencia2');
 });
 
 

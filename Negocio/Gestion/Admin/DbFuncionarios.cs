@@ -54,6 +54,7 @@ namespace Negocio.Gestion.Admin
                     retorno.Dependencia = respuestaPIP.Respuesta.DescripcionDependencia;
                     retorno.Cargo = respuestaPIP.Respuesta.Cargo;
                     retorno.Fisica = respuestaPIP.Respuesta.SiglaFisica;
+                    retorno.IdUndeLaborando = respuestaPIP.Respuesta.UndeConsecutivoLaborando;
 
                     resp.IdRespuesta = 1;
                     resp.Mensaje = "Consulta Exitosa";

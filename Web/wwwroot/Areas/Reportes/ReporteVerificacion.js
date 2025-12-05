@@ -89,13 +89,13 @@ function renderDataTable(selector, datosFiltrados, columnas) {
 $("#btnExcel").on("click", function () {
     let filtro = $(".dataTables_filter input").val() || "";
     window.location.href =
-        "/Reportes/ReporteVerificacion/ExportarExcelReporteVerificacion?filtro=" + encodeURIComponent(filtro);
+        "Reportes/ReporteVerificacion/ExportarExcelReporteVerificacion?filtro=" + encodeURIComponent(filtro);
 });
 
 $("#btnPdf").on("click", function () {
     let filtro = $(".dataTables_filter input").val() || "";
     window.open(
-        "/Reportes/ReporteVerificacion/ExportarPdfReporteVerificacion?filtro=" + encodeURIComponent(filtro),
+        "Reportes/ReporteVerificacion/ExportarPdfReporteVerificacion?filtro=" + encodeURIComponent(filtro),
         "_blank"
     );
 });

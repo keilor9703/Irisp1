@@ -1,4 +1,4 @@
-using Comun.Areas.Admin;
+Ôªøusing Comun.Areas.Admin;
 using Comun.Areas.Reportes;
 using Comun.General;
 using Dapper;
@@ -50,7 +50,7 @@ DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
-//cadena conexiÛn
+//cadena conexi√≥n
 builder.Services.AddHttpClient();
 
 // Proxies api gateway 
@@ -72,7 +72,7 @@ builder.Services.AddScoped<IDbConsultasPIP, DbConsultasPIP>();
 //builder.Services.AddScoped<IGestionOUD, GestionOUD>();
 builder.Services.AddScoped<IPipWebServices, PipWebServices>();
 
-//¡reas
+//√Åreas
 builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
 builder.Services.AddScoped<IDbIrisp1, DbIrisp1>();
 builder.Services.AddScoped<IDbFuncionarios, DbFuncionarios>();
@@ -93,7 +93,7 @@ builder.Services.AddHttpClient<IPipWebServices, PipWebServices>();
 //builder.Services.AddHttpClient<IApiWebToken, ApiWebToken>();
 //builder.Services.AddHttpClient<IApiWebFuncionariosIdPIP, ApiWebFuncionariosIdPIP>();
 
-//Variables de SesiÛn
+//Variables de Sesi√≥n
 builder.Services.AddMvc();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -132,7 +132,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-//configuraciÛn de area
+//configuraci√≥n de area
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");

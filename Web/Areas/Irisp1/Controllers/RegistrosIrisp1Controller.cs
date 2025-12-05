@@ -1,7 +1,8 @@
 ﻿using Comun.Areas.AplicacionDTO;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
-using Web.Models;
+using Dapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,8 +11,12 @@ using Negocio.Gestion.Admin;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
+using Newtonsoft.Json;
 using NuGet.Packaging.Signing;
 using Oracle.ManagedDataAccess.Client;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 using System;
 using System.Data;
 using System.Net;
@@ -34,6 +39,7 @@ namespace Web.Areas.Irisp1.Controllers
        
         private readonly IDbDominios _IDbDominios;
         private readonly string _strConexionIris_Test;
+        private readonly string _strConexionIris_Disec;
       
 
         #endregion
@@ -49,6 +55,7 @@ namespace Web.Areas.Irisp1.Controllers
             _configuration = configuration;
             _IDbDominios = idbDominios;
             _strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
+            _strConexionIris_Disec = configuration.GetConnectionString("strConexionIris_Disec");
         }
 
         #endregion
@@ -288,22 +295,19 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
-        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> F_GetDocIris(string V_CriminalidadId)
         {
-            var resultado = await _iDbIrisp1.F_GetDocIris(V_CriminalidadId);
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-            if (resultado.IdRespuesta > 0)
-            {
+            var resultado = await _iDbIrisp1.F_GetDocIris(V_CriminalidadId, baseUrl);
+
+            if (resultado.IdRespuesta == 1)
                 return Json(new { success = true, data = resultado.Data });
-            }
-            else
-            {
-                return Json(new { success = false, message = resultado.Mensaje });
 
-            }
+            return Json(new { success = false, message = resultado.Mensaje });
         }
+
 
 
         [AllowAnonymous]
@@ -366,163 +370,199 @@ namespace Web.Areas.Irisp1.Controllers
         #endregion
 
 
+
         #region Métodos de Insersión
 
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> GuardarDocumentoConRegistro(IFormFile documento, string idCriminalidad)
+        {
+            if (string.IsNullOrWhiteSpace(idCriminalidad))
+                return BadRequest(new { exito = false, mensaje = "IdCriminalidad no proporcionado." });
 
+            if (documento == null || documento.Length == 0)
+                return BadRequest(new { exito = false, mensaje = "No se envió ningún archivo válido." });
+
+            var CriminalidadId_Desc = Convert.ToInt64(ClsEncriptar.Desencriptar(idCriminalidad));
+            var usuario = User.FindFirstValue("Identificacion");
+            var maquina = HttpContext.Session.GetString("IpMaquina");
+
+            try
+            {
+                var resultado = await ProcesarYRegistrarDocumentoAsync(
+                    idCriminalidad,
+                    CriminalidadId_Desc,
+                    documento,
+                    usuario,
+                    maquina
+                );
+
+                if (!resultado.Exito)
+                    return Json(new { exito = false, mensaje = resultado.Mensaje });
+
+                return Json(new { exito = true, mensaje = "Documento guardado y registro insertado correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { exito = false, mensaje = "Error interno al guardar el documento." });
+            }
+        }
+
+
+        [AllowAnonymous]
+        private async Task<DtoResultadoFoto> ProcesarYRegistrarDocumentoAsync(
+                                            string criminalidadIdCadena,
+                                            long criminalidadIdNumero,
+                                            IFormFile documento,
+                                            string usuario,
+                                            string maquina)
+        {
+            var resultado = new DtoResultadoFoto(); // mismo DTO reutilizable
+
+            try
+            {
+                // 1️⃣ Validar extensión permitida
+                var extension = Path.GetExtension(documento.FileName).ToLowerInvariant();
+                var extensionesPermitidas = new[] { ".pdf", ".doc", ".docx", ".xlsx", ".txt" };
+
+                if (!extensionesPermitidas.Contains(extension))
+                {
+                    resultado.Exito = false;
+                    resultado.Mensaje = "Formato de documento no permitido.";
+                    return resultado;
+                }
+
+                // 2️⃣ Validar tamaño (máximo 24MB igual que fotos)
+                if (documento.Length > 24 * 1024 * 1024)
+                {
+                    resultado.Exito = false;
+                    resultado.Mensaje = "El documento supera los 24MB permitidos.";
+                    return resultado;
+                }
+
+                // 3️⃣ Ruta base para documentos
+                var rutaBase = _configuration["RutasArchivosIris:RutaDocumentosDesa"];
+                if (string.IsNullOrWhiteSpace(rutaBase))
+                {
+                    resultado.Exito = false;
+                    resultado.Mensaje = "La ruta base de documentos no está configurada.";
+                    return resultado;
+                }
+
+                // 4️⃣ Construcción de carpetas Año/Mes
+                string anio = DateTime.Now.ToString("yyyy");
+                string mes = DateTime.Now.ToString("MM");
+
+                string rutaAnio = Path.Combine(rutaBase, anio);
+                string rutaMes = Path.Combine(rutaAnio, mes);
+
+                if (!Directory.Exists(rutaAnio)) Directory.CreateDirectory(rutaAnio);
+                if (!Directory.Exists(rutaMes)) Directory.CreateDirectory(rutaMes);
+
+                // 5️⃣ Nombre del archivo
+                var nombreOriginal = Path.GetFileNameWithoutExtension(documento.FileName);
+                string nuevoNombre = $"{nombreOriginal}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+                string rutaFinal = Path.Combine(rutaMes, nuevoNombre);
+
+                // 6️⃣ Guardar archivo físico
+                await using (var stream = new FileStream(rutaFinal, FileMode.Create))
+                {
+                    await documento.CopyToAsync(stream);
+                }
+
+                // Ruta relativa para BD
+                string rutaRelativa = Path.Combine(anio, mes, nuevoNombre);
+
+                // 7️⃣ Insertar en BD vía Dapper
+                using var conexion = new OracleConnection(_strConexionIris_Disec);
+                var parametros = new DynamicParameters();
+
+                parametros.Add("P_ID_CRIMINALIDAD", criminalidadIdCadena);
+                parametros.Add("P_SERVIDOR", rutaBase);
+                parametros.Add("P_TIPO_DOC", extension.Replace(".", ""));
+                parametros.Add("P_NAME_FILE", nuevoNombre);
+                parametros.Add("P_RUTA", rutaRelativa);
+                parametros.Add("P_USUARIO_CREACION", Convert.ToInt64(usuario));
+                parametros.Add("P_FECHA_CREACION", DateTime.Now);
+                parametros.Add("P_MAQUINA_CREACION", maquina ?? string.Empty);
+                parametros.Add("P_VIGENTE", 1);
+                parametros.Add("P_ID_CRIMINALIDA", criminalidadIdNumero);
+
+                parametros.Add("P_RESULTADO", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                parametros.Add("SRV_Message", dbType: DbType.String, size: 4000, direction: ParameterDirection.Output);
+
+                await conexion.ExecuteAsync(
+                    "PK_REGISTRO_IRIS.P_InsCriminalidadDocumentos",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                int resultadoSp = parametros.Get<int>("P_RESULTADO");
+                string mensajeSp = parametros.Get<string>("SRV_Message");
+
+                resultado.Exito = resultadoSp == 1;
+                resultado.Mensaje = mensajeSp;
+
+                return resultado;
+            }
+            catch (Exception ex)
+            {
+                resultado.Exito = false;
+                resultado.Mensaje = "Error al procesar o registrar el documento: " + ex.Message;
+                return resultado;
+            }
+        }
+
+
+
+        
         [HttpPost]
         public async Task<IActionResult> GuardarFotoConRegistro(IFormFile foto, string idCriminalidad)
         {
+            if (string.IsNullOrWhiteSpace(idCriminalidad))
+                return BadRequest(new { exito = false, mensaje = "IdCriminalidad no proporcionado." });
 
             var CriminalidadId_Desencp = Convert.ToInt64(ClsEncriptar.Desencriptar(idCriminalidad));
-
-            var usuario = User.FindFirstValue("Identificacion");
-            var maquina = HttpContext.Session.GetString("IpMaquina");
-            if (foto == null || foto.Length == 0)
-                return Json(new { exito = false, mensaje = "Archivo inválido" });
-
-            var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png" };
-            var extension = Path.GetExtension(foto.FileName).ToLowerInvariant();
-
-            if (!extensionesPermitidas.Contains(extension))
-                return Json(new { exito = false, mensaje = "Formato no permitido" });
-
-            if (foto.Length > 5 * 1024 * 1024)
-                return Json(new { exito = false, mensaje = "Tamaño excedido" });
-
-            try
-            {
-                // 1. Guardar archivo en red
-                var nombreArchivo = Path.GetFileNameWithoutExtension(foto.FileName);
-                var nuevoNombre = $"{nombreArchivo}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
-                var rutaRed = @"\\srvfilesponal3\OFITE\AITEC\GRUDE\TE KEHILOR MARTINEZ\Fotos_Iris";
-                var rutaArchivoCompleta = Path.Combine(rutaRed, nuevoNombre);
-
-                using (var stream = new FileStream(rutaArchivoCompleta, FileMode.Create))
-                {
-                    await foto.CopyToAsync(stream);
-                }
-
-                // 2. Llamar procedimiento almacenado
-                using (var Conexion = new OracleConnection(_strConexionIris_Test))
-                    
-                using (var command = new OracleCommand("PK_REGISTRO_IRIS.P_InsCriminalidadFotos", Conexion))
-                {
-                    command.CommandType = CommandType.StoredProcedure;
-
-                  
-                    command.Parameters.Add("P_ID_CRIMINALIDAD", OracleDbType.Varchar2).Value = idCriminalidad;
-                    command.Parameters.Add("P_SERVIDOR", OracleDbType.NVarchar2).Value = Environment.MachineName;
-                    command.Parameters.Add("P_TIPO_DOC", OracleDbType.NVarchar2).Value = extension.TrimStart('.'); // jpg, png, etc.
-                    command.Parameters.Add("P_NAME_FILE", OracleDbType.NVarchar2).Value = nuevoNombre;
-                    command.Parameters.Add("P_RUTA", OracleDbType.NVarchar2).Value = rutaArchivoCompleta;
-                    command.Parameters.Add("P_USUARIO_CREACION", OracleDbType.Int32).Value = usuario;
-                    command.Parameters.Add("P_FECHA_CREACION", OracleDbType.Date).Value = DateTime.Now;
-                    command.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.NVarchar2).Value = maquina;
-                    command.Parameters.Add("P_VIGENTE", OracleDbType.Int32).Value = 1;
-                    command.Parameters.Add("P_USUARIO_MODIFICA", OracleDbType.Int32).Value = usuario;
-                    command.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.NVarchar2).Value = maquina;
-                    command.Parameters.Add("P_FECHA_MODIFICA", OracleDbType.Date).Value = DateTime.Now;
-                    command.Parameters.Add("P_ID_CRIMINALIDA", OracleDbType.Int32).Value = CriminalidadId_Desencp;
-
-                 
-
-                    command.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                    command.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
-
-                    await Conexion.OpenAsync();
-                    await command.ExecuteNonQueryAsync();
-
-                    var resultado = ((Oracle.ManagedDataAccess.Types.OracleDecimal)command.Parameters["P_RESULTADO"].Value).ToInt32();
-                    var mensaje = command.Parameters["SRV_Message"].Value.ToString();
-
-
-                    if (resultado == 1)
-                    {
-                        return Json(new { exito = true, mensaje = "Foto guardada y registro insertado correctamente" });
-                    }
-                    else
-                    {
-                        return Json(new { exito = false, mensaje = $"Fallo al insertar en base de datos: {mensaje}" });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { exito = false, mensaje = $"Error al guardar imagen o registrar: {ex.Message}" });
-            }
-        }
-
-
-        [HttpPost]
-        public async Task<IActionResult> GuardarDocumentoConRegistro(IFormFile file, string idCriminalidad)
-        {
-           
             var usuario = User.FindFirstValue("Identificacion");
             var maquina = HttpContext.Session.GetString("IpMaquina");
 
-            if (file == null || file.Length == 0)
-                return Json(new { exito = false, mensaje = "Archivo inválido" });
-
             try
             {
-                // 1. Guardar archivo en red
-                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                var nombreArchivoOriginal = Path.GetFileNameWithoutExtension(file.FileName);
-                var nuevoNombre = $"{nombreArchivoOriginal}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
-                var rutaRed = @"\\srvfilesponal3\OFITE\AITEC\GRUDE\TE KEHILOR MARTINEZ\Documentos Iris";
-                var rutaArchivoCompleta = Path.Combine(rutaRed, nuevoNombre);
-
-                using (var stream = new FileStream(rutaArchivoCompleta, FileMode.Create))
+                if (foto == null || foto.Length == 0)
                 {
-                    await file.CopyToAsync(stream);
+                    return BadRequest(new { exito = false, mensaje = "No se envió ninguna foto válida." });
                 }
 
-                // 2. Guardar registro en BD
-                using (var conexion = new OracleConnection(_strConexionIris_Test))
-                using (var command = new OracleCommand("PK_REGISTRO_IRIS.P_InsCriminalidadDocumentos", conexion))
+                var resultadoFoto = await ProcesarYRegistrarFotoAsync(
+                    idCriminalidad,            // VARCHAR2 (GUID/encriptado)
+                    CriminalidadId_Desencp,    // NUMBER (desencriptado)
+                    foto,
+                    usuario,
+                    maquina
+                );
+
+                if (!resultadoFoto.Exito)
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-
-                    command.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = idCriminalidad;
-                    command.Parameters.Add("P_NOMBRE", OracleDbType.NVarchar2).Value = nombreArchivoOriginal;
-                    command.Parameters.Add("P_URL", OracleDbType.NVarchar2).Value = rutaArchivoCompleta;
-                 
-                   
-                    command.Parameters.Add("P_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
-                    command.Parameters.Add("P_MAQUINA_CREACION", OracleDbType.NVarchar2).Value = maquina;
-                   
-
-                    command.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                    command.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
-
-                    await conexion.OpenAsync();
-                    await command.ExecuteNonQueryAsync();
-
-                    var resultado = Convert.ToInt32(((Oracle.ManagedDataAccess.Types.OracleDecimal)command.Parameters["P_RESULTADO"].Value).ToInt32());
-                    var mensaje = command.Parameters["SRV_Message"].Value.ToString();
-
-                    if (resultado == 1)
-                        return Json(new { success = true, message = "Documento guardado correctamente" });
-
-                    else
-                        return Json(new { exito = false, mensaje = $"Error al insertar en BD: {mensaje}" });
+                    // IRIS se guardó, pero la foto falló
+                    return Json(new { exito = false, mensaje = $"Fallo al insertar en base de datos: {resultadoFoto.Mensaje}" });
                 }
+
+                return Json(new { exito = true, mensaje = "Foto guardada y registro insertado correctamente" });
             }
             catch (Exception ex)
             {
-                return Json(new { exito = false, mensaje = $"Error al guardar documento: {ex.Message}" });
+                // Loguear el error
+                //_logger.LogError(ex, "Error en GuardarFotoConRegistro");
+                return StatusCode(500, new { exito = false, mensaje = "Error interno al guardar la foto." });
             }
         }
-
-
 
 
         [HttpPost]
         public async Task<IActionResult> P_InsIntegrantes(DtoIntegrantes Obj_Integrante)
         {
 
-            //Obj_Integrante.ID_CRIMINALIDAD = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.CRIMINALIDAD_ID));
-           // Obj_Integrante.ID_INTEGRANTE = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_Integrante.INTEGRANTE_ID));
+           
             try
             {
                 var Resultado = await _iDbIrisp1.P_InsIntegrantes(Obj_Integrante, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
@@ -571,32 +611,279 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
-        [HttpPost]
-        public async Task<IActionResult> P_InsRegistroIrisP1(DtoIrispCriminalidad Obj_NuevoIrisP1)
-        {
 
-            Obj_NuevoIrisP1.IdCriminalidad = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_NuevoIrisP1.CriminalidadId));
-           
+        [HttpPost]
+        public async Task<IActionResult> P_InsRegistroIrisP1(IFormFile foto, string datosJson)
+        {
+            if (string.IsNullOrWhiteSpace(datosJson))
+                return Json(new { success = false, message = "Datos del IRIS vacíos o inválidos." });
+
+            DtoIrispCriminalidad Obj_NuevoIrisP1;
             try
             {
-                var Resultado = await _iDbIrisp1.P_InsRegistroIrisP1(Obj_NuevoIrisP1, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
-
-                if (Resultado.IdRespuesta > 0)
-                {
-                    return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
-                }
-                else
-                {
-                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
-                }
+                Obj_NuevoIrisP1 = JsonConvert.DeserializeObject<DtoIrispCriminalidad>(datosJson);
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                return Json(new { success = false, message = "Error interpretando los datos del IRIS: " + ex.Message });
             }
 
+            if (string.IsNullOrWhiteSpace(Obj_NuevoIrisP1.CriminalidadId))
+                return Json(new { success = false, message = "No se recibió el identificador de criminalidad." });
+
+            // Desencriptar Id numérico
+            Obj_NuevoIrisP1.IdCriminalidad = Convert.ToInt64(ClsEncriptar.Desencriptar(Obj_NuevoIrisP1.CriminalidadId));
+
+            var usuario = User.FindFirstValue("Identificacion");
+            var maquina = HttpContext.Session.GetString("IpMaquina");
+
+            if (string.IsNullOrWhiteSpace(usuario))
+                return Json(new { success = false, message = "No se pudo determinar el usuario autenticado." });
+
+            try
+            {
+                // 1️⃣ PRIMERO: insertar el IRIS
+                var resultadoRegistro = await _iDbIrisp1.P_InsRegistroIrisP1(Obj_NuevoIrisP1, usuario, maquina);
+
+                if (resultadoRegistro.IdRespuesta <= 0)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = resultadoRegistro.Mensaje ?? "No fue posible guardar el registro IRISP."
+                    });
+                }
+
+                // 2️⃣ SEGUNDO (opcional): procesar y asociar la foto
+                if (foto != null && foto.Length > 0)
+                {
+                    var resultadoFoto = await ProcesarYRegistrarFotoAsync(
+                        Obj_NuevoIrisP1.CriminalidadId,       // VARCHAR2 (GUID/encriptado)
+                        Obj_NuevoIrisP1.IdCriminalidad,       // NUMBER (desencriptado)
+                        foto,
+                        usuario,
+                        maquina
+                    );
+
+                    if (!resultadoFoto.Exito)
+                    {
+                        // OJO: el IRIS ya está insertado (P_InsCriminalidad hace COMMIT)
+                        // aquí reportamos que el IRIS se guardó, pero la foto falló.
+                        return Json(new
+                        {
+                            success = false,
+                            message = "IRIS creado, pero la fotografía no se pudo asociar: " + resultadoFoto.Mensaje
+                        });
+                    }
+                }
+
+                // 3️⃣ Todo OK
+                return Json(new
+                {
+                    success = true,
+                    message = resultadoRegistro.Mensaje ?? "Registro IRISP creado correctamente."
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Error inesperado al guardar el IRIS y la fotografía: " + ex.Message
+                });
+            }
         }
 
+
+        [AllowAnonymous]
+        private async Task<DtoResultadoFoto> ProcesarYRegistrarFotoAsync(
+            string criminalidadIdCadena,   // P_ID_CRIMINALIDAD (VARCHAR2)
+            long? criminalidadIdNumero,     // P_ID_CRIMINALIDA (NUMBER)
+            IFormFile foto,
+            string usuario,
+            string maquina)
+        {
+            var resultado = new DtoResultadoFoto();
+
+            if (foto == null || foto.Length == 0)
+            {
+                resultado.Exito = false;
+                resultado.Mensaje = "Archivo de imagen vacío o no enviado.";
+                return resultado;
+            }
+
+            var extension = Path.GetExtension(foto.FileName).ToLowerInvariant();
+
+            // Tipos permitidos de entrada (lo convertimos a WebP internamente)
+            if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
+            {
+                resultado.Exito = false;
+                resultado.Mensaje = "Formato de imagen no permitido. Solo JPG o PNG.";
+                return resultado;
+            }
+
+            if (foto.Length > 24 * 1024 * 1024)
+            {
+                resultado.Exito = false;
+                resultado.Mensaje = "La imagen supera el tamaño máximo permitido de 24MB.";
+                return resultado;
+            }
+
+            try
+            {
+                // 1️⃣ Ruta base y calidad desde appsettings
+                var rutaBase = _configuration["RutasArchivosIris:RutaFotosDesa"];
+                var calidadStr = _configuration["RutasArchivosIris:CalidadWebP"];
+                int calidad = 80;
+
+                if (!string.IsNullOrWhiteSpace(calidadStr) && int.TryParse(calidadStr, out var q))
+                    calidad = q;
+
+                if (string.IsNullOrWhiteSpace(rutaBase))
+                {
+                    resultado.Exito = false;
+                    resultado.Mensaje = "La ruta base para almacenamiento de fotos no está configurada.";
+                    return resultado;
+                }
+
+                // 2️⃣ Subcarpetas por AÑO / MES
+                string anio = DateTime.Now.ToString("yyyy");
+                string mes = DateTime.Now.ToString("MM");
+
+                string rutaAnio = Path.Combine(rutaBase, anio);
+                string rutaMes = Path.Combine(rutaAnio, mes);
+
+                if (!Directory.Exists(rutaAnio)) Directory.CreateDirectory(rutaAnio);
+                if (!Directory.Exists(rutaMes)) Directory.CreateDirectory(rutaMes);
+
+                // 3️⃣ Nombre final .webp
+                var nombreBase = Path.GetFileNameWithoutExtension(foto.FileName);
+                string nuevoNombre = $"{nombreBase}_{DateTime.Now:yyyyMMddHHmmss}.webp";
+                string rutaFinal = Path.Combine(rutaMes, nuevoNombre);
+
+                // 4️⃣ Cargar imagen y convertir a WebP comprimido
+                using (var imagen = Image.Load(foto.OpenReadStream()))
+                {
+                    imagen.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Mode = ResizeMode.Max,
+                        Size = new Size(1600, 1600) // recorta solo si es muy grande
+                    }));
+
+                    var encoder = new WebpEncoder
+                    {
+                        Quality = calidad,
+                        FileFormat = WebpFileFormatType.Lossy
+                    };
+
+                    await using (var output = new FileStream(rutaFinal, FileMode.Create))
+                    {
+                        imagen.Save(output, encoder);
+                    }
+                }
+
+
+                // ⚡ Aquí calculamos la ruta relativa (lo que quieres guardar en BD)
+                string rutaRelativa = Path.Combine(anio, mes, nuevoNombre);
+
+                // 5️⃣ Insertar registro en IRISP_CRIMINALIDAD_FOTOS via Dapper
+                using var conexion = new OracleConnection(_strConexionIris_Disec);
+                var parametros = new DynamicParameters();
+
+                parametros.Add("P_ID_CRIMINALIDAD", criminalidadIdCadena);
+                parametros.Add("P_SERVIDOR", rutaBase);
+                parametros.Add("P_TIPO_DOC", "webp");
+                parametros.Add("P_NAME_FILE", nuevoNombre);
+                parametros.Add("P_RUTA", rutaRelativa);
+                parametros.Add("P_USUARIO_CREACION", Convert.ToInt64(usuario));
+                parametros.Add("P_FECHA_CREACION", DateTime.Now);
+                parametros.Add("P_MAQUINA_CREACION", maquina ?? string.Empty);
+                parametros.Add("P_VIGENTE", 1);
+                parametros.Add("P_ID_CRIMINALIDA", criminalidadIdNumero);
+                parametros.Add("P_RESULTADO", dbType: System.Data.DbType.Int32, direction: System.Data.ParameterDirection.Output);
+                parametros.Add("SRV_Message", dbType: System.Data.DbType.String, size: 4000, direction: System.Data.ParameterDirection.Output);
+
+                await conexion.ExecuteAsync(
+                    "PK_REGISTRO_IRIS.P_InsCriminalidadFotos",
+                    parametros,
+                    commandType: System.Data.CommandType.StoredProcedure
+                );
+
+                int resultadoSp = parametros.Get<int>("P_RESULTADO");
+                string mensajeSp = parametros.Get<string>("SRV_Message");
+
+                resultado.Exito = resultadoSp == 1;
+                resultado.Mensaje = mensajeSp;
+
+                return resultado;
+            }
+            catch (Exception ex)
+            {
+                resultado.Exito = false;
+                resultado.Mensaje = "Error al procesar o registrar la fotografía: " + ex.Message;
+                return resultado;
+            }
+        }
+
+
+
+      
+        [HttpGet]
+        public IActionResult Fotos(string V_Ruta)
+        {
+            Console.WriteLine($"ENTRÓ A Fotos, V_Ruta={V_Ruta}");
+            if (string.IsNullOrWhiteSpace(V_Ruta))
+                return NotFound();
+
+            try
+            {
+                // Ruta base física
+                string rutaBase = _configuration["RutasArchivosIris:RutaFotos"];
+
+                // Arma la ruta FÍSICA completa
+                string rutaCompleta = Path.Combine(
+                    rutaBase,
+                    V_Ruta.TrimStart('/', '\\')
+                );
+
+                // Opción 1: usando Console.WriteLine
+                Console.WriteLine($"RUTA: {rutaCompleta}");
+               
+
+
+                // Opción 2 (más recomendado): usando ILogger
+                //_logger.LogInformation("RUTA: {RutaCompleta}", rutaCompleta);
+
+                if (!System.IO.File.Exists(rutaCompleta))
+                    return NotFound("Archivo no encontrado: " + rutaCompleta);
+
+                string extension = Path.GetExtension(rutaCompleta).ToLower();
+                string contentType = extension switch
+                {
+                    ".webp" => "image/webp",
+                    ".jpg" => "image/jpeg",
+                    ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    _ => "application/octet-stream"
+                };
+
+                var bytes = System.IO.File.ReadAllBytes(rutaCompleta);
+                return File(bytes, contentType);
+            }
+            catch (Exception ex)
+            {
+                // También puedes loguear el error
+                Console.WriteLine($"Error cargando la foto: {ex.Message}");
+                //_logger.LogError(ex, "Error cargando la foto");
+
+                return StatusCode(500, "Error cargando la foto.");
+            }
+        }
+
+
+
+
+    
 
 
         [HttpPost]

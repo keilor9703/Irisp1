@@ -5,6 +5,7 @@ using Comun.Areas.Irisp1;
 using Comun.General;
 using System.Data;
 
+
 namespace Negocio.Interfaz.Irisp1
 {
     public interface IDbIrisp1
@@ -24,7 +25,12 @@ namespace Negocio.Interfaz.Irisp1
         public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId);
         public Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId);
         public Task<DtoResultado<List<DtoInfoAdicional>>> F_GetInfoAdicional(string V_CriminalidadId);
-        public Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string V_CriminalidadId);
+
+
+        //public Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId);
+        Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId, string baseUrl);
+
+
         public Task<DtoResultado<List<DtoCriminalidadFoto>>> F_GetCriminalidadFotos(string V_CriminalidadId);
         public Task<DtoResultado<List<DtoUbicacionIris>>> F_GetUbicacionIris(string V_CriminalidadId);
 
@@ -33,6 +39,7 @@ namespace Negocio.Interfaz.Irisp1
 
 
         #region Métodos de Insersión
+
 
         public Task<DtoResultado<Int32>> P_InsIntegrantes(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
         public Task<DtoResultado<Int32>> P_InsIntegrantesPreliminar(DtoIntegrantes Obj_Integrante, string usuario, string maquina);
@@ -45,6 +52,8 @@ namespace Negocio.Interfaz.Irisp1
         public Task<DtoResultado<string>> P_UpdEstadoCriminalidad(DtoIrispCriminalidad data, string usuario, string maquina);
         public Task<DtoResultado<string>> P_UpdExistenciaCriminalidad(DtoIrispCriminalidad data, string usuario, string maquina);
         public Task<DtoResultado<string>> P_InsUbicacionIris(DtoUbicacionIris Obj_Ubicacion, string usuario, string maquina);
+
+        
 
 
 

@@ -59,5 +59,12 @@ namespace Negocio.Gestion.Admin
         //    return await _iPipWebServices.ObtenerCarruselImgSeviciosAsync(identificacion, token.Respuesta);
         //}
 
+
+        public async Task<DtoRespuesta<string>> ObtenerFotoFuncinarioAsync(long identificacion)
+        {
+            var token = await ObtenerTokenAsync();
+            return await _iPipWebServices.ObtenerFotoFuncionarioSeviciosAsync(identificacion, token.Respuesta);
+        }
+
     }
 }

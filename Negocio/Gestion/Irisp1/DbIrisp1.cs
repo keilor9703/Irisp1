@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -809,11 +810,28 @@ namespace Negocio.Gestion.Irisp1
 
                     if (retorno.Count > 0)
                     {
+                        string uncBase = _iConfiguration["RutasArchivosIris:RutaFotos"];
+
+                        foreach (var foto in retorno)
+                        {
+                            if (!string.IsNullOrEmpty(foto.Ruta))
+                            {
+                                foto.Ruta = foto.Ruta
+                                    .Replace(uncBase, "")
+                                    .Replace("\\", "/")
+                                    .TrimStart('/', '\\');  // <-- remover slashes iniciales
+                            }
+                        }
+
+
+
+
                         resp.IdRespuesta = 1;
                         resp.Mensaje = "Consulta Exitosa";
                         resp.Operacion = "F_GetCriminalidadFotos";
                         resp.Data = retorno;
                     }
+
                     else
                     {
                         resp.IdRespuesta = 0;
@@ -911,77 +929,38 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId, string baseUrl)
         {
-            DataTable resultado = new();
-            List<DtoDocumentoIris> retorno = new();
-            DtoResultado<List<DtoDocumentoIris>> resp = new();
+            var resp = new DtoResultado<List<DtoDocumentoIris>>();
 
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            using var connection = new OracleConnection(_strConexionIris_Disec);
 
-            try
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("P_Criminalidad_Id", criminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
+            parameters.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+
+            var lista = (await connection.QueryAsync<DtoDocumentoIris>(
+                "PK_REGISTRO_IRIS.F_GetDocIris",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            )).ToList();
+
+            foreach (var doc in lista)
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_REGISTRO_IRIS.F_GetDocIris";
-                objCommand.BindByName = true;
-                Conexion.Open();
-
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_CriminalidadId;
-                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-                if (Conexion.State == ConnectionState.Open)
+                if (!string.IsNullOrWhiteSpace(doc.Url))
                 {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoDocumentoIris>(resultado);
-
-                    if (retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetDelitosIris";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
+                    var fileName = Path.GetFileName(doc.Url);
+                    doc.Url = $"{baseUrl}/aisec/{fileName}";
                 }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
-                }
-
             }
-            catch (Exception e)
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_REGISTRO_IRIS.F_GetDocIris " + e);
 
-                resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
+            resp.IdRespuesta = 1;
+            resp.Data = lista;
+            resp.Mensaje = "Consulta Exitosa";
 
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
-            }
             return resp;
         }
+
 
 
 

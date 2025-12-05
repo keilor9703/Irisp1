@@ -13,18 +13,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Servicios.Api
 {
-    public class PipWebServices: IPipWebServices
+    public class PipWebServices : IPipWebServices
     {
 
         private readonly ApiGatewayUrl _apiGatewayUrl;
         private readonly HttpClient _httpClient;
-        
+
 
         public PipWebServices(HttpClient httpClient, ApiGatewayUrl apiGatewayUrl)
         {
             _httpClient = httpClient;
             _apiGatewayUrl = apiGatewayUrl;
-            
+
         }
 
 
@@ -134,6 +134,76 @@ namespace Servicios.Api
                 };
             }
         }
+
+
+
+        public async Task<DtoRespuesta<string>> ObtenerFotoFuncionarioSeviciosAsync(long identificacion, string token)
+        {
+            try
+            {
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+                _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
+
+                var url = $"{_apiGatewayUrl.ImagenFuncionario}?_identificacion={identificacion}";
+                var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new DtoRespuesta<string>
+                    {
+                        Codigo = EstadoOperacion.Excepcion,
+                        Estado = false,
+                        Mensaje = $"Error al consumir el servicio de imagen: {response.StatusCode}",
+                        Respuesta = null!
+                    };
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                var resultado = JsonSerializer.Deserialize<DtoRespuesta<string>>(
+                    json,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                if (resultado == null || string.IsNullOrWhiteSpace(resultado.Respuesta))
+                {
+                    return new DtoRespuesta<string>
+                    {
+                        Codigo = EstadoOperacion.Excepcion,
+                        Estado = false,
+                        Mensaje = "El servicio no devolvió imagen.",
+                        Respuesta = null!
+                    };
+                }
+
+                return resultado;
+            }
+            catch (JsonException ex)
+            {
+                return new DtoRespuesta<string>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = $"Error deserializando la imagen: {ex.Message}",
+                    Respuesta = null!
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DtoRespuesta<string>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = $"Error general al obtener la imagen: {ex.Message}",
+                    Respuesta = null!
+                };
+            }
+        }
+
+
 
     }
 }

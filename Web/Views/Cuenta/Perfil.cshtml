@@ -26,7 +26,13 @@
         <div class="card">
             <div class="card-body">
                 <center class="mt-4">
-                    <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" class="rounded-circle profile-pic rounded-circle" width="150" />
+@*                     <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" class="rounded-circle profile-pic rounded-circle" width="150" /> *@
+
+                    <img src="@Url.Action("FotoPerfil", "Cuenta")"
+                         alt="user"
+                         width="150"
+                         class="rounded-circle profile-pic rounded-circle" />
+
                     <h4 class="card-title mt-2">@User.FindFirstValue("Funcionario")</h4>
                     <h6 class="card-subtitle">@User.FindFirstValue("Cargo")</h6>
                 </center>

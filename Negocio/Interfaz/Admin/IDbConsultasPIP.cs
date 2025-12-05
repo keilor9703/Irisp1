@@ -14,6 +14,7 @@ namespace Negocio.Interfaz.Admin
         public Task<DtoRespuesta<string>> ObtenerTokenAsync();
         public Task<DtoRespuesta<bool>> ObtenerOudAsync(DtoCredenciales _credenciales);
         public Task<DtoRespuesta<DtoFuncionariosPIP>> ObtenerDatosFuncionarioIdAsync(long identificacion);
+        public Task<DtoRespuesta<string>> ObtenerFotoFuncinarioAsync(long identificacion);
 
       //  public Task<DtoRespuesta<DtoFuncionariosPIP>> ObtenerCarruselImgAsync();
     }

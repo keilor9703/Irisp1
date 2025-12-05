@@ -12,31 +12,11 @@ namespace Comun.Areas.Irisp1
 
 
 
-        [JsonPropertyName("DocumentoId")]
-        public string? DocumentoId { get; set; }
-
-
-        [JsonPropertyName("Nombre")]
-        public string? Nombre { get; set; }
-
-        [JsonPropertyName("Url")]
-        public string? Url { get; set; }
-
-        [JsonPropertyName("Vigente")]
-        public Int32? Vigente { get; set; }
-
-        [JsonPropertyName("CriminalidadId")]
-        public Int32? CriminalidadId { get; set; }
-
-        [JsonPropertyName("FechaCreacion")]
-        public string? FechaCreacion { get; set; }
-
-
-        [JsonPropertyName("IdTipoInfo")]
-        public Int32? IdTipoInfo { get; set; }
-
-        [JsonPropertyName("DescTipoInfo")]
-        public string? DescTipoInfo { get; set; }
+        public string DocumentoId { get; set; }
+        public string Nombre { get; set; }
+        public string Url { get; set; }
+        public DateTime FechaCreacion { get; set; }
+        public string CriminalidadId { get; set; }
 
 
 

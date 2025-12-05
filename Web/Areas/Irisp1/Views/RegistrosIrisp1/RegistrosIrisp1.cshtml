@@ -11,7 +11,9 @@
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
 
-   <script src="~/areas/rutas/RutasIris.js"></script>
+
+   
+   @* <script src="~/areas/rutas/RutasIris.js"></script> *@
    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
    <script src="~/areas/irisp1/registrosirisp1.js"></script>
 
@@ -369,6 +371,7 @@
                                 <label class="Labels">Descripcion General:</label>
                             </div>
                         </div>
+
                         <div class="col-md-4 MargFloatBoos">
                             <div class="form-horizontal">
                                 <div class="form-group row" style="margin-bottom: 0px;">
@@ -395,7 +398,7 @@
                                                         onclick="document.getElementById('fileAnexoFotografico').click();"
                                                         type="button"
                                                         style="border-radius: 0px;"
-                                                        title="Subir Foto">
+                                                        title="Seleccionar foto">
                                                     <b><i class="fas fa-folder-open"></i></b>
                                                 </button>
                                             </div>
@@ -902,24 +905,41 @@
                     </div>
                 </div>
 
+                <div class="card border-success" id="pn_GrillaFotografiasIrisP1">
+                    <div class="card-header d-flex align-items-center">
+                        <h4 class="card-title text-white">
+                            <i class="fas fa-clipboard-list"></i> Fotografías Asociadas
+                        </h4>
 
-                 <div class="card border-success hidden" id="pn_GrillaFotografiasIrisP1">
-                        <div class="card-header d-flex align-items-center">
-                            <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Fotografías Asociadas</h4>
-                            <div class="card-actions ms-auto d-flex button-group">
-                                <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-                                <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-                                <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                                    <i data-feather="x" class="feather-sm"></i>
-                                </a>
-                            </div>
+                        <div class="card-actions ms-auto d-flex button-group">
+
+                            <!-- Botón ÚNICO para cargar fotografía -->
+                            <button type="button"
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center"
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="document.getElementById('fileUploadFoto').click();">
+                                <i class="fas fa-upload"></i> Cargar
+                            </button>
+
+                            <!-- Input oculto -->
+                            <input type="file" id="fileUploadFoto"
+                                   class="d-none"
+                                   accept="image/jpeg,image/png"
+                                   onchange="SubirFoto(this)" />
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse">
+                                <i class="ti-minus"></i>
+                            </a>
+                            
                         </div>
-                        <div class="card-body collapse show">
-                            <div id="contenedorFotosIrisP1" class="mt-3">
-                                <!-- Aquí se renderizan las fotos -->
-                            </div>
-                        </div>
-                 </div>
+                    </div>
+
+                    <div class="card-body collapse show">
+                        <div id="contenedorFotosIrisP1" class="mt-3"></div>
+                    </div>
+                </div>
+
+
 
                 <!-- /.modal-Crear Integrante IRISP1 -->
 

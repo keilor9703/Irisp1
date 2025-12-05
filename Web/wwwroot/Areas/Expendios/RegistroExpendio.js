@@ -49,7 +49,7 @@ $(document).ready(function () {
         let filtro = $(".dataTables_filter input").val() || "";
         let anio = $("#ddlAnioIris").val();
 
-        window.location.href = `/Expendios/Registros/ExportarExcel?filtro=${encodeURIComponent(filtro)}&anio=${anio}`;
+        window.location.href = `Expendios/Registros/ExportarExcel?filtro=${encodeURIComponent(filtro)}&anio=${anio}`;
 
     });
    
@@ -254,7 +254,7 @@ $('#ddlTipoResultado').change(function () {
     const valor = $(this).val();
 
     if (valor && !isNaN(valor)) {
-        handleDropdownChange('/Expendios/Registros/F_GetDominiosIris', { V_id: valor }, '#ddlSubTipoResultado');
+        handleDropdownChange('Expendios/Registros/F_GetDominiosIris', { V_id: valor }, '#ddlSubTipoResultado');
     } else {
         console.warn("Valor inválido o vacío:", valor);
     }
@@ -299,8 +299,8 @@ $('#ddlUnidadExpendio').change(function () {
     const valor = $(this).val();
 
     if (valor) {
-        PoblarListaDesplegable('/Expendios/Registros/F_GetEstaciones', { V_Sigla: valor }, '#ddlEstacionExpendio');
-        PoblarListaDesplegable('/Expendios/Registros/F_GetEspecialidad', { V_Sigla: valor }, '#ddlunidadInformaExpendio');
+        PoblarListaDesplegable('Expendios/Registros/F_GetEstaciones', { V_Sigla: valor }, '#ddlEstacionExpendio');
+        PoblarListaDesplegable('Expendios/Registros/F_GetEspecialidad', { V_Sigla: valor }, '#ddlunidadInformaExpendio');
     } else {
         console.warn("Valor inválido o vacío:", valor);
     }
@@ -383,7 +383,7 @@ function F_GetInfoGrillas() {
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
-            console.log("✅ Respuesta exitosa:", response);
+            //console.log("✅ Respuesta exitosa:", response);
             let data = response.data || [];
             GetGrillaExpendios(data);
            
@@ -774,15 +774,15 @@ function OpenUbicacionModal(latitud, longitud) {
 
     // 🧹 Evento al cerrar completamente el modal: destruir mapa
     $('#myModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
-        console.log("🧹 Modal cerrado, destruyendo mapa...");
+       // console.log("🧹 Modal cerrado, destruyendo mapa...");
 
         // Si existe un mapa, destrúyelo correctamente
         if (typeof map !== "undefined" && map) {
             try {
                 map.destroy();   // Libera memoria del objeto ArcGIS
-                console.log("🧭 Mapa destruido correctamente");
+               // console.log("🧭 Mapa destruido correctamente");
             } catch (err) {
-                console.warn("⚠️ Error al destruir mapa:", err);
+                //console.warn("⚠️ Error al destruir mapa:", err);
             }
         }
 

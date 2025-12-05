@@ -81,7 +81,7 @@ function F_GetInfoGrillas() {
         dataType: 'json',
         data: { V_Anio: $('#ddlAnioIris').val() },
         success: function (response) {
-            console.log("✅ Respuesta exitosa:", response);
+           // console.log("✅ Respuesta exitosa:", response);
             let data = response.data || [];
             GetGrillaVerificacion(data);
             GetGrillaInvestigacion(data);
@@ -457,7 +457,7 @@ function AbrirModalVisualizarTexto(Texto) {
 }
 // Función detalle
 function F_GetDetalleIris(registro) {   // 👈 ahora recibe directamente el objeto
-    console.log("✅ Registro recibido:", registro);
+    //console.log("✅ Registro recibido:", registro);
 
     // Ya no se hace JSON.parse de nuevo
     $("#txtCriminalidadIdModal").val(registro.CriminalidadId);
@@ -983,16 +983,16 @@ function GetGrillaDocumentosIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.DocumentoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.documentoid}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
             },
-            { "title": "Nombre", "data": "Nombre", "name": "Nombre", className: "celdaCenter celda5" },
+            { "title": "Nombre", "data": "nombre", "name": "nombre", className: "celdaCenter celda5" },
             {
                 "title": "Enlace",
-                "data": "Url",
-                "name": "Url",
+                "data": "url",
+                "name": "url",
                 className: "celdaCenter celda7",
                 "render": function (data, type, row) {
                     if (!data || data.trim() === "") {
@@ -1002,7 +1002,7 @@ function GetGrillaDocumentosIris(Datos) {
                     return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;
                 }
             },
-            { "title": "Fecha Creación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaCenter celda10" }
+            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "FechaCreacion", render: formatDate , className: "celdaCenter celda10"  }
         ],
         lengthChange: false,
         searching: false,
@@ -1237,19 +1237,44 @@ function obtenerDelitosSecundariosSeleccionadosModal() {
 }
 function P_InsDelitosModal() {
 
-
-
-
     var Obj_DelitosSecundarios = obtenerDelitosSecundariosSeleccionadosModal();
 
     const Obj_DelitosIris = {
-
         CriminalidadId: $("#txtCriminalidadIdModal").val(),
         IdDelitoPrincipal: $("#ddlDelitoPrincipalModal").val(),
         IdDelitoSecundario: Obj_DelitosSecundarios
+    };
 
+    // -------------------------------
+    // VALIDACIONES
+    // -------------------------------
+
+    // Validar CriminalidadId
+    if (!Obj_DelitosIris.CriminalidadId || Obj_DelitosIris.CriminalidadId.trim() === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'El registro no tiene Criminalidad ID. Refresque e intente nuevamente.'
+        });
+        return;
     }
 
+    // Validar que exista al menos UN delito: principal o secundario
+    const noHayPrincipal = (!Obj_DelitosIris.IdDelitoPrincipal || Obj_DelitosIris.IdDelitoPrincipal === "");
+    const noHaySecundarios = (Obj_DelitosIris.IdDelitoSecundario.length === 0);
+
+    if (noHayPrincipal && noHaySecundarios) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Debe seleccionar al menos un Delito Principal o un Delito Secundario.'
+        });
+        return;
+    }
+
+    // -------------------------------
+    // SI TODO ES VÁLIDO -> Enviar al servidor
+    // -------------------------------
     $.ajax({
         url: AppRoutes.Verificacion.UrlInsDelitos,
         type: 'POST',
@@ -1260,10 +1285,10 @@ function P_InsDelitosModal() {
                 F_GetDelitosIris($("#txtCriminalidadIdModal").val());
                 $('#Modal_InsDelitos').modal('hide');
                 limpiarFormularioDelitos();
-            } else {
 
+            } else {
                 Swal.fire({
-                    type: 'error',
+                    icon: 'error',
                     title: 'Señor(a) Funcionario(a:)',
                     text: 'Error al insertar: ' + resp.message
                 });
@@ -1273,7 +1298,6 @@ function P_InsDelitosModal() {
             Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
         }
     });
-
 }
 
 
@@ -1464,7 +1488,7 @@ function subirDocumentoSeleccionado(input) {
         formData.append('idCriminalidad', idCriminalidad);
 
         $.ajax({
-            url: '/Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
+            url: 'Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
             type: 'POST',
             data: formData,
             processData: false,
@@ -1555,119 +1579,219 @@ function DellIris(CriminalidadId) {
 }
 function P_DelIntegranteIris(IntegranteId) {
 
-    $.ajax({
-        type: 'POST',
-        url: AppRoutes.Verificacion.UrlDelIntegrante,
-        async: true,
-        dataType: 'json',
-        data: { IntegranteId: IntegranteId },
-        success: function (result) {
-            if (result.success) {
-                var ID = $("#txtCriminalidadIdModal").val();
-                F_GetIntegrantesIris(ID);
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción eliminará el integrante seleccionado.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-            } else {
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            type: 'POST',
+            url: AppRoutes.Verificacion.UrlDelIntegrante,
+            async: true,
+            dataType: 'json',
+            data: { IntegranteId: IntegranteId },
+
+            success: function (result) {
+                if (result.success) {
+                    var ID = $("#txtCriminalidadIdModal").val();
+                    F_GetIntegrantesIris(ID);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+                }
+            },
+
+            error: function () {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
+                    title: 'Señor(a) Funcionario(a)',
+                    text: "No es posible eliminar el integrante. Por favor revise."
                 });
             }
-        },
-        error: function () {
-            Swal.fire({
-                icon: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: "No es posible grabar, revise"
-            });
-        }
-    });
+        });
 
+    });
 }
+
 function P_DelDelitosIris(DelitoId) {
-
-
-    $.ajax({
-        type: 'POST',
-        url: AppRoutes.Verificacion.UrlDelDelitos,
-        async: true,
-        dataType: 'json',
-        data: { DelitoId: DelitoId },
-        success: function (result) {
-            if (result.success) {
-
-                F_GetDelitosIris($("#txtCriminalidadIdModal").val());
-                Swal.fire({
-                    type: 'success',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-
-            } else {
-                Swal.fire({
-                    type: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-            }
-        },
-        error: function (ex) {
-            Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: "No es posible grabar, revise"
-            });
-        }
-    });
-
-}
-function P_DelDelInfoAdicionalIris(InfoId) {
-
-
-    $.ajax({
-        type: 'POST',
-        url: AppRoutes.Verificacion.UrlDelInfoAdicionalIris,
-        async: true,
-        dataType: 'json',
-        data: { InfoId: InfoId },
-        success: function (result) {
-            if (result.success) {
-
-                F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
-                Swal.fire({
-                    type: 'success',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-
-            } else {
-                Swal.fire({
-                    type: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-            }
-        },
-        error: function (ex) {
-            Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: "No es posible grabar, revise"
-            });
-        }
-    });
-
-}
-function P_DelUbicacionIris(UbicacionId) {
 
     Swal.fire({
         title: '¿Está seguro?',
-        text: "Esta acción eliminará la ubicación seleccionada.",
+        text: "Esta acción eliminará el delito registrado.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            type: 'POST',
+            url: AppRoutes.Verificacion.UrlDelDelitos,
+            async: true,
+            dataType: 'json',
+            data: { DelitoId: DelitoId },
+
+            success: function (result) {
+                if (result.success) {
+
+                    F_GetDelitosIris($("#txtCriminalidadIdModal").val());
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+                }
+            },
+
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a)',
+                    text: "No es posible eliminar el delito. Por favor revise."
+                });
+            }
+        });
+
+    });
+}
+
+function P_DelDelInfoAdicionalIris(InfoId) {
+
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción eliminará la información adicional.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            type: 'POST',
+            url: AppRoutes.Verificacion.UrlDelInfoAdicionalIris,
+            async: true,
+            dataType: 'json',
+            data: { InfoId: InfoId },
+
+            success: function (result) {
+                if (result.success) {
+
+                    F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+                }
+            },
+
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a)',
+                    text: "No es posible eliminar la información adicional. Por favor revise."
+                });
+            }
+        });
+
+    });
+}
+
+function P_DelDocumentoIris(DocumentoId) {
+
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción eliminará el documento cargado.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            type: 'POST',
+            url: AppRoutes.Verificacion.UrlDelDocumentoIris,
+            async: true,
+            dataType: 'json',
+            data: { DocumentoId: DocumentoId },
+
+            success: function (result) {
+                if (result.success) {
+
+                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Señor(a) Funcionario(a)',
+                        text: result.message
+                    });
+                }
+            },
+
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a)',
+                    text: "No es posible eliminar el documento. Por favor revise."
+                });
+            }
+        });
+
+    });
+}
+
+
+
+function P_DelDocumentoIris(DocumentoId) {
+
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción eliminará el documento seleccionado.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
@@ -1675,22 +1799,22 @@ function P_DelUbicacionIris(UbicacionId) {
     }).then((result) => {
 
         if (!result.isConfirmed) {
-            return; // ❌ El usuario canceló
+            return; // Usuario canceló la eliminación
         }
 
-        // ✔ Usuario confirmó → proceder con el AJAX
+        // Usuario confirmó → Ejecutar AJAX
         $.ajax({
             type: 'POST',
-            url: AppRoutes.Verificacion.UrlDelUbiacionIris,
+            url: AppRoutes.Verificacion.UrlDelDocumentoIris,
             async: true,
             dataType: 'json',
-            data: { UbicacionId: UbicacionId },
+            data: { DocumentoId: DocumentoId },
 
             success: function (result) {
                 if (result.success) {
 
-                    // Recargar listado de ubicaciones
-                    F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                    // Recargar lista de documentos
+                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
 
                     Swal.fire({
                         icon: 'success',
@@ -1712,7 +1836,7 @@ function P_DelUbicacionIris(UbicacionId) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Señor(a) Funcionario(a)',
-                    text: "No es posible eliminar la ubicación. Por favor revise."
+                    text: "No es posible eliminar el documento, por favor revise."
                 });
             }
         });
@@ -1720,45 +1844,6 @@ function P_DelUbicacionIris(UbicacionId) {
     });
 }
 
-
-function P_DelDocumentoIris(DocumentoId) {
-
-
-
-    $.ajax({
-        type: 'POST',
-        url: AppRoutes.Verificacion.UrlDelDocumentoIris,
-        async: true,
-        dataType: 'json',
-        data: { DocumentoId: DocumentoId },
-        success: function (result) {
-            if (result.success) {
-
-                F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
-                Swal.fire({
-                    type: 'success',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-
-            } else {
-                Swal.fire({
-                    type: 'error',
-                    title: 'Señor(a) Funcionario(a:)',
-                    text: result.message
-                });
-            }
-        },
-        error: function (ex) {
-            Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: "No es posible grabar, revise"
-            });
-        }
-    });
-
-}
 function limpiarFormularioIntegrantes() {
     $("#txtConsecutivoIntegrante").val('');
     $("#txtAlias").val('');
@@ -1793,7 +1878,6 @@ function limpiarFormularioResultado() {
 function P_InsUbicacionModal() {
 
     const Obj_Ubicacion = {
-
         CriminalidadId: $("#txtCriminalidadIdModal").val(),
         Latitud: $("#LATITUD_CASO").val(),
         Longitud: $("#LONGITUD_CASO").val(),
@@ -1804,17 +1888,47 @@ function P_InsUbicacionModal() {
         Direccion: $("#txtDireccion").val(),
         CodigoDane: $("#txtCodDane").val(),
         CodigoEstacion: $("#txtCodEstacion").val(),
-        CodigoSiedcoCuadrante: $("#txtCodSiedcoCuadrante").val(),
+        CodigoSiedcoCuadrante: $("#txtCodSiedcoCuadrante").val()
+    };
 
+    // ---------------------------
+    // VALIDACIONES
+    // ---------------------------
 
+    // Validar CriminalidadId
+    if (!Obj_Ubicacion.CriminalidadId || Obj_Ubicacion.CriminalidadId.trim() === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'No fue posible encontrar el identificador del caso. Cierre la ventana y vuelva a abrir el registro.'
+        });
+        return;
     }
 
+    // Validar Latitud y Longitud
+    if (!Obj_Ubicacion.Latitud || !Obj_Ubicacion.Longitud) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Debe seleccionar la ubicación del caso en el mapa (Latitud y Longitud).'
+        });
+        return;
+    }
+
+
+
+
+
+    // ---------------------------
+    // SI PASA LAS VALIDACIONES → ENVIAR AL SERVIDOR
+    // ---------------------------
 
     $.ajax({
         url: AppRoutes.Verificacion.UrlInsUbicacion,
         type: 'POST',
         data: Obj_Ubicacion,
         success: function (resp) {
+
             if (resp.success) {
 
                 F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
@@ -1823,7 +1937,7 @@ function P_InsUbicacionModal() {
             } else {
 
                 Swal.fire({
-                    type: 'error',
+                    icon: 'error',
                     title: 'Señor(a) Funcionario(a:)',
                     text: 'Error al insertar: ' + resp.message
                 });
@@ -1835,6 +1949,7 @@ function P_InsUbicacionModal() {
     });
 
 }
+
 function F_GetTareas(IdCriminalidad, IdResponsable) {
 
     $("#txtResponsableIdModal").val(IdResponsable);

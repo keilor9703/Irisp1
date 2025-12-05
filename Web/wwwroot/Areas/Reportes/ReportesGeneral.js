@@ -20,12 +20,12 @@ function F_GetInfoGrillas() {
         dataType: 'json',
         data: { anio: $('#ddlAnioIris').val() },
         success: function (response) {
-            console.log("📩 Respuesta recibida:", response);
+           // console.log("📩 Respuesta recibida:", response);
 
             // Validar si la respuesta es exitosa
             if (response && response.success === true) {
                 let data = response.data || [];
-                console.log("✅ Datos cargados:", data);
+              //  console.log("✅ Datos cargados:", data);
                 GetGrillaLista(data);
             } else {
                 console.warn("⚠️ Respuesta no exitosa o success=false");
@@ -287,7 +287,7 @@ $("#btnExcel").on("click", function () {
     let anio = $("#ddlAnioIris").val();
 
     window.location.href =
-        "/Reportes/ReporteGeneral/ExportarExcelReporteGeneral?anio=" +
+        "Reportes/ReporteGeneral/ExportarExcelReporteGeneral?anio=" +
         encodeURIComponent(anio);
 });
 

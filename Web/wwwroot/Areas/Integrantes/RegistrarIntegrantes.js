@@ -42,12 +42,19 @@ $(document).ready(function () {
 
 
 
-
-// ----- Botón Exportar Excel -----
 $("#btnNuevoReincidente").on("click", function (e) {
     e.preventDefault();
 
     $('#Modal_InsReincidente').modal("show");
+});
+
+
+
+
+$("#btnAddReincidente").on("click", function (e) {
+    e.preventDefault();
+    P_InsOrUpdReincidente();
+  
 });
 
 $("#btnUpdReincidente").on("click", function (e) {
@@ -94,7 +101,7 @@ function F_GetReincidentes() {
         type: "GET",
         success: function (respuesta) {
            /* console.log(respuesta.data);*/
-            console.log("✅Respuesta exitosa:", respuesta);
+            //console.log("✅Respuesta exitosa:", respuesta);
 
             let data = respuesta.data || [];
             GetGrillaReincidentes(data)
@@ -157,7 +164,7 @@ function GetGrillaReincidentes(Datos) {
                 var DatosFila = JSON.stringify(row).replace(/"/g, '&quot;');
                 var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
                 var Actualizar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:OpenModalActualizar(${DatosFila})"><i class="fa fa-rotate-right green"></i>&nbsp;Actualizar</a></li>`;
-                var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DellReincidente(${DatosFila})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DellReincidente('${row.reincidenteId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
 
                 var finBoton = '</ul></div>';
                 return inicioBoton + Actualizar + Eliminar + finBoton;
@@ -179,71 +186,15 @@ function GetGrillaReincidentes(Datos) {
 
 $("#btnExcel").on("click", function () {
     let filtro = $(".dataTables_filter input").val() || "";
-    window.location.href = "/Integrantes/RegistrarInteg/ExportarExcel?filtro=" + encodeURIComponent(filtro);
+    window.location.href = "Integrantes/RegistrarInteg/ExportarExcel?filtro=" + encodeURIComponent(filtro);
 });
 
 $("#btnPdf").on("click", function () {
     let filtro = $(".dataTables_filter input").val() || "";
-    window.open("/Integrantes/RegistrarInteg/ExportarPdf?filtro=" + encodeURIComponent(filtro), "_blank");
+    window.open("Integrantes/RegistrarInteg/ExportarPdf?filtro=" + encodeURIComponent(filtro), "_blank");
 });
 
 
-//function GetGrillaReincidentes(Datos) {
-
-
-//   if ($.fn.dataTable.isDataTable('#tbGrillaReincidentes')) {
-//        const table = $('#tbGrillaReincidentes').DataTable();
-//        table.clear();
-//        table.rows.add(Datos);
-//        table.draw(false);
-//        return;
-//    }
-
-
-//    $("#pn_GrillaReincidentes").removeClass('hidden');
-//    $("#tbGrillaReincidentes").DataTable({
-//        // destroy: true,
-//        data: Datos,
-//        language: glOpcionesIdioma,
-//        scrollX: true,          // ✅ Activa scroll horizontal
-//        scrollCollapse: true,   // ✅ Permite colapsar si hay menos columnas
-//        responsive: false,      // ✅ Desactiva comportamiento que oculta columnas
-//        autoWidth: false,       // ✅ Evita cálculos automáticos de ancho que rompen el scroll
-//        "columns": [
-//            {
-//                data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
-//                    var DatosFila = JSON.stringify(row).replace(/"/g, '&quot;');
-//                    var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-//                    var Actualizar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:OpenModalActualizar(${DatosFila})"><i class="fa fa-rotate-right green"></i>&nbsp;Actualizar</a></li>`;
-//                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DellReincidente(${DatosFila})"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
-                    
-//                    var finBoton = '</ul></div>';
-//                    return inicioBoton + Actualizar + Eliminar + finBoton;
-//                }
-//            },
-
-//            { title: "Tipo reincidencia", data: "tipoId", class: " celda7" },
-//            { title: "Nombre", data: "nombre", class: " celda10" },
-//            { title: "Apellido", data: "apellido"   ,class: " celda10" },
-//            { title: "Identificación", data: "identificacion", class: "celdaCenter celda6" },
-//            { title: "Alias", data: "alias", class: " celda10" },
-//            { title: "Observación", data: "observacion" },
-
-//            { title: "ReincidenteId", data: "reincidenteId", visible: false}
-//        ],
-//        lengthMenu: [
-//            [15, 25, 50, -1],
-//            ['15 registros', '25 registros', '50 registros', 'Todos']
-//        ],
-//        ordering: false,
-//        pageLength: 15,
-//        bLengthChange: true,
-//        searching: true,
-//        paging: true,
-//        info: true,
-
-//    });
-//}
 
 function P_InsOrUpdReincidente() {
 
@@ -371,11 +322,11 @@ function P_UpdReincidente() {
 
 
 
-function P_DellReincidente() {
+function P_DellReincidente(V_ReincidenteId) {
 
     const Obj_Reincidente = {
 
-        reincidenteId: $("#txtReincidenteIDUpd").val(),
+        reincidenteId: V_ReincidenteId
 
     }
 
@@ -531,5 +482,5 @@ function Limpiar() {
 
 //$("#btnPrint").on("click", function () {
 //    let filtro = $(".dataTables_filter input").val() || "";
-//    window.open("/Integrantes/RegistrarInteg/Imprimir?filtro=" + encodeURIComponent(filtro), "_blank");
+//    window.open("Integrantes/RegistrarInteg/Imprimir?filtro=" + encodeURIComponent(filtro), "_blank");
 //});

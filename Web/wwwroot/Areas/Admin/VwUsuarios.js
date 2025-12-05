@@ -140,6 +140,12 @@ function F_GetFuncionarios(V_IdentificacionB){
         return;
     }
 
+    if (!V_IdentificacionB || V_IdentificacionB.length < 6) {
+        $("#imgFoto").attr("src", "/img/Avatar.png");
+        return;
+    }
+
+
     $.ajax({
         type: "POST",
         url: AppRoutes.Administracion.UrlGetFuncionarios,
@@ -149,7 +155,13 @@ function F_GetFuncionarios(V_IdentificacionB){
         cache: false,
         success: function (respuesta) {
             if (respuesta.success) {
-                $("#imgFoto")[0].src = "https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=" + respuesta.idEncry + "&Token=Mxl7995Julabdfjughyts1*_58$$";
+
+
+                $("#imgFoto").attr(
+                    "src",
+                    "/Cuenta/FotoFuncionario?identificacion=" + V_IdentificacionB + "&t=" + new Date().getTime()
+                );
+
                 $("#txtSituacionLab").val(respuesta.data.SituacionLaboral);
                 $("#txtFuncionario").val(respuesta.data.Funcionario);
                 $("#txtCorreo").val(respuesta.data.Correo);
@@ -478,7 +490,7 @@ function GrillaUserRoles(Datos) {
 
 //Limpiar Variables
 function Limpiar() {
-    $("#imgFoto")[0].src = "/img/Avatar.png";
+    $("#imgFoto")[0].src = "img/Avatar.png";
     $("#txtSituacionLab").val("");
     $("#txtFuncionario").val("");
     $("#txtCorreo").val("");

@@ -111,7 +111,7 @@ function inicializarMapa(idMapa) {
                         $("#txtBarrio").val(barrio);
                         $("#txtMunicipio").val(ciudad);
 
-                        console.log("Dirección:", direccion, "Barrio:", barrio, "Ciudad:", ciudad);
+                       // console.log("Dirección:", direccion, "Barrio:", barrio, "Ciudad:", ciudad);
                     } else {
                         $("#txtDireccion").val("No se pudo obtener la dirección");
                         $("#txtBarrio").val("No disponible");
@@ -221,8 +221,8 @@ function inicializarMapa(idMapa) {
                     var cuadrante = featureSet.features[0].attributes;
 
                     // ✅ Mostrar todos los campos disponibles
-                    console.log("🔎 TODOS LOS CAMPOS DEL CUADRANTE:");
-                    console.table(cuadrante);
+                   // console.log("🔎 TODOS LOS CAMPOS DEL CUADRANTE:");
+                   // console.table(cuadrante);
 
                     // Usar algunos campos clave para mostrar en inputs
                     var nroCuadrante = cuadrante.NRO_CUADRANTE;
@@ -289,7 +289,7 @@ function inicializarMapa(idMapa) {
                 return;
             }
 
-            console.log("Ubicando llamada en el mapa - Lat:", latitud, "Lng:", longitud);
+           // console.log("Ubicando llamada en el mapa - Lat:", latitud, "Lng:", longitud);
 
             var punto = new Point(parseFloat(longitud), parseFloat(latitud));
             var symbolLlamada = crearMunecoVerde();
@@ -303,7 +303,7 @@ function inicializarMapa(idMapa) {
 
             obtenerDireccionPorCoordenadas(latitud, longitud);
 
-            console.log("Punto de llamada agregado exitosamente al mapa");
+           // console.log("Punto de llamada agregado exitosamente al mapa");
         }
 
         window.ubicarLlamadaEnMapa = function (latitud, longitud) {

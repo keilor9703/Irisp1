@@ -22,7 +22,7 @@ namespace Web.Controllers
                                 IDbAdministracion iDbAdministracion,
                                 IDbConsultasPIP idbConsultasPIP)
         {
-           
+
             _iHttpContextAccessor = iHttpContextAccessor;
             _iDbAdministracion = iDbAdministracion;
             _iDbConsultasPIP = idbConsultasPIP;
@@ -31,7 +31,7 @@ namespace Web.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult InicioSesion(string returnurl ="nullhttps://disec.policia.gov.co/Irisp1/Home/Indexl") 
+        public IActionResult InicioSesion(string returnurl = "nullhttps://disec.policia.gov.co/Irisp1/Home/Indexl")
         {
             ViewData["ReturnUrl"] = returnurl;
             return View();
@@ -41,14 +41,14 @@ namespace Web.Controllers
         [ValidateAntiForgeryToken]
         [AllowAnonymous]
         public async Task<IActionResult> InicioSesionAsync(DtoCredenciales loginUsuario, string returnurl = null)
-        
-        
-        
+
+
+
         {
             ViewData["ReturnUrl"] = returnurl;
             returnurl = returnurl ?? Url.Action(nameof(HomeController.Index), "Home"); //Url.Content("~/Home/Index");
 
-             if (!ModelState.IsValid)
+            if (!ModelState.IsValid)
                 return View(loginUsuario);
 
             //Deshabilitar el OUD 
@@ -71,10 +71,27 @@ namespace Web.Controllers
             if (Usuario.Data.Identificacion != 0)
             {
                 //Cargar Foto
-                var foto_empl = "https://sinac.policia.gov.co:8443" + "/SinacPicture/picture.aspx?DocID=" + ClsEncriptar.Encriptar(Convert.ToString(Usuario.Data.Identificacion)) + "&Token=Mxl7995Julabdfjughyts1*_58$$";
+                //var foto_empl = "https://sinac.policia.gov.co:8443" + "/SinacPicture/picture.aspx?DocID=" + ClsEncriptar.Encriptar(Convert.ToString(Usuario.Data.Identificacion)) + "&Token=Mxl7995Julabdfjughyts1*_58$$";
+
+
+                //Cargar Foto del funcionario desde el servicio PIP
+                //var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(Usuario.Data.Identificacion);
+
+                //string fotoBase64 = foto_empl.Estado && foto_empl.Respuesta != null
+                //    ? foto_empl.Respuesta.Respuesta
+                //    : "";
+
 
                 //Validar si el usuario está bloqueado
-                
+                if (Usuario.Data.Bloqueado == 1)
+                {
+                    ModelState.AddModelError("", "Su cuenta de usuario está DESHABILITADA, contacte al Administrador");
+                    return View();
+                }
+
+
+                //Validar si el usuario está bloqueado
+
                 if (Usuario.Data.Bloqueado == 1)
                 {
                     ModelState.AddModelError("", "Su cuenta de usuario está DESHABILITADA, contacte al Administrador");
@@ -106,9 +123,9 @@ namespace Web.Controllers
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, Usuario.Data.Usuario),
-                    new Claim("Funcionario", Usuario.Data.Funcionario), 
-                    new Claim("GradoNombre", Usuario.Data.GradAlfabetico + " " + Usuario.Data.Nombres + " " + Usuario.Data.ApellidosNombres),
+                    new Claim("Funcionario", Usuario.Data.Funcionario),
                     new Claim("Identificacion", Convert.ToString(Usuario.Data.Identificacion)),
+                     new Claim("GradoNombre", Usuario.Data.GradAlfabetico + " " + Usuario.Data.Nombres + " " + Usuario.Data.ApellidosNombres),
                     new Claim("IdUsuario", Convert.ToString(Usuario.Data.IdUsuario)),
                     new Claim("Cargo", Convert.ToString(Usuario.Data.Cargo)),
                     new Claim("IdUndeLabora", Convert.ToString(Usuario.Data.IdUndeLaborando)),
@@ -119,6 +136,7 @@ namespace Web.Controllers
                     new Claim("Celular", Convert.ToString(Usuario.Data.Celular)),
                     new Claim("Usuario", Convert.ToString(Usuario.Data.Usuario)),
                     new Claim("SituacionLaboral", Convert.ToString(Usuario.Data.SituacionLaboral)),
+                   // new Claim("FotoBase64", Usuario.Data.Foto ?? "")
                 };
 
                 foreach (var rol in Usuario.Data.DtoUserRoles)
@@ -155,5 +173,99 @@ namespace Web.Controllers
 
         public ActionResult Perfil() => View();
 
+
+        [Authorize]
+        public async Task<IActionResult> FotoPerfil()
+        {
+            try
+            {
+                // 1. Obtener identificación desde el claim
+                var identificacionClaim = User.FindFirst("Identificacion")?.Value;
+
+                if (string.IsNullOrWhiteSpace(identificacionClaim))
+                {
+                    return FotoPorDefecto();
+                }
+
+                if (!long.TryParse(identificacionClaim, out long identificacion))
+                {
+                    return FotoPorDefecto();
+                }
+
+                // 2. Llamar el servicio que trae la foto
+                var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(identificacion);
+
+                if (!foto_empl.Estado || string.IsNullOrWhiteSpace(foto_empl.Respuesta))
+                {
+                    return FotoPorDefecto();
+                }
+
+                // 3. Convertir Base64 a bytes
+                byte[] bytes;
+                try
+                {
+                    bytes = Convert.FromBase64String(foto_empl.Respuesta);
+                }
+                catch
+                {
+                    return FotoPorDefecto();
+                }
+
+                // 4. Devolver como archivo de imagen
+                return File(bytes, "image/jpeg");
+            }
+            catch
+            {
+                return FotoPorDefecto();
+            }
+        }
+
+        private IActionResult FotoPorDefecto()
+        {
+            // Ruta a una imagen por defecto en wwwroot/images
+            var ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "Avatar.png");
+            var bytes = System.IO.File.ReadAllBytes(ruta);
+            return File(bytes, "image/png");
+        }
+
+
+
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> FotoFuncionario(long identificacion)
+        {
+            try
+            {
+                var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(identificacion);
+
+                if (!foto_empl.Estado || string.IsNullOrWhiteSpace(foto_empl.Respuesta))
+                {
+                    return FotoPorDefecto();
+                }
+
+                byte[] bytes;
+                try
+                {
+                    bytes = Convert.FromBase64String(foto_empl.Respuesta);
+                }
+                catch
+                {
+                    return FotoPorDefecto();
+                }
+
+                return File(bytes, "image/jpeg");
+            }
+            catch
+            {
+                return FotoPorDefecto();
+            }
+        }
+
+        
+
     }
+
+
 }
+

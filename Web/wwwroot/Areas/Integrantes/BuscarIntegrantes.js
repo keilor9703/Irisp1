@@ -147,7 +147,7 @@ function F_GetListaIris(V_Indentificacion) {
         data: { V_Identificacion: V_Indentificacion },
         success: function (respuesta) {
            
-            console.log("✅Respuesta exitosa:", respuesta);
+            //console.log("✅Respuesta exitosa:", respuesta);
 
             let data = respuesta.data || [];
             GetGrillaListaIris(data)
@@ -451,7 +451,7 @@ function GetGrillaLog(Datos) {
         {
             data: null, className: "celdaCenter celda3", render: function (data) {
 
-                var urlArcGis = `/Ubicacion/GraficarCoordenada?latitud=${data.latitud}&longitud=${data.longitud}`;
+                var urlArcGis = `Ubicacion/GraficarCoordenada?latitud=${data.latitud}&longitud=${data.longitud}`;
                 var urlGoogle = `https://www.google.com/maps/place/${data.latitud},${data.longitud}`;
 
                 var inicioBoton = `
@@ -503,14 +503,14 @@ function GetGrillaLog(Datos) {
 
 
 function OpenInsUbicacionModal(latitud, longitud) {
-    console.log("🗺️ Abriendo modal con coordenadas:", latitud, longitud);
+   // console.log("🗺️ Abriendo modal con coordenadas:", latitud, longitud);
 
     // Abre el modal
     $('#myModal').modal("show");
 
     // Evento al mostrarse completamente
     $('#myModal').off('shown.bs.modal').on('shown.bs.modal', function () {
-        console.log("✅ Modal visible, inicializando mapa...");
+        //console.log("✅ Modal visible, inicializando mapa...");
 
         // Inicializa el mapa
         inicializarMapa('mapaDiv');
@@ -525,15 +525,15 @@ function OpenInsUbicacionModal(latitud, longitud) {
 
     // 🧹 Evento al cerrar completamente el modal: destruir mapa
     $('#myModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
-        console.log("🧹 Modal cerrado, destruyendo mapa...");
+        //console.log("🧹 Modal cerrado, destruyendo mapa...");
 
         // Si existe un mapa, destrúyelo correctamente
         if (typeof map !== "undefined" && map) {
             try {
                 map.destroy();   // Libera memoria del objeto ArcGIS
-                console.log("🧭 Mapa destruido correctamente");
+               // console.log("🧭 Mapa destruido correctamente");
             } catch (err) {
-                console.warn("⚠️ Error al destruir mapa:", err);
+                //console.warn("⚠️ Error al destruir mapa:", err);
             }
         }
 
@@ -565,7 +565,7 @@ $("#btnAbrirMapaUbicaciones").on("click", function () {
         return;
     }
 
-    console.log("🔵 Coordenadas recopiladas:", ubicaciones);
+   // console.log("🔵 Coordenadas recopiladas:", ubicaciones);
 
     // Abrir modal y enviar lista al mapa
     OpenModalTodasUbicaciones(ubicaciones);
@@ -610,7 +610,7 @@ $("#btnExcel").on("click", function () {
     let identificacion = $("#txtIdentificacion").val();
 
     window.location.href =
-        "/Integrantes/BuscarInteg/ExportarExcelListaIris?V_Identificacion=" +
+        "Integrantes/BuscarInteg/ExportarExcelListaIris?V_Identificacion=" +
         encodeURIComponent(identificacion);
 });
 
@@ -622,7 +622,7 @@ $("#btnPdf").on("click", function () {
     let identificacion = $("#txtIdentificacion").val();
 
     window.open(
-        "/Integrantes/BuscarInteg/ExportarPdfListaIris?V_Identificacion=" +
+        "Integrantes/BuscarInteg/ExportarPdfListaIris?V_Identificacion=" +
         encodeURIComponent(identificacion),
         "_blank"
     );
@@ -636,7 +636,7 @@ $("#btnExcel2").on("click", function () {
     let identificacion = $("#txtIdentificacion").val();
 
     window.location.href =
-        "/Integrantes/BuscarInteg/ExportarExcelUbicaciones?V_Identificacion=" +
+        "Integrantes/BuscarInteg/ExportarExcelUbicaciones?V_Identificacion=" +
         encodeURIComponent(identificacion);
 });
 
@@ -646,7 +646,7 @@ $("#btnExcel2").on("click", function () {
 $("#btnPdf2").on("click", function () {
     let identificacion = $("#txtIdentificacion").val();
     window.open(
-        "/Integrantes/BuscarInteg/ExportarPdfUbicaciones?V_Identificacion=" +
+        "Integrantes/BuscarInteg/ExportarPdfUbicaciones?V_Identificacion=" +
         encodeURIComponent(identificacion),
         "_blank"
     );

@@ -71,5 +71,8 @@ namespace Comun.Areas.Admin
 
         [JsonPropertyName("Resultado")]
         public Int32? Resultado { get; set; }
+
+        [JsonPropertyName("Foto")]
+        public string? Foto { get; set; }
     }
 }

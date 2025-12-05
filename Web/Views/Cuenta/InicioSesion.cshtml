@@ -52,12 +52,18 @@
                             <img src="~/img/LogoIrisp1.png" alt="logo" width="369px" style="margin-top: -8px;margin-bottom: 26px;" class="img-responsive" />
                         </span>
                         <br />
-                        @*<span class="text-center h4" style="color: white ">SISTEMA DE INFORMACIÓN PARA LA ADMINISTRACIÓN DEL TALENTO HUMANO</span>*@
+                        
                     </div>
                     <!-- Form -->
                     <div class="row" style="padding: 0px 66px 0px 89px;">
                         <div class="col-12">
-                            <form class="form-horizontal mt-3 form-material" id="loginform" asp-action="InicioSesion" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]">
+                            <form class="form-horizontal mt-3 form-material"
+                                  id="loginform"
+                                  asp-controller="Cuenta"
+                                  asp-action="InicioSesion"
+                                  method="post"
+                                  asp-route-returnurl="@ViewData["ReturnUrl"]">
+
                                 <div class="form-group mb-3">
                                     <div class="col-xs-12">
                                         <input asp-for="UsuarioEmpresarial"
@@ -126,8 +132,14 @@
     </div>
 
     <!-- ============================================================== -->
-    <script src="../lib/jquery/dist/jquery2024.min.js"></script>
-    <script src="../lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+   @*  <script src="../lib/jquery/dist/jquery2024.min.js"></script>
+    <script src="../lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script> *@
+
+    <script src="~/lib/jquery/dist/jquery2024.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
     <script>
         //el siguiente script oculta el preloader
         $(".preloader").fadeOut();

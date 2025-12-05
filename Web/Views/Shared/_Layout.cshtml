@@ -7,6 +7,14 @@
     var GradoNombre = User.FindFirstValue("GradoNombre");
 }
 
+@{
+    var fotoClaim = User.FindFirst("FotoBase64")?.Value;
+    var fotoSrc = string.IsNullOrWhiteSpace(fotoClaim)
+        ? Url.Content("~/img/Avatar.png")
+        : $"data:image/jpeg;base64,{fotoClaim}";
+}
+
+
 <!DOCTYPE html>
 <html dir="ltr" lang="es">
 
@@ -15,6 +23,191 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@ViewData["Title"] IRIS-P1</title>
+    <base href="~/" />
+
+    <script>
+        window.AppRoutes = {
+
+            /* ============================================================
+             *  ADMINISTRACIÓN
+             * ============================================================ */
+            Administracion: {
+                UrlGetFuncionarios: "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })",
+                UrlGetEmpleadoIntel: "@Url.Action("F_GetEmpleadoIntel", "Empleados", new { Area = "" })",
+
+                UrlInsUdpUsuarios: "@Url.Action("P_InsUdpUsuarios", "Usuarios", new { Area = "Admin" })",
+                UrlGetUserRoles: "@Url.Action("F_GetUserRoles", "Usuarios", new { Area = "Admin" })",
+                UrlInsRoles: "@Url.Action("P_InsRoles", "Usuarios", new { Area = "Admin" })",
+                UrlDelRoles: "@Url.Action("P_DelRoles", "Usuarios", new { Area = "Admin" })",
+                UrlGetListUsuarios: "@Url.Action("F_GetListUsuarios", "Usuarios", new { Area = "Admin" })"
+            },
+
+            /* ============================================================
+             *  IRIS P1 – REGISTROS
+             * ============================================================ */
+            RegistroIrisP1: {
+                UrlGetAniosIrisp1: "@Url.Action("F_GetAniosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetInfoGrillas: "@Url.Action("F_GetInfoGrillas", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlGetFuncionarios: "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })",
+                UrlInsIntegrantesPreliminar: "@Url.Action("P_InsIntegrantesPreliminar", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlInsIntegrantes: "@Url.Action("P_InsIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlGetConsecutivoIris: "@Url.Action("F_ConsultarSeqIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetConsecutivoIntegrante: "@Url.Action("F_ConsultarSeqIntegrante", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlGetIntegrantes: "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetIntegrantesPreliminar: "@Url.Action("F_GetIntegrantesPreliminar", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlInsRegistroIrisP1: "@Url.Action("P_InsRegistroIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlGetDelitosIris: "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetInfoAdicional: "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetDocIris: "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlGetFotosIris: "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetUbicacion: "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlInsDelitos: "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlInsUbicacion: "@Url.Action("P_InsUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlInsInfoAdicional: "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlUpdCriminalidad: "@Url.Action("P_UpdCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlUpdEstadoCriminalidad: "@Url.Action("P_UpdEstadoCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlUpdExistenciaCriminalidad: "@Url.Action("P_UpdExistenciaCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlDelIris: "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelIntegrante: "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelDelitos: "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelInfoAdicionalIris: "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelUbiacionIris: "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelDocumentoIris: "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })"
+            },
+
+            /* ============================================================
+             *  VERIFICACIÓN
+             * ============================================================ */
+                 Verificacion: {
+            // ======= Verificación =======
+                UrlGetInfoGrillas: "@Url.Action("F_GetInfoGrillas", "Verificacion", new { Area = "Irisp1" })",
+                UrlGetTareasIris: "@Url.Action("F_GetTareas", "Verificacion", new { Area = "Irisp1" })",
+                UrlGetResultadosIris: "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })",
+                UrlGetResponsablesTareasIris: "@Url.Action("F_GetResponsablesTareasIris", "Verificacion", new { Area = "Irisp1" })",
+
+                UrlInsResultadoTareas: "@Url.Action("P_InsResultadoTareasIris", "Verificacion", new { Area = "Irisp1" })",
+                UrlInsRespuestaTarea: "@Url.Action("P_InsTareaRespuesta", "Verificacion", new { Area = "Irisp1" })",
+
+                // ======= Registros IRISP1 (FALTANTES AGREGADAS) =======
+                UrlGetEstadosIrisP1: "@Url.Action("F_GetEstadosIrisP1", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlInsIntegrantes: "@Url.Action("P_InsIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetConsecutivoIntegrante: "@Url.Action("F_ConsultarSeqIntegrante", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetIntegrantes: "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlGetDelitosIris: "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetInfoAdicional: "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetDocIris: "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetFotosIris: "@Url.Action("f_GetFotosCriminalidad", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetUbicacion: "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlInsDelitos: "@Url.Action("P_InsDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlInsUbicacion: "@Url.Action("P_InsUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlInsInfoAdicional: "@Url.Action("P_InsInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                UrlDelIris: "@Url.Action("P_DellIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelIntegrante: "@Url.Action("P_DelIntegranteIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelDelitos: "@Url.Action("P_DelDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelInfoAdicionalIris: "@Url.Action("P_DelDelInfoAdicionalIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelUbiacionIris: "@Url.Action("P_DelUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlDelDocumentoIris: "@Url.Action("P_DelDocumentoIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+
+                // ======= Empleados (faltante) =======
+                UrlGetFuncionarios: "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })"
+        },
+
+
+            /* ============================================================
+             *  SEGUIMIENTO
+             * ============================================================ */
+            Seguimiento: {
+                UrlGetInfoGrillas: "@Url.Action("F_GetInfoGrillas", "Seguimiento", new { Area = "Irisp1" })",
+                UrlGetAniosIrisp1: "@Url.Action("F_GetAniosIrisP1", "Seguimiento", new { Area = "Irisp1" })",
+                UrlConsultarAnioSeguimiento: "@Url.Action("ConsultarAnioSeguimiento", "Seguimiento", new { Area = "Irisp1" })",
+                UrlGetResponsable: "@Url.Action("F_GetResponsables", "Seguimiento", new { Area = "Irisp1" })",
+                UrlGetDependencias: "@Url.Action("F_GetUnidadesPorSigla", "Seguimiento", new { Area = "Irisp1" })",
+                UrlInsResponsable: "@Url.Action("P_InsResponsable", "Seguimiento", new { Area = "Irisp1" })",
+                UrlUpdResponsable: "@Url.Action("P_UpdUnidadResponsable", "Seguimiento", new { Area = "Irisp1" })",
+                UrlDelResponsable: "@Url.Action("P_DelUnidadResponsable", "Seguimiento", new { Area = "Irisp1" })",
+                UrlEvalTarea: "@Url.Action("P_EvalTarea", "Seguimiento", new { Area = "Irisp1" })",
+                UrlReasignarTarea: "@Url.Action("P_ReasignarTarea", "Seguimiento", new { Area = "Irisp1" })",
+                UrlFinalizarIris: "@Url.Action("P_FinalizarIris", "Seguimiento", new { Area = "Irisp1" })",
+
+                UrlGetResponsablesTareasIris: "@Url.Action("F_GetResponsablesTareasIris", "Seguimiento", new { Area = "Irisp1" })",
+                UrlGetResultadosIris: "@Url.Action("F_GetResultados", "Verificacion", new { Area = "Irisp1" })",
+
+                UrlGetFuncionarios: "@Url.Action("F_GetFuncionarios", "Empleados", new { Area = "" })",
+                UrlGetIntegrantes: "@Url.Action("F_GetIntegrantes", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetUbicacion: "@Url.Action("F_GetUbicacionIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetDelitosIris: "@Url.Action("F_GetDelitosIris", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetInfoAdicional: "@Url.Action("F_GetInfoAdicional", "RegistrosIrisp1", new { Area = "Irisp1" })",
+                UrlGetDocIris: "@Url.Action("F_GetDocIris", "RegistrosIrisp1", new { Area = "Irisp1" })"
+            },
+
+            /* ============================================================
+             *  EXPENDIOS
+             * ============================================================ */
+            RegistroExpendio: {
+                UrlGetInfoGrillas: "@Url.Action("F_GetInfoGrillas", "Registros", new { Area = "Expendios" })",
+                UrlGetIntegrantes: "@Url.Action("F_GetIntegrantes", "Registros", new { Area = "Expendios" })",
+                UrlGetDelitosIris: "@Url.Action("F_GetDelitosIris", "Registros", new { Area = "Expendios" })",
+                UrlGetBitacora: "@Url.Action("F_GetBitacora", "Registros", new { Area = "Expendios" })",
+                UrlGetResultados: "@Url.Action("F_GetResultados", "Registros", new { Area = "Expendios" })",
+                UrlGetIntegrantesAll: "@Url.Action("F_GetIntegranteAll", "Registros", new { Area = "Expendios" })",
+
+                UrlInsIntgrante: "@Url.Action("P_InsIntegrante", "Registros", new { Area = "Expendios" })",
+                UrlInsIntgrantePreliminar: "@Url.Action("P_InsIntegrantePreliminar", "Registros", new { Area = "Expendios" })",
+                UrlInsDelito: "@Url.Action("P_InsDelito", "Registros", new { Area = "Expendios" })",
+                UrlInsBitacora: "@Url.Action("P_InsBitacora", "Registros", new { Area = "Expendios" })",
+                UrlInsResultados: "@Url.Action("P_InsResultados", "Registros", new { Area = "Expendios" })",
+                UrlUpdExpendio: "@Url.Action("P_UpdExpendio", "Registros", new { Area = "Expendios" })",
+                UrlUpdIntegrante: "@Url.Action("P_UpdIntegrante", "Registros", new { Area = "Expendios" })",
+               
+
+                UrlGetIntegrantesPreliminar: "@Url.Action("F_GetIntegrantesPreliminar", "Registros", new { Area = "Expendios" })",
+                UrlGetConsecutivoIris: "@Url.Action("F_ConsultarSeqIris", "Registros", new { Area = "Expendios" })",
+                UrlInsRegistroExpendio: "@Url.Action("P_InsRegistroExpendio", "Registros", new { Area = "Expendios" })"
+            },
+
+            /* ============================================================
+             *  REGISTRO REINCIDENTES
+             * ============================================================ */
+            RegistroReincidentes: {
+                UrlGetInfoGrila: "@Url.Action("F_GetReincidentes", "RegistrarInteg", new { Area = "Integrantes" })",
+                UrlGetReincidentes: "@Url.Action("F_GetReincidentesPorId", "RegistrarInteg", new { Area = "Integrantes" })",
+                UrlInsOrUpdReincidente: "@Url.Action("P_InsOrUpdReincidente", "RegistrarInteg", new { Area = "Integrantes" })",
+                UrlUpdReincidente: "@Url.Action("P_UpdReincidente", "RegistrarInteg", new { Area = "Integrantes" })",
+                UrlDellReincidente: "@Url.Action("P_DellReincidente", "RegistrarInteg", new { Area = "Integrantes" })"
+            },
+
+            /* ============================================================
+             *  BUSCAR INTEGRANTES
+             * ============================================================ */
+            BuscarIntegrantes: {
+                UrlGetListaIris: "@Url.Action("F_GetListaIris", "BuscarInteg", new { Area = "Integrantes" })",
+                UrlGetintegrantesPorId: "@Url.Action("F_GetIntegrantesPorId", "BuscarInteg", new { Area = "Integrantes" })",
+                UrlGetLogPorIdentificacion: "@Url.Action("F_GetLogPorIdentificacion", "BuscarInteg", new { Area = "Integrantes" })"
+            },
+
+            /* ============================================================
+             *  REPORTES GENERALES
+             * ============================================================ */
+            ReportesGeneral: {
+                UrlGetInfoGrillas: "@Url.Action("F_GetReporteGeneral", "ReporteGeneral", new { Area = "Reportes" })",
+                UrlGetReporteVerificacion: "@Url.Action("F_GetReporteVerificacion", "ReporteVerificacion", new { Area = "Reportes" })"
+            }
+        };
+    </script>
+
+
 
     <!-- Custom CSS -->
     <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -124,12 +317,37 @@
 
                                 <span class="ms-2">Bienvenido, @GradoNombre</span>
 
-                                <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" width="35" class="profile-pic rounded-circle" />
+                                <img src="@Url.Action(
+                                         "FotoPerfil",
+                                         "Cuenta",
+                                         new { area = "" }
+                                     )"
+                                     alt="user"
+                                     width="35"
+                                     class="profile-pic rounded-circle"
+                                     onerror="this.src='/img/Avatar.png';" />
+
+
+
+                             
+
                             </a>
                             <div class="dropdown-menu dropdown-menu-end user-dd animated flipInY">
                                 <div class="d-flex no-block align-items-center p-3 azulPonal text-white mb-2">
                                     <div class="">
-                                        <img src="https://sinac.policia.gov.co:8443/SinacPicture/picture.aspx?DocID=@ClsEncriptar.Encriptar(Convert.ToString(@Identificacion))&Token=Mxl7995Julabdfjughyts1*_58$$" alt="user" class="rounded-circle profile-pic rounded-circle" width="60" />
+                                        <img src="@Url.Action(
+                                                 "FotoPerfil",
+                                                 "Cuenta",
+                                                 new { area = "" }
+                                             )"
+                                             alt="user"
+                                             class="rounded-circle profile-pic"
+                                             width="60"
+                                             onerror="this.src='/img/Avatar.png';" />
+
+
+
+
                                     </div>
                                     <div class="ms-2">
                                         <h4 class="mb-0 text-white">@User.FindFirstValue("Funcionario")</h4>

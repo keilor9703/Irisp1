@@ -6,6 +6,8 @@ using Negocio.Gestion.Utilidades;
 using Negocio.Interfaz.Admin;
 using Oracle.ManagedDataAccess.Client;
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Negocio.Gestion.Admin
 {
@@ -227,6 +229,37 @@ namespace Negocio.Gestion.Admin
         }
 
 
+
+
+        // Convierte Base64 → Texto (como en proyecto viejo)
+        public string ConvertirBase64Bytes(string texto)
+        {
+            byte[] data = Convert.FromBase64String(texto);
+            return Encoding.UTF8.GetString(data);
+        }
+
+        // MÉTODO DECRIPCIÓN EXACTO YA MIGRADO A DOTNET CORE
+        public string Decript(string message, string key)
+        {
+            using (var aes = Aes.Create())
+            {
+                aes.KeySize = 128;
+                aes.Key = Convert.FromBase64String(key);
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.PKCS7;
+
+                var decryptor = aes.CreateDecryptor();
+
+                // limpiar espacios igual que el código original
+                string mensajeSinEspacios = message.Replace(" ", "");
+
+                byte[] data = Convert.FromBase64String(mensajeSinEspacios);
+                byte[] decryptedData = decryptor.TransformFinalBlock(data, 0, data.Length);
+
+                return Encoding.UTF8.GetString(decryptedData);
+            }
+        }
+
         public async Task<DtoResultado<List<DtoUsuario>>> F_GetListUsuarios()
         {
             DataTable resultado = new();
@@ -370,6 +403,20 @@ namespace Negocio.Gestion.Admin
                         retorno.ApellidosNombres = respuestaPIP.Respuesta.Apellidos;
 
                     }
+
+                    //var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(retorno.Identificacion);
+
+
+                    //if (foto_empl.Estado)
+                    //{
+
+                    //    string fotoBase64 = foto_empl.Estado && foto_empl.Respuesta != null ? foto_empl.Respuesta: "";
+
+                    //    retorno.Foto = fotoBase64;
+                  
+                    //}
+                    
+
 
 
 
