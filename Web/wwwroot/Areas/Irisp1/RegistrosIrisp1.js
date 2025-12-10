@@ -834,7 +834,7 @@ function F_GetFuncionariosIris(V_Identificacion) {
     }
 
     $.ajax({
-        type: "POST",
+        type: "GET",
         url: AppRoutes.RegistroIrisP1.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: $("#txtIdentificacion").val() },
@@ -1526,7 +1526,7 @@ function obtenerDelitosSecundariosSeleccionadosModal() {
     return delitos;
 }
 function F_GetDetalleIris(registro) {
-    console.log("✅ Registro recibido:", registro);
+   // console.log("✅ Registro recibido:", registro);
 
     $("#txtCriminalidadIdModal").val(registro.CriminalidadId);
     $("#txtConsecutivoIris").val(registro.CriminalidadId);
@@ -1555,7 +1555,7 @@ function F_GetDetalleIris(registro) {
     var IdenInforma = registro.IdentificacionInforma;
 
     $.ajax({
-        type: "POST",
+        type: "GET",
         url: AppRoutes.RegistroIrisP1.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: IdenInforma },
@@ -2078,16 +2078,16 @@ function GetGrillaDocumentosIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.DocumentoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.documentoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
             },
-            { "title": "Nombre", "data": "Nombre", "name": "Nombre", className: "celdaCenter celda5" },
+            { "title": "Nombre", "data": "nombre", "name": "nombre", className: "celdaCenter celda5" },
             {
                 "title": "Enlace",
-                "data": "Url",
-                "name": "Url",
+                "data": "ruta",
+                "name": "ruta",
                 className: "celdaCenter celda7",
                 "render": function (data, type, row) {
                     if (!data || data.trim() === "") {
@@ -2100,7 +2100,7 @@ function GetGrillaDocumentosIris(Datos) {
                     return `<a href="/Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
-            { "title": "Fecha Creación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaJust celda17" }
+            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", className: "celdaJust celda17", render: formatDate }
         ],
         lengthChange: false,
         searching: false,
@@ -2390,52 +2390,79 @@ function P_InsInfoAdicionalModal() {
 }
 
 function subirDocumentoSeleccionado(input) {
-    if (input.files && input.files.length > 0) {
-        let file = input.files[0];
 
-       
-        var idCriminalidad = $("#txtConsecutivoIris").val();
-
-
-        if (!idCriminalidad) {
-            Swal.fire('Error', 'Faltan datos requeridos para guardar la imagen.', 'error');
-            return;
-        }
-
-        var formData = new FormData();
-        formData.append('documento', file); 
-        formData.append('idCriminalidad', idCriminalidad);
-
-        $.ajax({
-            url: 'IRIS/Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-           
-            success: function (response) {
-                Swal.close();
-                if (response.success) {
-                  
-
-                    Swal.fire({
-                        type: 'success',
-                        title: 'Señor(a) Funcionario(a:)',
-                        text: response.message
-                    });
-                   
-                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
-                } else {
-                    Swal.fire('Error', response.message || 'No se pudo cargar el documento', 'error');
-                }
-            },
-            error: function () {
-                Swal.close();
-                Swal.fire('Error', 'Ocurrió un error al cargar el documento', 'error');
-            }
-        });
+    if (!input.files || input.files.length === 0) {
+        Swal.fire('Error', 'Debe seleccionar un documento válido.', 'error');
+        return;
     }
+
+    let file = input.files[0];
+    let idCriminalidad = $("#txtConsecutivoIris").val();
+
+    if (!idCriminalidad) {
+        Swal.fire('Error', 'Faltan datos requeridos para guardar la imagen.', 'error');
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('documento', file);
+    formData.append('idCriminalidad', idCriminalidad);
+
+    $.ajax({
+        url: 'Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        beforeSend: function () {
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+        },
+        success: function (response) {
+
+            Swal.close();
+
+            // Muy importante: tu controlador devuelve { exito, mensaje }
+            if (response.exito === true) {
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: response.mensaje
+                });
+
+                // Vuelve a cargar los documentos del IRIS
+                F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.mensaje || 'No se pudo procesar el documento.'
+                });
+            }
+        },
+        error: function (xhr) {
+            Swal.close();
+
+            let msg = 'Ocurrió un error al cargar el documento';
+
+            if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                msg = xhr.responseJSON.mensaje;
+            }
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: msg
+            });
+        }
+    });
 }
+
 
 function actualizarCriminalidad() {
     var data = {

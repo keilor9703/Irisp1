@@ -489,7 +489,7 @@ function F_GetDetalleIris(registro) {   // 👈 ahora recibe directamente el obj
 
 
     $.ajax({
-        type: "POST",
+        type: "GET",
         url: AppRoutes.Verificacion.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: IdenInforma },
@@ -737,6 +737,63 @@ function GetGrillaUbicacionIris(Datos) {
         info: false
     });
 }
+
+function P_DelUbicacionIris(UbicacionId) {
+
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "¿Desea eliminar esta ubicación?",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        if (result.value) {
+
+            $.ajax({
+                type: 'POST',
+                url: AppRoutes.RegistroIrisP1.UrlDelUbiacionIris,
+                async: true,
+                dataType: 'json',
+                data: { UbicacionId: UbicacionId },
+                success: function (result) {
+
+                    if (result.success) {
+
+                        F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+
+                        Swal.fire({
+                            type: 'success',
+                            title: 'Señor(a) Funcionario(a):',
+                            text: result.message
+                        });
+
+                    } else {
+
+                        Swal.fire({
+                            type: 'error',
+                            title: 'Señor(a) Funcionario(a):',
+                            text: result.message
+                        });
+
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        type: 'error',
+                        title: 'Señor(a) Funcionario(a):',
+                        text: "No es posible eliminar, revise."
+                    });
+                }
+            });
+
+        }
+    });
+
+}
+
+
 function F_GetDelitosIris(CriminalidadId) {
     $.ajax({
         type: 'GET',
@@ -991,18 +1048,18 @@ function GetGrillaDocumentosIris(Datos) {
             { "title": "Nombre", "data": "nombre", "name": "nombre", className: "celdaCenter celda5" },
             {
                 "title": "Enlace",
-                "data": "url",
-                "name": "url",
+                "data": "ruta",
+                "name": "ruta",
                 className: "celdaCenter celda7",
                 "render": function (data, type, row) {
                     if (!data || data.trim() === "") {
                         return '';
                     }
                     // Opción 1: enlace azul visible sobre fondo blanco
-                    return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;
+                    return `<a href="Irisp1/Verificacion/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
-            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "FechaCreacion", render: formatDate , className: "celdaCenter celda10"  }
+            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", render: formatDate , className: "celdaCenter celda10"  }
         ],
         lengthChange: false,
         searching: false,
@@ -1038,19 +1095,31 @@ function F_GetFotosIris(CriminalidadId) {
 
 function RenderGaleriaFotos(fotos) {
     let html = '<div class="row">';
+
+
+
     fotos.forEach(function (foto) {
+        console.log("Ruta Foto:", foto.ruta);
+
+        const urlFoto = `Irisp1/RegistrosIrisp1/Fotos?V_Ruta=${encodeURIComponent(foto.ruta)}`;
+
+
         html += `
             <div class="col-md-3 col-sm-4 col-6 mb-3">
                 <div class="card shadow-sm border-light">
-                    <img src="${foto.ruta}" class="card-img-top img-thumbnail" style="height: 180px; object-fit: cover; cursor: pointer;"
-                         alt="${foto.nombreArchivo}" onclick="VerFotoGrande('${foto.ruta}')">
+                    <img src="${urlFoto}" class="card-img-top img-thumbnail" 
+                         style="height: 180px; object-fit: cover; cursor: pointer;"
+                         alt="${foto.nombreArchivo}" 
+                         onclick="VerFotoGrande('${urlFoto}')">
                 </div>
             </div>
         `;
     });
+
     html += '</div>';
     $("#contenedorFotosIrisP1").html(html);
 }
+
 // Modal para ver la imagen grande
 function VerFotoGrande(ruta) {
     const modalHtml = `
@@ -1076,6 +1145,7 @@ function VerFotoGrande(ruta) {
         }
     });
 }
+
 
 function OpenInsIntegrantesModal() {
 
@@ -1304,8 +1374,6 @@ function P_InsDelitosModal() {
 function InsRespuestaTareaModal() {
 
 
-  
-
     const Obj_RespuestaTarea = {
 
         EstadoExistencia: $("#ddlTipoExiste").val(),
@@ -1341,7 +1409,7 @@ function InsRespuestaTareaModal() {
                 Swal.fire({
                     type: 'success',
                     title: 'Señor(a) Funcionario(a:)',
-                    text: response.message
+                    text: resp.message
                 });
 
 
@@ -1469,56 +1537,198 @@ function P_InsInfoAdicionalModal() {
 }
 
 
-function subirDocumentoSeleccionado(input) {
-    if (input.files && input.files.length > 0) {
-        let file = input.files[0];
+function SubirFoto(input) {
 
-
-        var idCriminalidad = $("#txtCriminalidadIdModal").val();
-
-
-        if (!idCriminalidad) {
-            Swal.fire('Error', 'Faltan datos requeridos para guardar la imagen.', 'error');
-            return;
-        }
-
-        var formData = new FormData();
-        formData.append('file', file); // antes era 'foto'
-
-        formData.append('idCriminalidad', idCriminalidad);
-
-        $.ajax({
-            url: 'Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-
-            success: function (response) {
-                Swal.close();
-                if (response.success) {
-                    // Swal.fire('Éxito', 'Documento cargado correctamente', 'success');
-
-
-                    Swal.fire({
-                        type: 'success',
-                        title: 'Señor(a) Funcionario(a:)',
-                        text: response.message
-                    });
-                    // Recargar la grilla de documentos
-
-                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
-                } else {
-                    Swal.fire('Error', response.message || 'No se pudo cargar el documento', 'error');
-                }
-            },
-            error: function () {
-                Swal.close();
-                Swal.fire('Error', 'Ocurrió un error al cargar el documento', 'error');
-            }
-        });
+    if (!input.files || input.files.length === 0) {
+        Swal.fire('Advertencia', 'Debe seleccionar una imagen.', 'warning');
+        return;
     }
+
+    var file = input.files[0];
+    var maxSizeMB = 5;
+    var allowedTypes = ['image/jpeg', 'image/png'];
+
+    if (!allowedTypes.includes(file.type)) {
+        Swal.fire('Error', 'Formato inválido. Solo JPG o PNG.', 'error');
+        input.value = '';
+        return;
+    }
+
+    if (file.size > maxSizeMB * 1024 * 1024) {
+        Swal.fire('Error', 'La imagen supera el límite de 5MB.', 'error');
+        input.value = '';
+        return;
+    }
+
+    var CriminalidadId = $("#txtCriminalidadIdModal").val();
+
+    if (!CriminalidadId) {
+        Swal.fire('Error', 'No se encontró ID de Criminalidad.', 'error');
+        input.value = '';
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append("foto", file);
+    formData.append("idCriminalidad", CriminalidadId);
+
+    $.ajax({
+        url: 'Irisp1/RegistrosIrisp1/GuardarFotoConRegistro',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (resp) {
+
+            if (resp.exito) {
+                Swal.fire({
+                    icon: "success",
+                    title: "Fotografía cargada",
+                    text: "La imagen se guardó correctamente.",
+                    timer: 2000
+                });
+
+                input.value = "";
+
+                // 🔥 Recargas tu grilla existente
+                F_GetFotosIris(CriminalidadId);
+
+            } else {
+                Swal.fire('Error', resp.mensaje || 'No se pudo subir la imagen.', 'error');
+            }
+        },
+        error: function () {
+            Swal.fire('Error', 'Ocurrió un error al subir la fotografía.', 'error');
+        }
+    });
 }
+
+
+
+function subirDocumentoSeleccionado(input) {
+
+    if (!input.files || input.files.length === 0) {
+        Swal.fire('Error', 'Debe seleccionar un documento válido.', 'error');
+        return;
+    }
+
+    let file = input.files[0];
+    let idCriminalidad = $("#txtCriminalidadIdModal").val();
+
+    if (!idCriminalidad) {
+        Swal.fire('Error', 'Faltan datos requeridos para guardar la imagen.', 'error');
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('documento', file);
+    formData.append('idCriminalidad', idCriminalidad);
+
+    $.ajax({
+        url: 'Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        beforeSend: function () {
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+        },
+        success: function (response) {
+
+            Swal.close();
+
+            // Muy importante: tu controlador devuelve { exito, mensaje }
+            if (response.exito === true) {
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: response.mensaje
+                });
+
+                // Vuelve a cargar los documentos del IRIS
+                F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.mensaje || 'No se pudo procesar el documento.'
+                });
+            }
+        },
+        error: function (xhr) {
+            Swal.close();
+
+            let msg = 'Ocurrió un error al cargar el documento';
+
+            if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                msg = xhr.responseJSON.mensaje;
+            }
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: msg
+            });
+        }
+    });
+}
+
+//function subirDocumentoSeleccionado(input) {
+//    if (input.files && input.files.length > 0) {
+//        let file = input.files[0];
+
+
+//        var idCriminalidad = $("#txtCriminalidadIdModal").val();
+
+
+//        if (!idCriminalidad) {
+//            Swal.fire('Error', 'Faltan datos requeridos para guardar la imagen.', 'error');
+//            return;
+//        }
+
+//        var formData = new FormData();
+//        formData.append('file', file); // antes era 'foto'
+
+//        formData.append('idCriminalidad', idCriminalidad);
+
+//        $.ajax({
+//            url: 'Irisp1/RegistrosIrisp1/GuardarDocumentoConRegistro',
+//            type: 'POST',
+//            data: formData,
+//            processData: false,
+//            contentType: false,
+
+//            success: function (response) {
+//                Swal.close();
+//                if (response.success) {
+//                    // Swal.fire('Éxito', 'Documento cargado correctamente', 'success');
+
+
+//                    Swal.fire({
+//                        type: 'success',
+//                        title: 'Señor(a) Funcionario(a:)',
+//                        text: response.message
+//                    });
+//                    // Recargar la grilla de documentos
+
+//                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+//                } else {
+//                    Swal.fire('Error', response.message || 'No se pudo cargar el documento', 'error');
+//                }
+//            },
+//            error: function () {
+//                Swal.close();
+//                Swal.fire('Error', 'Ocurrió un error al cargar el documento', 'error');
+//            }
+//        });
+//    }
+//}
 
 // Funciones de Eliminación
 function DellIris(CriminalidadId) {
@@ -1588,43 +1798,44 @@ function P_DelIntegranteIris(IntegranteId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
 
-        if (!result.isConfirmed) return;
+        if (result.value) {
 
-        $.ajax({
-            type: 'POST',
-            url: AppRoutes.Verificacion.UrlDelIntegrante,
-            async: true,
-            dataType: 'json',
-            data: { IntegranteId: IntegranteId },
+            $.ajax({
+                type: 'POST',
+                url: AppRoutes.Verificacion.UrlDelIntegrante,
+                async: true,
+                dataType: 'json',
+                data: { IntegranteId: IntegranteId },
 
-            success: function (result) {
-                if (result.success) {
-                    var ID = $("#txtCriminalidadIdModal").val();
-                    F_GetIntegrantesIris(ID);
+                success: function (result) {
+                    if (result.success) {
+                        var ID = $("#txtCriminalidadIdModal").val();
+                        F_GetIntegrantesIris(ID);
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Señor(a) Funcionario(a)',
-                        text: result.message
-                    });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
 
-                } else {
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
+                    }
+                },
+
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Señor(a) Funcionario(a)',
-                        text: result.message
+                        text: "No es posible eliminar el integrante. Por favor revise."
                     });
                 }
-            },
-
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Señor(a) Funcionario(a)',
-                    text: "No es posible eliminar el integrante. Por favor revise."
-                });
-            }
-        });
+            });
+        }
 
     });
 }
@@ -1640,43 +1851,44 @@ function P_DelDelitosIris(DelitoId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
 
-        if (!result.isConfirmed) return;
+        if (result.value) {
 
-        $.ajax({
-            type: 'POST',
-            url: AppRoutes.Verificacion.UrlDelDelitos,
-            async: true,
-            dataType: 'json',
-            data: { DelitoId: DelitoId },
+            $.ajax({
+                type: 'POST',
+                url: AppRoutes.Verificacion.UrlDelDelitos,
+                async: true,
+                dataType: 'json',
+                data: { DelitoId: DelitoId },
 
-            success: function (result) {
-                if (result.success) {
+                success: function (result) {
+                    if (result.success) {
 
-                    F_GetDelitosIris($("#txtCriminalidadIdModal").val());
+                        F_GetDelitosIris($("#txtCriminalidadIdModal").val());
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Señor(a) Funcionario(a)',
-                        text: result.message
-                    });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
 
-                } else {
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
+                    }
+                },
+
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Señor(a) Funcionario(a)',
-                        text: result.message
+                        text: "No es posible eliminar el delito. Por favor revise."
                     });
                 }
-            },
-
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Señor(a) Funcionario(a)',
-                    text: "No es posible eliminar el delito. Por favor revise."
-                });
-            }
-        });
+            });
+        }
 
     });
 }
@@ -1692,43 +1904,44 @@ function P_DelDelInfoAdicionalIris(InfoId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
 
-        if (!result.isConfirmed) return;
+        if (result.value) {
 
-        $.ajax({
-            type: 'POST',
-            url: AppRoutes.Verificacion.UrlDelInfoAdicionalIris,
-            async: true,
-            dataType: 'json',
-            data: { InfoId: InfoId },
+            $.ajax({
+                type: 'POST',
+                url: AppRoutes.Verificacion.UrlDelInfoAdicionalIris,
+                async: true,
+                dataType: 'json',
+                data: { InfoId: InfoId },
 
-            success: function (result) {
-                if (result.success) {
+                success: function (result) {
+                    if (result.success) {
 
-                    F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
+                        F_GetInfoAdiconalIris($("#txtCriminalidadIdModal").val());
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Señor(a) Funcionario(a)',
-                        text: result.message
-                    });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
 
-                } else {
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
+                    }
+                },
+
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Señor(a) Funcionario(a)',
-                        text: result.message
+                        text: "No es posible eliminar la información adicional. Por favor revise."
                     });
                 }
-            },
-
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Señor(a) Funcionario(a)',
-                    text: "No es posible eliminar la información adicional. Por favor revise."
-                });
-            }
-        });
+            });
+        }
 
     });
 }
@@ -1744,43 +1957,44 @@ function P_DelDocumentoIris(DocumentoId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
 
-        if (!result.isConfirmed) return;
+        if (result.value) {
 
-        $.ajax({
-            type: 'POST',
-            url: AppRoutes.Verificacion.UrlDelDocumentoIris,
-            async: true,
-            dataType: 'json',
-            data: { DocumentoId: DocumentoId },
+            $.ajax({
+                type: 'POST',
+                url: AppRoutes.Verificacion.UrlDelDocumentoIris,
+                async: true,
+                dataType: 'json',
+                data: { DocumentoId: DocumentoId },
 
-            success: function (result) {
-                if (result.success) {
+                success: function (result) {
+                    if (result.success) {
 
-                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+                        F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Señor(a) Funcionario(a)',
-                        text: result.message
-                    });
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
 
-                } else {
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
+                    }
+                },
+
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Señor(a) Funcionario(a)',
-                        text: result.message
+                        text: "No es posible eliminar el documento. Por favor revise."
                     });
                 }
-            },
-
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Señor(a) Funcionario(a)',
-                    text: "No es posible eliminar el documento. Por favor revise."
-                });
-            }
-        });
+            });
+        }
 
     });
 }
@@ -1798,48 +2012,46 @@ function P_DelDocumentoIris(DocumentoId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
 
-        if (!result.isConfirmed) {
-            return; // Usuario canceló la eliminación
-        }
+        if (result.value) {
+            // Usuario confirmó → Ejecutar AJAX
+            $.ajax({
+                type: 'POST',
+                url: AppRoutes.Verificacion.UrlDelDocumentoIris,
+                async: true,
+                dataType: 'json',
+                data: { DocumentoId: DocumentoId },
 
-        // Usuario confirmó → Ejecutar AJAX
-        $.ajax({
-            type: 'POST',
-            url: AppRoutes.Verificacion.UrlDelDocumentoIris,
-            async: true,
-            dataType: 'json',
-            data: { DocumentoId: DocumentoId },
+                success: function (result) {
+                    if (result.success) {
 
-            success: function (result) {
-                if (result.success) {
+                        // Recargar lista de documentos
+                        F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
 
-                    // Recargar lista de documentos
-                    F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Señor(a) Funcionario(a)',
-                        text: result.message
-                    });
+                    } else {
 
-                } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Señor(a) Funcionario(a)',
+                            text: result.message
+                        });
+                    }
+                },
 
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Señor(a) Funcionario(a)',
-                        text: result.message
+                        text: "No es posible eliminar el documento, por favor revise."
                     });
                 }
-            },
-
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Señor(a) Funcionario(a)',
-                    text: "No es posible eliminar el documento, por favor revise."
-                });
-            }
-        });
+            });
+        }
 
     });
 }
@@ -2125,12 +2337,12 @@ function subirDocumentoTareas(tareaId) {
         var idCriminalidad = $("#txtCriminalidadIdModal").val();
 
         var formData = new FormData();
-        formData.append('file', file);
+        formData.append('documento', file);
         formData.append('idCriminalidad', idCriminalidad);
         formData.append('tareaId', tareaId);  // 🔹 ahora se envía el id de la tarea
 
         $.ajax({
-            url: '/Irisp1/Verificacion/GuardarDocumentoTareaConRegistro',
+            url: 'Irisp1/Verificacion/GuardarDocumentoTareaConRegistro',
             type: 'POST',
             data: formData,
             processData: false,

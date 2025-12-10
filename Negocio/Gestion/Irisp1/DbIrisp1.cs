@@ -929,7 +929,7 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId, string baseUrl)
+        public async Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId)
         {
             var resp = new DtoResultado<List<DtoDocumentoIris>>();
 
@@ -945,18 +945,36 @@ namespace Negocio.Gestion.Irisp1
                 commandType: CommandType.StoredProcedure
             )).ToList();
 
-            foreach (var doc in lista)
+          
+            if (lista.Count > 0)
             {
-                if (!string.IsNullOrWhiteSpace(doc.Url))
+                string uncBase = _iConfiguration["RutasArchivosIris:RutaDocumentos"];
+
+                foreach (var foto in lista)
                 {
-                    var fileName = Path.GetFileName(doc.Url);
-                    doc.Url = $"{baseUrl}/aisec/{fileName}";
+                    if (!string.IsNullOrEmpty(foto.Ruta))
+                    {
+                        foto.Ruta = foto.Ruta
+                            .Replace(uncBase, "")
+                            .Replace("\\", "/")
+                            .TrimStart('/', '\\');  // <-- remover slashes iniciales
+                    }
                 }
+
+
+                resp.IdRespuesta = 1;
+                resp.Mensaje = "Consulta Exitosa";
+                resp.Operacion = "F_GetDocIris";
+                resp.Data = lista;
             }
 
-            resp.IdRespuesta = 1;
-            resp.Data = lista;
-            resp.Mensaje = "Consulta Exitosa";
+            else
+            {
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "No se encontraron documentos";
+                resp.Operacion = "0";
+            }
+
 
             return resp;
         }

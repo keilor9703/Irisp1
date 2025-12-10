@@ -107,25 +107,6 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
-		//[HttpGet]
-		//public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
-		//{
-
-
-		//    var resultado = await _iDbIrisp1.F_GetInfoGrillas(V_Anio);
-
-		//    if (resultado.IdRespuesta > 0)
-		//    {
-		//        return Json(new { success = true, data = resultado.Data });
-		//    }
-		//    else
-		//    {
-		//        return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-
-		//    }
-		//}
-
-
 
 		[HttpGet]
 		public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
@@ -298,14 +279,27 @@ namespace Web.Areas.Irisp1.Controllers
         [HttpGet]
         public async Task<IActionResult> F_GetDocIris(string V_CriminalidadId)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            //var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-            var resultado = await _iDbIrisp1.F_GetDocIris(V_CriminalidadId, baseUrl);
+            var resultado = await _iDbIrisp1.F_GetDocIris(V_CriminalidadId);
 
-            if (resultado.IdRespuesta == 1)
-                return Json(new { success = true, data = resultado.Data });
+            //if (resultado.IdRespuesta == 1)
+            //    return Json(new { success = true, data = resultado.Data });
 
-            return Json(new { success = false, message = resultado.Mensaje });
+            //return Json(new { success = false, message = resultado.Mensaje });
+
+
+
+            if (resultado.IdRespuesta > 0)
+            {
+                return Json(new { data = resultado.Data, exito = resultado.IdRespuesta == 1, mensaje = resultado.Mensaje });
+            }
+            else
+            {
+                //  return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+                return Json(new { success = false, message = resultado.Mensaje });
+
+            }
         }
 
 
@@ -351,19 +345,43 @@ namespace Web.Areas.Irisp1.Controllers
 
         }
 
-
         [HttpGet]
         [Route("Irisp1/RegistroIrisp1/descargar")]
-        public IActionResult DescargarArchivo(string ruta)
+        public async Task<IActionResult> DescargarArchivo(string ruta)
         {
-            Console.WriteLine($"Ruta solicitada: {ruta}");
+            if (string.IsNullOrWhiteSpace(ruta))
+                return BadRequest("Ruta inválida.");
 
-            if (!System.IO.File.Exists(ruta))
-                return NotFound("Archivo no encontrado");
+            try
+            {
+                // Base UNC desde configuración
+                string uncBase = _configuration["RutasArchivosIris:RutaDocumentos"];
 
-            var nombreArchivo = Path.GetFileName(ruta);
-            var bytes = System.IO.File.ReadAllBytes(ruta);
-            return File(bytes, "application/octet-stream", nombreArchivo);
+                // Reconstruir la ruta física real
+                string rutaCompleta = Path.Combine(uncBase, ruta.Replace("/", "\\"));
+
+                if (!System.IO.File.Exists(rutaCompleta))
+                    return NotFound("Archivo no encontrado.");
+
+                var bytes = System.IO.File.ReadAllBytes(rutaCompleta);
+                var nombreArchivo = Path.GetFileName(rutaCompleta);
+
+                // Auditoría (usando interpolación de cadenas)
+                await _iDbAdministracion.P_InsAuditoria(
+                    Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                    "Descarga Documento IRIS",
+                    $"Descarga documento: {nombreArchivo}",   // <-- Ajuste aquí
+                    Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                return File(bytes, "application/octet-stream", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                // Opcional: loguear el error con más detalle
+                return StatusCode(500, $"Error al descargar el archivo: {ex.Message}");
+            }
         }
 
 
@@ -373,7 +391,7 @@ namespace Web.Areas.Irisp1.Controllers
 
         #region Métodos de Insersión
 
-        [AllowAnonymous]
+      
         [HttpPost]
         public async Task<IActionResult> GuardarDocumentoConRegistro(IFormFile documento, string idCriminalidad)
         {
@@ -441,7 +459,7 @@ namespace Web.Areas.Irisp1.Controllers
                 }
 
                 // 3️⃣ Ruta base para documentos
-                var rutaBase = _configuration["RutasArchivosIris:RutaDocumentosDesa"];
+                var rutaBase = _configuration["RutasArchivosIris:RutaDocumentos"];
                 if (string.IsNullOrWhiteSpace(rutaBase))
                 {
                     resultado.Exito = false;
@@ -477,16 +495,16 @@ namespace Web.Areas.Irisp1.Controllers
                 using var conexion = new OracleConnection(_strConexionIris_Disec);
                 var parametros = new DynamicParameters();
 
-                parametros.Add("P_ID_CRIMINALIDAD", criminalidadIdCadena);
-                parametros.Add("P_SERVIDOR", rutaBase);
-                parametros.Add("P_TIPO_DOC", extension.Replace(".", ""));
-                parametros.Add("P_NAME_FILE", nuevoNombre);
-                parametros.Add("P_RUTA", rutaRelativa);
-                parametros.Add("P_USUARIO_CREACION", Convert.ToInt64(usuario));
-                parametros.Add("P_FECHA_CREACION", DateTime.Now);
+                parametros.Add("P_CRIMINALIDAD_ID", criminalidadIdCadena);
+                //parametros.Add("P_SERVIDOR", rutaBase);
+               // parametros.Add("P_TIPO_DOC", extension.Replace(".", ""));
+                parametros.Add("P_NOMBRE", nombreOriginal);
+                parametros.Add("P_URL", rutaFinal);
+                parametros.Add("P_IDENTIFICACION_CREACION", Convert.ToInt64(usuario));
+                //parametros.Add("P_FECHA_CREACION", DateTime.Now);
                 parametros.Add("P_MAQUINA_CREACION", maquina ?? string.Empty);
-                parametros.Add("P_VIGENTE", 1);
-                parametros.Add("P_ID_CRIMINALIDA", criminalidadIdNumero);
+               // parametros.Add("P_VIGENTE", 1);
+               // parametros.Add("P_ID_CRIMINALIDA", criminalidadIdNumero);
 
                 parametros.Add("P_RESULTADO", dbType: DbType.Int32, direction: ParameterDirection.Output);
                 parametros.Add("SRV_Message", dbType: DbType.String, size: 4000, direction: ParameterDirection.Output);
@@ -732,7 +750,7 @@ namespace Web.Areas.Irisp1.Controllers
             try
             {
                 // 1️⃣ Ruta base y calidad desde appsettings
-                var rutaBase = _configuration["RutasArchivosIris:RutaFotosDesa"];
+                var rutaBase = _configuration["RutasArchivosIris:RutaFotos"];
                 var calidadStr = _configuration["RutasArchivosIris:CalidadWebP"];
                 int calidad = 80;
 
@@ -831,7 +849,7 @@ namespace Web.Areas.Irisp1.Controllers
         [HttpGet]
         public IActionResult Fotos(string V_Ruta)
         {
-            Console.WriteLine($"ENTRÓ A Fotos, V_Ruta={V_Ruta}");
+            //Console.WriteLine($"ENTRÓ A Fotos, V_Ruta={V_Ruta}");
             if (string.IsNullOrWhiteSpace(V_Ruta))
                 return NotFound();
 
@@ -847,7 +865,7 @@ namespace Web.Areas.Irisp1.Controllers
                 );
 
                 // Opción 1: usando Console.WriteLine
-                Console.WriteLine($"RUTA: {rutaCompleta}");
+               // Console.WriteLine($"RUTA: {rutaCompleta}");
                
 
 
@@ -880,10 +898,6 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
-
-
-
-    
 
 
         [HttpPost]

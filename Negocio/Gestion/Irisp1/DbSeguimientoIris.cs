@@ -184,7 +184,7 @@ namespace Negocio.Gestion.Irisp1
 
 
         public async Task<DtoResultado<List<DtoTareasIris>>> F_GetResponsablesTareasIris(string V_Criminalidad)
-        {
+         {
             DataTable resultado = new();
             List<DtoTareasIris> retorno = new();
             DtoResultado<List<DtoTareasIris>> resp = new();
@@ -221,7 +221,7 @@ namespace Negocio.Gestion.Irisp1
                         {
                             ResponValidacionId = reader["IDRESPONSABLE"]?.ToString(),
                             IdUnidadResponsable = reader["IDUNIDADRESPONSABLE"]?.ToString(),
-                            DescUnidad = reader["DESCUNIDAD"]?.ToString(),
+                           // DescUnidad = reader["DESCUNIDAD"]?.ToString(),
                             UnidadCompleta = reader["UNIDADCOMPLETA"]?.ToString(),
                             Aceptada = reader["ACEPTADA"]?.ToString(),
                         };
@@ -673,6 +673,7 @@ namespace Negocio.Gestion.Irisp1
 
                 objCommand.Parameters.Add("P_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_responsableUpd.IdResponsable;
                 objCommand.Parameters.Add("P_ID_UNIDAD_NUEVA", OracleDbType.Int32).Value = obj_responsableUpd.IdUnidad ?? 0;
+               //objCommand.Parameters.Add("P_ID_DEPENDENCIA_NUEVA", OracleDbType.Int32).Value = obj_responsableUpd.IdDependencia ?? 0;
                
                 objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
                 objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;

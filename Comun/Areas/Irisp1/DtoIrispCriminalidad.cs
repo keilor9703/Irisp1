@@ -280,6 +280,9 @@ namespace Comun.Areas.Irisp1
         [JsonPropertyName("Dependencia")]
         public string? Dependencia { get; set; }
 
+        
+
+
 
         [JsonPropertyName("Estacioncuadrante")]
         public string? Estacioncuadrante { get; set; }

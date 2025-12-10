@@ -1,12 +1,14 @@
 ﻿using Comun.Areas.Admin;
-using Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Negocio.Interfaz.Admin;
+using Newtonsoft.Json;
 using System.Security.Claims;
 using Web;
+using Web.Models;
 using Web.Models;
 
 namespace Web.Controllers
@@ -17,25 +19,82 @@ namespace Web.Controllers
         private readonly IHttpContextAccessor _iHttpContextAccessor;
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IDbConsultasPIP _iDbConsultasPIP;
+        private readonly IConfiguration _iConfiguration;
+
         bool Admin = false;
         public CuentaController(IHttpContextAccessor iHttpContextAccessor,
+                                IConfiguration iConfiguration,
                                 IDbAdministracion iDbAdministracion,
                                 IDbConsultasPIP idbConsultasPIP)
         {
 
             _iHttpContextAccessor = iHttpContextAccessor;
+            _iConfiguration = iConfiguration;
             _iDbAdministracion = iDbAdministracion;
             _iDbConsultasPIP = idbConsultasPIP;
         }
 
 
+        //[HttpGet]
+        //[AllowAnonymous]
+        //public IActionResult InicioSesion(string returnurl = "nullhttps://sisec.policia.gov.co/IRIS/Home/Index")
+        //{
+        //    ViewData["ReturnUrl"] = returnurl;
+        //    return View();
+        //}
+
+
+
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult InicioSesion(string returnurl = "nullhttps://disec.policia.gov.co/Irisp1/Home/Indexl")
+        public async Task<IActionResult> InicioSesion(string returnurl = null, string _mensaje = null)
         {
-            ViewData["ReturnUrl"] = returnurl;
-            return View();
+            try
+            {
+                if (!string.IsNullOrEmpty(_mensaje))
+                {
+
+                    /// PARA INICIO DESDE SISEC
+                    string key = _iConfiguration["Encryption:Key"];
+
+                    // 1. Base64 → texto
+                    string mensajeRecibido = _iDbAdministracion.ConvertirBase64Bytes(_mensaje);
+
+                    // 2. Desencriptar mensaje
+                    string mensajeDesencriptado = _iDbAdministracion.Decript(
+                        mensajeRecibido,
+                        key
+                    );
+
+                    // 3. Pasar JSON a modelo
+                    DtoCredencialesSisec loginDTO =
+                        JsonConvert.DeserializeObject<DtoCredencialesSisec>(mensajeDesencriptado);
+
+                    // 4. Desencriptar clave interna
+                    string claveBase64 = _iDbAdministracion.ConvertirBase64Bytes(loginDTO.Clave);
+                    string claveDesencriptada = _iDbAdministracion.Decript(claveBase64, key);
+
+                    // 5. Construir DTO para tu login actual
+                    var loginUsuario = new DtoCredenciales
+                    {
+                        UsuarioEmpresarial = loginDTO.Usuario,
+                        ClaveEmpresarial = claveDesencriptada
+                    };
+
+                    // 6. Ejecutar login normal
+                    return await InicioSesionAsync(loginUsuario, returnurl);
+                }
+
+                // SIN MENSAJE → formulario normal
+                ViewData["ReturnUrl"] = returnurl;
+                return View("InicioSesion");
+            }
+            catch
+            {
+                return View("ErrorGeneral");
+            }
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -70,26 +129,7 @@ namespace Web.Controllers
 
             if (Usuario.Data.Identificacion != 0)
             {
-                //Cargar Foto
-                //var foto_empl = "https://sinac.policia.gov.co:8443" + "/SinacPicture/picture.aspx?DocID=" + ClsEncriptar.Encriptar(Convert.ToString(Usuario.Data.Identificacion)) + "&Token=Mxl7995Julabdfjughyts1*_58$$";
-
-
-                //Cargar Foto del funcionario desde el servicio PIP
-                //var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(Usuario.Data.Identificacion);
-
-                //string fotoBase64 = foto_empl.Estado && foto_empl.Respuesta != null
-                //    ? foto_empl.Respuesta.Respuesta
-                //    : "";
-
-
-                //Validar si el usuario está bloqueado
-                if (Usuario.Data.Bloqueado == 1)
-                {
-                    ModelState.AddModelError("", "Su cuenta de usuario está DESHABILITADA, contacte al Administrador");
-                    return View();
-                }
-
-
+             
                 //Validar si el usuario está bloqueado
 
                 if (Usuario.Data.Bloqueado == 1)
@@ -124,8 +164,8 @@ namespace Web.Controllers
                 {
                     new Claim(ClaimTypes.Name, Usuario.Data.Usuario),
                     new Claim("Funcionario", Usuario.Data.Funcionario),
+                    new Claim("GradoNombre", Usuario.Data.GradAlfabetico + " " + Usuario.Data.Nombres + " " + Usuario.Data.ApellidosNombres),
                     new Claim("Identificacion", Convert.ToString(Usuario.Data.Identificacion)),
-                     new Claim("GradoNombre", Usuario.Data.GradAlfabetico + " " + Usuario.Data.Nombres + " " + Usuario.Data.ApellidosNombres),
                     new Claim("IdUsuario", Convert.ToString(Usuario.Data.IdUsuario)),
                     new Claim("Cargo", Convert.ToString(Usuario.Data.Cargo)),
                     new Claim("IdUndeLabora", Convert.ToString(Usuario.Data.IdUndeLaborando)),
@@ -136,7 +176,10 @@ namespace Web.Controllers
                     new Claim("Celular", Convert.ToString(Usuario.Data.Celular)),
                     new Claim("Usuario", Convert.ToString(Usuario.Data.Usuario)),
                     new Claim("SituacionLaboral", Convert.ToString(Usuario.Data.SituacionLaboral)),
-                   // new Claim("FotoBase64", Usuario.Data.Foto ?? "")
+                  //  new Claim("FotoBase64", foto_empl.Respuesta.Respuesta ?? ""),
+                    //new Claim("FotoBase64", fotoBase64),
+
+
                 };
 
                 foreach (var rol in Usuario.Data.DtoUserRoles)
@@ -160,16 +203,39 @@ namespace Web.Controllers
             }
         }
 
-        [HttpGet]
+
+
+        [AllowAnonymous]
         public async Task<IActionResult> CerrarSesion()
         {
+            try
+            {
+                long identificacion = 0;
+                var idClaim = User.FindFirstValue("Identificacion");
 
-            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Cierre Sesión", "Cierre Sesión Sistema", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+                if (!string.IsNullOrEmpty(idClaim))
+                    long.TryParse(idClaim, out identificacion);
 
+                await _iDbAdministracion.P_InsAuditoria(
+                    identificacion,
+                    "Cierre Sesión",
+                    "Cierre Sesión Sistema",
+                    identificacion,
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+            }
+            catch { }
+
+            // Limpieza total
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction(nameof(InicioSesion));
+
+            // ✅ REDIRECCIÓN CORRECTA
+            return RedirectToAction("InicioSesion", "Cuenta");
         }
+
+
+
 
         public ActionResult Perfil() => View();
 

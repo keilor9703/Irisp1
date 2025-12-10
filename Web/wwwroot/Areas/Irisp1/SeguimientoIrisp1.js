@@ -652,7 +652,7 @@ function Resultados() {
 }
 
 function F_GetDetalleIris(registro) {
-    console.log("✅ Registro recibido:", registro);
+    //console.log("✅ Registro recibido:", registro);
 
     $("#txtCriminalidadIdModal").val(registro.CriminalidadId);
    
@@ -697,7 +697,7 @@ function F_GetDetalleIris(registro) {
     var IdenInforma = registro.IdentificacionInforma;
 
     $.ajax({
-        type: "POST",
+        type: "GET",
         url: AppRoutes.Seguimiento.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: IdenInforma },
@@ -1073,11 +1073,11 @@ function GetGrillaDocumentosIris(Datos) {
             //        return inicioBoton + Eliminar + finBoton;
             //    }
             //},
-            { "title": "Nombre", "data": "Nombre", "name": "Nombre", className: "celdaCenter celda5" },
+            { "title": "Nombre", "data": "nombre", "name": "nombre", className: "celdaCenter celda5" },
             {
                 "title": "Enlace",
-                "data": "Url",
-                "name": "Url",
+                "data": "ruta",
+                "name": "ruta",
                 className: "celdaCenter celda7",
                 "render": function (data, type, row) {
                     if (!data || data.trim() === "") {
@@ -1087,10 +1087,10 @@ function GetGrillaDocumentosIris(Datos) {
 
                     // Opción 1: enlace azul visible sobre fondo blanco
                     /*  return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;*/
-                    return `<a href="/Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
+                    return `<a href="Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
-            { "title": "Fecha Creación", "data": "FechaCreacion", "name": "FechaCreacion", className: "celdaJust celda17" }
+            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", className: "celdaJust celda17" }
         ],
         lengthChange: false,
         searching: false,
@@ -1690,7 +1690,8 @@ function P_UpdUnidadResponsable() {
    
     const obj_responsableUpd = {
         IdResponsable: $("#txtResponsableId").val(),
-        IdUnidad: $('#ddlTipoDependencia2').data('idSeleccionado')
+        IdUnidad: $('#ddlTipoDependencia2').data('idSeleccionado'),
+        //IdUnidad: $('#ddlTipoUnidad2').data('idSeleccionado')
     }
 
 

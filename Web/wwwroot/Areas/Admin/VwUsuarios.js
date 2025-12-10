@@ -65,7 +65,7 @@ $("#txtFuncionario").autocomplete({
     source: function (request, response) {
         $.ajax({
             url: AppRoutes.Administracion.UrlGetEmpleadoIntel,
-            type: "POST",
+            type: "GET",
             dataType: "json",
             data: { V_Busqueda: $("#txtFuncionario").val() },
             success: function (respuesta) {
@@ -147,7 +147,7 @@ function F_GetFuncionarios(V_IdentificacionB){
 
 
     $.ajax({
-        type: "POST",
+        type: "GET",
         url: AppRoutes.Administracion.UrlGetFuncionarios,
         async: true,
         data: { V_Identificacion: V_IdentificacionB },
@@ -159,7 +159,7 @@ function F_GetFuncionarios(V_IdentificacionB){
 
                 $("#imgFoto").attr(
                     "src",
-                    "/Cuenta/FotoFuncionario?identificacion=" + V_IdentificacionB + "&t=" + new Date().getTime()
+                    "Cuenta/FotoFuncionario?identificacion=" + V_IdentificacionB + "&t=" + new Date().getTime()
                 );
 
                 $("#txtSituacionLab").val(respuesta.data.SituacionLaboral);

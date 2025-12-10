@@ -626,7 +626,7 @@ function AbrirModalVisualizarTexto(Texto) {
 
 
 function F_GetDetalleExpendio(registro) {   // 👈 ahora recibe directamente el objeto
-    console.log("✅ Registro recibido:", registro);
+    //console.log("✅ Registro recibido:", registro);
 
 
     $("#btnNuevoIntegrante").addClass("hidden");

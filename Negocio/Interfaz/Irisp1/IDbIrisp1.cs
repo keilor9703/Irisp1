@@ -28,7 +28,7 @@ namespace Negocio.Interfaz.Irisp1
 
 
         //public Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId);
-        Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId, string baseUrl);
+        Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId);
 
 
         public Task<DtoResultado<List<DtoCriminalidadFoto>>> F_GetCriminalidadFotos(string V_CriminalidadId);

@@ -30,7 +30,7 @@
     <div class="breadcrumb-line">
         <ul class="breadcrumb">
             <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio  </span></a></li>
-            <li class="active">Instrumento de Recoleccion de Informacion del Servicio de Policía / Verificación IRIS-P1</li>
+            <li class="active">Instrumento de Recolección de Información del Servicio de Policía / Verificación IRIS-P1</li>
         </ul>
     </div>
 </div>
@@ -420,23 +420,40 @@
                 </div>
 
 
-                <div class="card border-success hidden" id="pn_GrillaFotografiasIrisP1">
+                <div class="card border-success" id="pn_GrillaFotografiasIrisP1">
                     <div class="card-header d-flex align-items-center">
-                        <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Fotografías Asociadas</h4>
+                        <h4 class="card-title text-white">
+                            <i class="fas fa-clipboard-list"></i> Fotografías Asociadas
+                        </h4>
+
                         <div class="card-actions ms-auto d-flex button-group">
-                            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-                            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-                            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                                <i data-feather="x" class="feather-sm"></i>
+
+                            <!-- Botón ÚNICO para cargar fotografía -->
+                            <button type="button"
+                                    class="btn btn-green btn-sm py-0 px-2 align-self-center"
+                                    style="line-height:1.2; font-size: 0.8rem;"
+                                    onclick="document.getElementById('fileUploadFoto').click();">
+                                <i class="fas fa-upload"></i> Cargar
+                            </button>
+
+                            <!-- Input oculto -->
+                            <input type="file" id="fileUploadFoto"
+                                   class="d-none"
+                                   accept="image/jpeg,image/png"
+                                   onchange="SubirFoto(this)" />
+
+                            <a class="link text-white d-flex align-items-center" data-action="collapse">
+                                <i class="ti-minus"></i>
                             </a>
+
                         </div>
                     </div>
+
                     <div class="card-body collapse show">
-                        <div id="contenedorFotosIrisP1" class="mt-3">
-                            <!-- Aquí se renderizan las fotos -->
-                        </div>
+                        <div id="contenedorFotosIrisP1" class="mt-3"></div>
                     </div>
                 </div>
+
 
                 <!-- /.modal-Crear Integrante IRISP1 -->
 
