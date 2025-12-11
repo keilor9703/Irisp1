@@ -973,19 +973,19 @@ function GetGrillaDelitosExpendios(Datos) {
 function F_GetBitacora(CriminalidadId) {
     $.ajax({
         type: 'GET',
-        url: AppRoutes.RegistroExpendio.UrlGetBitacora, // URL del endpoint que devuelve los datos
+        url: AppRoutes.RegistroExpendio.UrlGetBitacora,
         dataType: 'json',
         data: { V_CriminalidadId: CriminalidadId },
         success: function (response) {
 
-            // Inicializar la grilla con los datos filtrados o vacíos
-            GetGrillaBitacora(response.data);
+            // Proteger en caso de que no venga 'data'
+            let datos = response.data || [];
 
+            GetGrillaBitacora(datos);
         },
         error: function () {
-            // En caso de error, inicializar la grilla con datos vacíos
+            // Error real; cargar grilla vacía
             GetGrillaBitacora([]);
-
         }
     });
 }

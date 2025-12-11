@@ -145,11 +145,21 @@ namespace Web.Areas.Expendios.Controllers
 
             var resultado = await _iDbRegistroExpendio.F_GetInfoGrillas(V_Anio, rolesUsuario, codigoUnidad);
 
-            if (resultado.IdRespuesta > 0)
+            // Caso 1: Hay datos
+            if (resultado.IdRespuesta == 1)
+            {
                 return Json(new { success = true, data = resultado.Data });
-            else
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { success = false, message = resultado.Mensaje });
+            }
+
+            // Caso 2: No hay datos (NO ES ERROR)
+            if (resultado.IdRespuesta == 0 && resultado.Mensaje == "No se encontraron datos")
+            {
+                return Json(new { success = true, data = new List<object>() });
+            }
+
+            // Caso 3: Error real
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = resultado.Mensaje });
         }
 
 
@@ -306,15 +316,21 @@ namespace Web.Areas.Expendios.Controllers
         {
             var resultado = await _iDbRegistroExpendio.F_GetEstaciones(V_Sigla);
 
-            if (resultado.IdRespuesta > 0)
+            // Caso 1: Hay datos
+            if (resultado.IdRespuesta == 1)
             {
                 return Json(new { success = true, data = resultado.Data });
             }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
 
+            // Caso 2: No hay datos (NO ES ERROR)
+            if (resultado.IdRespuesta == 0 && resultado.Mensaje == "No se encontraron datos")
+            {
+                return Json(new { success = true, data = new List<object>() });
             }
+
+            // Caso 3: Error real
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = resultado.Mensaje });
         }
 
 
@@ -324,15 +340,21 @@ namespace Web.Areas.Expendios.Controllers
         {
             var resultado = await _iDbRegistroExpendio.F_GetEspecialidad(V_Sigla);
 
-            if (resultado.IdRespuesta > 0)
+            // Caso 1: Hay datos
+            if (resultado.IdRespuesta == 1)
             {
                 return Json(new { success = true, data = resultado.Data });
             }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
 
+            // Caso 2: No hay datos (NO ES ERROR)
+            if (resultado.IdRespuesta == 0 && resultado.Mensaje == "No se encontraron datos")
+            {
+                return Json(new { success = true, data = new List<object>() });
             }
+
+            // Caso 3: Error real
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = resultado.Mensaje });
         }
 
 
@@ -376,15 +398,21 @@ namespace Web.Areas.Expendios.Controllers
         {
             var resultado = await _iDbRegistroExpendio.F_GetDelitosIris(V_CriminalidadId);
 
-            if (resultado.IdRespuesta > 0)
+            // Caso 1: Hay datos
+            if (resultado.IdRespuesta == 1)
             {
                 return Json(new { success = true, data = resultado.Data });
             }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
 
+            // Caso 2: No hay datos (NO ES ERROR)
+            if (resultado.IdRespuesta == 0 && resultado.Mensaje == "No se encontraron datos")
+            {
+                return Json(new { success = true, data = new List<object>() });
             }
+
+            // Caso 3: Error real
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = resultado.Mensaje });
         }
 
 
@@ -393,16 +421,23 @@ namespace Web.Areas.Expendios.Controllers
         {
             var resultado = await _iDbRegistroExpendio.F_GetBitacora(V_CriminalidadId);
 
-            if (resultado.IdRespuesta > 0)
+            // Caso 1: Hay datos
+            if (resultado.IdRespuesta == 1)
             {
                 return Json(new { success = true, data = resultado.Data });
             }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
 
+            // Caso 2: No hay datos (NO ES ERROR)
+            if (resultado.IdRespuesta == 0 && resultado.Mensaje == "No se encontraron datos")
+            {
+                return Json(new { success = true, data = new List<object>() });
             }
+
+            // Caso 3: Error real
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = resultado.Mensaje });
         }
+
 
 
         [HttpGet]
@@ -410,15 +445,21 @@ namespace Web.Areas.Expendios.Controllers
         {
             var resultado = await _iDbRegistroExpendio.F_GetResultados(V_CriminalidadId);
 
-            if (resultado.IdRespuesta > 0)
+            // Caso 1: Hay datos
+            if (resultado.IdRespuesta == 1)
             {
                 return Json(new { success = true, data = resultado.Data });
             }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
 
+            // Caso 2: No hay datos (NO ES ERROR)
+            if (resultado.IdRespuesta == 0 && resultado.Mensaje == "No se encontraron datos")
+            {
+                return Json(new { success = true, data = new List<object>() });
             }
+
+            // Caso 3: Error real
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = resultado.Mensaje });
         }
 
 

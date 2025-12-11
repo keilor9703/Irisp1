@@ -122,82 +122,8 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
-        //{
-        //    DataTable resultado = new();
-        //    List<DtoIrispCriminalidad> retorno = new();
-        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
-
-        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
-        //    using var objCommand = new OracleCommand();
-
-        //    try
-        //    {
-        //        objCommand.Connection = Conexion;
-        //        objCommand.CommandType = CommandType.StoredProcedure;
-        //        objCommand.CommandText = "PK_VERIFICACION_IRIS.F_GetInfoGrillas";
-        //        objCommand.BindByName = true;
-        //        Conexion.Open();
-
-        //        objCommand.Parameters.Clear();
-        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
-        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-
-        //        if (Conexion.State == ConnectionState.Open)
-        //        {
-        //            resultado.Load(await objCommand.ExecuteReaderAsync());
-
-        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
-
-        //            if (retorno.Count > 0)
-        //            {
-        //                resp.IdRespuesta = 1;
-        //                resp.Mensaje = "Consulta Exitosa";
-        //                resp.Operacion = "F_GetInfoGrillas";
-        //                resp.Data = retorno;
-        //            }
-        //            else
-        //            {
-        //                resp.IdRespuesta = 0;
-        //                resp.Mensaje = "No se encontraron datos";
-        //                resp.Operacion = "0";
-        //            }
-        //        }
-        //        else
-        //        {
-        //            resp.IdRespuesta = 0;
-        //            resp.Mensaje = "Error conexión base de datos";
-        //            resp.Operacion = "0";
-        //        }
-
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Connection.Close();
-        //        _logger.LogError("Creacion de log");
-        //        _logger.LogWarning("Error Ejecutando PK_VERIFICACION_IRIS.F_GetInfoGrillas " + e);
-
-        //        resp.IdRespuesta = 0;
-        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
-        //        resp.Operacion = "0";
-
-        //    }
-        //    finally
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Dispose();
-        //        objCommand.Connection.Close();
-        //        resultado.Dispose();
-        //    }
-        //    return resp;
-        //}
-
-
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(
-    Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
+       
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas( Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
         {
             var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
 
@@ -215,13 +141,13 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
                 string sql = @"
-        BEGIN
-            :RESULT := PK_VERIFICACION_IRIS.F_GetInfoGrillas(
-                :P_Anio,
-                :P_Roles,
-                :P_CodigoUnidad
-            );
-        END;";
+                                BEGIN
+                                    :RESULT := PK_VERIFICACION_IRIS.F_GetInfoGrillas(
+                                        :P_Anio,
+                                        :P_Roles,
+                                        :P_CodigoUnidad
+                                    );
+                                END;";
 
                 await connection.OpenAsync();
 

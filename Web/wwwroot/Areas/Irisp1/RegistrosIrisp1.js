@@ -2097,7 +2097,7 @@ function GetGrillaDocumentosIris(Datos) {
 
                     // Opción 1: enlace azul visible sobre fondo blanco
                   /*  return `<a href="${data}" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Descargar</a>`;*/
-                    return `<a href="/Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
+                    return `<a href="Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
             { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", className: "celdaJust celda17", render: formatDate }

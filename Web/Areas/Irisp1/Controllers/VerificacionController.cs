@@ -232,6 +232,46 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
+
+        [HttpGet]
+        [Route("Irisp1/Verificacion/descargarTarea")]
+        public async Task<IActionResult> DescargarArchivoTarea(string ruta)
+        {
+            if (string.IsNullOrWhiteSpace(ruta))
+                return BadRequest("Ruta inválida.");
+
+            try
+            {
+                // Base UNC desde configuración
+                string uncBase = _configuration["RutasArchivosIris:RutaDocumentosTareas"];
+
+                // Reconstruir la ruta física real
+                string rutaCompleta = Path.Combine(uncBase, ruta.Replace("/", "\\"));
+
+                if (!System.IO.File.Exists(rutaCompleta))
+                    return NotFound("Archivo no encontrado.");
+
+                var bytes = System.IO.File.ReadAllBytes(rutaCompleta);
+                var nombreArchivo = Path.GetFileName(rutaCompleta);
+
+                // Auditoría (usando interpolación de cadenas)
+                await _iDbAdministracion.P_InsAuditoria(
+                    Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                    "Descarga Documento IRIS",
+                    $"Descarga documento: {nombreArchivo}",   // <-- Ajuste aquí
+                    Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
+                return File(bytes, "application/octet-stream", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                // Opcional: loguear el error con más detalle
+                return StatusCode(500, $"Error al descargar el archivo: {ex.Message}");
+            }
+        }
+
         #endregion
 
 
@@ -376,13 +416,16 @@ namespace Web.Areas.Irisp1.Controllers
                 );
 
                 if (!resultado.Exito)
-                    return Json(new { exito = false, mensaje = resultado.Mensaje });
+                    return Json(new { success = false, message = resultado.Mensaje });
 
-                return Json(new { exito = true, mensaje = "Documento guardado y registro insertado correctamente" });
+              //  return Json(new { exito = true, mensaje = "Documento guardado y registro insertado correctamente" });
+                return Json(new { success = true, message = "Documento guardado y registro insertado correctamente" });
+
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { exito = false, mensaje = "Error interno al guardar el documento." });
+              //  return StatusCode(500, new { exito = false, mensaje = "Error interno al guardar el documento." });
+                return StatusCode(500, new { success = false, mensaje = "Error interno al guardar el documento." });
             }
         }
 
@@ -419,7 +462,7 @@ namespace Web.Areas.Irisp1.Controllers
                 }
 
                 // 3️⃣ Ruta base para documentos
-                var rutaBase = _configuration["RutasArchivosIris:RutaDocumentos"];
+                var rutaBase = _configuration["RutasArchivosIris:RutaDocumentosTareas"];
                 if (string.IsNullOrWhiteSpace(rutaBase))
                 {
                     resultado.Exito = false;

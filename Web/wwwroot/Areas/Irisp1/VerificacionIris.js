@@ -2537,7 +2537,7 @@ function EstadoEvidencias() {
 
             // Si existe una URL válida, crear enlace de descarga
             /* return `<a href="${data}" download style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;*/
-            return `<a href="/Irisp1/Verificacion/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
+            return `<a href="/Irisp1/Verificacion/descargarTarea?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
 
 
         }
@@ -2557,7 +2557,7 @@ function GetGrillaResponsablesTareas(Datos) {
         language: glOpcionesIdioma,
         responsive: true,
         columns: [
-            { title: "Unidad", data: "DescUnidad", className: "celdaJust" },
+            { title: "Unidad", data: "UnidadCompleta", className: "celdaJust" },
             //{
             //    title: "Seguimiento Tareas",
             //    data: "Seguimiento",
