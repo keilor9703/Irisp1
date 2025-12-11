@@ -500,7 +500,7 @@ namespace Web.Areas.Irisp1.Controllers
 
                 parametros.Add("P_TAREA_ID", tareaId);
                 parametros.Add("P_NOMBRE", nombreOriginal);
-                parametros.Add("P_URL", rutaFinal);
+                parametros.Add("P_URL", rutaRelativa);
                 parametros.Add("P_IDENTIFICACION_CREACION", Convert.ToInt64(usuario));
                 parametros.Add("P_MAQUINA_CREACION", maquina ?? string.Empty);
                 parametros.Add("P_RESULTADO", dbType: DbType.Int32, direction: ParameterDirection.Output);
