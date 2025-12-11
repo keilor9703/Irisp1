@@ -393,23 +393,23 @@ namespace Web.Areas.Irisp1.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> GuardarDocumentoTareaConRegistro(IFormFile documento, string idCriminalidad)
+        public async Task<IActionResult> GuardarDocumentoTareaConRegistro(IFormFile documento, string tareaId)
         {
-            if (string.IsNullOrWhiteSpace(idCriminalidad))
+            if (string.IsNullOrWhiteSpace(tareaId))
                 return BadRequest(new { exito = false, mensaje = "IdCriminalidad no proporcionado." });
 
             if (documento == null || documento.Length == 0)
                 return BadRequest(new { exito = false, mensaje = "No se envió ningún archivo válido." });
 
-            var CriminalidadId_Desc = Convert.ToInt64(ClsEncriptar.Desencriptar(idCriminalidad));
+           // var CriminalidadId_Desc = Convert.ToInt64(ClsEncriptar.Desencriptar(tareaId));
             var usuario = User.FindFirstValue("Identificacion");
             var maquina = HttpContext.Session.GetString("IpMaquina");
 
             try
             {
                 var resultado = await ProcesarYRegistrarDocumentoAsync(
-                    idCriminalidad,
-                    CriminalidadId_Desc,
+                    tareaId,
+                   // CriminalidadId_Desc,
                     documento,
                     usuario,
                     maquina
@@ -432,8 +432,8 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         private async Task<DtoResultadoFoto> ProcesarYRegistrarDocumentoAsync(
-                                            string criminalidadIdCadena,
-                                            long criminalidadIdNumero,
+                                            string tareaId,
+                                           // long criminalidadIdNumero,
                                             IFormFile documento,
                                             string usuario,
                                             string maquina)
@@ -498,7 +498,7 @@ namespace Web.Areas.Irisp1.Controllers
                 using var conexion = new OracleConnection(_strConexionIris_Disec);
                 var parametros = new DynamicParameters();
 
-                parametros.Add("P_TAREA_ID", criminalidadIdCadena);
+                parametros.Add("P_TAREA_ID", tareaId);
                 parametros.Add("P_NOMBRE", nombreOriginal);
                 parametros.Add("P_URL", rutaFinal);
                 parametros.Add("P_IDENTIFICACION_CREACION", Convert.ToInt64(usuario));

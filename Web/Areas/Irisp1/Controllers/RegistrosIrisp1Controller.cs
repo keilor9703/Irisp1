@@ -1173,7 +1173,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
         }
 
-
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> P_DelDocumentoIris(string DocumentoId)
         {

@@ -1040,7 +1040,7 @@ function GetGrillaDocumentosIris(Datos) {
             {
                 data: null, className: "celdaCenter celda3", "render": function (data, type, row) {
                     var inicioBoton = '<div class="dropdown dropend"><button class="btn btn-success" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false"><span class="fas fa-list"></span></button><ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1" style="line-height:23px;">';
-                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.documentoid}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
+                    var Eliminar = `<li style="padding-left: 17px;"><a style="color: #102717;" href="javascript:P_DelDocumentoIris('${row.documentoId}')"><i class="fa fa-trash red"></i>&nbsp;Eliminar</a></li>`;
                     var finBoton = '</ul></div>';
                     return inicioBoton + Eliminar + finBoton;
                 }
@@ -1054,12 +1054,13 @@ function GetGrillaDocumentosIris(Datos) {
                 "render": function (data, type, row) {
                     if (!data || data.trim() === "") {
                         return '';
+
                     }
-                    // Opción 1: enlace azul visible sobre fondo blanco
+                   
                     return `<a href="Irisp1/Verificacion/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
-            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", render: formatDate , className: "celdaCenter celda10"  }
+            { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", render: formatDate , className: "celdaCenter celda17"  }
         ],
         lengthChange: false,
         searching: false,
@@ -1950,61 +1951,6 @@ function P_DelDocumentoIris(DocumentoId) {
 
     Swal.fire({
         title: '¿Está seguro?',
-        text: "Esta acción eliminará el documento cargado.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-
-        if (result.value) {
-
-            $.ajax({
-                type: 'POST',
-                url: AppRoutes.Verificacion.UrlDelDocumentoIris,
-                async: true,
-                dataType: 'json',
-                data: { DocumentoId: DocumentoId },
-
-                success: function (result) {
-                    if (result.success) {
-
-                        F_GetDocumentosIris($("#txtCriminalidadIdModal").val());
-
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Señor(a) Funcionario(a)',
-                            text: result.message
-                        });
-
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Señor(a) Funcionario(a)',
-                            text: result.message
-                        });
-                    }
-                },
-
-                error: function () {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Señor(a) Funcionario(a)',
-                        text: "No es posible eliminar el documento. Por favor revise."
-                    });
-                }
-            });
-        }
-
-    });
-}
-
-
-
-function P_DelDocumentoIris(DocumentoId) {
-
-    Swal.fire({
-        title: '¿Está seguro?',
         text: "Esta acción eliminará el documento seleccionado.",
         icon: 'warning',
         showCancelButton: true,
@@ -2334,11 +2280,11 @@ function subirDocumentoTareas(tareaId) {
         var file = e.target.files[0];
         if (!file) return;
 
-        var idCriminalidad = $("#txtCriminalidadIdModal").val();
+      //  var idCriminalidad = $("#txtCriminalidadIdModal").val();
 
         var formData = new FormData();
         formData.append('documento', file);
-        formData.append('idCriminalidad', idCriminalidad);
+     //   formData.append('idCriminalidad', idCriminalidad);
         formData.append('tareaId', tareaId);  // 🔹 ahora se envía el id de la tarea
 
         $.ajax({
