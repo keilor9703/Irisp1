@@ -1040,173 +1040,6 @@ function consultarConsecutivoIris() {
     });
 }
 
-//function P_InsRegistroIrisP1() {
-
-//    var formData = new FormData();
-
-//    var IdClase = $("#ddlClase").val();
-
-//    let NombreClaseI = '';
-//    let Id_modalidadI = 0;
-//    let Cantidad = 0;
-//    let Id_ClasiNarcotrafico = 0;
-
-//    switch (IdClase) {
-//        case '74':
-//            NombreClaseI = $("#txtNombreTrafico").val();
-//            Id_modalidadI = $("#ddlModExpendio").val();
-//            break;
-
-//        case '13':
-//            NombreClaseI = $("#txtNombreEstructura").val();
-//            Cantidad = $("#txtCantidadEstructura").val();
-//            break;
-
-//        case '14':
-//            NombreClaseI = $("#txtNombreInstalacion").val();
-//            Cantidad = $("#txtCantidadInstalacion").val();
-//            break;
-
-//        case '15':
-//            Cantidad = $("#txtCantidadPersonas").val();
-//            break;
-
-//        case '153':
-//            NombreClaseI = $("#txtNombreNarcotrafico").val();
-//            Id_ClasiNarcotrafico = $("#ddlClasiNarcotrafico").val();
-//            break;
-
-//        case '154':
-//            break;
-
-//        default:
-//            NombreClaseI = '';
-//            Id_modalidadI = 0;
-//            Cantidad = 0;
-//            Id_ClasiNarcotrafico = 0;
-//    }
-
-//    var Obj_DelitosSecundarios = obtenerDelitosSecundariosSeleccionados();
-
-//    const Obj_NuevoIrisP1 = {
-//        CriminalidadId: $("#txtConsecutivoIris").val(),
-//        IdUnidad: $("#txtUndeLabora").val(),
-//        IdZona: $("#ddlZona").val(),
-//        IdentificacionInforma: $("#txtIdentificacion").val(),
-//        Celular: $("#txtTelefono").val(),
-//        IdTipoServicio: $("#ddlTipoServicio").val(),
-//        IdCuadrante: $("#ddlCuadrante").val(),
-//        IdClase: IdClase,
-//        NombreClase: NombreClaseI,
-//        Id_modalidad: Id_modalidadI,
-//        CantidadIntegrantes: Cantidad,
-//        CaracteristicasGenerales: $("#txtCaractGenerales").val(),
-//        Vigente: 1,
-//        SiglaUnidad: $("#txtSiglaUnidad").val(),
-//        IdEstado: 2,
-//        IdFuente: $("#ddlFuente").val(),
-//        EntornoAfectado: $("#ddlEntono").val(),
-//        IdtiempoDelito: $("#ddlActividad").val(),
-//        Clasificacion: Id_ClasiNarcotrafico,
-//        Modalidadexpendio: Id_modalidadI,
-//        Origen: 'WEB',
-//        NombreEntornoAfectado: $("#txtNombreEntornoAfectado").val(),
-//        EspecialidadAporta: $("#ddlEspecialidad").val(),
-//        IdDelitoPrincipal: $("#ddlDelitoPrincipal").val(),
-//        IdDelitoSecundario: Obj_DelitosSecundarios,
-//        IdTipoInfo: 30,
-
-//        Latitud: $("#LATITUD_CASO").val(),
-//        Longitud: $("#LONGITUD_CASO").val(),
-//        Barrio: $("#txtBarrio").val(),
-//        Cuadrante: $("#txtCuadrante").val(),
-//        Direccion: $("#txtDireccion").val(),
-//        CuadranteRural: $("#txtCuadrante").val(),
-//        CodigoDane: $("#txtCodDane").val(),
-//        CodigoEstacion: $("#txtCodEstacion").val(),
-//        CodigoSiedcoCuadrante: $("#txtCodSiedcoCuadrante").val(),
-//        MunicipioUbica: $("#txtMunicipio").val(),
-//        RadioAccion: $("#txtRadioAccion").val()
-
-//    };
-
-//    // --- Validación de campos obligatorios ---
-//    for (let key in Obj_NuevoIrisP1) {
-//        if (key !== 'IdDelitoSecundario' && key !== 'IdCuadrante' && key !== 'RadioAccion' &&// puede venir vacío
-//            (Obj_NuevoIrisP1[key] === null || Obj_NuevoIrisP1[key] === '' || Obj_NuevoIrisP1[key] === undefined || (typeof Obj_NuevoIrisP1[key] === 'number' && isNaN(Obj_NuevoIrisP1[key]))))
-//        {
-//            /*Swal.fire('Advertencia', `El campo "${key}" es obligatorio y no puede estar vacío.`, 'warning');*/
-           
-//            Swal.fire({
-//                type: 'warning',
-//                title: 'Señor(a) Funcionario(a:)',
-//                text: "Valide todos los campos para completar el presente registro"
-//            });
-//            return; // detener ejecución
-//        }
-//    }
-
-
-//    formData.append("datosJson", JSON.stringify(Obj_NuevoIrisP1));
-
-
-//    var file = $("#fileAnexoFotografico")[0].files[0];
-//    if (file) {
-//        formData.append("foto", file);
-//    }
-
-
-//    // --- Enviar solicitud ---
-//    $.ajax({
-//        url: AppRoutes.RegistroIrisP1.UrlInsRegistroIrisP1
-//,
-//        type: 'POST',
-//        data: Obj_NuevoIrisP1,
-//        success: function (resp) {
-//            if (resp.success) {
-//                Swal.fire({
-//                    icon: 'success',
-//                    title: 'Señor(a) Funcionario(a):',
-//                    text: resp.message
-//                })
-                  
-//                // Cerrar la modal
-//                $('#Modal_VerRegistro').modal('hide');
-
-//                // Obtener todas las opciones y convertir a número
-//                var opciones = $('#ddlAnioIris option').map(function () {
-//                    return parseInt($(this).val(), 10);
-//                }).get();
-
-//                // Filtrar solo los valores numéricos válidos
-//                var opcionesValidas = opciones.filter(function (v) {
-//                    return !isNaN(v);
-//                });
-
-//                // Calcular el máximo año
-//                var maxAnio = Math.max.apply(null, opcionesValidas);
-
-//                // Asignar el máximo año como valor seleccionado
-//                $('#ddlAnioIris').val(maxAnio).trigger('change');
-
-//                // Refrescar la grilla
-//                F_GetInfoGrillas();
-//                limpiarFormularioIrisP1();
-
-
-                
-//            } else {
-//                Swal.fire('Error', 'Error al insertar: ' + resp.message, 'error');
-//            }
-//        },
-//        error: function () {
-//            Swal.fire('Error', 'Fallo en la llamada AJAX.', 'error');
-//        }
-//    });
-//}
-
-
-
 
 function P_InsRegistroIrisP1() {
 
@@ -1822,6 +1655,49 @@ function F_GetUbicacionIris(CrininalidadId) {
         }
     });
 }
+
+
+async function F_GetUbicacionIris(CriminalidadId) {
+
+    try {
+
+        // Construcción de la URL con querystring (equivalente a data: {})
+        const url = `${AppRoutes.RegistroIrisP1.UrlGetUbicacion}?V_CriminalidadId=${encodeURIComponent(CriminalidadId)}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        // 🔴 IMPORTANTE: fetch NO falla con 401 / 500
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const responseJson = await response.json();
+
+        if (responseJson.success) {
+            GetGrillaUbicacionIris(responseJson.data);
+        } else {
+            GetGrillaUbicacionIris([]);
+            // Swal.fire('Error', responseJson.message, 'error');
+        }
+
+    } catch (error) {
+
+        console.error('Error F_GetUbicacionIris:', error);
+        GetGrillaUbicacionIris([]);
+
+        Swal.fire(
+            'Error',
+            'No se pudo obtener la lista de ubicaciones.',
+            'error'
+        );
+    }
+}
+
 
 
 function GetGrillaUbicacionIris(Datos) {
