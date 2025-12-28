@@ -7,9 +7,9 @@ namespace Negocio.Interfaz.Admin
     public interface IDbAdministracion
     {
         #region Métodos de Consulta        
-        public DataTable F_GetImagenes(int Consecutivo);
-        public Task<DtoResultado<List<DtoMenu>>> F_GetMenu(string V_Idrol, long P_Identificacion);
-        public Task<DtoResultado<List<DtoSlider>>> F_GetSilerSuperior();
+       
+        public Task<DtoResultado<List<DtoMenu>>> F_GetMenu(int V_Idrol, long P_Identificacion);
+      
         public Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string V_Usuario, string V_Maquina);
         public Task<DtoResultado<List<DtoRoles>>> F_GetRoles();
         public Task<DtoResultado<List<DtoUsuario>>> F_GetListUsuarios();

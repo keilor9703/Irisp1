@@ -26,26 +26,6 @@ namespace Comun.Areas.Integrantes
         [JsonPropertyName("identificacion")]
         public long Identificacion { get; set; }
 
-        //[JsonPropertyName("VIGENTE")]
-        //public int? Vigente { get; set; }
-
-        //[JsonPropertyName("FECHA_CREACION")]
-        //public DateTime? FechaCreacion { get; set; }
-
-        //[JsonPropertyName("IDENTIFICACION_CREACION")]
-        //public long? IdentificacionCreacion { get; set; }
-
-        //[JsonPropertyName("MAQUINA_CREACION")]
-        //public string MaquinaCreacion { get; set; }
-
-        //[JsonPropertyName("FECHA_MODIFICA")]
-        //public DateTime? FechaModifica { get; set; }
-
-        //[JsonPropertyName("IDENTIFICACION_MODIFICA")]
-        //public long? IdentificacionModifica { get; set; }
-
-        //[JsonPropertyName("MAQUINA_MODIFICA")]
-        //public string MaquinaModifica { get; set; }
 
         [JsonPropertyName("observacion")]
         public string? Observacion { get; set; }

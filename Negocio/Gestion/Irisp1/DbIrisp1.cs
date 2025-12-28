@@ -43,380 +43,122 @@ namespace Negocio.Gestion.Irisp1
 
         #region Métodos de Consulta
 
+       
         public async Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1()
         {
-            List<DtoIrisp1> Retorno = new();
-            DtoResultado<List<DtoIrisp1>> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
-
-            try
+            var resp = new DtoResultado<List<DtoIrisp1>>
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetAniosIrisP1";
-                objCommand.BindByName = true;
-                Conexion.Open();
-
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
-
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    var reader = await objCommand.ExecuteReaderAsync();
-                    while (reader.Read())
-                    {
-                        var domi = new DtoIrisp1()
-                        {
-                            AnoIrisp1 = reader.GetInt32(0),
-                        };
-                        Retorno.Add(domi);
-                    }
-
-                    if (Retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_AniosIris";
-                        resp.Data = Retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encuentran registros en base de datos";
-                        resp.Operacion = "0";
-                    }
-
-                    reader.Close();
-                    Conexion.Close();
-                    Conexion.Dispose();
-                    objCommand.Connection.Close();
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
-                }
-            }
-            catch (Exception e)
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_AniosIris " + e);
-
-                resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-            }
-            return resp;
-        }
-
-        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
-        //{
-        //    DataTable resultado = new();
-        //    List<DtoIrispCriminalidad> retorno = new();
-        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
-
-        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
-        //    using var objCommand = new OracleCommand();
-
-        //    try
-        //    {
-        //        objCommand.Connection = Conexion;
-        //        objCommand.CommandType = CommandType.StoredProcedure;
-        //        objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
-        //        objCommand.BindByName = true;
-        //        Conexion.Open();
-
-        //        objCommand.Parameters.Clear();
-        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
-        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-
-        //        if (Conexion.State == ConnectionState.Open)
-        //        {
-        //            resultado.Load(await objCommand.ExecuteReaderAsync());
-
-        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
-
-        //            if (retorno.Count > 0)
-        //            {
-        //                resp.IdRespuesta = 1;
-        //                resp.Mensaje = "Consulta Exitosa";
-        //                resp.Operacion = "F_GetInfoGrillas";
-        //                resp.Data = retorno;
-        //            }
-        //            else
-        //            {
-        //                resp.IdRespuesta = 0;
-        //                resp.Mensaje = "No se encontraron datos";
-        //                resp.Operacion = "0";
-        //            }
-        //        }
-        //        else
-        //        {
-        //            resp.IdRespuesta = 0;
-        //            resp.Mensaje = "Error conexión base de datos";
-        //            resp.Operacion = "0";
-        //        }
-
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Connection.Close();
-        //        _logger.LogError("Creacion de log");
-        //        _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas " + e);
-
-        //        resp.IdRespuesta = 0;
-        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
-        //        resp.Operacion = "0";
-
-        //    }
-        //    finally
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Dispose();
-        //        objCommand.Connection.Close();
-        //        resultado.Dispose();
-        //    }
-        //    return resp;
-        //}
-
-        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas( Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
-        //{
-        //    DataTable resultado = new();
-        //    List<DtoIrispCriminalidad> retorno = new();
-        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
-
-        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
-        //    using var objCommand = new OracleCommand();
-
-        //    try
-        //    {
-        //        objCommand.Connection = Conexion;
-        //        objCommand.CommandType = CommandType.StoredProcedure;
-        //        objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
-        //        objCommand.BindByName = true;
-        //        Conexion.Open();
-
-        //        objCommand.Parameters.Clear();
-        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
-        //        objCommand.Parameters.Add("P_Roles", OracleDbType.Varchar2, ParameterDirection.Input).Value = RolesUsuario;
-        //        objCommand.Parameters.Add("P_CodigoUnidad", OracleDbType.Int64, ParameterDirection.Input).Value = CodigoUnidad;
-        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-
-        //        if (Conexion.State == ConnectionState.Open)
-        //        {
-        //            resultado.Load(await objCommand.ExecuteReaderAsync());
-        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
-
-        //            resp.IdRespuesta = retorno.Count > 0 ? 1 : 0;
-        //            resp.Mensaje = retorno.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
-        //            resp.Data = retorno;
-        //            resp.Operacion = "F_GetInfoGrillas";
-        //        }
-        //        else
-        //        {
-        //            resp.IdRespuesta = 0;
-        //            resp.Mensaje = "Error conexión base de datos";
-        //        }
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        _logger.LogError(e, "Error ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas");
-        //        resp.IdRespuesta = 0;
-        //        resp.Mensaje = e.Message;
-        //    }
-        //    finally
-        //    {
-        //        Conexion.Close();
-        //        objCommand.Dispose();
-        //    }
-
-        //    return resp;
-        //}
-
-
-
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas( Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
-        {
-            var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
+                Operacion = "F_GetAniosIrisP1",
+                Data = new List<DtoIrisp1>()
+            };
 
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
+                var parametros = new OracleDynamicParameters();
+                
+                // RefCursor de salida
+                parametros.Add("V_CONSULTA", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoIrisp1>("PK_CONSULTA_IRISP.F_GetAniosIrisP1", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+
+                resp.Data = lista ?? new List<DtoIrisp1>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex,
+                    "OracleException en {Operacion}",
+                    resp.Operacion);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                // resp.Data ya va como lista vacía
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} ",
+                    resp.Operacion);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                // resp.Data ya va como lista vacía
+            }
+
+            return resp;
+        }
+
+
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(int V_Anio,string RolesUsuario, long CodigoUnidad)
+        {
+            var resp = new DtoResultado<List<DtoIrispCriminalidad>>
+            {
+                Operacion = "F_GetInfoGrillas",
+                Data = new List<DtoIrispCriminalidad>()
+            };
+
+            try
+            {
+                // Validaciones mínimas (evita llamadas innecesarias a BD)
+                if (V_Anio <= 0)
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "El año (V_Anio) no es válido.";
+                    return resp;
+                }
+
+                RolesUsuario = (RolesUsuario ?? string.Empty).Trim();
+
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                // Recomendado para Oracle: bind por nombre
+               // connection.BindByName = true;
 
                 var parametros = new OracleDynamicParameters();
                 parametros.Add("P_Anio", V_Anio, OracleMappingType.Int32, ParameterDirection.Input);
                 parametros.Add("P_Roles", RolesUsuario, OracleMappingType.Varchar2, ParameterDirection.Input);
                 parametros.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
 
-                // 🔥 Cursor de salida
-                parametros.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
-
-                var sql = @"
-                            BEGIN
-                                :RESULT := PK_CONSULTA_IRISP.F_GetInfoGrillas(
-                                    :P_Anio,
-                                    :P_Roles,
-                                    :P_CodigoUnidad
-                                );
-                            END;";
+                // RefCursor de salida
+                parametros.Add("V_CONSULTA", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
-                // 🔥 Mapeo automático directo a la lista de DTO
-                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>(
-                    sql,
-                    parametros,
-                    commandType: CommandType.Text
-                )).ToList();
+                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>( "PK_CONSULTA_IRISP.F_GetInfoGrillas", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120 )).AsList();
 
-                resp.IdRespuesta = lista.Count > 0 ? 1 : 0;
-                resp.Mensaje = lista.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
-                resp.Data = lista;
-                resp.Operacion = "F_GetInfoGrillas";
+                resp.Data = lista ?? new List<DtoIrispCriminalidad>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | V_Anio={Anio} | CodigoUnidad={CodigoUnidad} | Roles={Roles}",
+                    resp.Operacion, V_Anio, CodigoUnidad, RolesUsuario);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                // resp.Data ya va como lista vacía
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper F_GetInfoGrillas");
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | V_Anio={Anio} | CodigoUnidad={CodigoUnidad} | Roles={Roles}",
+                    resp.Operacion, V_Anio, CodigoUnidad, RolesUsuario);
+
                 resp.IdRespuesta = 0;
                 resp.Mensaje = ex.Message;
-                resp.Data = null;
+                // resp.Data ya va como lista vacía
             }
 
             return resp;
         }
-
-
-
-        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio)
-        //{
-        //    List<DtoIrispCriminalidad> retorno = new();
-        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
-
-        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
-        //    using var objCommand = new OracleCommand();
-
-        //    try
-        //    {
-        //        objCommand.Connection = Conexion;
-        //        objCommand.CommandType = CommandType.StoredProcedure;
-        //        objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetInfoGrillas";
-        //        objCommand.BindByName = true;
-
-        //        objCommand.Parameters.Clear();
-        //        objCommand.Parameters.Add("P_Anio", OracleDbType.Int32, ParameterDirection.Input).Value = V_Anio;
-        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-
-        //        await Conexion.OpenAsync();
-
-        //        using var reader = await objCommand.ExecuteReaderAsync();
-        //        while (await reader.ReadAsync())
-        //        {
-        //            var dto = new DtoIrispCriminalidad
-        //            {
-        //                // ---------- Identificadores ----------
-        //                CriminalidadId = reader["CriminalidadId"]?.ToString(),
-        //                IdResponsable = reader["IdResponsable"]?.ToString(),
-        //                IdUnidad = reader["IdUnidad"] == DBNull.Value ? null : Convert.ToInt64(reader["IdUnidad"]),
-        //                IdUnidadResponsable = reader["IdUnidadResponsable"] == DBNull.Value ? null : Convert.ToInt64(reader["IdUnidad"]),
-
-        //                // ---------- Numéricos ----------
-        //                IdZona = reader["IdZona"] == DBNull.Value ? null : Convert.ToInt32(reader["IdZona"]),
-        //                IdentificacionInforma = reader["IdentificacionInforma"] == DBNull.Value ? null : Convert.ToInt64(reader["IdentificacionInforma"]),
-        //                IdTipoServicio = reader["IdTipoServicio"] == DBNull.Value ? null : Convert.ToInt32(reader["IdTipoServicio"]),
-        //                IdCuadrante = reader["IdCuadrante"] == DBNull.Value ? null : Convert.ToInt32(reader["IdCuadrante"]),
-        //                IdClase = reader["IdClase"] == DBNull.Value ? null : Convert.ToInt32(reader["IdClase"]),
-        //                CantidadIntegrantes = reader["CantidadIntegrantes"] == DBNull.Value ? null : Convert.ToInt32(reader["CantidadIntegrantes"]),
-        //                Vigente = reader["Vigente"] == DBNull.Value ? null : Convert.ToInt32(reader["Vigente"]),
-        //                ConsecutivoCodigo = reader["ConsecutivoCodigo"] == DBNull.Value ? null : Convert.ToInt32(reader["ConsecutivoCodigo"]),
-        //                IdEstado = reader["IdEstado"] == DBNull.Value ? null : Convert.ToInt32(reader["IdEstado"]),
-        //                IdFuente = reader["IdFuente"] == DBNull.Value ? null : Convert.ToInt32(reader["IdFuente"]),
-        //                IdEstadoExistencia = reader["IdEstadoExistencia"] == DBNull.Value ? null : Convert.ToInt32(reader["IdEstadoExistencia"]),
-        //                CelularCuadrante = reader["CelularCuadrante"] == DBNull.Value ? null : Convert.ToInt64(reader["CelularCuadrante"]),
-
-        //                // ---------- Fechas ----------
-        //                FechaInicioExistencia = reader["FechaInicioExistencia"] == DBNull.Value ? null : Convert.ToDateTime(reader["FechaInicioExistencia"]),
-        //                FechaCreacion = reader["FechaCreacion"] == DBNull.Value ? null : Convert.ToDateTime(reader["FechaCreacion"]),
-        //                FechaModifica = reader["FechaModifica"] == DBNull.Value ? null : Convert.ToDateTime(reader["FechaModifica"]),
-
-        //                // ---------- Auditoría ----------
-        //                IdentificacionCrea = reader["IdentificacionCrea"] == DBNull.Value ? null : Convert.ToInt64(reader["IdentificacionCrea"]),
-        //                MaquinaCrea = reader["MaquinaCrea"]?.ToString(),
-        //                IdentificacionModifica = reader["IdentificacionModifica"] == DBNull.Value ? null : Convert.ToInt64(reader["IdentificacionModifica"]),
-        //                MaquinaModifica = reader["MaquinaModifica"]?.ToString(),
-
-        //                // ---------- Códigos ----------
-        //                Codigo = reader["Codigo"]?.ToString(),
-        //                SiglaUnidad = reader["SiglaUnidad"]?.ToString(),
-
-        //                // ---------- Texto ----------
-        //                CaracteristicasGenerales = reader["CaracteristicasGenerales"]?.ToString(),
-        //                DescripcionTramite = reader["DescripcionTramite"]?.ToString(),
-        //                Celular = reader["Celular"]?.ToString(),
-        //                EstadoDescripcion = reader["EstadoDescripcion"]?.ToString(),
-        //                EstadoExistenciaDescripcion = reader["EstadoExistenciaDescripcion"]?.ToString(),
-        //                Municipio = reader["Municipio"]?.ToString(),
-        //                Zona = reader["Zona"]?.ToString(),
-        //                TipoServicio = reader["TipoServicio"]?.ToString(),
-        //                Fuente = reader["Fuente"]?.ToString(),
-        //                Clase = reader["Clase"]?.ToString(),
-        //                NombreClase = reader["NombreClase"]?.ToString(),
-        //                UnidadResponsable = reader["UnidadResponsable"]?.ToString(),
-
-        //                // ---------- Cuadrantes ----------
-        //                Cuadrante = reader["Cuadrante"]?.ToString(),
-        //                DependCuadrante = reader["DependCuadrante"]?.ToString(),
-        //                Estacioncuadrante = reader["Estacioncuadrante"]?.ToString(),
-        //                Nivel1cuadrante = reader["Nivel1cuadrante"]?.ToString(),
-        //                Dependencia = reader["Dependencia"]?.ToString(),
-
-        //                // ---------- Resultados ----------
-        //                IdTipoResultado = reader["IdTipoResultado"]?.ToString(),
-        //                DescTipoResultado = reader["DescTipoResultado"]?.ToString(),
-        //                NumeroResultado = reader["NumeroResultado"]?.ToString(),
-        //                EstadoResultados = reader["EstadoResultados"]?.ToString()
-        //            };
-
-
-        //            retorno.Add(dto);
-        //        }
-
-        //        resp.IdRespuesta = retorno.Any() ? 1 : 0;
-        //        resp.Mensaje = retorno.Any() ? "Consulta Exitosa" : "No se encontraron datos";
-        //        resp.Operacion = "F_GetInfoGrillas";
-        //        resp.Data = retorno;
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        _logger.LogError("Error Ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas ", e);
-        //        resp.IdRespuesta = 0;
-        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
-        //        resp.Operacion = "0";
-        //    }
-        //    finally
-        //    {
-        //        await Conexion.CloseAsync();
-        //    }
-
-        //    return resp;
-        //}
-
 
 
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)

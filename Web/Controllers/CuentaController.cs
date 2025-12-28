@@ -149,12 +149,12 @@ namespace Web.Controllers
                 if (Admin)
                 {
                     //Generamos el Menú Super usuario
-                    var Menu = await _iDbAdministracion.F_GetMenu("1", Usuario.Data.Identificacion);
+                    var Menu = await _iDbAdministracion.F_GetMenu(1, Usuario.Data.Identificacion);
                     HttpContext.Session.SetObject("ListaMenu", Menu.Data);
                 }
                 else
                 {
-                    var Menu = await _iDbAdministracion.F_GetMenu("0", Usuario.Data.Identificacion);
+                    var Menu = await _iDbAdministracion.F_GetMenu(0, Usuario.Data.Identificacion);
                     HttpContext.Session.SetObject("ListaMenu", Menu.Data);
                 }
 
@@ -192,7 +192,7 @@ namespace Web.Controllers
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
                 //Auditoria Inicio de Sesion
-                var Auditoria = _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(Usuario.Data.Identificacion), "Inicio Sesion", "Inicio sesion Sistema", Convert.ToInt64(Usuario.Data.Identificacion), HttpContext.Session.GetString("IpMaquina"));
+                var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(Usuario.Data.Identificacion), "Inicio Sesion", "Inicio sesion Sistema", Convert.ToInt64(Usuario.Data.Identificacion), HttpContext.Session.GetString("IpMaquina"));
 
                 return RedirectToAction("Index", "Home");
             }
@@ -232,6 +232,15 @@ namespace Web.Controllers
 
             // ✅ REDIRECCIÓN CORRECTA
             return RedirectToAction("InicioSesion", "Cuenta");
+        }
+
+
+
+        [AllowAnonymous]
+        public async Task<IActionResult> SesionExpirada()
+        {
+            // Aquí puedes: 1) mostrar mensaje, o 2) intentar reconstruir menú si tienes Identificacion en claims
+            return RedirectToAction("InicioSesion", "Cuenta", new { _mensaje = "" });
         }
 
 
@@ -295,8 +304,6 @@ namespace Web.Controllers
         }
 
 
-
-
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> FotoFuncionario(long identificacion)
@@ -328,9 +335,25 @@ namespace Web.Controllers
             }
         }
 
-        
+
+
+
+
+
+
+
+
+
+
+
 
     }
+
+
+
+
+
+
 
 
 }

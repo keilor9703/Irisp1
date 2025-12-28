@@ -64,6 +64,18 @@ var logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+
 
 builder.Services.AddHttpContextAccessor();
 
@@ -98,7 +110,7 @@ builder.Services.AddMvc();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(15);
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
@@ -114,6 +126,9 @@ builder.Services.Configure<CredencialesPipOptions>(builder.Configuration.GetSect
 var RutaVisualizador = builder.Configuration.GetValue<string>("Visualizador");
 
 var app = builder.Build();
+
+app.UseCors("AngularPolicy");
+
 
 //Variables de Sesion
 app.UseSession();
@@ -143,27 +158,59 @@ app.MapControllerRoute(
     pattern: "{controller=Cuenta}/{action=InicioSesion}/{id?}");
 
 
+//app.Use(async (context, next) =>
+//{
+//    var url = context.Request.Path.Value;
+//    var HayError = url.Contains("Error");
+
+//    if (!HayError)
+//    {
+//        var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
+//        var ipMaquina = context.Session.GetString("IpMaquina");
+
+//        if ((!url.Contains("Cuenta")) && url.Length > 5)
+//        {
+//            if (obj == null || string.IsNullOrEmpty(ipMaquina))
+//            {
+//                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host.Value}/Cuenta/CerrarSesion");
+//                return;
+//            }
+//        }
+//    }
+//    await next();
+//});
+
+
 app.Use(async (context, next) =>
 {
-    var url = context.Request.Path.Value;
-    var HayError = url.Contains("Error");
+    var path = context.Request.Path.Value ?? "";
 
-    if (!HayError)
+    // Ignorar estáticos / cuenta / error
+    if (path.StartsWith("/Cuenta", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/css") || path.StartsWith("/js") || path.StartsWith("/img") ||
+        path.Contains("Error", StringComparison.OrdinalIgnoreCase))
     {
-        var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
+        await next();
+        return;
+    }
+
+    // Solo aplicar si el usuario está autenticado (si no, que cookie auth lo mande al LoginPath)
+    if (context.User?.Identity?.IsAuthenticated == true)
+    {
+        var menu = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
         var ipMaquina = context.Session.GetString("IpMaquina");
 
-        if ((!url.Contains("Cuenta")) && url.Length > 5)
+        // Si se perdió session, NO cierres sesión: redirige a una ruta de "SesionExpirada"
+        if (menu == null || string.IsNullOrEmpty(ipMaquina))
         {
-            if (obj == null || string.IsNullOrEmpty(ipMaquina))
-            {
-                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host.Value}/Cuenta/CerrarSesion");
-                return;
-            }
+            context.Response.Redirect("/Cuenta/SesionExpirada");
+            return;
         }
     }
+
     await next();
 });
+
 
 app.Run();
 

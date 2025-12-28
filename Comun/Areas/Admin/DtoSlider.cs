@@ -7,9 +7,9 @@ namespace Comun.Areas.Admin
         [JsonPropertyName("Orden")]
         public decimal ORDEN { get; set; }
         [JsonPropertyName("Consecutivo")]
-        public string? CONSECUTIVO { get; set; }
+        public int? CONSECUTIVO { get; set; }
         [JsonPropertyName("ImagenesConsecutivas")]
-        public string? IMAGENES_CONSECUTIVO { get; set; }
+        public int? IMAGENES_CONSECUTIVO { get; set; }
         [JsonPropertyName("Url")]
         public string? URL { get; set; }
         [JsonPropertyName("Filename")]

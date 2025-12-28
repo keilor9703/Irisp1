@@ -1041,8 +1041,16 @@ a:not([href]) {
 }
 .btn-success {
     color: #fff;
-    background-image: linear-gradient(to right, #00741a 0%, #32d918 48%, #012d12 100%);
+   /* background-image: linear-gradient(to right, #00741a 0%, #32d918 48%, #012d12 100%);*/
     border-color: #008d4c;
+    background: linear-gradient(45deg, #151b3b, #1c45b4);
+}
+
+.btn-excel {
+    color: #fff;
+     background-image: linear-gradient(to right, #00741a 0%, #32d918 48%, #012d12 100%);
+    border-color: #008d4c;
+   
 }
 
 div.dataTables_wrapper div.dataTables_filter input {

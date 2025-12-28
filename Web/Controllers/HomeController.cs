@@ -1,10 +1,11 @@
 using Comun.Areas.Admin;
-using Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Negocio.Gestion.Admin;
 using Negocio.Interfaz.Admin;
 using System.Data;
 using System.Diagnostics;
+using Web.Models;
 
 namespace Web.Controllers
 {
@@ -13,94 +14,52 @@ namespace Web.Controllers
     {
         private readonly IDbAdministracion _DbAdministracion;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IDbConsultasPIP _iDbConsultasPIP;
         private readonly ILogger<HomeController> _logger;
-        public HomeController(IDbAdministracion iDbAdministracion, IWebHostEnvironment webHostEnvironment, ILogger<HomeController> logger)
+        public HomeController(IDbAdministracion iDbAdministracion, IWebHostEnvironment webHostEnvironment, ILogger<HomeController> logger, IDbConsultasPIP iDbConsultasPIP)
         {
             _DbAdministracion = iDbAdministracion;
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
+            _iDbConsultasPIP = iDbConsultasPIP;
+            
         }
+   
+
         public async Task<IActionResult> Index()
         {
-
             try
             {
-                var ImagenesSlider = await _DbAdministracion.F_GetSilerSuperior();
-                var SlidersView = new List<DtoSlider>();
+                var carruselResp = await _iDbConsultasPIP.ObtenerCarruselAsync();
 
-                foreach (var item in ImagenesSlider.Data)
+                if (!carruselResp.Estado || carruselResp.Respuesta == null || carruselResp.Respuesta.Count == 0)
+                    throw new Exception("Carrusel vacío o no disponible");
+
+                var slidersView = carruselResp.Respuesta.Select( x => new DtoSlider
                 {
-                    string ruta = ConsultarRuta(Convert.ToInt32(item.IMAGENES_CONSECUTIVO));
-                    string ruta1 = "";
+                    IMAGENES_CONSECUTIVO = x.consecutivo,
+                    FILENAME = x.fileName,
+                    RUTA = $"data:{(string.IsNullOrWhiteSpace(x.contentType) ? "image/jpeg" : x.contentType)};base64,{x.foto}"
+                }).ToList();
 
-                    if (ruta == null || ruta == "")
-                    {
-                        ruta1 = F_GetImagenes(Convert.ToInt32(item.IMAGENES_CONSECUTIVO));
-                    }
-                    else
-                    {
-                        ruta1 = ruta;
-                    }
-                    var SliderView = new DtoSlider
-                    {
-                        CONSECUTIVO = item.CONSECUTIVO,
-                        IMAGENES_CONSECUTIVO = item.IMAGENES_CONSECUTIVO,
-                        URL = item.URL,
-                        FILENAME = item.FILENAME,
-                        ORDEN = item.ORDEN,
-                        RUTA = ruta1
-                    };
-                    SlidersView.Add(SliderView);
-                }
-                return View(SlidersView);
-
+                return View(slidersView);
             }
-            catch (Exception)
+            catch
             {
-                var SlidersView = new List<DtoSlider>();
-                var SliderView = new DtoSlider
-                {
-                    IMAGENES_CONSECUTIVO = "19957",
-                    FILENAME = "ARTE4_polired.jpg",
-                    RUTA = "~/img/Carrusel/19957.jpg"
-                };
-                SlidersView.Add(SliderView);
-                return View(SlidersView);
+            
+                var slidersView = new List<DtoSlider>
+        {
+            new DtoSlider
+            {
+                IMAGENES_CONSECUTIVO = 19957,
+                FILENAME = "ARTE4_polired.jpg",
+                RUTA = "~/img/Carrusel/19957.jpg"
             }
-            //Immplementar con microservicio
+        };
+                return View(slidersView);
+            }
         }
 
-
-        //public async Task<IActionResult> Index()
-        //{
-        //    try
-        //    {
-        //        // ?? 1. Intentar primero cargar desde el microservicio
-        //        var ImagenesSlider = await _DbAdministracion.F_GetSliderSuperiorApi();
-
-        //        if (ImagenesSlider.IdRespuesta != 1 || ImagenesSlider.Data == null || ImagenesSlider.Data.Count == 0)
-        //        {
-        //            // ?? 2. Si falla o no hay datos, usar la versión local de Oracle
-        //            ImagenesSlider = await _DbAdministracion.F_GetSilerSuperior();
-        //        }
-
-        //        return View(ImagenesSlider.Data);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError($"Error en Index Carrusel: {ex.Message}");
-        //        var fallback = new List<DtoSlider>
-        //{
-        //    new DtoSlider
-        //    {
-        //        IMAGENES_CONSECUTIVO = "19957",
-        //        FILENAME = "ARTE4_polired.jpg",
-        //        RUTA = "~/img/Carrusel/19957.jpg"
-        //    }
-        //};
-        //        return View(fallback);
-        //    }
-        //}
 
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -109,95 +68,8 @@ namespace Web.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        public string ConsultarRuta(int Consecutivo)
-        {
-            // verificar si la imagen existe en una carpeta
-            string[] formatos = new[] { ".tiff", ".ief", ".gif", ".jpg", ".png" };
-            string ruta = "";
-            string extensionArchivo = "";
-            bool existe = false;
-            string Resultado = "";
-            foreach (string formato in formatos)
-            {
-
-                string webRootPath = _webHostEnvironment.WebRootPath;
-                string contentRootPath = _webHostEnvironment.ContentRootPath;
-
-                ruta = Path.Combine(webRootPath, "img/Carrusel/") + Consecutivo.ToString() + formato;
-                //or path = Path.Combine(contentRootPath , "wwwroot" ,"CSS" );
-
-                if (System.IO.File.Exists(ruta))
-                {
-                    existe = true;
-                    extensionArchivo = formato;
-                    break;
-                }
-            }
-            // si existe devolverla
-            if (existe)
-            {
-                return "~/img/Carrusel/" + Consecutivo.ToString() + extensionArchivo;
-            }
-            else
-            {
-                return Resultado;
-            }
-        }
-        public string F_GetImagenes(int Consecutivo)
-        {
-            bool existe = false;
-            string ruta = "";
-            string extensionArchivo = "";
-            string Resultado = "";
-
-            DataTable dsImagen = _DbAdministracion.F_GetImagenes(Consecutivo);
-
-
-            if (dsImagen != null)
-            {
-                // validar que haya un resultado
-                if (dsImagen.Rows.Count == 1)
-                {
-                    DataRow fila = dsImagen.Rows[0];
-                    string ContentType = fila[1].ToString();
-                    string FileName = fila[2].ToString();
-                    byte[] Foto = (byte[])fila[3];
-                    // obtener la extension
-                    if (ContentType.Equals("image/tiff"))
-                        extensionArchivo = ".tiff";
-                    else if (ContentType.Equals("image/ief"))
-                        extensionArchivo = ".ief";
-                    else if (ContentType.Equals("image/gif"))
-                        extensionArchivo = ".gif";
-                    else if (ContentType.Equals("image/jpg") | ContentType.Equals("image/jpeg"))
-                        extensionArchivo = ".jpg";
-                    else if (ContentType.Equals("image/png"))
-                        extensionArchivo = ".png";
-
-                    // guardar la imagen en la carpeta
-                    string webRootPath = _webHostEnvironment.WebRootPath;
-                    string contentRootPath = _webHostEnvironment.ContentRootPath;
-
-                    ruta = Path.Combine(webRootPath, "img/Carrusel/") + Consecutivo.ToString() + extensionArchivo;
-                    System.IO.File.WriteAllBytes(ruta, Foto);
-                    existe = true;
-                }
-                else
-                {
-                    existe = false;
-                }
-
-            }
-            // si existe devolverla
-            if (existe)
-            {
-                return "~/img/Carrusel/" + Consecutivo.ToString() + extensionArchivo;
-            }
-            else
-            {
-                return Resultado;
-            }
-        }
+       
+       
 
     }
 }

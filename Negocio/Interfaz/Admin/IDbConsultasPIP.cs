@@ -1,4 +1,5 @@
 ﻿using Comun.Areas.Admin;
+using Comun.Areas.Admin.Comun.Areas.Admin;
 using Comun.General;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,9 @@ namespace Negocio.Interfaz.Admin
         public Task<DtoRespuesta<bool>> ObtenerOudAsync(DtoCredenciales _credenciales);
         public Task<DtoRespuesta<DtoFuncionariosPIP>> ObtenerDatosFuncionarioIdAsync(long identificacion);
         public Task<DtoRespuesta<string>> ObtenerFotoFuncinarioAsync(long identificacion);
+        public  Task<DtoRespuesta<List<DtoCarrusel>>> ObtenerCarruselAsync();
 
-      //  public Task<DtoRespuesta<DtoFuncionariosPIP>> ObtenerCarruselImgAsync();
+
+
     }
 }

@@ -129,8 +129,7 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(
-      Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
         {
             var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
 
@@ -158,11 +157,7 @@ namespace Negocio.Gestion.Irisp1
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>(
-                    sql,
-                    parametros,
-                    commandType: CommandType.Text
-                )).ToList();
+                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>( sql,parametros, commandType: CommandType.Text)).ToList();
 
                 // respuesta final
                 resp.IdRespuesta = lista.Count > 0 ? 1 : 0;
@@ -196,23 +191,18 @@ namespace Negocio.Gestion.Irisp1
             {
                 objCommand.Connection = Conexion;
                 objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris"; // Ajusta si tu SP tiene otro nombre
+                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris"; 
                 objCommand.BindByName = true;
                 Conexion.Open();
 
                 objCommand.Parameters.Clear();
                 objCommand.Parameters.Add("P_Criminalidad_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Criminalidad;
-                // objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.ReturnValue);
+                
                 objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.Output);
 
                 if (Conexion.State == ConnectionState.Open)
                 {
-                    //resultado.Load(await objCommand.ExecuteReaderAsync());
-
-                    //retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoTareasIris>(resultado);
-
-
-
+                  
                     using var reader = await objCommand.ExecuteReaderAsync();
 
                     while (await reader.ReadAsync())
@@ -279,78 +269,7 @@ namespace Negocio.Gestion.Irisp1
             return resp;
         }
 
-        //public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
-        //{
-        //    DataTable resultado = new();
-        //    List<DtoIrispCriminalidad> retorno = new();
-        //    DtoResultado<List<DtoIrispCriminalidad>> resp = new();
-
-        //    using var Conexion = new OracleConnection(_strConexionIris_Disec);
-        //    using var objCommand = new OracleCommand();
-
-        //    try
-        //    {
-        //        objCommand.Connection = Conexion;
-        //        objCommand.CommandType = CommandType.StoredProcedure;
-        //        objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_GetResponsables";
-        //        objCommand.BindByName = true;
-        //        Conexion.Open();
-
-        //        objCommand.Parameters.Clear();
-        //        objCommand.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_CriminalidadId;
-        //        objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-        //        if (Conexion.State == ConnectionState.Open)
-        //        {
-        //            resultado.Load(await objCommand.ExecuteReaderAsync());
-        //            retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoIrispCriminalidad>(resultado);
-
-        //            if (retorno.Count > 0)
-        //            {
-        //                resp.IdRespuesta = 1;
-        //                resp.Mensaje = "Consulta Exitosa";
-        //                resp.Operacion = "P_GetResponsables";
-        //                resp.Data = retorno;
-        //            }
-        //            else
-        //            {
-        //                resp.IdRespuesta = 0;
-        //                resp.Mensaje = "No se encontraron datos";
-        //                resp.Operacion = "0";
-        //            }
-        //        }
-        //        else
-        //        {
-        //            resp.IdRespuesta = 0;
-        //            resp.Mensaje = "Error conexión base de datos";
-        //            resp.Operacion = "0";
-        //        }
-
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Connection.Close();
-        //        _logger.LogError("Creacion de log");
-        //        _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.P_GetResponsables " + e);
-
-        //        resp.IdRespuesta = 0;
-        //        resp.Mensaje = $"{e.Message} - {e.InnerException}";
-        //        resp.Operacion = "0";
-
-        //    }
-        //    finally
-        //    {
-        //        Conexion.Close();
-        //        Conexion.Dispose();
-        //        objCommand.Dispose();
-        //        objCommand.Connection.Close();
-        //        resultado.Dispose();
-        //    }
-        //    return resp;
-        //}
-
+       
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
         {
             var retorno = new List<DtoIrispCriminalidad>();

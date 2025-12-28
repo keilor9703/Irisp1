@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Comun.Areas.Admin.Comun.Areas.Admin;
 
 
 namespace Servicios.Api
@@ -135,8 +136,6 @@ namespace Servicios.Api
             }
         }
 
-
-
         public async Task<DtoRespuesta<string>> ObtenerFotoFuncionarioSeviciosAsync(long identificacion, string token)
         {
             try
@@ -199,6 +198,75 @@ namespace Servicios.Api
                     Estado = false,
                     Mensaje = $"Error general al obtener la imagen: {ex.Message}",
                     Respuesta = null!
+                };
+            }
+        }
+
+
+
+
+        public async Task<DtoRespuesta<List<DtoCarrusel>>> ObtenerCarruselSeviciosAsync(string token)
+        {
+            try
+            {
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+                _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
+
+                // OJO: ya es URL completa según tu ApiGatewayUrl
+                var url = _apiGatewayUrl.GetCarruselImagenesPonal;
+
+                var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new DtoRespuesta<List<DtoCarrusel>>
+                    {
+                        Codigo = EstadoOperacion.Excepcion,
+                        Estado = false,
+                        Mensaje = $"Error al consumir el servicio de Carrusel: {response.StatusCode}",
+                        Respuesta = new List<DtoCarrusel>()
+                    };
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                var resultado = JsonSerializer.Deserialize<DtoRespuesta<List<DtoCarrusel>>>(
+                    json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                if (resultado == null || resultado.Respuesta == null || resultado.Respuesta.Count == 0)
+                {
+                    return new DtoRespuesta<List<DtoCarrusel>>
+                    {
+                        Codigo = EstadoOperacion.Excepcion,
+                        Estado = false,
+                        Mensaje = "El servicio no devolvió imágenes de carrusel.",
+                        Respuesta = new List<DtoCarrusel>()
+                    };
+                }
+
+                return resultado;
+            }
+            catch (JsonException ex)
+            {
+                return new DtoRespuesta<List<DtoCarrusel>>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = $"Error deserializando el carrusel: {ex.Message}",
+                    Respuesta = new List<DtoCarrusel>()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DtoRespuesta<List<DtoCarrusel>>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = $"Error general al obtener el carrusel: {ex.Message}",
+                    Respuesta = new List<DtoCarrusel>()
                 };
             }
         }

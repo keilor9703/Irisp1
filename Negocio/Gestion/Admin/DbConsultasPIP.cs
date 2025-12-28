@@ -1,4 +1,6 @@
 ﻿using Comun.Areas.Admin;
+using Comun.Areas.Admin.Comun.Areas.Admin;
+using Comun.Enumeraciones;
 using Comun.General;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -65,6 +67,24 @@ namespace Negocio.Gestion.Admin
             var token = await ObtenerTokenAsync();
             return await _iPipWebServices.ObtenerFotoFuncionarioSeviciosAsync(identificacion, token.Respuesta);
         }
+
+        public async Task<DtoRespuesta<List<DtoCarrusel>>> ObtenerCarruselAsync()
+        {
+            var token = await ObtenerTokenAsync();
+            if (!token.Estado || string.IsNullOrWhiteSpace(token.Respuesta))
+            {
+                return new DtoRespuesta<List<DtoCarrusel>>
+                {
+                    Codigo = EstadoOperacion.Excepcion,
+                    Estado = false,
+                    Mensaje = "No fue posible obtener token para el carrusel.",
+                    Respuesta = new List<DtoCarrusel>()
+                };
+            }
+
+            return await _iPipWebServices.ObtenerCarruselSeviciosAsync(token.Respuesta);
+        }
+
 
     }
 }
