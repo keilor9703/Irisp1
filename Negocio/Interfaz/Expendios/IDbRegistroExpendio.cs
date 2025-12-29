@@ -19,7 +19,7 @@ namespace Negocio.Interfaz.Expendios
         Task<DtoResultado<List<DtoDominios>>> F_GetEstaciones(string V_Sigla);
         Task<DtoResultado<List<DtoDominios>>> F_GetEspecialidad(string V_Sigla);
 
-        Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId);
+        Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantes(string V_CriminalidadId);
         Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId);
         Task<DtoResultado<List<DtoInfoAdicional>>> F_GetBitacora(string V_CriminalidadId);
         Task<DtoResultado<List<DtoResultadosExpendio>>> F_GetResultados(string V_CriminalidadId);

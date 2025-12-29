@@ -976,7 +976,7 @@ $('#txtDependencia').change(function () {
     const valor1 = $(this).val();
     const valor2 = $('#txtDependencia2').val();
 
-    handleDropdownChange('Irisp1/RegistrosIrisp1/F_GetCuadrantes', {
+    handleDropdownChange('Irisp1/RegistrosIrisp1/P_GetCuadrantes', {
         V_unidadLabora: valor1,
         V_unidadLabora2: valor2
     }, '#ddlCuadrante');
@@ -1405,7 +1405,7 @@ function F_GetDetalleIris(registro) {
                 $('#Modal_DetalleIris').modal("show");
 
                 F_GetIntegrantesIris(registro.CriminalidadId);
-                F_GetUbicacionIris(registro.CriminalidadId);
+                P_GetUbicacionIris(registro.CriminalidadId);
                 F_GetDelitosIris(registro.CriminalidadId);
                 F_GetInfoAdiconalIris(registro.CriminalidadId);
                 F_GetDocumentosIris(registro.CriminalidadId);
@@ -1610,7 +1610,7 @@ function P_InsUbicacionModal() {
         success: function (resp) {
             if (resp.success) {
 
-                F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                P_GetUbicacionIris($("#txtCriminalidadIdModal").val());
                 $('#myModal2').modal('hide');
               
             } else {
@@ -1630,7 +1630,7 @@ function P_InsUbicacionModal() {
 }
 
 
-function F_GetUbicacionIris(CrininalidadId) {
+function P_GetUbicacionIris(CrininalidadId) {
 
 
     $.ajax({
@@ -1657,7 +1657,7 @@ function F_GetUbicacionIris(CrininalidadId) {
 }
 
 
-async function F_GetUbicacionIris(CriminalidadId) {
+async function P_GetUbicacionIris(CriminalidadId) {
 
     try {
 
@@ -1687,7 +1687,7 @@ async function F_GetUbicacionIris(CriminalidadId) {
 
     } catch (error) {
 
-        console.error('Error F_GetUbicacionIris:', error);
+        console.error('Error P_GetUbicacionIris:', error);
         GetGrillaUbicacionIris([]);
 
         Swal.fire(
@@ -2751,7 +2751,7 @@ function P_DelUbicacionIris(UbicacionId) {
 
                     if (result.success) {
 
-                        F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                        P_GetUbicacionIris($("#txtCriminalidadIdModal").val());
 
                         Swal.fire({
                             type: 'success',

@@ -4,14 +4,14 @@ using Comun.General;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Negocio.Gestion.Admin;
-using Negocio.Gestion.Clientes;
+
 using Negocio.Gestion.Expendios;
 using Negocio.Gestion.General;
 using Negocio.Gestion.Integrantes;
 using Negocio.Gestion.Irisp1;
 using Negocio.Gestion.Reportes;
 using Negocio.Interfaz.Admin;
-using Negocio.Interfaz.Clientes;
+
 using Negocio.Interfaz.Expendios;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Integrantes;
@@ -89,8 +89,6 @@ builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
 builder.Services.AddScoped<IDbIrisp1, DbIrisp1>();
 builder.Services.AddScoped<IDbFuncionarios, DbFuncionarios>();
 builder.Services.AddScoped<IDbDominios, DbDominios>();
-builder.Services.AddScoped<IDbClientes, DbClientes>();
-builder.Services.AddScoped<IUnidades, Unidades>();
 builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
 builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
@@ -203,7 +201,7 @@ app.Use(async (context, next) =>
         // Si se perdió session, NO cierres sesión: redirige a una ruta de "SesionExpirada"
         if (menu == null || string.IsNullOrEmpty(ipMaquina))
         {
-            context.Response.Redirect("/Cuenta/SesionExpirada");
+            context.Response.Redirect("/Cuenta/CerrarSesion");
             return;
         }
     }

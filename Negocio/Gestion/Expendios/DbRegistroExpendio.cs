@@ -221,7 +221,7 @@ namespace Negocio.Gestion.Expendios
         }
 
 
-        public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantes(string V_CriminalidadId)
         {
             var respuesta = new DtoResultado<List<DtoIntegrantes>>();
 
@@ -231,7 +231,7 @@ namespace Negocio.Gestion.Expendios
                 {
                     await conn.OpenAsync();
 
-                    using (var cmd = new OracleCommand("PK_EXPENDIOS_IRIS.F_GetIntegrantes", conn))
+                    using (var cmd = new OracleCommand("PK_EXPENDIOS_IRIS.P_GetIntegrantes", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 

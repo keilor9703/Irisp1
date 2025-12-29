@@ -524,7 +524,7 @@ namespace Negocio.Gestion.Admin
                 var resultado = p.Get<int?>("P_Resultado") ?? 0;
                 var mensajeSrv = p.Get<string>("SRV_Message");
 
-                resp.IdRespuesta = resultado;
+                resp.IdRespuesta = 1;
                 resp.Data = resultado;
                 resp.Mensaje = !string.IsNullOrWhiteSpace(mensajeSrv)
                     ? mensajeSrv

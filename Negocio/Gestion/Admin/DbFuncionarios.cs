@@ -1,5 +1,7 @@
 ﻿using Comun.Areas.Admin;
 using Comun.General;
+using Dapper;
+using Dapper.Oracle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Negocio.Gestion.Utilidades;
@@ -14,15 +16,15 @@ namespace Negocio.Gestion.Admin
         #region Propiedades
         private readonly IConfiguration _iConfiguration;
         private readonly string _strConexionTelepol;
-        private readonly ILogger _logger;
+        private readonly ILogger<DbFuncionarios> _logger;
         private readonly IDbConsultasPIP _iDbConsultasPIP;
         #endregion
 
         #region Constructor
-        public DbFuncionarios(IConfiguration iConfiguration,
-                IDbConsultasPIP dbConsultasPIP,
-                                ILogger<DbAdministracion> logger
-                                )
+        public DbFuncionarios(
+            IConfiguration iConfiguration,
+            IDbConsultasPIP dbConsultasPIP,
+            ILogger<DbFuncionarios> logger)
         {
             _iConfiguration = iConfiguration;
             _strConexionTelepol = _iConfiguration.GetConnectionString("strConexionTelepol");
@@ -32,166 +34,128 @@ namespace Negocio.Gestion.Admin
         #endregion
 
         #region Métodos de Consulta
-        public async Task<DtoResultado<DtoUsuario>> F_GetFuncionarios(Int64 V_Identificacion)
-        {
-            DataTable resultado = new();
-            DtoUsuario retorno = new();
-            DtoResultado<DtoUsuario> resp = new();
 
-            var respuestaPIP = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(V_Identificacion);
+        public async Task<DtoResultado<DtoUsuario>> F_GetFuncionarios(long V_Identificacion)
+        {
+            var resp = new DtoResultado<DtoUsuario>
+            {
+                Operacion = "F_GetFuncionarios",
+                Data = new DtoUsuario()
+            };
 
             try
             {
-               
-                if (respuestaPIP.Estado)
+                var respuestaPIP = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(V_Identificacion);
+
+                if (respuestaPIP is null)
                 {
+                    _logger.LogWarning("{Operacion} | Respuesta PIP nula | Identificacion={Identificacion}",
+                        resp.Operacion, V_Identificacion);
 
-                    retorno.SituacionLaboral = respuestaPIP.Respuesta.SituacionLaboral;
-                    retorno.Funcionario = respuestaPIP.Respuesta.Funcionario;
-                    retorno.Correo = respuestaPIP.Respuesta.CorreoElectronico;
-                    retorno.Usuario = respuestaPIP.Respuesta.UsuarioEmpresarial;
-                    retorno.Celular = (long)respuestaPIP.Respuesta.NumeroCelular;
-                    retorno.Dependencia = respuestaPIP.Respuesta.DescripcionDependencia;
-                    retorno.Cargo = respuestaPIP.Respuesta.Cargo;
-                    retorno.Fisica = respuestaPIP.Respuesta.SiglaFisica;
-                    retorno.IdUndeLaborando = respuestaPIP.Respuesta.UndeConsecutivoLaborando;
-
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = "Consulta Exitosa";
-                    resp.Operacion = "F_GetFuncionarios";
-                    resp.Data = retorno;
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "No fue posible consultar el funcionario (respuesta nula).";
+                    return resp;
                 }
-                else
+
+                if (!respuestaPIP.Estado || respuestaPIP.Respuesta is null)
                 {
+                    _logger.LogWarning(
+                        "{Operacion} | PIP no exitoso | Identificacion={Identificacion} | Estado={Estado} | Codigo={Codigo} | Mensaje={Mensaje}",
+                        resp.Operacion, V_Identificacion, respuestaPIP.Estado, respuestaPIP.Codigo, respuestaPIP.Mensaje);
+
                     resp.IdRespuesta = 0;
                     resp.Mensaje = "No se encontraron datos";
-                    resp.Operacion = "0";
+                    return resp;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Error ejecutando F_GetFuncionarios: " + e);
 
-                resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException?.Message}";
-                resp.Operacion = "0";
-            }
-            finally
-            {
-               
-            }
-
-            return resp;
-        }
-
-
-        public async Task<DtoFuncionarios> F_GetDatosAdicionalesPorIdentificacion(decimal identificacion)
-        {
-            var resultado = new DtoFuncionarios();
-
-            using var conexion = new OracleConnection(_strConexionTelepol);
-            using var comando = new OracleCommand();
-            try
-            {
-                comando.Connection = conexion;
-                comando.CommandType = CommandType.Text;
-                comando.CommandText = @"SELECT t.direccion, t.undelaborando, C.NIVEL1
-                                          FROM USR_MATERIALIZADAS.VM_CTR_FUNCIONARIOS_ACTIVOS t
-                                          LEFT JOIN USR_MATERIALIZADAS.Vm_Ctr_Unidades_Dependencia C 
-                                            ON T.UNDELABORANDO = C.CONSECUTIVO  WHERE t.IDENTIFICACION =  :identificacion";
-                comando.Parameters.Add(new OracleParameter("identificacion", OracleDbType.Int64)).Value = identificacion;
-
-                await conexion.OpenAsync();
-
-                using var reader = await comando.ExecuteReaderAsync();
-                if (await reader.ReadAsync())
+                // Mapear respuesta PIP -> DtoUsuario
+                var retorno = new DtoUsuario
                 {
-                    resultado.DIRECCION = reader["DIRECCION"]?.ToString() ?? string.Empty;
-                    resultado.ESTACION = reader["NIVEL1"]?.ToString() ?? string.Empty;
+                    SituacionLaboral = respuestaPIP.Respuesta.SituacionLaboral,
+                    Funcionario = respuestaPIP.Respuesta.Funcionario,
+                    Correo = respuestaPIP.Respuesta.CorreoElectronico,
+                    Usuario = respuestaPIP.Respuesta.UsuarioEmpresarial,
+                    Celular = (long)respuestaPIP.Respuesta.NumeroCelular,
+                    Dependencia = respuestaPIP.Respuesta.DescripcionDependencia,
+                    Cargo = respuestaPIP.Respuesta.Cargo,
+                    Fisica = respuestaPIP.Respuesta.SiglaFisica,
+                    IdUndeLaborando = respuestaPIP.Respuesta.UndeConsecutivoLaborando
+                };
 
-                    if (reader["UNDELABORANDO"] != DBNull.Value && int.TryParse(reader["UNDELABORANDO"].ToString(), out int unidad))
-                    {
-                        resultado.UNDELABORANDO = unidad;
-                    }
-                }
+                resp.Data = retorno;
+                resp.IdRespuesta = 1;
+                resp.Mensaje = "Consulta Exitosa";
+                return resp;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error consultando dirección del funcionario: {ex.Message}");
-            }
-            finally
-            {
-                comando.Dispose();
-                conexion.Close();
-                conexion.Dispose();
-            }
+                _logger.LogError(ex,
+                    "{Operacion} | Error consultando funcionario por PIP | Identificacion={Identificacion}",
+                    resp.Operacion, V_Identificacion);
 
-            return resultado;
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                return resp;
+            }
         }
-
 
         public async Task<DtoResultado<List<DtoFuncionarios>>> F_GetEmpleadoIntel(string V_Busqueda)
         {
-            DataTable resultado = new();
-            List<DtoFuncionarios> retorno = new();
-            DtoResultado<List<DtoFuncionarios>> resp = new();
+            var resp = new DtoResultado<List<DtoFuncionarios>>
+            {
+                Operacion = "F_GetEmpleadoIntel",
+                Data = new List<DtoFuncionarios>()
+            };
 
-            using var Conexion = new OracleConnection(_strConexionTelepol);
-            using var objCommand = new OracleCommand();
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "USR_MATERIALIZADAS.PK_FUNCIONARIOS.F_GetEmpleadoIntel";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionTelepol);
 
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
-                objCommand.Parameters.Add("V_Busqueda", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Busqueda;
+                var parametros = new OracleDynamicParameters();
 
-                if (Conexion.State == ConnectionState.Open)
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
+                // En tu código original el cursor estaba como ReturnValue.
+                // En Dapper.Oracle puedes mapearlo como Output RefCursor con el mismo nombre.
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
-                retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoFuncionarios>(resultado);
+                parametros.Add("V_Busqueda", V_Busqueda, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                if (retorno.Count > 0)
-                {
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = "Consulta Exitosa";
-                    resp.Operacion = "F_GetFuncionarios";
-                    resp.Data = retorno;
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "No se encontraron datos";
-                    resp.Operacion = "0";
-                }
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoFuncionarios>(
+                    "USR_MATERIALIZADAS.PK_FUNCIONARIOS.F_GetEmpleadoIntel",
+                    parametros,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoFuncionarios>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+
+                return resp;
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_FUNCIONARIOS.F_GetEmpleadoIntel " + e);
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | V_Busqueda={V_Busqueda}",
+                    resp.Operacion, V_Busqueda);
 
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                return resp;
             }
-            finally
+            catch (Exception ex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | V_Busqueda={V_Busqueda}",
+                    resp.Operacion, V_Busqueda);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                return resp;
             }
-            return resp;
         }
+
         #endregion
     }
 }

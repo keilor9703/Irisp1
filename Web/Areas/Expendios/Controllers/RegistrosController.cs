@@ -359,9 +359,9 @@ namespace Web.Areas.Expendios.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> F_GetIntegrantes(string V_CriminalidadId)
+        public async Task<IActionResult> P_GetIntegrantes(string V_CriminalidadId)
         {
-            var resultado = await _iDbRegistroExpendio.F_GetIntegrantes(V_CriminalidadId);
+            var resultado = await _iDbRegistroExpendio.P_GetIntegrantes(V_CriminalidadId);
 
             if (resultado.IdRespuesta > 0)
             {

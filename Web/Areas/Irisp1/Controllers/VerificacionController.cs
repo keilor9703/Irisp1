@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Negocio.Gestion.General;
 using Negocio.Gestion.Irisp1;
 using Negocio.Interfaz.Admin;
-using Negocio.Interfaz.Clientes;
+
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Irisp1;
 using Oracle.ManagedDataAccess.Client;
