@@ -1,14 +1,15 @@
-﻿using Comun.Areas.Expendios;
+﻿
 using Comun.Areas.Integrantes;
-using Comun.General; // ← Asegúrate de tener aquí tu clase DtoResultado
+using Comun.General;
 using Dapper;
 using Dapper.Oracle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Negocio.Gestion.Utilidades;
-using Negocio.Interfaz.Integrantes;
 using Oracle.ManagedDataAccess.Client;
+
 using System.Data;
+
+using Negocio.Interfaz.Integrantes;
 
 namespace Negocio.Gestion.Integrantes
 {
@@ -16,350 +17,329 @@ namespace Negocio.Gestion.Integrantes
     {
         private readonly IConfiguration _iConfiguration;
         private readonly string _strConexionIris_Disec;
-        private readonly ILogger _logger;
+        private readonly ILogger<DbRegistroInteg> _logger;
 
-        public DbRegistroInteg(IConfiguration iConfiguration, ILogger<IDbRegistroInteg> logger)
+        public DbRegistroInteg(IConfiguration iConfiguration, ILogger<DbRegistroInteg> logger)
         {
             _iConfiguration = iConfiguration;
             _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }
 
-        
+        // ================================================================
+        // F_GetReincidentes
+        // ================================================================
         public async Task<DtoResultado<List<DtoReincidentes>>> F_GetReincidentes()
         {
-            var resp = new DtoResultado<List<DtoReincidentes>>();
+            var resp = new DtoResultado<List<DtoReincidentes>>
+            {
+                Operacion = "F_GetReincidentes",
+                Data = new List<DtoReincidentes>()
+            };
 
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                var parametros = new OracleDynamicParameters();
-                parametros.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                // Si tu función NO recibe parámetros y retorna un refcursor,
+                // esta forma (bloque PL/SQL) suele funcionar bien.
+                var p = new OracleDynamicParameters();
+                p.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
-                string sql = @"BEGIN 
-                                  :RESULT := PK_INTEGRANTES_IRIS.F_GetReincidentes; 
-                               END;";
+                var sql = @"BEGIN 
+                                :RESULT := PK_INTEGRANTES_IRIS.F_GetReincidentes; 
+                            END;";
 
                 await connection.OpenAsync();
 
                 var lista = (await connection.QueryAsync<DtoReincidentes>(
                     sql,
-                    parametros,
-                    commandType: CommandType.Text
-                )).ToList();
+                    p,
+                    commandType: CommandType.Text,
+                    commandTimeout: 120
+                )).AsList();
 
-                // 🔹 Construcción del DTO de respuesta
-                resp.Data = lista;
-                resp.IdRespuesta = lista.Count > 0 ? 1 : 0;
-                resp.Mensaje = lista.Count > 0 ? "Consulta exitosa" : "No se encontraron registros";
-                resp.Operacion = "F_GetReincidentes";
+                resp.Data = lista ?? new List<DtoReincidentes>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron registros";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoReincidentes>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error ejecutando PK_INTEGRANTES_IRIS.F_GetReincidentes");
-
+                _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error consultando reincidentes: " + ex.Message;
                 resp.Data = new List<DtoReincidentes>();
-                resp.Operacion = "F_GetReincidentes";
             }
 
             return resp;
         }
 
-
-
-
-
-        public async Task<DtoResultado<List<DtoReincidentes>>> F_GetReincidentesPorId(Int64 V_Identificacion)
+        // ================================================================
+        // F_GetReincidentesPorId
+        // ================================================================
+        public async Task<DtoResultado<List<DtoReincidentes>>> F_GetReincidentesPorId(long V_Identificacion)
         {
-            DataTable resultado = new();
-            List<DtoReincidentes> retorno = new();
-            DtoResultado<List<DtoReincidentes>> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<List<DtoReincidentes>>
+            {
+                Operacion = "F_GetReincidentesPorId",
+                Data = new List<DtoReincidentes>()
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_INTEGRANTES_IRIS.F_GetReincidentesPorId";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add("P_Identificacion", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Identificacion;
-                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+                var p = new OracleDynamicParameters();
+                // En tu código viejo lo mandabas Varchar2. Si en BD es number, cambia a Int64.
+                p.Add("P_Identificacion", V_Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
 
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
-                    retorno = UtilidadesDeMapeo.ConvertirDataTableAListaDto<DtoReincidentes>(resultado);
+                // Cursor salida (si tu función exige ReturnValue, dime y lo cambiamos a ReturnValue)
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
-                    if (retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetIntegranteAll";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
-                }
+                await connection.OpenAsync();
 
+                var lista = (await connection.QueryAsync<DtoReincidentes>(
+                    "PK_INTEGRANTES_IRIS.F_GetReincidentesPorId",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoReincidentes>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_EXPENDIOS_IRIS.F_GetIntegranteAll " + e);
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | Identificacion={Identificacion}",
+                    resp.Operacion, V_Identificacion);
 
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoReincidentes>();
             }
-            finally
+            catch (Exception ex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | Identificacion={Identificacion}",
+                    resp.Operacion, V_Identificacion);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoReincidentes>();
             }
+
             return resp;
         }
 
-
-
-
+        // ================================================================
+        // P_InsOrUpdReincidente
+        // ================================================================
         public async Task<DtoResultado<string>> P_InsOrUpdReincidente(DtoReincidentes Obj_Reincidente, string usuario, string maquina)
         {
-            DtoResultado<string> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<string>
+            {
+                Operacion = "P_InsOrUpdReincidente",
+                Data = string.Empty
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_INTEGRANTES_IRIS.P_InsOrUpdReincidente";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
 
+                p.Add("P_IDENTIFICACION", Obj_Reincidente.Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
+                p.Add("P_ALIAS", Obj_Reincidente.Alias, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_NOMBRE", Obj_Reincidente.Nombre, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_APELLIDO", Obj_Reincidente.Apellido, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_OBSERVACION", Obj_Reincidente.Observacion, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ID_TIPO", Obj_Reincidente.IdTipo, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                // Parámetros de entrada
-                objCommand.Parameters.Add("P_IDENTIFICACION", OracleDbType.Int32).Value = Obj_Reincidente.Identificacion;
-                objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Reincidente.Alias;
-                objCommand.Parameters.Add("P_NOMBRE", OracleDbType.Varchar2).Value = Obj_Reincidente.Nombre;
-                objCommand.Parameters.Add("P_APELLIDO", OracleDbType.Varchar2).Value = Obj_Reincidente.Apellido;
-                objCommand.Parameters.Add("P_OBSERVACION", OracleDbType.Varchar2).Value = Obj_Reincidente.Observacion;
-                objCommand.Parameters.Add("P_ID_TIPO", OracleDbType.Varchar2).Value = Obj_Reincidente.IdTipo;
+                p.Add("P_USUARIO", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA", OracleDbType.Varchar2).Value = maquina;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                // Parámetros de salida
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.OpenAsync();
 
-                if (Conexion.State == ConnectionState.Open)
-                    await objCommand.ExecuteNonQueryAsync();
+                await connection.ExecuteAsync(
+                    "PK_INTEGRANTES_IRIS.P_InsOrUpdReincidente",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value?.ToString() ?? "0");
-                string mensaje = objCommand.Parameters["SRV_Message"].Value?.ToString() ?? "";
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
-                if (resultado > 0)
-                {
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = mensaje;
-                    resp.Data = "OK";
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = mensaje;
-                    resp.Data = "";
-                }
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? "OK" : "";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                _logger.LogError(e, "Error ejecutando PK_INTEGRANTES_IRIS.P_InsOrUpdReincidente");
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | Identificacion={Identificacion}",
+                    resp.Operacion, Obj_Reincidente?.Identificacion);
+
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"Error: {e.Message}";
+                resp.Mensaje = $"OracleException: {oex.Message}";
                 resp.Data = "";
             }
-            finally
+            catch (Exception ex)
             {
-                if (Conexion.State == ConnectionState.Open)
-                    Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | Identificacion={Identificacion}",
+                    resp.Operacion, Obj_Reincidente?.Identificacion);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = "";
             }
 
             return resp;
         }
 
-
-
-
-
+        // ================================================================
+        // P_UpdReincidente
+        // ================================================================
         public async Task<DtoResultado<string>> P_UpdReincidente(DtoReincidentes Obj_Reincidente, string usuario, string maquina)
         {
-            DtoResultado<string> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<string>
+            {
+                Operacion = "P_UpdReincidente",
+                Data = string.Empty
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_INTEGRANTES_IRIS.P_UpdReincidente";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
 
+                p.Add("P_REINCIDENTE_ID", Obj_Reincidente.ReincidenteId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ALIAS", Obj_Reincidente.Alias, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_OBSERVACION", Obj_Reincidente.Observacion, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ID_TIPO", Obj_Reincidente.IdTipo, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                // Parámetros de entrada
-               
-                objCommand.Parameters.Add("P_REINCIDENTE_ID", OracleDbType.Varchar2).Value = Obj_Reincidente.ReincidenteId;
-                objCommand.Parameters.Add("P_ALIAS", OracleDbType.Varchar2).Value = Obj_Reincidente.Alias;
-                
-                
-                objCommand.Parameters.Add("P_OBSERVACION", OracleDbType.Varchar2).Value = Obj_Reincidente.Observacion;
-                objCommand.Parameters.Add("P_ID_TIPO", OracleDbType.Varchar2).Value = Obj_Reincidente.IdTipo;
+                p.Add("P_USUARIO", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA", OracleDbType.Varchar2).Value = maquina;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                // Parámetros de salida
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.OpenAsync();
 
-                if (Conexion.State == ConnectionState.Open)
-                    await objCommand.ExecuteNonQueryAsync();
+                await connection.ExecuteAsync(
+                    "PK_INTEGRANTES_IRIS.P_UpdReincidente",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value?.ToString() ?? "0");
-                string mensaje = objCommand.Parameters["SRV_Message"].Value?.ToString() ?? "";
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
-                if (resultado > 0)
-                {
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = mensaje;
-                    resp.Data = "OK";
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = mensaje;
-                    resp.Data = "";
-                }
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? "OK" : "";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                _logger.LogError(e, "Error ejecutando PK_INTEGRANTES_IRIS.P_UpdReincidente");
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | ReincidenteId={ReincidenteId}",
+                    resp.Operacion, Obj_Reincidente?.ReincidenteId);
+
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"Error: {e.Message}";
+                resp.Mensaje = $"OracleException: {oex.Message}";
                 resp.Data = "";
             }
-            finally
+            catch (Exception ex)
             {
-                if (Conexion.State == ConnectionState.Open)
-                    Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | ReincidenteId={ReincidenteId}",
+                    resp.Operacion, Obj_Reincidente?.ReincidenteId);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = "";
             }
 
             return resp;
         }
 
-
-
+        // ================================================================
+        // P_DellReincidente
+        // ================================================================
         public async Task<DtoResultado<string>> P_DellReincidente(DtoReincidentes Obj_Reincidente, string usuario, string maquina)
         {
-            DtoResultado<string> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec); // Usa tu cadena correcta
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<string>
+            {
+                Operacion = "P_DellReincidente",
+                Data = string.Empty
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_INTEGRANTES_IRIS.P_DellReincidente";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
 
+                p.Add("P_REINCIDENTE_ID", Obj_Reincidente.ReincidenteId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_USUARIO", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                // Parámetros de entrada
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                objCommand.Parameters.Add("P_REINCIDENTE_ID", OracleDbType.Varchar2).Value = Obj_Reincidente.ReincidenteId;
+                await connection.OpenAsync();
 
-                objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA", OracleDbType.Varchar2).Value = maquina;
+                await connection.ExecuteAsync(
+                    "PK_INTEGRANTES_IRIS.P_DellReincidente",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                // Parámetros de salida
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
-                if (Conexion.State == ConnectionState.Open)
-                    await objCommand.ExecuteNonQueryAsync();
-
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value?.ToString() ?? "0");
-                string mensaje = objCommand.Parameters["SRV_Message"].Value?.ToString() ?? "";
-
-                if (resultado > 0)
-                {
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = mensaje;
-                    resp.Data = "OK";
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = mensaje;
-                    resp.Data = "";
-                }
+                resp.IdRespuesta = resultado > 0 ? 1 : 0;
+                resp.Mensaje = mensaje;
+                resp.Data = resultado > 0 ? "OK" : "";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                _logger.LogError(e, "Error ejecutando PK_INTEGRANTES_IRIS.P_DellReincidente");
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | ReincidenteId={ReincidenteId}",
+                    resp.Operacion, Obj_Reincidente?.ReincidenteId);
+
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"Error: {e.Message}";
+                resp.Mensaje = $"OracleException: {oex.Message}";
                 resp.Data = "";
             }
-            finally
+            catch (Exception ex)
             {
-                if (Conexion.State == ConnectionState.Open)
-                    Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | ReincidenteId={ReincidenteId}",
+                    resp.Operacion, Obj_Reincidente?.ReincidenteId);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = "";
             }
 
             return resp;
         }
-
-
     }
 }

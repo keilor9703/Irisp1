@@ -1,25 +1,16 @@
 ﻿using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
-using Comun.Areas.Irisp1;
 using Comun.General;
 using Dapper;
 using Dapper.Oracle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging;
-using Negocio.Gestion.Utilidades;
 using Negocio.Interfaz.Irisp1;
 using Oracle.ManagedDataAccess.Client;
-using Oracle.ManagedDataAccess.Client;
-using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data;
-using System.Diagnostics;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Negocio.Gestion.Irisp1
@@ -31,11 +22,11 @@ namespace Negocio.Gestion.Irisp1
         private readonly string _strConexionIris_Test;
         private readonly string _strConexionTelepol;
         private readonly string _strConexionIris_Disec;
-        private readonly ILogger _logger;
+        private readonly ILogger<DbSeguimientoIris> _logger;
         #endregion
 
         #region Constructor
-        public DbSeguimientoIris(IConfiguration iConfiguration, ILogger<IDbSeguimientoIris> logger)
+        public DbSeguimientoIris(IConfiguration iConfiguration, ILogger<DbSeguimientoIris> logger)
         {
             _iConfiguration = iConfiguration;
             _strConexionIris_Test = _iConfiguration.GetConnectionString("strConexionIris_Test");
@@ -45,812 +36,714 @@ namespace Negocio.Gestion.Irisp1
         }
         #endregion
 
-
-
         #region Métodos de Consulta
 
+        // ================================================================
+        // F_GetAniosIrisP1
+        // ================================================================
         public async Task<DtoResultado<List<SeguimientoIrisDto>>> F_GetAniosIrisP1()
         {
-            List<SeguimientoIrisDto> Retorno = new();
-            DtoResultado<List<SeguimientoIrisDto>> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
-
-            try
+            var resp = new DtoResultado<List<SeguimientoIrisDto>>
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_CONSULTA_IRISP.F_GetAniosIrisP1";
-                objCommand.BindByName = true;
-                Conexion.Open();
-
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
-
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    var reader = await objCommand.ExecuteReaderAsync();
-                    while (reader.Read())
-                    {
-                        var domi = new SeguimientoIrisDto()
-                        {
-                            AnoIrisp1 = reader.GetInt32(0),
-                        };
-                        Retorno.Add(domi);
-                    }
-
-                    if (Retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_AniosIris";
-                        resp.Data = Retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encuentran registros en base de datos";
-                        resp.Operacion = "0";
-                    }
-
-                    reader.Close();
-                    Conexion.Close();
-                    Conexion.Dispose();
-                    objCommand.Connection.Close();
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
-                }
-            }
-            catch (Exception e)
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_CONSULTA_IRISP.F_AniosIris " + e);
-
-                resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-            }
-            return resp;
-        }
-
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolesUsuario, Int64 CodigoUnidad)
-        {
-            var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
+                Operacion = "F_GetAniosIrisP1",
+                Data = new List<SeguimientoIrisDto>()
+            };
 
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                var parametros = new OracleDynamicParameters();
+                var p = new OracleDynamicParameters();
+                p.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
-                parametros.Add("P_Anio", V_Anio, OracleMappingType.Int32, ParameterDirection.Input);
-                parametros.Add("P_Roles", RolesUsuario, OracleMappingType.Varchar2, ParameterDirection.Input);
-                parametros.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
-
-                // Cursor de salida
-                parametros.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
-
-                string sql = @"
-                    BEGIN
-                        :RESULT := PK_CONSULTA_IRISP.F_GetInfoGrillas(
-                            :P_Anio,
-                            :P_Roles,
-                            :P_CodigoUnidad
-                        );
-                    END;";
+                var sql = @"BEGIN 
+                                :RESULT := PK_CONSULTA_IRISP.F_GetAniosIrisP1; 
+                            END;";
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>( sql,parametros, commandType: CommandType.Text)).ToList();
+                var lista = (await connection.QueryAsync<SeguimientoIrisDto>(
+                    sql,
+                    p,
+                    commandType: CommandType.Text,
+                    commandTimeout: 120
+                )).AsList();
 
-                // respuesta final
-                resp.IdRespuesta = lista.Count > 0 ? 1 : 0;
-                resp.Mensaje = lista.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
-                resp.Data = lista;
-                resp.Operacion = "F_GetInfoGrillas";
+                resp.Data = lista ?? new List<SeguimientoIrisDto>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encuentran registros en base de datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<SeguimientoIrisDto>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error ejecutando PK_CONSULTA_IRISP.F_GetInfoGrillas");
+                _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = ex.Message;
-                resp.Data = null;
+                resp.Data = new List<SeguimientoIrisDto>();
             }
 
             return resp;
         }
 
-
-
-        public async Task<DtoResultado<List<DtoTareasIris>>> F_GetResponsablesTareasIris(string V_Criminalidad)
-         {
-            DataTable resultado = new();
-            List<DtoTareasIris> retorno = new();
-            DtoResultado<List<DtoTareasIris>> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
-
-            try
-            {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris"; 
-                objCommand.BindByName = true;
-                Conexion.Open();
-
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add("P_Criminalidad_id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Criminalidad;
-                
-                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor, ParameterDirection.Output);
-
-                if (Conexion.State == ConnectionState.Open)
-                {
-                  
-                    using var reader = await objCommand.ExecuteReaderAsync();
-
-                    while (await reader.ReadAsync())
-                    {
-                        var dto = new DtoTareasIris
-                        {
-                            ResponValidacionId = reader["IDRESPONSABLE"]?.ToString(),
-                            IdUnidadResponsable = reader["IDUNIDADRESPONSABLE"]?.ToString(),
-                           // DescUnidad = reader["DESCUNIDAD"]?.ToString(),
-                            UnidadCompleta = reader["UNIDADCOMPLETA"]?.ToString(),
-                            Aceptada = reader["ACEPTADA"]?.ToString(),
-                        };
-
-                        // 👇 Aquí manejamos correctamente el CLOB:
-                        if (reader["SEGUIMIENTO"] is OracleClob clob && !clob.IsNull)
-                            dto.Seguimiento = clob.Value; // ← Extrae el texto completo del CLOB
-                        else
-                            dto.Seguimiento = reader["SEGUIMIENTO"]?.ToString();
-
-                        retorno.Add(dto);
-                    }
-
-                    if (retorno.Count > 0)
-                    {
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetResponsablesTareasIris";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                    }
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "Error conexión base de datos";
-                    resp.Operacion = "0";
-                }
-            }
-            catch (Exception e)
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris " + e);
-
-                resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
-            }
-            return resp;
-        }
-
-       
-        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
+        // ================================================================
+        // F_GetInfoGrillas
+        // ================================================================
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(int V_Anio, string RolesUsuario, long CodigoUnidad)
         {
-            var retorno = new List<DtoIrispCriminalidad>();
-            var resp = new DtoResultado<List<DtoIrispCriminalidad>>();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand("PK_SEGUIMIENTO_IRIS.P_GetResponsables", Conexion)
+            var resp = new DtoResultado<List<DtoIrispCriminalidad>>
             {
-                CommandType = CommandType.StoredProcedure,
-                BindByName = true
+                Operacion = "F_GetInfoGrillas",
+                Data = new List<DtoIrispCriminalidad>()
             };
 
             try
             {
-                objCommand.Parameters.Add("P_Criminalidad_Id", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_CriminalidadId;
-                objCommand.Parameters.Add("RETURN_VALUE", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                await Conexion.OpenAsync();
+                var p = new OracleDynamicParameters();
+                p.Add("P_Anio", V_Anio, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_Roles", RolesUsuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+                p.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
-                using var reader = await objCommand.ExecuteReaderAsync();
+                var sql = @"
+                            BEGIN
+                                :RESULT := PK_CONSULTA_IRISP.F_GetInfoGrillas(
+                                    :P_Anio,
+                                    :P_Roles,
+                                    :P_CodigoUnidad
+                                );
+                            END;";
 
-                while (await reader.ReadAsync())
-                {
-                    var dto = new DtoIrispCriminalidad
-                    {
-                        FuncionarioResponsable = reader["FuncionarioResponsable"] != DBNull.Value
-                            ? reader["FuncionarioResponsable"].ToString()
-                            : string.Empty,
+                await connection.OpenAsync();
 
-                        UnidadFuncionarioResponsable = reader["UnidadFuncionarioResponsable"] != DBNull.Value
-                            ? reader["UnidadFuncionarioResponsable"].ToString()
-                            : string.Empty
-                    };
+                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>(
+                    sql,
+                    p,
+                    commandType: CommandType.Text,
+                    commandTimeout: 120
+                )).AsList();
 
-                    retorno.Add(dto);
-                }
-
-                if (retorno.Count > 0)
-                {
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = "Consulta Exitosa";
-                    resp.Operacion = "P_GetResponsables";
-                    resp.Data = retorno;
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "No se encontraron datos";
-                    resp.Operacion = "0";
-                }
+                resp.Data = lista ?? new List<DtoIrispCriminalidad>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                _logger.LogError("Error ejecutando PK_SEGUIMIENTO_IRIS.P_GetResponsables", e);
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | Anio={Anio} Roles={Roles} Unidad={Unidad}",
+                    resp.Operacion, V_Anio, RolesUsuario, CodigoUnidad);
+
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoIrispCriminalidad>();
             }
-            finally
+            catch (Exception ex)
             {
-                if (Conexion.State == ConnectionState.Open)
-                    await Conexion.CloseAsync();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | Anio={Anio} Roles={Roles} Unidad={Unidad}",
+                    resp.Operacion, V_Anio, RolesUsuario, CodigoUnidad);
 
-                objCommand.Dispose();
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoIrispCriminalidad>();
             }
 
             return resp;
         }
 
-
-        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesSeguimiento()
+        // ================================================================
+        // F_GetResponsablesTareasIris  (manejo CLOB)
+        // ================================================================
+        public async Task<DtoResultado<List<DtoTareasIris>>> F_GetResponsablesTareasIris(string V_Criminalidad)
         {
-            DataTable resultado = new();
-            List<DtoDominios> retorno = new();
-            DtoResultado<List<DtoDominios>> resp = new();
+            var resp = new DtoResultado<List<DtoTareasIris>>
+            {
+                Operacion = "F_GetResponsablesTareasIris",
+                Data = new List<DtoTareasIris>()
+            };
 
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
+                var p = new OracleDynamicParameters();
+                p.Add("P_Criminalidad_id", V_Criminalidad, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+
               
 
+                await connection.OpenAsync();
 
+                
+                var lista = (await connection.QueryAsync<DtoTareasIris>(
+                    "PK_SEGUIMIENTO_IRIS.F_GetResponsablesTareasIris",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
 
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
-
-                    if (resultado.Rows.Count > 0)
-                    {
-                        foreach (DataRow fila in resultado.Rows)
-                        {
-                            retorno.Add(new DtoDominios
-                            {
-                                SIGLA = fila["SIGLA"].ToString(),
-                                DESCRIPCION_DEPENDENCIA = fila["DESCRIPCION_DEPENDENCIA"].ToString()
-                            });
-                        }
-
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetDominios";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                        resp.Data = new List<DtoDominios>(); // 👈💥 evita el NullReference
-                    }
-
-                    Conexion.Close();
-                    Conexion.Dispose();
-                    objCommand.Connection.Close();
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "No se pudo realizar la conexión a la base de datos";
-                    resp.Operacion = "0";
-                }
-
+                resp.Data = lista ?? new List<DtoTareasIris>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento " + e);
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | Criminalidad={Criminalidad}",
+                    resp.Operacion, V_Criminalidad);
 
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoTareasIris>();
             }
-            finally
+            catch (Exception ex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | Criminalidad={Criminalidad}",
+                    resp.Operacion, V_Criminalidad);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoTareasIris>();
             }
+
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesPorSigla(string V_Sigla)
+        // ================================================================
+        // F_GetResponsables 
+        // ================================================================
+        public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetResponsables(string V_CriminalidadId)
         {
-            DataTable resultado = new();
-            List<DtoDominios> retorno = new();
-            DtoResultado<List<DtoDominios>> resp = new();
+            var resp = new DtoResultado<List<DtoIrispCriminalidad>>
+            {
+                Operacion = "P_GetResponsables",
+                Data = new List<DtoIrispCriminalidad>()
+            };
 
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.F_GetUnidadesPorSigla";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
-                objCommand.Parameters.Add(new OracleParameter("RETURN_VALUE", OracleDbType.RefCursor)).Direction = ParameterDirection.ReturnValue;
+                var p = new OracleDynamicParameters();
+                p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
-                objCommand.Parameters.Add("p_sigla", OracleDbType.Varchar2, ParameterDirection.Input).Value = V_Sigla;
+           
 
-                if (Conexion.State == ConnectionState.Open)
-                {
-                    resultado.Load(await objCommand.ExecuteReaderAsync());
+                await connection.OpenAsync();
 
-                    if (resultado.Rows.Count > 0)
-                    {
-                        foreach (DataRow fila in resultado.Rows)
-                        {
-                            retorno.Add(new DtoDominios
-                            {
-                                CONSECUTIVO = fila["CONSECUTIVO"].ToString(),
-                                DESCRIPCION_DEPENDENCIA = fila["DESCRIPCION_DEPENDENCIA"].ToString(),
-                                SIGLA = fila["SIGLA_PAPA"].ToString()
-                            });
-                        }
+                var lista = (await connection.QueryAsync<DtoIrispCriminalidad>(
+                    "PK_SEGUIMIENTO_IRIS.P_GetResponsables",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
 
-                        resp.IdRespuesta = 1;
-                        resp.Mensaje = "Consulta Exitosa";
-                        resp.Operacion = "F_GetDominios";
-                        resp.Data = retorno;
-                    }
-                    else
-                    {
-                        resp.IdRespuesta = 0;
-                        resp.Mensaje = "No se encontraron datos";
-                        resp.Operacion = "0";
-                        resp.Data = new List<DtoDominios>(); // 👈💥 evita el NullReference
-                    }
-
-                    Conexion.Close();
-                    Conexion.Dispose();
-                    objCommand.Connection.Close();
-                }
-                else
-                {
-                    resp.IdRespuesta = 0;
-                    resp.Mensaje = "No se pudo realizar la conexión a la base de datos";
-                    resp.Operacion = "0";
-                }
-
+                resp.Data = lista ?? new List<DtoIrispCriminalidad>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Connection.Close();
-                _logger.LogError("Creacion de log");
-                _logger.LogWarning("Error Ejecutando PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento " + e);
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | Criminalidad={Criminalidad}",
+                    resp.Operacion, V_CriminalidadId);
 
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"{e.Message} - {e.InnerException}";
-                resp.Operacion = "0";
-
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoIrispCriminalidad>();
             }
-            finally
+            catch (Exception ex)
             {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
-                objCommand.Connection.Close();
-                resultado.Dispose();
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | Criminalidad={Criminalidad}",
+                    resp.Operacion, V_CriminalidadId);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoIrispCriminalidad>();
             }
+
+            return resp;
+        }
+
+        // ================================================================
+        // F_GetUnidadesSeguimiento
+        // ================================================================
+        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesSeguimiento()
+        {
+            var resp = new DtoResultado<List<DtoDominios>>
+            {
+                Operacion = "F_GetUnidadesSeguimiento",
+                Data = new List<DtoDominios>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+
+                // 👇 IMPORTANTE: una FUNCTION se lee por RETURN VALUE (ReturnValue)
+                // El nombre puede ser "RETURN_VALUE" o el que tú quieras,
+                // lo clave es direction: ReturnValue
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                var lista = (await connection.QueryAsync<DtoDominios>(
+                    "PK_SEGUIMIENTO_IRIS.f_GetUnidadesSeguimiento",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).ToList();
+
+                resp.Data = lista ?? new List<DtoDominios>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoDominios>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoDominios>();
+            }
+
             return resp;
         }
 
 
+        // ================================================================
+        // F_GetUnidadesPorSigla
+        // ================================================================
+        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidadesPorSigla(string V_Sigla)
+        {
+            var resp = new DtoResultado<List<DtoDominios>>
+            {
+                Operacion = "F_GetUnidadesPorSigla",
+                Data = new List<DtoDominios>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("p_sigla", V_Sigla, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoDominios>(
+                    "PK_SEGUIMIENTO_IRIS.F_GetUnidadesPorSigla",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoDominios>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | Sigla={Sigla}",
+                    resp.Operacion, V_Sigla);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoDominios>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | Sigla={Sigla}",
+                    resp.Operacion, V_Sigla);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoDominios>();
+            }
+
+            return resp;
+        }
 
         #endregion
 
+        #region Métodos de Actualización / Inserción / Eliminación
 
-
-        public async Task<DtoResultado<Int32>> P_InsResponsable(DtoIrispCriminalidad Obj_Responsable, string usuario, string maquina)
+        // ================================================================
+        // P_InsResponsable
+        // ================================================================
+        public async Task<DtoResultado<int>> P_InsResponsable(DtoIrispCriminalidad Obj_Responsable, string usuario, string maquina)
         {
-            DtoResultado<Int32> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<int>
+            {
+                Operacion = "P_InsResponsable",
+                Data = 0
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_InsResponsable";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
+                p.Add("P_CRIMINALIDAD_ID", Obj_Responsable.CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ID_UNIDAD", Obj_Responsable.IdUnidad ?? 0, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_TAREA", Obj_Responsable.IdTareai ?? 1, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_OBSERVACION", Obj_Responsable.Observacion, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_USUARIO", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = Obj_Responsable.CriminalidadId;
-                objCommand.Parameters.Add("P_ID_UNIDAD", OracleDbType.Int32).Value = Obj_Responsable.IdUnidad ?? 0;
-                objCommand.Parameters.Add("P_TAREA", OracleDbType.Int32).Value = Obj_Responsable.IdTareai ?? 1;
-                objCommand.Parameters.Add("P_OBSERVACION", OracleDbType.Varchar2).Value = Obj_Responsable.Observacion;
-                objCommand.Parameters.Add("P_USUARIO", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA", OracleDbType.Varchar2).Value = maquina;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.OpenAsync();
 
-                await objCommand.ExecuteNonQueryAsync();
+                await connection.ExecuteAsync(
+                    "PK_SEGUIMIENTO_IRIS.P_InsResponsable",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
-                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
                 resp.IdRespuesta = resultado > 0 ? 1 : 0;
                 resp.Mensaje = mensaje;
                 resp.Data = resultado > 0 ? 1 : 0;
-
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | Criminalidad={Criminalidad}", resp.Operacion, Obj_Responsable?.CriminalidadId);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = 0;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | Criminalidad={Criminalidad}", resp.Operacion, Obj_Responsable?.CriminalidadId);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"Error: {ex.Message}";
                 resp.Data = 0;
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
             }
 
             return resp;
         }
 
-
-
-        public async Task<DtoResultado<Int32>> P_UpdUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina)
+        // ================================================================
+        // P_UpdUnidadResponsable
+        // ================================================================
+        public async Task<DtoResultado<int>> P_UpdUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina)
         {
-            DtoResultado<Int32> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<int>
+            {
+                Operacion = "P_UpdUnidadResponsable",
+                Data = 0
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_UpdUnidadResponsable";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
+                p.Add("P_RESPON_VALIDACION_ID", obj_responsableUpd.IdResponsable, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ID_UNIDAD_NUEVA", obj_responsableUpd.IdUnidad ?? 0, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_IDENTIFICACION_MODIFICA", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA_MODIFICA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("P_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_responsableUpd.IdResponsable;
-                objCommand.Parameters.Add("P_ID_UNIDAD_NUEVA", OracleDbType.Int32).Value = obj_responsableUpd.IdUnidad ?? 0;
-               //objCommand.Parameters.Add("P_ID_DEPENDENCIA_NUEVA", OracleDbType.Int32).Value = obj_responsableUpd.IdDependencia ?? 0;
-               
-                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.OpenAsync();
 
-                await objCommand.ExecuteNonQueryAsync();
+                await connection.ExecuteAsync(
+                    "PK_SEGUIMIENTO_IRIS.P_UpdUnidadResponsable",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
-                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
                 resp.IdRespuesta = resultado > 0 ? 1 : 0;
                 resp.Mensaje = mensaje;
                 resp.Data = resultado > 0 ? 1 : 0;
-
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | ResponId={ResponId}", resp.Operacion, obj_responsableUpd?.IdResponsable);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = 0;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | ResponId={ResponId}", resp.Operacion, obj_responsableUpd?.IdResponsable);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"Error: {ex.Message}";
                 resp.Data = 0;
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
             }
 
             return resp;
         }
 
-
-
+        // ================================================================
+        // P_FinalizarIris
+        // ================================================================
         public async Task<DtoResultado<string>> P_FinalizarIris(DtoIrispCriminalidad datos, string usuario, string maquina)
         {
-            DtoResultado<string> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<string>
+            {
+                Operacion = "P_FinalizarIris",
+                Data = string.Empty
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_FinalizarIris";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
+                p.Add("P_CRIMINALIDAD_ID", datos.CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_IDENTIFICACION_MODIFICA", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA_MODIFICA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_JUSTIFICACION", datos.Justificacion, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                // Parámetros de entrada
-                objCommand.Parameters.Add("P_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = datos.CriminalidadId;
-              //  objCommand.Parameters.Add("P_ID_ESTADO", OracleDbType.Int32).Value = datos.IdEstado;
-                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
-                objCommand.Parameters.Add("P_JUSTIFICACION", OracleDbType.Varchar2).Value = datos.Justificacion;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
-                // Parámetros de salida
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+                await connection.OpenAsync();
 
-                if (Conexion.State == ConnectionState.Open)
-                    await objCommand.ExecuteNonQueryAsync();
+                await connection.ExecuteAsync(
+                    "PK_SEGUIMIENTO_IRIS.P_FinalizarIris",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value?.ToString() ?? "0");
-                string mensaje = objCommand.Parameters["SRV_Message"].Value?.ToString() ?? "";
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
                 resp.IdRespuesta = resultado > 0 ? 1 : 0;
                 resp.Mensaje = mensaje;
                 resp.Data = resultado > 0 ? "OK" : "";
             }
-            catch (Exception e)
+            catch (OracleException oex)
             {
-                _logger.LogError(e, "Error ejecutando PK_SEGUIMIENTO_IRIS.P_FinalizarIris");
+                _logger.LogError(oex, "OracleException en {Operacion} | Criminalidad={Criminalidad}", resp.Operacion, datos?.CriminalidadId);
                 resp.IdRespuesta = 0;
-                resp.Mensaje = $"Error: {e.Message}";
+                resp.Mensaje = $"OracleException: {oex.Message}";
                 resp.Data = "";
             }
-            finally
+            catch (Exception ex)
             {
-                if (Conexion.State == ConnectionState.Open)
-                    Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
+                _logger.LogError(ex, "Error Dapper en {Operacion} | Criminalidad={Criminalidad}", resp.Operacion, datos?.CriminalidadId);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"Error: {ex.Message}";
+                resp.Data = "";
             }
 
             return resp;
         }
 
-
-
-
-
-        public async Task<DtoResultado<Int32>> P_DelUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina)
+        // ================================================================
+        // P_DelUnidadResponsable
+        // ================================================================
+        public async Task<DtoResultado<int>> P_DelUnidadResponsable(DtoIrispCriminalidad obj_responsableUpd, string usuario, string maquina)
         {
-            DtoResultado<Int32> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<int>
+            {
+                Operacion = "P_DelUnidadResponsable",
+                Data = 0
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_DelUnidadResponsable";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
+                p.Add("P_RESPON_VALIDACION_ID", obj_responsableUpd.IdResponsable, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ID_UNIDAD", obj_responsableUpd.IdUnidad ?? 0, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_IDENTIFICACION_MODIFICA", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA_MODIFICA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("P_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_responsableUpd.IdResponsable;
-                objCommand.Parameters.Add("P_ID_UNIDAD", OracleDbType.Int32).Value = obj_responsableUpd.IdUnidad ?? 0;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
+                await connection.OpenAsync();
 
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.ExecuteAsync(
+                    "PK_SEGUIMIENTO_IRIS.P_DelUnidadResponsable",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                await objCommand.ExecuteNonQueryAsync();
-
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
-                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
                 resp.IdRespuesta = resultado > 0 ? 1 : 0;
                 resp.Mensaje = mensaje;
                 resp.Data = resultado > 0 ? 1 : 0;
-
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | ResponId={ResponId}", resp.Operacion, obj_responsableUpd?.IdResponsable);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = 0;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | ResponId={ResponId}", resp.Operacion, obj_responsableUpd?.IdResponsable);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"Error: {ex.Message}";
                 resp.Data = 0;
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
             }
 
             return resp;
         }
 
-
-
-
-        public async Task<DtoResultado<Int32>> P_EvalTarea(DtoIrispCriminalidad obj_EvalTarea, string usuario, string maquina)
+        // ================================================================
+        // P_EvalTarea
+        // ================================================================
+        public async Task<DtoResultado<int>> P_EvalTarea(DtoIrispCriminalidad obj_EvalTarea, string usuario, string maquina)
         {
-            DtoResultado<Int32> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<int>
+            {
+                Operacion = "P_EvalTarea",
+                Data = 0
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_EvalTarea";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
+                p.Add("P_TAREA_ID", obj_EvalTarea.IdTarea, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_EVAL_TAREA_ID", obj_EvalTarea.IdEstado ?? 0, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_IDENTIFICACION_MODIFICA", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_MAQUINA_MODIFICA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("P_TAREA_ID", OracleDbType.Varchar2).Value = obj_EvalTarea.IdTarea;
-                objCommand.Parameters.Add("P_EVAL_TAREA_ID", OracleDbType.Int32).Value = obj_EvalTarea.IdEstado ?? 0;
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                objCommand.Parameters.Add("P_IDENTIFICACION_MODIFICA", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("P_MAQUINA_MODIFICA", OracleDbType.Varchar2).Value = maquina;
+                await connection.OpenAsync();
 
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.ExecuteAsync(
+                    "PK_SEGUIMIENTO_IRIS.P_EvalTarea",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                await objCommand.ExecuteNonQueryAsync();
-
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
-                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
                 resp.IdRespuesta = resultado > 0 ? 1 : 0;
                 resp.Mensaje = mensaje;
                 resp.Data = resultado > 0 ? 1 : 0;
-
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | TareaId={TareaId}", resp.Operacion, obj_EvalTarea?.IdTarea);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = 0;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | TareaId={TareaId}", resp.Operacion, obj_EvalTarea?.IdTarea);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"Error: {ex.Message}";
                 resp.Data = 0;
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
             }
 
             return resp;
         }
 
-
-        public async Task<DtoResultado<Int32>> P_ReasignarTarea(DtoTareasIris obj_ReasignarTarea, string usuario, string maquina)
+        // ================================================================
+        // P_ReasignarTarea
+        // ================================================================
+        public async Task<DtoResultado<int>> P_ReasignarTarea(DtoTareasIris obj_ReasignarTarea, string usuario, string maquina)
         {
-            DtoResultado<Int32> resp = new();
-
-            using var Conexion = new OracleConnection(_strConexionIris_Disec);
-            using var objCommand = new OracleCommand();
+            var resp = new DtoResultado<int>
+            {
+                Operacion = "P_ReasignarTarea",
+                Data = 0
+            };
 
             try
             {
-                objCommand.Connection = Conexion;
-                objCommand.CommandType = CommandType.StoredProcedure;
-                objCommand.CommandText = "PK_SEGUIMIENTO_IRIS.P_ReasignarTarea";
-                objCommand.BindByName = true;
-                Conexion.Open();
+                using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                objCommand.Parameters.Clear();
+                var p = new OracleDynamicParameters();
+                p.Add("p_CRIMINALIDAD_ID", obj_ReasignarTarea.CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("p_RESPON_VALIDACION_ID", obj_ReasignarTarea.ResponValidacionId, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("p_OBSERVACION", obj_ReasignarTarea.Observacion ?? "", OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("p_IDENTIFICACION_CREACION", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("p_MAQUINA_CREACION", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
 
-                objCommand.Parameters.Add("p_CRIMINALIDAD_ID", OracleDbType.Varchar2).Value = obj_ReasignarTarea.CriminalidadId;
-                objCommand.Parameters.Add("p_RESPON_VALIDACION_ID", OracleDbType.Varchar2).Value = obj_ReasignarTarea.ResponValidacionId;
-                objCommand.Parameters.Add("p_OBSERVACION", OracleDbType.Varchar2).Value = obj_ReasignarTarea.Observacion ?? "";
+                p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
 
-                objCommand.Parameters.Add("p_IDENTIFICACION_CREACION", OracleDbType.Int64).Value = usuario;
-                objCommand.Parameters.Add("p_MAQUINA_CREACION", OracleDbType.Varchar2).Value = maquina;
+                await connection.OpenAsync();
 
-                objCommand.Parameters.Add("P_RESULTADO", OracleDbType.Int32).Direction = ParameterDirection.Output;
-                objCommand.Parameters.Add("SRV_Message", OracleDbType.Varchar2, 500).Direction = ParameterDirection.Output;
+                await connection.ExecuteAsync(
+                    "PK_SEGUIMIENTO_IRIS.P_ReasignarTarea",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                );
 
-                await objCommand.ExecuteNonQueryAsync();
-
-                int resultado = Convert.ToInt32(objCommand.Parameters["P_RESULTADO"].Value.ToString());
-                string mensaje = objCommand.Parameters["SRV_Message"].Value.ToString();
+                var resultado = p.Get<int>("P_RESULTADO");
+                var mensaje = p.Get<string>("SRV_Message") ?? string.Empty;
 
                 resp.IdRespuesta = resultado > 0 ? 1 : 0;
                 resp.Mensaje = mensaje;
                 resp.Data = resultado > 0 ? 1 : 0;
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | Criminalidad={Criminalidad} Respon={Respon}",
+                    resp.Operacion, obj_ReasignarTarea?.CriminalidadId, obj_ReasignarTarea?.ResponValidacionId);
 
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = 0;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | Criminalidad={Criminalidad} Respon={Respon}",
+                    resp.Operacion, obj_ReasignarTarea?.CriminalidadId, obj_ReasignarTarea?.ResponValidacionId);
+
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"Error: {ex.Message}";
                 resp.Data = 0;
-            }
-            finally
-            {
-                Conexion.Close();
-                Conexion.Dispose();
-                objCommand.Dispose();
             }
 
             return resp;
         }
 
-
-
-
+        #endregion
     }
 }

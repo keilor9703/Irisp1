@@ -120,9 +120,11 @@ namespace Web.Controllers
             }
 
             //Obtener IP
-            var Ip = _iHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-
+            var Ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrWhiteSpace(Ip)) Ip = "0.0.0.0";
             HttpContext.Session.SetString("IpMaquina", Ip);
+
+
 
             var Usuario = await _iDbAdministracion.P_GetValidaUser(loginUsuario.UsuarioEmpresarial, Ip);
 

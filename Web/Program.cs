@@ -64,18 +64,6 @@ var logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AngularPolicy", policy =>
-    {
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
-
-
 
 builder.Services.AddHttpContextAccessor();
 
@@ -89,6 +77,7 @@ builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
 builder.Services.AddScoped<IDbIrisp1, DbIrisp1>();
 builder.Services.AddScoped<IDbFuncionarios, DbFuncionarios>();
 builder.Services.AddScoped<IDbDominios, DbDominios>();
+
 builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
 builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
@@ -125,9 +114,6 @@ var RutaVisualizador = builder.Configuration.GetValue<string>("Visualizador");
 
 var app = builder.Build();
 
-app.UseCors("AngularPolicy");
-
-
 //Variables de Sesion
 app.UseSession();
 
@@ -156,59 +142,27 @@ app.MapControllerRoute(
     pattern: "{controller=Cuenta}/{action=InicioSesion}/{id?}");
 
 
-//app.Use(async (context, next) =>
-//{
-//    var url = context.Request.Path.Value;
-//    var HayError = url.Contains("Error");
-
-//    if (!HayError)
-//    {
-//        var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
-//        var ipMaquina = context.Session.GetString("IpMaquina");
-
-//        if ((!url.Contains("Cuenta")) && url.Length > 5)
-//        {
-//            if (obj == null || string.IsNullOrEmpty(ipMaquina))
-//            {
-//                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host.Value}/Cuenta/CerrarSesion");
-//                return;
-//            }
-//        }
-//    }
-//    await next();
-//});
-
-
 app.Use(async (context, next) =>
 {
-    var path = context.Request.Path.Value ?? "";
+    var url = context.Request.Path.Value;
+    var HayError = url.Contains("Error");
 
-    // Ignorar estáticos / cuenta / error
-    if (path.StartsWith("/Cuenta", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/css") || path.StartsWith("/js") || path.StartsWith("/img") ||
-        path.Contains("Error", StringComparison.OrdinalIgnoreCase))
+    if (!HayError)
     {
-        await next();
-        return;
-    }
-
-    // Solo aplicar si el usuario está autenticado (si no, que cookie auth lo mande al LoginPath)
-    if (context.User?.Identity?.IsAuthenticated == true)
-    {
-        var menu = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
+        var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
         var ipMaquina = context.Session.GetString("IpMaquina");
 
-        // Si se perdió session, NO cierres sesión: redirige a una ruta de "SesionExpirada"
-        if (menu == null || string.IsNullOrEmpty(ipMaquina))
+        if ((!url.Contains("Cuenta")) && url.Length > 5)
         {
-            context.Response.Redirect("/Cuenta/CerrarSesion");
-            return;
+            if (obj == null || string.IsNullOrEmpty(ipMaquina))
+            {
+                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host.Value}/Cuenta/CerrarSesion");
+                return;
+            }
         }
     }
-
     await next();
 });
-
 
 app.Run();
 
