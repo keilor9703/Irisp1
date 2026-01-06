@@ -13,6 +13,8 @@ namespace Comun.Areas.Irisp1
         public string Ruta { get; set; }
         public string Tipo { get; set; }
         public DateTime FechaCreacion { get; set; }
+
+        public int TipoRuta { get; set; }
     }
 
 }

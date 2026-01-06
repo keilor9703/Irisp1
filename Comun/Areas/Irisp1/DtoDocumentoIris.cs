@@ -18,6 +18,8 @@ namespace Comun.Areas.Irisp1
         public DateTime FechaCreacion { get; set; }
         public string CriminalidadId { get; set; }
 
+        public int TipoRuta { get; set; }
+
 
 
 

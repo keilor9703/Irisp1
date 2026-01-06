@@ -1396,11 +1396,22 @@ function F_GetDetalleIris(registro) {
         cache: false,
         success: function (respuesta) {
             if (respuesta.success) {
-                $("#txtFuncionarioDetalle").text(respuesta.data.Funcionario);
+                //$("#txtFuncionarioDetalle").text(respuesta.data.Funcionario);
                 $("#txtUnidadDetalle").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
-                $("#txtUnidadDetalle2").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
-                $("#txtCorreo").text(respuesta.data.Correo);
-                $("#txtCelularSiath").text(respuesta.data.Celular);
+                //$("#txtUnidadDetalle2").text(respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                //$("#txtCorreo").text(respuesta.data.Correo);
+                //$("#txtCelularSiath").text(respuesta.data.Celular);
+
+
+                setMaskedSpanValue("#txtFuncionarioDetalle", respuesta.data.Funcionario);
+                //setMaskedSpanValue("#txtUnidadDetalle", respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                setMaskedSpanValue("#txtUnidadDetalle2", respuesta.data.Fisica + " - " + respuesta.data.Dependencia);
+                setMaskedSpanValue("#txtCorreo", respuesta.data.Correo);
+                setMaskedSpanValue("#txtCelularSiath", respuesta.data.Celular);
+
+                funcionarioVisible = false;
+                aplicarMascara(false);
+
 
                 $('#Modal_DetalleIris').modal("show");
 
@@ -1972,7 +1983,7 @@ function GetGrillaDocumentosIris(Datos) {
 
 
                    
-                    return `<a href="Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
+                    return `<a href="Irisp1/RegistroIrisp1/descargar?ruta=${encodeURIComponent(data)}&tipoRuta=${row.tipoRuta}" target="_blank" style="background-color: #236305; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 200px; text-decoration: none;">Descargar</a>`;
                 }
             },
             { "title": "Fecha Creación", "data": "fechaCreacion", "name": "fechaCreacion", className: "celdaCenter celda17", render: formatDate }
@@ -2837,3 +2848,35 @@ function P_DelDocumentoIris(DocumentoId) {
         }
     });
 }
+
+
+ let funcionarioVisible = false;
+
+// Enmascara manteniendo espacios y longitud
+function OcultarTexto(value) {
+    if (!value) return "";
+    return value.replace(/\S/g, "*"); // reemplaza todo lo que NO sea espacio por *
+}
+
+// Pone el valor real y deja visible lo enmascarado inicialmente
+function setMaskedSpanValue(selector, realValue) {
+    const CajaTexto = $(selector);
+    const ValorReal = (realValue ?? "").toString();
+
+    CajaTexto.attr("data-real", ValorReal);
+    CajaTexto.text(OcultarTexto(ValorReal)); // inicia oculto
+}
+
+function aplicarMascara(showReal) {
+    $(".maskable").each(function () { //Recorre todos los spans que tengan la clase maskable
+        const real = $(this).attr("data-real") || "";
+        $(this).text(showReal ? real : OcultarTexto(real));
+    });
+
+    $("#btnToggleFuncionario").text(showReal ? "🙈 Ocultar" : "👁 Ver");
+}
+
+$(document).on("click", "#btnToggleFuncionario", function () {
+    funcionarioVisible = !funcionarioVisible;
+    aplicarMascara(funcionarioVisible);
+});

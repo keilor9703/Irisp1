@@ -668,15 +668,25 @@
 
                         <!-- Columna 2: Funcionario que informa -->
                         <div class="col-md-4">
-                            <h6 class="fw-bold">FUNCIONARIO QUE INFORMA:</h6>
-                           <p><strong></strong> 
-                           @*  <button id="btnVisualizarFuncionario" class="btn btn-primary btn-sm mb-2">Visualizar</button> *@
-                            <p><strong>Funcionario:</strong> <span id="txtFuncionarioDetalle"></span></p>
-                            <p><strong>Unidad:</strong> <span id="txtUnidadDetalle2"></span></p>
-                            <p><strong>Correo:</strong> <span id="txtCorreo"></span></p>
-                            <p><strong>Celular SIATH:</strong> <span id="txtCelularSiath"></span></p>
-                            <p><strong>Celular IRIS-PI:</strong> <span id="txtCelularIris"></span></p>
+                            <h6 class="fw-bold d-flex align-items-center justify-content-between">
+                                <span>FUNCIONARIO QUE INFORMA:</span>
+
+                                
+                            </h6>
+
+                            <p class="mt-3"><strong>Funcionario:</strong> <span class="maskable" id="txtFuncionarioDetalle"></span></p>
+
+                            <p><strong>Unidad:</strong> <span class="maskable" id="txtUnidadDetalle2"></span></p>
+                            <p><strong>Correo:</strong> <span class="maskable" id="txtCorreo"></span></p>
+                            <p><strong>Celular SIATH:</strong> <span class="maskable" id="txtCelularSiath"></span></p>
+                            <p><strong>Celular IRIS-PI:</strong> <span class="maskable" id="txtCelularIris"></span></p> 
+                            <button type="button" id="btnToggleFuncionario" class="btn btn-excel btn-sm">
+                                👁 Ver
+                            </button>
+                           
                         </div>
+
+
 
                         <!-- Columna 3: Información del cuadrante -->
                         <div class="col-md-4">

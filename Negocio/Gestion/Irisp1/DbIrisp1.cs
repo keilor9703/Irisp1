@@ -476,6 +476,8 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
+
+
         public async Task<DtoResultado<List<DtoCriminalidadFoto>>> P_GetCriminalidadFotos(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoCriminalidadFoto>>
@@ -629,18 +631,38 @@ namespace Negocio.Gestion.Irisp1
           
             if (lista.Count > 0)
             {
-                string uncBase = _iConfiguration["RutasArchivosIris:RutaDocumentos"];
+               // string uncBase = _iConfiguration["RutasArchivosIris:RutaDocumentos"];
 
-                foreach (var foto in lista)
+                string uncBase;
+
+                // Comparar con un DateTime
+                DateTime fechaReferencia = DateTime.Parse("2025-10-01 19:17:24");
+
+
+                foreach (var doc in lista)
                 {
-                    if (!string.IsNullOrEmpty(foto.Ruta))
+                    if (!string.IsNullOrEmpty(doc.Ruta))
                     {
-                        foto.Ruta = foto.Ruta
+                        if (doc.FechaCreacion >= fechaReferencia)
+                        {
+                            uncBase = _iConfiguration["RutasArchivosIris:RutaDocumentos"];
+                            doc.TipoRuta = 1;
+                        }
+                        else
+                        {
+                            uncBase = _iConfiguration["RutasArchivosIris:RutaDocumentosAnterior"];
+                            doc.TipoRuta = 2;
+                        }
+
+
+
+                        doc.Ruta = doc.Ruta
                             .Replace(uncBase, "")
                             .Replace("\\", "/")
                             .TrimStart('/', '\\');  // <-- remover slashes iniciales
                     }
                 }
+
 
 
                 resp.IdRespuesta = 1;

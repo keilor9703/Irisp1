@@ -347,7 +347,7 @@ namespace Web.Areas.Irisp1.Controllers
 
         [HttpGet]
         [Route("Irisp1/RegistroIrisp1/descargar")]
-        public async Task<IActionResult> DescargarArchivo(string ruta)
+        public async Task<IActionResult> DescargarArchivo(string ruta, int tipoRuta)
         {
             if (string.IsNullOrWhiteSpace(ruta))
                 return BadRequest("Ruta inválida.");
@@ -355,7 +355,13 @@ namespace Web.Areas.Irisp1.Controllers
             try
             {
                 // Base UNC desde configuración
-                string uncBase = _configuration["RutasArchivosIris:RutaDocumentos"];
+               string uncBase ;
+
+
+                if (tipoRuta == 1) 
+                { uncBase = _configuration["RutasArchivosIris:RutaDocumentos"]; } 
+                else 
+                { uncBase = _configuration["RutasArchivosIris:RutaDocumentosAnterior"]; }
 
                 // Reconstruir la ruta física real
                 string rutaCompleta = Path.Combine(uncBase, ruta.Replace("/", "\\"));
