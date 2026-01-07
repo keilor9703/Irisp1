@@ -3,7 +3,12 @@ using Comun.Areas.Reportes;
 using Comun.General;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Negocio.Gestion.Admin;
+
+
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
 
 using Negocio.Gestion.Expendios;
 using Negocio.Gestion.General;
@@ -29,21 +34,35 @@ builder.Services.AddRazorPages();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Cuenta/InicioSesion";
         options.AccessDeniedPath = "/Cuenta/CerrarSesion";
         options.LogoutPath = "/Cuenta/CerrarSesion";
+
         options.Cookie.Name = "Web";
+
+        // 🔒 Recomendado para SSO/MFA en subdominios o flujos externos:
+        options.Cookie.SameSite = SameSiteMode.None;   // <-- ANTES: Lax
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // <-- ANTES: SameAsRequest
+
+
+        //options.Cookie.SameSite = SameSiteMode.Lax;
+        //options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+
+        // (Opcional, si usas subdominios)
+        // options.Cookie.Domain = ".policia.gov.co";
+
         options.Cookie.HttpOnly = true;
-        //vencimiento
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.Cookie.MaxAge = options.ExpireTimeSpan;
         options.SlidingExpiration = true;
-        // ReturnUrlParameter requires 
-        options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
     });
+
+
 
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -63,6 +82,11 @@ var logger = new LoggerConfiguration()
 .CreateLogger();
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
+
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\IRISP1\DataProtectionKeys"))
+    .SetApplicationName("IRIS-P1");
 
 
 builder.Services.AddHttpContextAccessor();
@@ -85,6 +109,10 @@ builder.Services.AddScoped<IDbRegistroInteg, DbRegistroInteg>();
 builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
 builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
 builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
+builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
+builder.Services.AddScoped<IDbMfaIris, DbMfaIris>();
+
+
 
 
 // httpClient
@@ -94,13 +122,29 @@ builder.Services.AddHttpClient<IPipWebServices, PipWebServices>();
 
 //Variables de Sesión
 builder.Services.AddMvc();
-builder.Services.AddDistributedMemoryCache();
+
+
+builder.Services.AddDistributedMemoryCache(); // 
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
+    options.Cookie.Name = ".IRISP1.Session";
     options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;
+
+    // ✅ CORRECTO PARA LOCALHOST
+    //options.Cookie.SameSite = SameSiteMode.Lax;
+    //options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
 });
+
+
+
+
 
 //AppSettings
 builder.Services.AddOptions();
@@ -114,55 +158,62 @@ var RutaVisualizador = builder.Configuration.GetValue<string>("Visualizador");
 
 var app = builder.Build();
 
-//Variables de Sesion
-app.UseSession();
-
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
+// ✅ Session DEBE ir aquí (después de Routing y antes de Auth)
+app.UseSession();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-//configuración de area
+// ✅ Tu middleware de validación de sesión debe ir DESPUÉS de UseSession
+app.Use(async (context, next) =>
+{
+    var url = context.Request.Path.Value ?? "";
+    var hayError = url.Contains("Error", StringComparison.OrdinalIgnoreCase);
+
+    if (!hayError)
+    {
+        var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
+        var ipMaquina = context.Session.GetString("IpMaquina");
+
+        bool esRutaMfa =
+            url.Contains("/Cuenta/Mfa", StringComparison.OrdinalIgnoreCase) ||
+            url.Contains("/Mfa", StringComparison.OrdinalIgnoreCase);
+
+        bool esRutaCuenta = url.Contains("/Cuenta", StringComparison.OrdinalIgnoreCase);
+
+        if (!esRutaCuenta && !esRutaMfa && url.Length > 1)
+        {
+            if (obj == null || string.IsNullOrEmpty(ipMaquina))
+            {
+                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host}/Cuenta/CerrarSesion");
+                return;
+            }
+        }
+    }
+
+    await next();
+});
+
+// ✅ Endpoints al final
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Cuenta}/{action=InicioSesion}/{id?}");
 
-
-app.Use(async (context, next) =>
-{
-    var url = context.Request.Path.Value;
-    var HayError = url.Contains("Error");
-
-    if (!HayError)
-    {
-        var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
-        var ipMaquina = context.Session.GetString("IpMaquina");
-
-        if ((!url.Contains("Cuenta")) && url.Length > 5)
-        {
-            if (obj == null || string.IsNullOrEmpty(ipMaquina))
-            {
-                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host.Value}/Cuenta/CerrarSesion");
-                return;
-            }
-        }
-    }
-    await next();
-});
-
 app.Run();
+
 

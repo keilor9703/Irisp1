@@ -1,19 +1,42 @@
-﻿
-using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 
 namespace Web
 {
-    public static class SessionExtensionss
+    public static class SessionExtensions
     {
-        public static void SetObject(this ISession session, string key, object value)
+        private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
         {
-            session.SetString(key, JsonConvert.SerializeObject(value));
+            PropertyNameCaseInsensitive = true
+        };
+
+        public static void SetObject<T>(this ISession session, string key, T value)
+        {
+            if (value == null)
+            {
+                session.Remove(key);
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(value, _jsonOptions);
+            session.SetString(key, json);
         }
 
-        public static T GetObject<T>(this ISession session, string key)
+        public static T? GetObject<T>(this ISession session, string key)
         {
-            var value = session.GetString(key);
-            return value == null ? default(T) : JsonConvert.DeserializeObject<T>(value);
+            var json = session.GetString(key);
+            if (string.IsNullOrWhiteSpace(json)) return default;
+
+            try
+            {
+                return JsonSerializer.Deserialize<T>(json, _jsonOptions);
+            }
+            catch
+            {
+                // Si el JSON está corrupto o cambió el tipo, limpia para evitar bucles
+                session.Remove(key);
+                return default;
+            }
         }
     }
 }
