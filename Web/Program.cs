@@ -4,19 +4,16 @@ using Comun.General;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.Repositories;
+using Microsoft.Extensions.Options;
 using Negocio.Gestion.Admin;
-
-
-using Microsoft.AspNetCore.DataProtection;
-using System.IO;
-
 using Negocio.Gestion.Expendios;
 using Negocio.Gestion.General;
 using Negocio.Gestion.Integrantes;
 using Negocio.Gestion.Irisp1;
 using Negocio.Gestion.Reportes;
 using Negocio.Interfaz.Admin;
-
 using Negocio.Interfaz.Expendios;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Integrantes;
@@ -84,8 +81,29 @@ builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
 
+//builder.Services.AddDataProtection()
+//    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\IRISP1\DataProtectionKeys"))
+//    .SetApplicationName("IRIS-P1");
+
+
+
+var dpConn = builder.Configuration.GetConnectionString("strConexionIris_Disec");
+
+builder.Services.AddSingleton<IXmlRepository>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<OracleXmlRepository>>();
+    return new OracleXmlRepository(dpConn, logger);
+});
+
+
+builder.Services.AddSingleton<IConfigureOptions<KeyManagementOptions>>(sp =>
+    new ConfigureOptions<KeyManagementOptions>(options =>
+    {
+        options.XmlRepository = sp.GetRequiredService<IXmlRepository>();
+    })
+);
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\IRISP1\DataProtectionKeys"))
     .SetApplicationName("IRIS-P1");
 
 
