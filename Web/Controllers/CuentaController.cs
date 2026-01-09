@@ -152,7 +152,7 @@ namespace Web.Controllers
             // ============================================================
             bool requiereMfa = Admin; 
 
-            if (requiereMfa)
+            if (!requiereMfa)
             {
                 // ✅ Guardar estado en TempData 
                 TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
