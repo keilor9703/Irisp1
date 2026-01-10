@@ -24,6 +24,10 @@ namespace Web.Controllers
         private readonly IDbMfaIris _dbMfa;
         private readonly IMfaTotpService _totp;
 
+
+        private readonly IDbMfaCentralWs _mfaWs;
+
+
         private bool Admin = false;
 
         // ===== TempData keys (cookie-based) =====
@@ -35,7 +39,15 @@ namespace Web.Controllers
         private const string SessEnrollQr = "MFA_ENROLL_QR";
 
         // ===== Cookies =====
+       // private const string CookieTrusted = "IRISP_MFA_DEVICE";
+
+
+
+        private const string TdEnrollToken = "MFA_ENROLL_TOKEN";
+        private const string TdEnrollQr = "MFA_ENROLL_QR";
+        private const string TdEnrollManualKey = "MFA_ENROLL_MANUALKEY";
         private const string CookieTrusted = "IRISP_MFA_DEVICE";
+
 
         public CuentaController(
             IHttpContextAccessor iHttpContextAccessor,
@@ -43,7 +55,8 @@ namespace Web.Controllers
             IDbAdministracion iDbAdministracion,
             IDbConsultasPIP idbConsultasPIP,
             IDbMfaIris dbMfa,
-            IMfaTotpService totp
+            IMfaTotpService totp,
+               IDbMfaCentralWs mfaWs
         )
         {
             _iHttpContextAccessor = iHttpContextAccessor;
@@ -53,6 +66,8 @@ namespace Web.Controllers
 
             _dbMfa = dbMfa;
             _totp = totp;
+
+            _mfaWs = mfaWs;
         }
 
         // ============================================================
@@ -150,90 +165,84 @@ namespace Web.Controllers
             // ============================================================
             // ✅ MFA (NO USAR SESSION para el estado del MFA)
             // ============================================================
-            bool requiereMfa = Admin; 
+            // ============================================================
+            // ✅ MFA CENTRALIZADO (solo si requiereMfa)
+            // ============================================================
+            bool requiereMfa = Admin; // tu política actual
 
-            if (!requiereMfa)
+            if (requiereMfa)
             {
-                // ✅ Guardar estado en TempData 
                 TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
 
                 TempData[TdMfaPending] = JsonConvert.SerializeObject(new MfaPendingDto
                 {
                     IdUsuario = Usuario.Data.IdUsuario,
                     Identificacion = Usuario.Data.Identificacion,
-                    Usuario = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString(),
+                    Usuario = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString(), // usuario empresarial preferido
                     Funcionario = Usuario.Data.Funcionario ?? "",
                     Ip = ip
                 });
 
-                // 🔁Mantener TempData vivo para el siguiente POST (MFA)
                 TempData.Keep(TdLoginUserData);
                 TempData.Keep(TdMfaPending);
 
-                await _iDbAdministracion.P_InsAuditoria(
-                    Convert.ToInt64(Usuario.Data.Identificacion),
-                    "MFA Required",
-                    "Usuario requiere validación TOTP para completar el inicio de sesión",
-                    Convert.ToInt64(Usuario.Data.Identificacion),
-                    ip
-                );
-
-                // Consultar estado MFA en BD
-                var mfa = await _dbMfa.GetMfaAsync(Usuario.Data.IdUsuario);
-
-                // Bloqueo temporal
-                if (mfa.BloqueoHasta.HasValue && mfa.BloqueoHasta.Value > DateTime.Now)
+                // Estado MFA central
+                var mfaState = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+                if (mfaState.CodigoExito != 1)
                 {
-                    ViewBag.MfaShow = true;
-                    ViewBag.MfaMode = "blocked";
-                    ViewBag.BloqueoHasta = mfa.BloqueoHasta.Value;
+                    ModelState.AddModelError("", $"No fue posible consultar estado MFA: {mfaState.Mensaje}");
                     return View("InicioSesion", loginUsuario);
                 }
 
-                // Dispositivo confiable?
+                // Bloqueo?
+                if (mfaState.Data?.BloqueoHasta.HasValue == true && mfaState.Data.BloqueoHasta.Value > DateTime.Now)
+                {
+                    ViewBag.MfaShow = true;
+                    ViewBag.MfaMode = "blocked";
+                    ViewBag.BloqueoHasta = mfaState.Data.BloqueoHasta.Value;
+                    return View("InicioSesion", loginUsuario);
+                }
+
+                // Trusted device?
                 var deviceId = Request.Cookies[CookieTrusted];
                 if (!string.IsNullOrWhiteSpace(deviceId))
                 {
-                    var hash = _totp.HashDeviceId(deviceId);
-                    var trusted = await _dbMfa.IsTrustedDeviceAsync(Usuario.Data.IdUsuario, hash);
-
-                    if (trusted == 1)
+                    var trustedResp = await _mfaWs.IsTrustedAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "", deviceId);
+                    if (trustedResp.CodigoExito == 1 && trustedResp.Data == 1)
                     {
-                        await _dbMfa.P_Validacion_exitosa(Usuario.Data.IdUsuario, ip, Usuario.Data.Identificacion);
-
-                        // ✅ finalizar login sin session intermedia
+                        // Finaliza login directo
                         return await FinalizeMfaLoginInternal();
                     }
                 }
 
-                // Decide modal: enroll o verify
-                ViewBag.MfaShow = true;
+                // ¿Debe enrolar?
+                bool debeEnrollar =
+                    (mfaState.Data?.MfaHabilitado != 1) ||
+                    (mfaState.Data?.RequireReenroll == 1);
 
-                bool debeEnrollar = (mfa.MfaHabilitado != 1) ||
-                                    (mfa.RequireReenroll == 1) ||
-                                    string.IsNullOrWhiteSpace(mfa.TotpSecretEnc);
+                ViewBag.MfaShow = true;
 
                 if (debeEnrollar)
                 {
-                    var issuer = "IRIS-P1";
-                    var account = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString();
+                    // Pedir QR y token de enrolamiento al WS
+                    var enrollStart = await _mfaWs.EnrollStartAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+                    if (enrollStart.CodigoExito != 1 || enrollStart.Data == null)
+                    {
+                        ModelState.AddModelError("", $"No fue posible iniciar enrolamiento MFA: {enrollStart.Mensaje}");
+                        return View("InicioSesion", loginUsuario);
+                    }
 
-                    var (secretBase32, qrBase64) = _totp.GenerateEnrollmentQr(issuer, account);
+                    TempData[TdEnrollToken] = enrollStart.Data.EnrollToken;
+                    TempData[TdEnrollQr] = enrollStart.Data.QrBase64;
+                    TempData[TdEnrollManualKey] = enrollStart.Data.ManualKey;
 
-                    // ✅ estos dos sí pueden ir en Session (solo para render del modal en esta misma navegación)
-                    //HttpContext.Session.SetString(SessEnrollSecret, secretBase32);
-                    //HttpContext.Session.SetString(SessEnrollQr, qrBase64);
-
-
-                    TempData["MFA_ENROLL_SECRET"] = secretBase32;
-                    TempData["MFA_ENROLL_QR"] = qrBase64;
-                    TempData.Keep("MFA_ENROLL_SECRET");
-                    TempData.Keep("MFA_ENROLL_QR");
-
+                    TempData.Keep(TdEnrollToken);
+                    TempData.Keep(TdEnrollQr);
+                    TempData.Keep(TdEnrollManualKey);
 
                     ViewBag.MfaMode = "enroll";
-                    ViewBag.MfaQrBase64 = qrBase64;
-                    ViewBag.MfaManualKey = secretBase32;
+                    ViewBag.MfaQrBase64 = enrollStart.Data.QrBase64;
+                    ViewBag.MfaManualKey = enrollStart.Data.ManualKey;
                 }
                 else
                 {
@@ -242,6 +251,7 @@ namespace Web.Controllers
 
                 return View("InicioSesion", loginUsuario);
             }
+
 
             // ============================================================
             // NO MFA -> flujo normal (menú, claims, SignIn)
@@ -275,31 +285,25 @@ namespace Web.Controllers
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MfaEnrollConfirm(DtoCredenciales loginUsuario, string Code)
-            {
-            // Recuperar de TempData
+        {
             var pending = GetPendingFromTempData(keep: true);
             if (pending == null)
                 return RedirectToAction("InicioSesion");
 
-            //var secret = HttpContext.Session.GetString(SessEnrollSecret);
-            //var qr = HttpContext.Session.GetString(SessEnrollQr);
+            var enrollToken = TempData[TdEnrollToken] as string;
+            var qr = TempData[TdEnrollQr] as string;
+            var manualKey = TempData[TdEnrollManualKey] as string;
 
+            TempData.Keep(TdEnrollToken);
+            TempData.Keep(TdEnrollQr);
+            TempData.Keep(TdEnrollManualKey);
 
-            var secret = TempData["MFA_ENROLL_SECRET"] as string;
-            var qr = TempData["MFA_ENROLL_QR"] as string;
-
-            // Mantener vivos para reintentos
-            TempData.Keep("MFA_ENROLL_SECRET");
-            TempData.Keep("MFA_ENROLL_QR");
-
-
-            // Mantener modal abierto
             ViewBag.MfaShow = true;
             ViewBag.MfaMode = "enroll";
-            ViewBag.MfaManualKey = secret;
             ViewBag.MfaQrBase64 = qr;
+            ViewBag.MfaManualKey = manualKey;
 
-            if (string.IsNullOrWhiteSpace(secret))
+            if (string.IsNullOrWhiteSpace(enrollToken))
             {
                 TempData["MfaError"] = "La sesión de enrolamiento expiró. Inicie sesión nuevamente.";
                 return View("InicioSesion", loginUsuario);
@@ -311,40 +315,36 @@ namespace Web.Controllers
                 return View("InicioSesion", loginUsuario);
             }
 
-            if (!_totp.ValidateCode(secret, Code))
+            var resp = await _mfaWs.EnrollConfirmAsync(
+                pending.Identificacion,
+                pending.Usuario,
+                enrollToken,
+                Code,
+                pending.Ip,
+                pending.Identificacion
+            );
+
+            if (resp.CodigoExito != 1 || resp.Data != true)
             {
-                TempData["MfaError"] = "Código inválido. Verifique la hora automática del celular y vuelva a intentar.";
+                TempData["MfaError"] = resp.Mensaje ?? "No fue posible activar MFA.";
                 return View("InicioSesion", loginUsuario);
             }
 
-            var enc = _totp.ProtectSecret(secret);
-            await _dbMfa.P_Guardar_LlaveSecreta(pending.IdUsuario, enc, pending.Ip, pending.Identificacion);
+            // Limpieza enrolamiento
+            TempData.Remove(TdEnrollToken);
+            TempData.Remove(TdEnrollQr);
+            TempData.Remove(TdEnrollManualKey);
 
-            await _iDbAdministracion.P_InsAuditoria(
-                pending.Identificacion,
-                "MFA Enroll OK",
-                "Usuario enroló TOTP",
-                pending.Identificacion,
-                pending.Ip
-            );
-
-            //HttpContext.Session.Remove(SessEnrollSecret);
-            //HttpContext.Session.Remove(SessEnrollQr);
-
-            TempData.Remove("MFA_ENROLL_SECRET");
-            TempData.Remove("MFA_ENROLL_QR");
-
-
-            // Luego de enrolar -> pasa a verify modal
+            // Pasa a verify
             ViewBag.MfaShow = true;
             ViewBag.MfaMode = "verify";
 
-            // Importante: TempData debe seguir vivo para Verify
             TempData.Keep(TdLoginUserData);
             TempData.Keep(TdMfaPending);
 
             return View("InicioSesion", loginUsuario);
         }
+
 
         // ============================================================
         // MFA - VERIFY CONFIRM (POST desde MODAL en el LOGIN)
@@ -363,83 +363,76 @@ namespace Web.Controllers
                 return View("InicioSesion", new DtoCredenciales());
             }
 
-            // 2) Consultar MFA en BD
-            var mfa = await _dbMfa.GetMfaAsync(pending.IdUsuario);
-
-            if (mfa.BloqueoHasta.HasValue && mfa.BloqueoHasta.Value > DateTime.Now)
+            if (string.IsNullOrWhiteSpace(Code))
             {
-                ModelState.AddModelError("", $"Usuario bloqueado temporalmente hasta {mfa.BloqueoHasta:yyyy-MM-dd HH:mm}.");
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-            if (mfa.MfaHabilitado != 1 || string.IsNullOrWhiteSpace(mfa.TotpSecretEnc))
-            {
-                ModelState.AddModelError("", "El usuario no tiene MFA configurado. Debe enrolar primero.");
+                ModelState.AddModelError("", "Ingrese el código.");
                 ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "enroll";
+                ViewBag.MfaMode = "verify";
+                TempData.Keep(TdLoginUserData);
+                TempData.Keep(TdMfaPending);
                 return View("InicioSesion", new DtoCredenciales());
             }
 
-            // 3) Validar código
-            var secretBase32 = _totp.UnprotectSecret(mfa.TotpSecretEnc);
-
-            if (!_totp.ValidateCode(secretBase32, Code))
+            // DeviceId: si quiere recordar, crea/usa uno
+            string? deviceId = null;
+            if (RememberDevice)
             {
-                await _dbMfa.P_Intentos_Fallidos(pending.IdUsuario, pending.Ip, pending.Identificacion);
-                await _iDbAdministracion.P_InsAuditoria(pending.Identificacion, "MFA Fail", "Código TOTP inválido", pending.Identificacion, pending.Ip);
+                deviceId = Request.Cookies[CookieTrusted];
+                if (string.IsNullOrWhiteSpace(deviceId))
+                    deviceId = Guid.NewGuid().ToString("N");
+            }
 
-                ModelState.AddModelError("", "Código inválido.");
+            var verify = await _mfaWs.VerifyAsync(
+                pending.Identificacion,
+                pending.Usuario,
+                Code,
+                RememberDevice,
+                deviceId,
+                pending.Ip,
+                pending.Identificacion
+            );
+
+            if (verify.CodigoExito != 1 || verify.Data?.Ok != true)
+            {
+                ModelState.AddModelError("", verify.Mensaje ?? "Código inválido.");
                 ViewBag.MfaShow = true;
                 ViewBag.MfaMode = "verify";
 
-                // mantener TempData para reintentos
                 TempData.Keep(TdLoginUserData);
                 TempData.Keep(TdMfaPending);
 
                 return View("InicioSesion", new DtoCredenciales());
             }
 
-            // 4) OK: marcar OK
-            await _dbMfa.P_Validacion_exitosa(pending.IdUsuario, pending.Ip, pending.Identificacion);
-            await _iDbAdministracion.P_InsAuditoria(pending.Identificacion, "MFA OK", "Validación TOTP exitosa", pending.Identificacion, pending.Ip);
-
-            // 5) Recordar equipo (cookie + DB)
-            if (RememberDevice)
+            // Si RememberDevice, set cookie (la API ya guardó el trusted device)
+            if (RememberDevice && !string.IsNullOrWhiteSpace(deviceId))
             {
-                var deviceId = Guid.NewGuid().ToString("N");
-                var hash = _totp.HashDeviceId(deviceId);
-
-                await _dbMfa.SaveTrustedDeviceAsync(pending.IdUsuario, hash, expiraDias: 15, pending.Ip, pending.Identificacion);
-
                 Response.Cookies.Append(CookieTrusted, deviceId, new CookieOptions
                 {
                     HttpOnly = true,
-                    // En localhost http puede ser false. En prod https debería ser true.
                     Secure = Request.IsHttps,
                     SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.Now.AddDays(15)
+                    Expires = DateTimeOffset.Now.AddDays(30)
                 });
             }
 
-            // 6) Finalizar login (menú + claims + SignIn)
+            // Finalizar login normal del sistema (menú + claims + SignIn)
             HttpContext.Session.SetString("IpMaquina", pending.Ip ?? "0.0.0.0");
 
-            var menu = AdminOrFromUser(userData)
+            bool admin = AdminOrFromUser(userData);
+            var menu = admin
                 ? await _iDbAdministracion.F_GetMenu(1, userData.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, userData.Identificacion);
 
             HttpContext.Session.SetObject("ListaMenu", menu.Data);
 
             var claims = BuildClaims(userData);
-
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
-            // 7) Limpieza TempData (ya no se necesita)
             TempData.Remove(TdLoginUserData);
             TempData.Remove(TdMfaPending);
 
-            // 8) Entrar al sistema
             return RedirectToAction("Index", "Home");
         }
 
@@ -712,7 +705,6 @@ namespace Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MfaLostDevice()
         {
-            //var pending = HttpContext.Session.GetObject<MfaStateDto>("MFA_PENDING");
             var pending = GetPendingFromTempData(keep: true);
 
             if (pending == null)
@@ -721,32 +713,31 @@ namespace Web.Controllers
                 return RedirectToAction("InicioSesion");
             }
 
-            // 🔐 Reset MFA controlado
-            await _dbMfa.ResetMfaAsync(
-                pending.IdUsuario,
+            var reset = await _mfaWs.ResetAsync(
+                pending.Identificacion,
+                pending.Usuario,
                 pending.Ip,
                 pending.Identificacion
             );
 
-            await _iDbAdministracion.P_InsAuditoria(
-                pending.Identificacion,
-                "MFA RESET",
-                "Usuario reporta pérdida del autenticador. Se fuerza re-enrolamiento.",
-                pending.Identificacion,
-                pending.Ip
-            );
+            if (reset.CodigoExito != 1)
+            {
+                TempData["MfaError"] = reset.Mensaje ?? "No fue posible reiniciar MFA.";
+                return RedirectToAction("InicioSesion");
+            }
 
-            // Limpieza de sesión MFA
-            HttpContext.Session.Remove("MFA_PENDING");
-            HttpContext.Session.Remove("LOGIN_USERDATA");
-            HttpContext.Session.Remove("MFA_ENROLL_SECRET");
-            HttpContext.Session.Remove("MFA_ENROLL_QR");
+            // Limpieza local
+            TempData.Remove(TdLoginUserData);
+            TempData.Remove(TdMfaPending);
+            TempData.Remove(TdEnrollToken);
+            TempData.Remove(TdEnrollQr);
+            TempData.Remove(TdEnrollManualKey);
 
-            TempData["MfaInfo"] =
-                "Se restableció la verificación en dos pasos. Inicie sesión nuevamente para activar su nuevo autenticador.";
+            TempData["MfaInfo"] = "Se restableció la verificación en dos pasos. Inicie sesión nuevamente para activar su nuevo autenticador.";
 
             return RedirectToAction("InicioSesion");
         }
+
 
 
 

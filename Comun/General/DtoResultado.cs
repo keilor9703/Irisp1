@@ -11,6 +11,7 @@ namespace Comun.General
         private string? _Mensaje;
         private Int64 _IdRespuesta;
         private string? _Operacion;
+        private Int64 _CodigoExito;
         private T _Data;
 
         /// <summary>
@@ -29,6 +30,22 @@ namespace Comun.General
             }
         }
 
+
+        /// <summary>
+        /// Codigo de exito que se presenta en el evento, representa el ID de almacenamientoen base de datos
+        /// </summary>
+        [JsonPropertyName("CodigoExito")]
+        public Int64 CodigoExito
+        {
+            get
+            {
+                return _CodigoExito;
+            }
+            set
+            {
+                _CodigoExito = value;
+            }
+        }
         /// <summary>
         /// Descripción mensaje que se presenta en el evento
         /// </summary>

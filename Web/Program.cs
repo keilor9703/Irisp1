@@ -69,8 +69,17 @@ QuestPDF.Settings.License = LicenseType.Community;
 //cadena conexión
 builder.Services.AddHttpClient();
 
-// Proxies api gateway 
-builder.Services.AddSingleton(new ApiGatewayUrl(builder.Configuration.GetValue<string>("ApiGatewayUrl")));
+builder.Services.AddSingleton(sp =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var pipBase = cfg.GetValue<string>("ApiGatewayUrl")
+                 ?? throw new InvalidOperationException("Falta ApiGatewayUrl en configuración.");
+    var mfaBase = cfg.GetValue<string>("MfaCentral:BaseUrl")
+                 ?? throw new InvalidOperationException("Falta MfaCentral:BaseUrl en configuración.");
+
+    return new ApiGatewayUrl(pipBase, mfaBase);
+});
+
 
 //configuracion log de mensajes
 var logger = new LoggerConfiguration()
@@ -89,19 +98,8 @@ builder.Logging.AddSerilog(logger);
 
 var dpConn = builder.Configuration.GetConnectionString("strConexionIris_Disec");
 
-builder.Services.AddSingleton<IXmlRepository>(sp =>
-{
-    var logger = sp.GetRequiredService<ILogger<OracleXmlRepository>>();
-    return new OracleXmlRepository(dpConn, logger);
-});
 
 
-builder.Services.AddSingleton<IConfigureOptions<KeyManagementOptions>>(sp =>
-    new ConfigureOptions<KeyManagementOptions>(options =>
-    {
-        options.XmlRepository = sp.GetRequiredService<IXmlRepository>();
-    })
-);
 
 builder.Services.AddDataProtection()
     .SetApplicationName("IRIS-P1");
@@ -130,13 +128,30 @@ builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
 builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
 builder.Services.AddScoped<IDbMfaIris, DbMfaIris>();
 
+builder.Services.AddScoped<IDbMfaCentralWs, DbMfaCentralWs>();
+
+
+
+builder.Services.AddMemoryCache();
 
 
 
 // httpClient
 builder.Services.AddHttpClient<IPipWebServices, PipWebServices>();
-//builder.Services.AddHttpClient<IApiWebToken, ApiWebToken>();
-//builder.Services.AddHttpClient<IApiWebFuncionariosIdPIP, ApiWebFuncionariosIdPIP>();
+builder.Services.AddHttpClient<IMfaWebServices, MfaWebServices>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+    client.DefaultRequestVersion = new Version(1, 1);
+    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+    PooledConnectionIdleTimeout = TimeSpan.FromSeconds(30),
+    MaxConnectionsPerServer = 50,
+    AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+});
+
 
 //Variables de Sesión
 builder.Services.AddMvc();
@@ -151,9 +166,18 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.HttpOnly = true;
 
-    // ✅ CORRECTO PARA LOCALHOST
-    //options.Cookie.SameSite = SameSiteMode.Lax;
-    //options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    //if (builder.Environment.IsDevelopment())
+    //{
+    //    options.Cookie.SameSite = SameSiteMode.Lax;
+    //    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    //}
+    //else
+    //{
+    //    options.Cookie.SameSite = SameSiteMode.None;
+    //    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    //}
+
+
 
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
