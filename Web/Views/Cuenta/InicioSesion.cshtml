@@ -517,6 +517,15 @@
                             <div class="alert alert-danger mb-3">@mfaError</div>
                         }
 
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.VerifyError as string))
+                        {
+                            <div class="alert alert-danger mb-3">@ViewBag.VerifyError</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.VerifyInfo as string))
+                        {
+                            <div class="alert alert-info mb-3">@ViewBag.VerifyInfo</div>
+                        }
+
                         <form asp-controller="Cuenta" asp-action="MfaVerifyConfirm" method="post" id="frmMfaVerify">
                             @Html.AntiForgeryToken()
 
@@ -549,9 +558,11 @@
 
                         <form asp-controller="Cuenta" asp-action="MfaLostDevice" method="post" class="text-center">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-link text-danger fw-bold p-0">
+                            <button type="button" class="btn btn-link text-danger fw-bold p-0"
+                                    data-bs-toggle="modal" data-bs-target="#mfaResetModal">
                                 ¿Perdió su autenticador?
                             </button>
+
                         </form>
 
                         <div class="mfa-divider"></div>
@@ -564,6 +575,166 @@
             </div>
         </div>
     </div>
+
+    <!-- ===========================
+      MODAL: MFA RESET REGISTRO)
+      =========================== -->
+
+    <div class="modal fade mfa-modal" id="mfaResetModal" tabindex="-1" aria-hidden="true"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="mfa-icon">📧</span>
+                        Restablecer MFA por correo institucional
+                    </h5>
+                    <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mfa-card">
+                        <div class="fw-bold mb-1">1) Enviaremos un código al correo institucional</div>
+                        <div class="mfa-help mb-3">
+                            El código dura <b>5 minutos</b>. Por seguridad, luego de validarlo habrá una espera corta antes de reenrolar.
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.ResetError as string))
+                        {
+                            <div class="alert alert-danger mb-3">@ViewBag.ResetError</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.ResetInfo as string))
+                        {
+                            <div class="alert alert-info mb-3">@ViewBag.ResetInfo</div>
+                        }
+
+                        <form asp-controller="Cuenta" asp-action="MfaResetRequest" method="post" class="d-grid gap-2">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-primary">
+                                Enviar código al correo
+                            </button>
+                        </form>
+
+                        <div class="mfa-divider"></div>
+
+                        <div class="fw-bold mb-1">2) Ingrese el código de 6 dígitos recibido</div>
+
+                        <form asp-controller="Cuenta" asp-action="MfaResetConfirm" method="post" id="frmMfaResetConfirm" class="mt-2">
+                            @Html.AntiForgeryToken()
+
+                            <div id="otpReset">
+                                <input type="hidden" name="Code" />
+                                <div class="otp-wrap" data-otp="true">
+                                    <input class="otp-box" inputmode="numeric" autocomplete="one-time-code" />
+                                    <input class="otp-box" inputmode="numeric" />
+                                    <input class="otp-box" inputmode="numeric" />
+                                    <input class="otp-box" inputmode="numeric" />
+                                    <input class="otp-box" inputmode="numeric" />
+                                    <input class="otp-box" inputmode="numeric" />
+                                </div>
+                            </div>
+
+                            <div class="mfa-actions d-grid gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    Confirmar código
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="mfa-divider"></div>
+
+                        <form asp-controller="Cuenta" asp-action="MfaResetExecute" method="post" class="d-grid gap-2" >
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success" hidden>
+                                Continuar (si ya está disponible)
+                            </button>
+                        </form>
+
+                        <div class="mfa-help mt-3">
+                            Si aún no está disponible, el sistema le indicará la hora exacta en la que podrá reenrolar.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===========================
+     MODAL: MFA BLOCKED
+     =========================== -->
+    <div class="modal fade mfa-modal" id="mfaBlockedModal" tabindex="-1" aria-hidden="true"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);">
+                    <h5 class="modal-title">
+                        <span class="mfa-icon">⛔</span>
+                        Acceso temporalmente bloqueado
+                    </h5>
+                    <button type="button" class="btn-close" aria-label="Close" onclick="mfaCancel()"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mfa-card">
+                        <div class="fw-bold mb-2">Su cuenta tiene un bloqueo activo por seguridad.</div>
+
+                        <div class="mfa-help mb-3">
+                            Se detectaron intentos fallidos o una condición de seguridad que activó el bloqueo temporal del MFA.
+                            Intente nuevamente cuando el bloqueo finalice.
+                        </div>
+
+                        <div class="alert alert-warning mb-3">
+                            <div class="fw-bold">Bloqueo hasta:</div>
+                            <div>
+                                @{
+                                    DateTime? bh = null;
+                                    if (ViewBag.BloqueoHasta != null)
+                                    {
+                                        try { bh = (DateTime)ViewBag.BloqueoHasta; } catch { bh = null; }
+                                    }
+                                }
+
+                                @if (bh.HasValue)
+                                {
+                                    <span id="bloqueoHastaText">@bh.Value.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                }
+                                else
+                                {
+                                    <span id="bloqueoHastaText">No disponible</span>
+                                }
+                            </div>
+
+                            @if (bh.HasValue)
+                            {
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        (Hora del servidor) — se habilitará automáticamente cuando expire el tiempo.
+                                    </small>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mfa-divider"></div>
+
+                        <div class="mfa-actions d-grid gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="mfaCancel()">
+                                Volver al inicio de sesión
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="window.location.reload()">
+                                Reintentar
+                            </button>
+                        </div>
+
+                        <div class="mfa-help mt-3">
+                            Si considera que esto es un error, contacte al Administrador o reporte el incidente según el canal institucional.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- JS -->
     <script src="~/lib/jquery/dist/jquery2024.min.js"></script>
@@ -588,18 +759,28 @@
         }
 
         // Abrir modal según el servidor
+               // Abrir modal según el servidor
         (function () {
             var show = '@(mfaShow ? "1" : "0")';
-            var mode = '@mfaMode';
+            var mode = '@mfaMode'.toLowerCase(); // normalizamos a minúsculas
 
             if (show !== "1") return;
 
+            var modalId = null;
+
             if (mode === "enroll") {
-                var el = document.getElementById('mfaEnrollModal');
-                if (el) new bootstrap.Modal(el).show();
+                modalId = 'mfaEnrollModal';
             } else if (mode === "verify") {
-                var el2 = document.getElementById('mfaVerifyModal');
-                if (el2) new bootstrap.Modal(el2).show();
+                modalId = 'mfaVerifyModal';
+            } else if (mode === "reset") {
+                modalId = 'mfaResetModal';
+            } else if (mode === "blocked") {
+                modalId = 'mfaBlockedModal';
+            }
+
+            if (modalId) {
+                var el = document.getElementById(modalId);
+                if (el) new bootstrap.Modal(el).show();
             }
         })();
 
@@ -611,6 +792,8 @@
           if (!b) return;
           setTimeout(() => b.remove(), 6000);
         });
+
+
 
 
     </script>
@@ -662,9 +845,11 @@
 
         // Al mostrar cada modal, inicializa sus OTP
         document.addEventListener("shown.bs.modal", function (e) {
-            if (e.target && e.target.id === "mfaVerifyModal") initOtp("#otpVerify");
-            if (e.target && e.target.id === "mfaEnrollModal") initOtp("#otpEnroll");
+          if (e.target && e.target.id === "mfaVerifyModal") initOtp("#otpVerify");
+          if (e.target && e.target.id === "mfaEnrollModal") initOtp("#otpEnroll");
+          if (e.target && e.target.id === "mfaResetModal") initOtp("#otpReset");
         });
+
     </script>
 </body>
 </html>

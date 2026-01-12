@@ -153,5 +153,50 @@ namespace Negocio.Gestion.Admin
                 Sistema = _sistema
             }, bearer);
         }
+
+
+        public async Task<DtoResultado<int>> ResetRequestAsync(long identificacion, string usuario, string ip, long userAudit)
+        {
+            var bearer = await GetBearerAsync(usuario, identificacion);
+            return await _ws.ResetRequestAsync(new DtoMfaResetRequestReq
+            {
+                Identificacion = identificacion,
+                Usuario = usuario,
+                IpMaquina = ip,
+                UserAudit = userAudit,
+                Sistema = _sistema
+            }, bearer);
+        }
+
+        public async Task<DtoResultado<DtoMfaResetConfirmResp>> ResetConfirmAsync(long identificacion, string usuario, string code, string ip, long userAudit)
+        {
+            var bearer = await GetBearerAsync(usuario, identificacion);
+            return await _ws.ResetConfirmAsync(new DtoMfaResetConfirmReq
+            {
+                Identificacion = identificacion,
+                Usuario = usuario,
+                Code = code,
+                IpMaquina = ip,
+                UserAudit = userAudit,
+                Sistema = _sistema
+            }, bearer);
+        }
+
+        public async Task<DtoResultado<int>> ResetExecuteAsync(long identificacion, string usuario, string ip, long userAudit)
+        {
+            var bearer = await GetBearerAsync(usuario, identificacion);
+            return await _ws.ResetExecuteAsync(new DtoMfaResetExecuteReq
+            {
+                Identificacion = identificacion,
+                Usuario = usuario,
+                IpMaquina = ip,
+                UserAudit = userAudit,
+                Sistema = _sistema
+            }, bearer);
+        }
+
+
+
+
     }
 }

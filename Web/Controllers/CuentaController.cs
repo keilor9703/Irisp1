@@ -21,10 +21,7 @@ namespace Web.Controllers
         private readonly IConfiguration _iConfiguration;
 
         // ✅ MFA
-        private readonly IDbMfaIris _dbMfa;
         private readonly IMfaTotpService _totp;
-
-
         private readonly IDbMfaCentralWs _mfaWs;
 
 
@@ -56,7 +53,7 @@ namespace Web.Controllers
             IDbConsultasPIP idbConsultasPIP,
             IDbMfaIris dbMfa,
             IMfaTotpService totp,
-               IDbMfaCentralWs mfaWs
+            IDbMfaCentralWs mfaWs
         )
         {
             _iHttpContextAccessor = iHttpContextAccessor;
@@ -64,7 +61,7 @@ namespace Web.Controllers
             _iDbAdministracion = iDbAdministracion;
             _iDbConsultasPIP = idbConsultasPIP;
 
-            _dbMfa = dbMfa;
+            
             _totp = totp;
 
             _mfaWs = mfaWs;
@@ -395,6 +392,7 @@ namespace Web.Controllers
             if (verify.CodigoExito != 1 || verify.Data?.Ok != true)
             {
                 ModelState.AddModelError("", verify.Mensaje ?? "Código inválido.");
+                ViewBag.VerifyError = verify.Mensaje ?? "Código inválido.";
                 ViewBag.MfaShow = true;
                 ViewBag.MfaMode = "verify";
 
@@ -736,6 +734,132 @@ namespace Web.Controllers
             TempData["MfaInfo"] = "Se restableció la verificación en dos pasos. Inicie sesión nuevamente para activar su nuevo autenticador.";
 
             return RedirectToAction("InicioSesion");
+        }
+
+
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MfaResetRequest()
+        {
+            var pending = GetPendingFromTempData(keep: true);
+            if (pending == null)
+            {
+                TempData["MfaError"] = "La sesión expiró. Inicie sesión nuevamente.";
+                return RedirectToAction("InicioSesion");
+            }
+
+            var resp = await _mfaWs.ResetRequestAsync(pending.Identificacion, pending.Usuario, pending.Ip, pending.Identificacion);
+
+            ViewBag.MfaShow = true;
+            ViewBag.MfaMode = "reset"; // seguimos en verify, y el usuario abre el modal reset
+            ViewBag.ResetInfo = resp.CodigoExito == 1 ? resp.Mensaje : null;
+            ViewBag.ResetError = resp.CodigoExito != 1 ? (resp.Mensaje ?? "No fue posible enviar el código.") : null;
+
+            TempData.Keep(TdLoginUserData);
+            TempData.Keep(TdMfaPending);
+
+            return View("InicioSesion", new DtoCredenciales());
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MfaResetConfirm(string Code)
+        {
+            var pending = GetPendingFromTempData(keep: true);
+            if (pending == null)
+            {
+                TempData["MfaError"] = "La sesión expiró. Inicie sesión nuevamente.";
+                return RedirectToAction("InicioSesion");
+            }
+
+            if (string.IsNullOrWhiteSpace(Code) || Code.Length != 6)
+            {
+                ViewBag.MfaShow = true;
+                ViewBag.MfaMode = "reset";
+                ViewBag.ResetError = "Ingrese el código de 6 dígitos.";
+                TempData.Keep(TdLoginUserData);
+                TempData.Keep(TdMfaPending);
+                return View("InicioSesion", new DtoCredenciales());
+
+            }
+
+            var resp = await _mfaWs.ResetConfirmAsync(pending.Identificacion, pending.Usuario, Code, pending.Ip, pending.Identificacion);
+
+            ViewBag.MfaShow = true;
+            ViewBag.MfaMode = "verify";
+
+            if (resp.CodigoExito != 1)
+            {
+                ViewBag.MfaMode = "reset";
+                ViewBag.ResetError = resp.Mensaje ?? "Código inválido o expirado.";
+            }
+            else
+            {
+                // resp.Data podría traer AvailableAt (recomendado)
+                //ViewBag.MfaMode = "reset";
+                // ViewBag.ResetInfo = resp.Mensaje;
+                await MfaResetExecute();
+
+
+            }
+
+            TempData.Keep(TdLoginUserData);
+            TempData.Keep(TdMfaPending);
+
+            return View("InicioSesion", new DtoCredenciales());
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MfaResetExecute()
+        {
+            var pending = GetPendingFromTempData(keep: true);
+            if (pending == null) return RedirectToAction("InicioSesion");
+
+            var resp = await _mfaWs.ResetExecuteAsync(pending.Identificacion, pending.Usuario, pending.Ip, pending.Identificacion);
+
+            if (resp.CodigoExito != 1)
+            {
+                ViewBag.MfaShow = true;
+                ViewBag.MfaMode = "reset";
+                ViewBag.ResetError = resp.Mensaje ?? "Aún no disponible.";
+                TempData.Keep(TdLoginUserData);
+                TempData.Keep(TdMfaPending);
+                return View("InicioSesion", new DtoCredenciales());
+            }
+
+            // listo para reenrolar: iniciamos EnrollStart y mostramos modal enroll
+            var enrollStart = await _mfaWs.EnrollStartAsync(pending.Identificacion, pending.Usuario);
+            if (enrollStart.CodigoExito != 1 || enrollStart.Data == null)
+            {
+                ViewBag.MfaShow = true;
+                ViewBag.MfaMode = "verify";
+                ViewBag.ResetError = "Reset OK, pero no fue posible iniciar enrolamiento. Intente nuevamente.";
+                TempData.Keep(TdLoginUserData);
+                TempData.Keep(TdMfaPending);
+                return View("InicioSesion", new DtoCredenciales());
+            }
+
+            TempData[TdEnrollToken] = enrollStart.Data.EnrollToken;
+            TempData[TdEnrollQr] = enrollStart.Data.QrBase64;
+            TempData[TdEnrollManualKey] = enrollStart.Data.ManualKey;
+
+            TempData.Keep(TdEnrollToken);
+            TempData.Keep(TdEnrollQr);
+            TempData.Keep(TdEnrollManualKey);
+            TempData.Keep(TdLoginUserData);
+            TempData.Keep(TdMfaPending);
+
+            ViewBag.MfaShow = true;
+            ViewBag.MfaMode = "enroll";
+            ViewBag.MfaQrBase64 = enrollStart.Data.QrBase64;
+            ViewBag.MfaManualKey = enrollStart.Data.ManualKey;
+
+            return View("InicioSesion", new DtoCredenciales());
         }
 
 

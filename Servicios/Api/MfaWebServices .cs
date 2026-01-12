@@ -106,4 +106,28 @@ public class MfaWebServices : IMfaWebServices
         using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
         return await ReadAsAsync<DtoResultado<int>>(resp);
     }
+
+
+
+    public async Task<DtoResultado<int>> ResetRequestAsync(DtoMfaResetRequestReq req, string bearer)
+    {
+        using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaResetRequest!, req, bearer);
+        using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
+        return await ReadAsAsync<DtoResultado<int>>(resp);
+    }
+
+    public async Task<DtoResultado<DtoMfaResetConfirmResp>> ResetConfirmAsync(DtoMfaResetConfirmReq req, string bearer)
+    {
+        using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaResetConfirm!, req, bearer);
+        using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
+        return await ReadAsAsync<DtoResultado<DtoMfaResetConfirmResp>>(resp);
+    }
+
+    public async Task<DtoResultado<int>> ResetExecuteAsync(DtoMfaResetExecuteReq req, string bearer)
+    {
+        using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaResetExecute!, req, bearer);
+        using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
+        return await ReadAsAsync<DtoResultado<int>>(resp);
+    }
+
 }
