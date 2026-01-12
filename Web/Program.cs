@@ -126,7 +126,7 @@ builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
 builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
 builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
 builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
-builder.Services.AddScoped<IDbMfaIris, DbMfaIris>();
+
 
 builder.Services.AddScoped<IDbMfaCentralWs, DbMfaCentralWs>();
 
