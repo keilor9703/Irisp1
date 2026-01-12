@@ -51,7 +51,7 @@ namespace Web.Controllers
             IConfiguration iConfiguration,
             IDbAdministracion iDbAdministracion,
             IDbConsultasPIP idbConsultasPIP,
-            IDbMfaIris dbMfa,
+            
             IMfaTotpService totp,
             IDbMfaCentralWs mfaWs
         )
