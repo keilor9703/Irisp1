@@ -108,6 +108,15 @@ public class MfaWebServices : IMfaWebServices
     }
 
 
+    public async Task<DtoResultado<int>> ChangeMfaAsync(DtoMfaResetReq req, string bearer)
+    {
+        using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaChangeMfa!, req, bearer);
+        using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
+        return await ReadAsAsync<DtoResultado<int>>(resp);
+    }
+
+
+
 
     public async Task<DtoResultado<int>> ResetRequestAsync(DtoMfaResetRequestReq req, string bearer)
     {

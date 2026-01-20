@@ -297,16 +297,25 @@ function P_InsRoles() {
 function P_InsUdpUsuarios() {
 
     var _Bloq = 0;
+    var _2FA = 0;
     let _chkBlq = chkActivo.checked;
     if (_chkBlq == true) {
         _Bloq = 0;
     } else {
         _Bloq = 1;
     }
+    let _chk2FA = chkMfaActivo.checked;
+    if (_chk2FA == true) {
+        _2FA = 1;
+    } else {
+        _2FA = 0;
+    }
 
     var DtoUsuario = {
         Identificacion: $("#txtIdentificacion").val(),
-        Bloqueado: _Bloq
+        Bloqueado: _Bloq,
+        Estado2Fa: _2FA,
+        Usuario: $("#txtUserName").val(),
     }
 
     $.ajax({

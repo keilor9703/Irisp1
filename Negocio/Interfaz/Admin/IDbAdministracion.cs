@@ -23,7 +23,7 @@ namespace Negocio.Interfaz.Admin
         #region Métodos de Inserción y Actualización
         public Task<DtoResultado<int>> P_InsAuditoria(long V_Identificacion, string V_Evento, string V_Descripcion, long V_Identificador, string V_Maquina);
         public Task<DtoResultado<int>> P_InsRolesUser(DtoInsUserRoles obj, long V_Usuario, string V_Maquina);
-        public Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, long V_Usuario, string V_Maquina);
+        public Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, int V_Estado2Fa,string V_UsuarioInst,long V_Usuario, string V_Maquina);
 
 
 

@@ -26,6 +26,7 @@
             MfaIsTrusted = $"{MfaBase}api/ApiMfa/IsTrusted";
             MfaSaveTrusted = $"{MfaBase}api/ApiMfa/SaveTrusted";
             MfaReset = $"{MfaBase}api/ApiMfa/Reset";
+            MfaChangeMfa = $"{MfaBase}api/ApiMfa/ChangeMfa";
             MfaResetRequest = $"{MfaBase}api/ApiMfa/ResetRequest";
             MfaResetConfirm = $"{MfaBase}api/ApiMfa/ResetConfirm";
             MfaResetExecute = $"{MfaBase}api/ApiMfa/ResetExecute";
@@ -49,6 +50,7 @@
         public readonly string? MfaIsTrusted;
         public readonly string? MfaSaveTrusted;
         public readonly string? MfaReset;
+        public readonly string? MfaChangeMfa;
         public readonly string? MfaResetRequest;
         public readonly string? MfaResetConfirm;
         public readonly string? MfaResetExecute;

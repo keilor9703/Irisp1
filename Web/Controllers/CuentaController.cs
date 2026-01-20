@@ -165,9 +165,11 @@ namespace Web.Controllers
             // ============================================================
             // ✅ MFA CENTRALIZADO (solo si requiereMfa)
             // ============================================================
-            bool requiereMfa = Admin; // tu política actual
+            // bool requiereMfa = Admin; // tu política actual
 
-            if (requiereMfa)
+            var requiereMfa = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+
+            if (requiereMfa.Data?.MfaHabilitado == 1)
             {
                 TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
 

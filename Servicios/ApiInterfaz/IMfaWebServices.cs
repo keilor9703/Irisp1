@@ -13,6 +13,7 @@ public interface IMfaWebServices
 
     Task<DtoResultado<int>> IsTrustedAsync(long identificacion, string usuario, string deviceId, string bearer);
     Task<DtoResultado<int>> ResetAsync(DtoMfaResetReq req, string bearer);
+    Task<DtoResultado<int>> ChangeMfaAsync(DtoMfaResetReq req, string bearer);
 
     Task<DtoResultado<int>> ResetRequestAsync(DtoMfaResetRequestReq req, string bearer);
 

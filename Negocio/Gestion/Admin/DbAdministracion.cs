@@ -21,18 +21,20 @@ namespace Negocio.Gestion.Admin
         private readonly string _strConexionIris_Disec;
         private readonly ILogger _logger;
         private readonly IDbConsultasPIP _iDbConsultasPIP;
+        private readonly IDbMfaCentralWs _mfaWs;
         #endregion
 
         #region Constructor
         public DbAdministracion(IConfiguration iConfiguration,
                                 IDbConsultasPIP dbConsultasPIP,
+                                IDbMfaCentralWs mfaWs,
                                 ILogger<DbAdministracion> logger
                                 )
         {
             _iConfiguration = iConfiguration;
             _iDbConsultasPIP = dbConsultasPIP;
-           
-            _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
+            _mfaWs = mfaWs;
+             _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }
         #endregion
@@ -486,7 +488,7 @@ namespace Negocio.Gestion.Admin
             return resp;
         }
 
-        public async Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, long V_Usuario, string V_Maquina)
+        public async Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado,int V_Estado2Fa ,string V_UsuarioInst, long V_Usuario, string V_Maquina)
         {
             var resp = new DtoResultado<int>
             {
@@ -494,11 +496,19 @@ namespace Negocio.Gestion.Admin
                 Data = 0
             };
 
+         
+
+            var Estado2fa = await _mfaWs.ChangeMfaAsync(
+               V_Identificacion,
+               V_UsuarioInst,
+               V_Estado2Fa,
+               V_Maquina,
+               V_Identificacion
+            );
+
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-               // connection.BindByName = true;
-
                 var p = new OracleDynamicParameters();
 
                 // IN

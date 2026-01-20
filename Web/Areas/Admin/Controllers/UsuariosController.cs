@@ -101,7 +101,7 @@ namespace Web.Areas.Admin.Controllers
 
             try
             {
-                var Resultado = await _iDbAdministracion.P_InsUdpUsuarios(obj.Identificacion, obj.Bloqueado, Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+                var Resultado = await _iDbAdministracion.P_InsUdpUsuarios(obj.Identificacion, obj.Bloqueado,obj.Estado2Fa,obj.Usuario, Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
                 if (Resultado.IdRespuesta > 0)
                 {
                     return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });

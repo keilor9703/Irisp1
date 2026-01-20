@@ -60,6 +60,11 @@ namespace Comun.Areas.Admin
         [JsonPropertyName("Bloqueado")]
         public int Bloqueado { get; set; }
 
+        [JsonPropertyName("Estado2Fa")]
+        public int Estado2Fa { get; set; }
+
+
+
         [JsonPropertyName("Celular")]
         public Int64 Celular { get; set; }
 

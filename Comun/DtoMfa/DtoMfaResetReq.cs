@@ -12,8 +12,9 @@ namespace Comun.DtoMfa
         public string Usuario { get; set; } = "";   // <-- NUEVO
         public string IpMaquina { get; set; } = "";
         public long UserAudit { get; set; }
-
         public string Sistema { get; set; }
+
+        public int Estado2FA { get; set; }
     }
 
 }
