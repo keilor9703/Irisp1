@@ -20,11 +20,18 @@ namespace Comun.Areas.Admin
         [JsonPropertyName("FechaCreacion")]
         public string? FechaCreacion { get; set; }
 
+        [JsonPropertyName("UsuarioInst")]
+        public string? UsuarioInst { get; set; }
+
         [JsonPropertyName("FuncionarioCreacion")]
         public string? FuncionarioCreacion { get; set; }
 
         [JsonPropertyName("Bloqueado")]
         public Int32 Bloqueado { get; set; }
+
+        [JsonPropertyName("EstadoMfa")]
+        public int EstadoMfa { get; set; }
+
 
         [JsonPropertyName("FechaFin")]
         public string? FechaFin { get; set; }

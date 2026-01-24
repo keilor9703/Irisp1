@@ -45,6 +45,22 @@ namespace Web.Areas.Admin.Controllers
         }
 
 
+
+
+        public async Task<IActionResult> F_GetEstadoMfa(Int64 V_Identificacion, string V_Usuario)
+        {
+            var Resultado = await _iDbAdministracion.F_GetEstadoMfa(V_Identificacion, V_Usuario);
+            if (Resultado.IdRespuesta > 0)
+            {
+                return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
+            }
+            else
+            {
+                return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
+            }
+        }
+
+
         public async Task<IActionResult> F_GetListUsuarios()
         {
             var Resultado = await _iDbAdministracion.F_GetListUsuarios();
@@ -101,21 +117,31 @@ namespace Web.Areas.Admin.Controllers
 
             try
             {
-                var Resultado = await _iDbAdministracion.P_InsUdpUsuarios(obj.Identificacion, obj.Bloqueado,obj.Estado2Fa,obj.Usuario, Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+                //bool esSuperUsuario = User.IsInRole("1");
+
+                // Si no es SuperUsuario, no se cambia MFA (ignorar lo que venga)
+                //int? estado2FaPermitido = esSuperUsuario ? (int?)obj.Estado2Fa : null;
+
+                var Resultado = await _iDbAdministracion.P_InsUdpUsuarios(
+                    obj.Identificacion,
+                    obj.Bloqueado,
+                    obj.Estado2Fa,              // <-- nullable
+                    obj.Usuario,
+                    Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                    HttpContext.Session.GetString("IpMaquina")
+                );
+
                 if (Resultado.IdRespuesta > 0)
-                {
                     return Json(new { success = true, data = Resultado.Data, message = Resultado.Mensaje });
-                }
-                else
-                {
-                    return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
-                }
+
+                return Json(new { success = false, data = Resultado.Data, message = Resultado.Mensaje });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
             }
         }
+
         #endregion
 
         #region Métodos de Eliminación

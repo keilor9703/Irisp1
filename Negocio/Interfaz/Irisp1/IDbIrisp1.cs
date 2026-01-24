@@ -12,27 +12,27 @@ namespace Negocio.Interfaz.Irisp1
     {
         #region Métodos de Consulta        
 
-        public Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1();
+        public Task<DtoResultado<List<DtoAnio>>> F_GetAniosIrisP1();
      
         public Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(Int32 V_Anio, string RolUsuario, Int64 CodigoUnidad);
 
 
-        public Task<DtoResultado<List<DtoCuadrantes>>> P_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2); 
+        public Task<DtoResultado<List<DtoCuadrantes>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2); 
 
         public Task<DtoResultado<long>> F_ConsultarSeqIris();
         public Task<DtoResultado<long>> F_ConsultarSeqIntegrante();
-        public Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantes(string V_CriminalidadId);
-        public Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantesPreliminar(string V_CriminalidadId);
-        public Task<DtoResultado<List<DtoDelitosIris>>> P_GetDelitosIris(string V_CriminalidadId);
-        public Task<DtoResultado<List<DtoInfoAdicional>>> P_GetInfoAdicional(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoInfoAdicional>>> F_GetInfoAdicional(string V_CriminalidadId);
 
 
         //public Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId);
         Task<DtoResultado<List<DtoDocumentoIris>>> F_GetDocIris(string criminalidadId);
 
 
-        public Task<DtoResultado<List<DtoCriminalidadFoto>>> P_GetCriminalidadFotos(string V_CriminalidadId);
-        public Task<DtoResultado<List<DtoUbicacionIris>>> P_GetUbicacionIris(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoCriminalidadFoto>>> F_GetCriminalidadFotos(string V_CriminalidadId);
+        public Task<DtoResultado<List<DtoUbicacionIris>>> F_GetUbicacionIris(string V_CriminalidadId);
 
         #endregion
 

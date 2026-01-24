@@ -110,27 +110,32 @@ function GetGrillaUsuarios() {
         language: glOpcionesIdioma,
         responsive: true,
         "columns": [
-          
             { "title": "Grado", "data": "GradAlfabetico", "name": "GradAlfabetico", className: "celdaCenter celda2" },
-            { "title": "Funcionario", "data": "Funcionario", "name": "Funcionario", className: "celdaCenter celda30" },
+            { "title": "Funcionario", "data": "Funcionario", "name": "Funcionario", className: "celda15" },
             { "title": "Identificación", "data": "Identificacion", "name": "Identificacion", className: "celdaCenter celda5" },
             { "title": "Cargo", "data": "Cargo", "name": "Cargo", className: "celdaCenter" },
+
+            // NUEVO
+            {
+                "title": "Roles",
+                "data": "Roles",
+                "name": "Roles",
+                className: "celdaCenter",
+                "render": function (data, type, row) {
+                    if (!data) return "SIN ROLES";
+                    return data; // viene como "ROL1 | ROL2 | ROL3"
+                }
+            }
         ],
-        lengthMenu: [
-            [10, 25, 50, -1],
-            ['10 registros', '25 registros', '50 registros', 'Todos']
-        ],
-        ordering: false,
+
+        ordering: true,
         pageLength: 10,
-        bLengthChange: false,
+        bLengthChange: true,
         searching: true,
         paging: true,
         info: true
     });
 }
-
-
-
 
 function F_GetFuncionarios(V_IdentificacionB){
 
@@ -221,6 +226,9 @@ function F_GetUserRoles(P_Identificacion) {
                 $('#chkActivo').prop('checked', Activo).trigger('change');
 
 
+                F_GetEstadoMfa(P_Identificacion, respuesta.data[0].UsuarioInst );
+
+
             } else {
                 $("#pn_Grilla").addClass('hidden');
                 $("#pn_Roles").addClass('hidden');
@@ -246,6 +254,35 @@ function F_GetUserRoles(P_Identificacion) {
 }
 
 
+function F_GetEstadoMfa(P_Identificacion, P_Usuario) {
+    $.ajax({
+        type: "POST",
+        url: AppRoutes.Administracion.UrlGetEstadoMfa,
+        async: true,
+        data: { V_Identificacion: P_Identificacion, V_Usuario: P_Usuario },
+        dataType: 'json',
+        cache: false,
+        success: function (respuesta) {
+            if (respuesta.success) {
+               
+                var _Habilitado = respuesta.data.EstadoMfa;
+
+                $('#chkMfaActivo').prop('checked', _Habilitado).trigger('change');
+
+
+            } else {
+               
+            }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'No es posible consultar MFA, revise!!'
+            });
+        }
+    });
+}
 //Funciones de Inserción y Actualización     AISGNAR ROLES ADMINISTRACION DE USUARIOS
 function P_InsRoles() {
 
@@ -294,29 +331,96 @@ function P_InsRoles() {
         }
     });
 }
+//function P_InsUdpUsuarios() {
+
+//    var _Bloq = 0;
+//    var _2FA = 0;
+//    let _chkBlq = chkActivo.checked;
+//    if (_chkBlq == true) {
+//        _Bloq = 0;
+//    } else {
+//        _Bloq = 1;
+//    }
+//    let _chk2FA = chkMfaActivo.checked;
+//    if (_chk2FA == true) {
+//        _2FA = 1;
+//    } else {
+//        _2FA = 0;
+//    }
+
+//    var DtoUsuario = {
+//        Identificacion: $("#txtIdentificacion").val(),
+//        Bloqueado: _Bloq,
+//        Estado2Fa: _2FA,
+//        Usuario: $("#txtUserName").val(),
+//    }
+
+//    $.ajax({
+//        type: 'POST',
+//        url: AppRoutes.Administracion.UrlInsUdpUsuarios,
+//        async: true,
+//        dataType: 'json',
+//        data: { obj: DtoUsuario },
+//        success: function (respuesta) {
+//            if (respuesta.success) {
+
+//                $("#txtIdUsuario").val(respuesta.data);
+//                $("#pn_Roles").removeClass('hidden');
+
+//                var uno = document.getElementById('btnGrabar');
+//                uno.innerHTML = '<span class="fa ico_grabar faa-wrench animated"></span>Actualizar';
+
+//                Swal.fire({
+//                    type: 'success',
+//                    title: 'Señor(a) Funcionario(a:)',
+//                    text: respuesta.message + ", ahora revise roles del sistema"
+//                });
+
+//            } else {
+//                $("#pn_Roles").addClass('hidden');
+//                Swal.fire({
+//                    type: 'error',
+//                    title: 'Señor(a) Funcionario(a:)',
+//                    text: respuesta.message
+//                });
+//            }
+//        },
+//        error: function (ex) {
+//            $("#txtIdUsuario").val(0);
+//            Swal.fire({
+//                type: 'error',
+//                title: 'Señor(a) Funcionario(a:)',
+//                text: "No es posible grabar, revise"
+//            });
+//        }
+//    });
+//}
+
+
 function P_InsUdpUsuarios() {
 
     var _Bloq = 0;
-    var _2FA = 0;
-    let _chkBlq = chkActivo.checked;
-    if (_chkBlq == true) {
-        _Bloq = 0;
-    } else {
-        _Bloq = 1;
-    }
-    let _chk2FA = chkMfaActivo.checked;
-    if (_chk2FA == true) {
+    var _2FA = null; // importante: null = "no cambiar MFA"
+
+    const chkActivoEl = document.getElementById('chkActivo');
+    const chkMfaEl = document.getElementById('chkMfaActivo'); // puede ser null si no es rol 1 super usuario
+
+    // Bloqueo (siempre existe)
+    _Bloq = (chkActivoEl && chkActivoEl.checked) ? 0 : 1;
+
+    // MFA
+    if (chkMfaEl == null) {
         _2FA = 1;
     } else {
-        _2FA = 0;
+        _2FA = chkMfaEl.checked ? 1 : 0;
     }
 
     var DtoUsuario = {
         Identificacion: $("#txtIdentificacion").val(),
         Bloqueado: _Bloq,
-        Estado2Fa: _2FA,
+        Estado2Fa: _2FA,  
         Usuario: $("#txtUserName").val(),
-    }
+    };
 
     $.ajax({
         type: 'POST',
@@ -358,6 +462,9 @@ function P_InsUdpUsuarios() {
         }
     });
 }
+
+
+
 
 //Funciones de Eliminación
 function Dell_Roles(P_IdRolUser) {

@@ -32,12 +32,12 @@ namespace Negocio.Gestion.Irisp1
         // ================================================================
         // 1) PK_CONSULTA_IRISP.F_GetAniosIrisP1  (FUNCTION -> RETURN SYS_REFCURSOR)
         // ================================================================
-        public async Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1()
+        public async Task<DtoResultado<List<DtoAnio>>> F_GetAniosIrisP1()
         {
-            var resp = new DtoResultado<List<DtoIrisp1>>
+            var resp = new DtoResultado<List<DtoAnio>>
             {
                 Operacion = "F_GetAniosIrisP1",
-                Data = new List<DtoIrisp1>()
+                Data = new List<DtoAnio>()
             };
 
             try
@@ -48,14 +48,14 @@ namespace Negocio.Gestion.Irisp1
                 // FUNCTION -> ReturnValue RefCursor
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
-                var lista = (await connection.QueryAsync<DtoIrisp1>(
+                var lista = (await connection.QueryAsync<DtoAnio>(
                     "PK_CONSULTA_IRISP.F_GetAniosIrisP1",
                     p,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120
                 )).ToList();
 
-                resp.Data = lista ?? new List<DtoIrisp1>();
+                resp.Data = lista ?? new List<DtoAnio>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
                 resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encuentran registros en base de datos";
             }
@@ -64,14 +64,14 @@ namespace Negocio.Gestion.Irisp1
                 _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"OracleException: {oex.Message}";
-                resp.Data = new List<DtoIrisp1>();
+                resp.Data = new List<DtoAnio>();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = ex.Message;
-                resp.Data = new List<DtoIrisp1>();
+                resp.Data = new List<DtoAnio>();
             }
 
             return resp;

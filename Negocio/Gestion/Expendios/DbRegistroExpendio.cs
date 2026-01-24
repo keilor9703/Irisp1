@@ -33,12 +33,12 @@ namespace Negocio.Gestion.Expendios
 
         #region Consultas
 
-        public async Task<DtoResultado<List<DtoExpendios>>> F_GetAniosIrisP1()
+        public async Task<DtoResultado<List<DtoAnioE>>> F_GetAniosIrisP1()
         {
-            var resp = new DtoResultado<List<DtoExpendios>>
+            var resp = new DtoResultado<List<DtoAnioE>>
             {
                 Operacion = "F_GetAniosIrisP1",
-                Data = new List<DtoExpendios>()
+                Data = new List<DtoAnioE>()
             };
 
             try
@@ -46,23 +46,19 @@ namespace Negocio.Gestion.Expendios
                 using var connection = new OracleConnection(_strConexionIris_Disec);
 
                 var p = new OracleDynamicParameters();
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
-                // Si tu DTO tiene la propiedad AnoIrisp1 y el cursor devuelve columna compatible, mapea directo.
-                var lista = (await connection.QueryAsync<DtoExpendios>(
+            
+                var lista = (await connection.QueryAsync<DtoAnioE>(
                     "PK_EXPENDIOS_IRIS.F_GetAniosIrisP1",
                     p,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120
                 )).AsList();
 
-                // Si el SP solo devuelve un int y tu DTO no mapea por nombre, puedes mapear manual:
-                // var anios = (await connection.QueryAsync<int>(...)).ToList();
-                // lista = anios.Select(x => new DtoExpendios { AnoIrisp1 = x }).ToList();
-
-                resp.Data = lista ?? new List<DtoExpendios>();
+                resp.Data = lista ?? new List<DtoAnioE>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
                 resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encuentran registros en base de datos";
                 return resp;
@@ -99,7 +95,7 @@ namespace Negocio.Gestion.Expendios
                 p.Add("P_Anio", V_Anio, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_Roles", RolesUsuario, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -150,8 +146,8 @@ namespace Negocio.Gestion.Expendios
                 using var connection = new OracleConnection(_strConexionIris_Disec);
                 await connection.OpenAsync();
 
-                // Nota: en tu SQL original faltaban paréntesis si realmente es función.
-                // Mantengo tu query. Si en Oracle es función, normalmente sería: SELECT PK_EXPENDIOS_IRIS.f_consultar_seq_Iris() FROM dual
+               
+              
                 var consecutivo = await connection.ExecuteScalarAsync<string>(
                     "SELECT PK_EXPENDIOS_IRIS.f_consultar_seq_Iris FROM dual",
                     commandType: CommandType.Text
@@ -183,11 +179,11 @@ namespace Negocio.Gestion.Expendios
             }
         }
 
-        public async Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantes(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoIntegrantes>>
             {
-                Operacion = "P_GetIntegrantes",
+                Operacion = "F_GetIntegrantes",
                 Data = new List<DtoIntegrantes>()
             };
 
@@ -197,12 +193,12 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
                 var lista = (await connection.QueryAsync<DtoIntegrantes>(
-                    "PK_EXPENDIOS_IRIS.P_GetIntegrantes",
+                    "PK_EXPENDIOS_IRIS.F_GetIntegrantes",
                     p,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120
@@ -249,7 +245,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -301,7 +297,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -353,7 +349,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -405,7 +401,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -457,7 +453,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Identificacion", V_Identificacion, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -509,7 +505,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_sigla", V_Sigla, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
@@ -555,7 +551,7 @@ namespace Negocio.Gestion.Expendios
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_sigla", V_Sigla, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 

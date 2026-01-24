@@ -41,8 +41,8 @@ namespace Negocio.Gestion.Integrantes
                 var p = new OracleDynamicParameters();
                 p.Add("P_IDENTIFICACION", identificacion, OracleMappingType.Int64, ParameterDirection.Input);
 
-                // Cursor de salida (más estable en Dapper.Oracle)
-                p.Add("V_CONSULTA", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+               
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await cnn.OpenAsync();
 
@@ -101,7 +101,7 @@ namespace Negocio.Gestion.Integrantes
                 p.Add("P_Identificacion", identificacion, OracleMappingType.Int64, ParameterDirection.Input);
 
                 // Cursor salida
-                p.Add("V_CONSULTA", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await cnn.OpenAsync();
 
@@ -160,7 +160,7 @@ namespace Negocio.Gestion.Integrantes
                 p.Add("P_Identificacion", identificacion, OracleMappingType.Int64, ParameterDirection.Input);
 
                 // Cursor salida
-                p.Add("V_Consulta", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await cnn.OpenAsync();
 

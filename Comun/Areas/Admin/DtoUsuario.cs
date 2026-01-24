@@ -61,7 +61,7 @@ namespace Comun.Areas.Admin
         public int Bloqueado { get; set; }
 
         [JsonPropertyName("Estado2Fa")]
-        public int Estado2Fa { get; set; }
+        public int? Estado2Fa { get; set; }
 
 
 
@@ -79,5 +79,8 @@ namespace Comun.Areas.Admin
 
         [JsonPropertyName("Foto")]
         public string? Foto { get; set; }
+
+        [JsonPropertyName("Roles")]
+        public string? Roles { get; set; }
     }
 }

@@ -203,8 +203,6 @@ namespace Servicios.Api
         }
 
 
-
-
         public async Task<DtoRespuesta<List<DtoCarrusel>>> ObtenerCarruselSeviciosAsync(string token)
         {
             try

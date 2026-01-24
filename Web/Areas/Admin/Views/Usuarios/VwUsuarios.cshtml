@@ -75,7 +75,7 @@
                     <div class="col-md-3 MargFloatBoos">
                         <div class="form-group has-float-label">
                             <input tabindex="7" name="txtUserName" type="text" id="txtUserName" autocomplete="off" placeholder=" " class="form-control InputPading" readonly />
-                            <label class="Labels">Usuario Institucional.:</label>
+                            <label class="Labels">Usuario Institucional:</label>
                         </div>
                     </div>
                     <div class="col-md-3 MargFloatBoos">
@@ -111,7 +111,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-4 MargFloatBoos">
+                   @*  <div class="col-md-4 MargFloatBoos">
                         <div class="form-horizontal">
                             <div class="form-group row" style="margin-bottom: 0px;">
                                 <label class="col-md-7 col-form-label Labels" style="margin-top:0px;">Activar MFA (Doble factor de autenticación):</label>
@@ -121,6 +121,25 @@
                             </div>
                         </div>
                     </div>
+ *@
+
+
+                    @if (User.IsInRole("1"))
+                    {
+                        <div class="col-md-4 MargFloatBoos" id="contenedorMfa">
+                            <div class="form-horizontal">
+                                <div class="form-group row" style="margin-bottom: 0px;">
+                                    <label class="col-md-7 col-form-label Labels" style="margin-top:0px;">
+                                        Activar MFA (Doble factor de autenticación):
+                                    </label>
+                                    <div class="col-md-5 text-left" style="padding-left:0px;">
+                                        <input tabindex="12" type="checkbox" checked data-toggle="toggle" id="chkMfaActivo">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                 </div>
 
                 
@@ -131,7 +150,7 @@
         <div class="card-footer" style="margin-bottom: 10px;">
             <div class="row">
                 <div class="col-md-6 text-left">
-                    <button tabindex="1003" type="button" id="btnListaUsuarios"  style="border-radius: 0px 16px 0px 16px !important; " class="btn btn-eliminar" title="Listado Usuarios"><span class="fas fa-trash-alt faa-ring animated"></span> Listado Usuarios</button>
+                    <button tabindex="1003" type="button" id="btnListaUsuarios"  style="border-radius: 0px 16px 0px 16px !important; " class="btn btn-buscar" title="Listado Usuarios"><span class="fas fa-users faa-ring animated"></span> Listado Usuarios</button>
                  </div>
                  <div class="col-md-6 text-right">
                  <button tabindex="1001" type="button" id="btnGrabar" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad" title="Guardar"><span class="fa ico_grabar faa-wrench animated"></span> Guardar</button>
@@ -142,32 +161,9 @@
     </div>
 </div>
 
-@* Grilla para listado de usuarios----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
-
-<div class="card border-success ">
-    <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="mr-2 mdi mdi-account-card-details text-white"></i>Listado de Usuarios</h4>
-        <div class="card-actions ms-auto d-flex button-group">
-            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
-            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
-            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
-                <i data-feather="x" class="feather-sm"></i>
-            </a>
-        </div>
-    </div>
-    <div id="pn_GrillaUsuarios" class="card-body collapse show">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
-                    <table id="tbGrillaUsuarios" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 
-@* Fin Grilla para listado de usuarios  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
+@* Fin Grilla Roles  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*@
 <div class="card border-success hidden" id="pn_Roles">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="mr-2 fa fa-server text-white"></i>Asignar Roles</h4>
@@ -226,6 +222,34 @@
             <div class="col-md-12">
                 <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
                     <table id="tbGrilla" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* Grilla para listado de usuarios----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- *@
+
+
+
+
+<div class="card border-success hidden" id="pn_GrillaUsuarios">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="mr-2 fa fa-server text-white"></i>Listado de Usuarios</h4>
+        <div class="card-actions ms-auto d-flex button-group">
+            <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
+            <a class="mb-0 btn-minimize text-white link d-flex align-items-center" data-action="expand"><i class="mdi mdi-arrow-expand"></i></a>
+            <a class="mb-0 link d-flex text-white align-items-center pe-0" data-action="close">
+                <i data-feather="x" class="feather-sm"></i>
+            </a>
+        </div>
+    </div>
+    <div class="card-body collapse show">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+                    <table id="tbGrillaUsuarios" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
                 </div>
             </div>
         </div>

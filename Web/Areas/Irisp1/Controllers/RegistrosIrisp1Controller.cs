@@ -133,9 +133,9 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 		[HttpGet]
-        public async Task<IActionResult> P_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
+        public async Task<IActionResult> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
         {
-            var cuadrantes = await _iDbIrisp1.P_GetCuadrantes(V_unidadLabora, V_unidadLabora2);
+            var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora, V_unidadLabora2);
 
 
 
@@ -207,9 +207,9 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> P_GetIntegrantes( string V_CriminalidadId)
+        public async Task<IActionResult> F_GetIntegrantes( string V_CriminalidadId)
         {
-            var resultado = await _iDbIrisp1.P_GetIntegrantes(V_CriminalidadId);
+            var resultado = await _iDbIrisp1.F_GetIntegrantes(V_CriminalidadId);
 
             if (resultado.IdRespuesta > 0)
             {
@@ -226,9 +226,9 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> P_GetIntegrantesPreliminar(string V_CriminalidadId)
+        public async Task<IActionResult> F_GetIntegrantesPreliminar(string V_CriminalidadId)
         {
-            var resultado = await _iDbIrisp1.P_GetIntegrantesPreliminar(V_CriminalidadId);
+            var resultado = await _iDbIrisp1.F_GetIntegrantesPreliminar(V_CriminalidadId);
 
             if (resultado.IdRespuesta > 0)
             {
@@ -243,9 +243,9 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> P_GetDelitosIris(string V_CriminalidadId)
+        public async Task<IActionResult> F_GetDelitosIris(string V_CriminalidadId)
         {
-            var resultado = await _iDbIrisp1.P_GetDelitosIris(V_CriminalidadId);
+            var resultado = await _iDbIrisp1.F_GetDelitosIris(V_CriminalidadId);
 
             if (resultado.IdRespuesta > 0)
             {
@@ -261,9 +261,9 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> P_GetInfoAdicional(string V_CriminalidadId)
+        public async Task<IActionResult> F_GetInfoAdicional(string V_CriminalidadId)
         {
-            var resultado = await _iDbIrisp1.P_GetInfoAdicional(V_CriminalidadId);
+            var resultado = await _iDbIrisp1.F_GetInfoAdicional(V_CriminalidadId);
 
             if (resultado.IdRespuesta > 0)
             {
@@ -306,9 +306,9 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> P_GetCriminalidadFotos(string V_CriminalidadId)
+        public async Task<IActionResult> F_GetCriminalidadFotos(string V_CriminalidadId)
         {
-            var resultado = await _iDbIrisp1.P_GetCriminalidadFotos(V_CriminalidadId);
+            var resultado = await _iDbIrisp1.F_GetCriminalidadFotos(V_CriminalidadId);
           
 
 
@@ -327,10 +327,10 @@ namespace Web.Areas.Irisp1.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> P_GetUbicacionIris(string V_CriminalidadId)
+        public async Task<IActionResult> F_GetUbicacionIris(string V_CriminalidadId)
         {
            
-            var resultado = await _iDbIrisp1.P_GetUbicacionIris(V_CriminalidadId);
+            var resultado = await _iDbIrisp1.F_GetUbicacionIris(V_CriminalidadId);
 
 
             if (resultado.IdRespuesta > 0)

@@ -214,13 +214,12 @@ namespace Negocio.Gestion.Admin
             var resp = new DtoResultado<List<DtoUserRoles>>
             {
                 Operacion = "F_GetUserRoles",
-                Data = new List<DtoUserRoles>()
+                Data = new List<DtoUserRoles>(),
             };
 
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-
 
                 var p = new OracleDynamicParameters();
 
@@ -239,6 +238,7 @@ namespace Negocio.Gestion.Admin
                 resp.Data = lista ?? new List<DtoUserRoles>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
                 resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+
             }
             catch (OracleException oex)
             {
@@ -257,58 +257,119 @@ namespace Negocio.Gestion.Admin
         }
 
 
+        public async Task<DtoResultado<DtoUserRoles>> F_GetEstadoMfa(long V_Identificacion, string V_Usuario)
+        {
+            var resp = new DtoResultado<DtoUserRoles>
+            {
+                Operacion = "F_GetEstadoMfa"
+            };
+
+            try
+            {
+                var EstadoMfa = await _mfaWs.StateAsync(V_Identificacion, V_Usuario);
+                if (EstadoMfa?.Data != null)
+                {
+                    resp.Data = new DtoUserRoles
+                    {
+                        EstadoMfa = EstadoMfa.Data.MfaHabilitado
+                    };
+                }
+
+                resp.IdRespuesta = 1;
+                resp.Mensaje = "Consulta Exitosa";
+            }
+            catch (OracleException ex)
+            {
+                _logger.LogError(ex, "Error Oracle en F_GetEstadoMfa");
+                resp.IdRespuesta = -1;
+                resp.Mensaje = "Error de base de datos al validar el usuario";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general en F_GetEstadoMfa");
+                resp.IdRespuesta = -1;
+                resp.Mensaje = "Ocurrió un error inesperado al validar el usuario";
+            }
+
+            return resp;
+        }
+
+
 
 
         public async Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string usuario, string maquina)
         {
-            var resp = new DtoResultado<DtoUsuario>();
-
-            var db = await ValidarUsuarioDbAsync(usuario, maquina);
-
-            var u = new DtoUsuario
+            var resp = new DtoResultado<DtoUsuario>
             {
-                Identificacion = db.Identificacion,
-                IdUsuario = db.IdUsuario,
-                Bloqueado = db.Bloqueado,
-                DtoUserRoles = db.Roles
+                Operacion = "P_GetValidaUser"
             };
 
-            if (db.Resultado <= 0 || db.IdUsuario <= 0)
+            try
             {
-                resp.IdRespuesta = 0;
-                resp.Mensaje = "Usuario no encontrado o inválido";
-                resp.Operacion = "P_GetValidaUser";
+                var db = await ValidarUsuarioDbAsync(usuario, maquina);
+
+                var u = new DtoUsuario
+                {
+                    Identificacion = db.Identificacion,
+                    IdUsuario = db.IdUsuario,
+                    Bloqueado = db.Bloqueado,
+                    DtoUserRoles = db.Roles
+                };
+
+                if (db.Resultado <= 0 || db.IdUsuario <= 0)
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = "Usuario no encontrado o inválido";
+                    resp.Data = u;
+                    return resp;
+                }
+
+                // Enriquecer con PIP (fuera del repositorio)
+                var pip = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(db.Identificacion);
+                if (pip.Estado && pip.Respuesta != null)
+                {
+                    u.GradAlfabetico = pip.Respuesta.GradAlfabetico;
+                    u.NombreGrado = pip.Respuesta.NombreGrado;
+                    u.EmplUndeFuerza = pip.Respuesta.UndeFuerza;
+                    u.EmplConsecutivo = pip.Respuesta.Consecutivo;
+                    u.Funcionario = pip.Respuesta.Funcionario;
+                    u.EmplUndeConsecutivo = pip.Respuesta.UndeConsecutivo;
+                    u.Cargo = pip.Respuesta.Cargo;
+                    u.Usuario = pip.Respuesta.UsuarioEmpresarial;
+                    u.IdUndeLaborando = pip.Respuesta.UndeConsecutivoLaborando;
+                    u.Fisica = pip.Respuesta.SiglaFisica;
+                    u.Dependencia = pip.Respuesta.DescripcionDependencia;
+                    u.Correo = pip.Respuesta.CorreoElectronico;
+                    u.SituacionLaboral = pip.Respuesta.SituacionLaboral;
+                    u.Celular = (long)pip.Respuesta.NumeroCelular;
+                    u.Nombres = pip.Respuesta.Nombres;
+                    u.ApellidosNombres = pip.Respuesta.Apellidos;
+                }
+
+                resp.IdRespuesta = 1;
+                resp.Mensaje = "Consulta Exitosa";
                 resp.Data = u;
                 return resp;
             }
-
-            // Enriquecer con PIP (fuera del repositorio)
-            var pip = await _iDbConsultasPIP.ObtenerDatosFuncionarioIdAsync(db.Identificacion);
-            if (pip.Estado)
+            catch (OracleException ex)
             {
-                u.GradAlfabetico = pip.Respuesta.GradAlfabetico;
-                u.NombreGrado = pip.Respuesta.NombreGrado;
-                u.EmplUndeFuerza = pip.Respuesta.UndeFuerza;
-                u.EmplConsecutivo = pip.Respuesta.Consecutivo;
-                u.Funcionario = pip.Respuesta.Funcionario;
-                u.EmplUndeConsecutivo = pip.Respuesta.UndeConsecutivo;
-                u.Cargo = pip.Respuesta.Cargo;
-                u.Usuario = pip.Respuesta.UsuarioEmpresarial;
-                u.IdUndeLaborando = pip.Respuesta.UndeConsecutivoLaborando;
-                u.Fisica = pip.Respuesta.SiglaFisica;
-                u.Dependencia = pip.Respuesta.DescripcionDependencia;
-                u.Correo = pip.Respuesta.CorreoElectronico;
-                u.SituacionLaboral = pip.Respuesta.SituacionLaboral;
-                u.Celular = (long)pip.Respuesta.NumeroCelular;
-                u.Nombres = pip.Respuesta.Nombres;
-                u.ApellidosNombres = pip.Respuesta.Apellidos;
-            }
+                // Ideal: log técnico
+                _logger.LogError(ex, "Error Oracle en P_GetValidaUser");
 
-            resp.IdRespuesta = 1;
-            resp.Mensaje = "Consulta Exitosa";
-            resp.Operacion = "P_GetValidaUser";
-            resp.Data = u;
-            return resp;
+                resp.IdRespuesta = -1;
+                resp.Mensaje = "Error de base de datos al validar el usuario";
+                resp.Data = null;
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general en P_GetValidaUser");
+
+                resp.IdRespuesta = -1;
+                resp.Mensaje = "Ocurrió un error inesperado al validar el usuario";
+                resp.Data = null;
+                return resp;
+            }
         }
 
 
@@ -488,7 +549,8 @@ namespace Negocio.Gestion.Admin
             return resp;
         }
 
-        public async Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado,int V_Estado2Fa ,string V_UsuarioInst, long V_Usuario, string V_Maquina)
+        public async Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, int? V_Estado2Fa,
+                                                     string V_UsuarioInst, long V_UsuarioAudita, string V_Maquina)
         {
             var resp = new DtoResultado<int>
             {
@@ -496,29 +558,18 @@ namespace Negocio.Gestion.Admin
                 Data = 0
             };
 
-         
-
-            var Estado2fa = await _mfaWs.ChangeMfaAsync(
-               V_Identificacion,
-               V_UsuarioInst,
-               V_Estado2Fa,
-               V_Maquina,
-               V_Identificacion
-            );
-
             try
             {
+                // 1) Guardar/actualizar usuario en Oracle 
                 using var connection = new OracleConnection(_strConexionIris_Disec);
                 var p = new OracleDynamicParameters();
 
-                // IN
                 p.Add("P_Identificacion", V_Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Bloqueado", V_Bloqueado, OracleMappingType.Int32, ParameterDirection.Input);
 
-                p.Add("P_Usuario", V_Usuario, OracleMappingType.Int64, ParameterDirection.Input);
+                p.Add("P_Usuario", V_UsuarioAudita, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Maquina", (V_Maquina ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input, size: 200);
 
-                // OUT
                 p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 2000);
                 p.Add("P_Resultado", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
 
@@ -534,26 +585,62 @@ namespace Negocio.Gestion.Admin
                 var resultado = p.Get<int?>("P_Resultado") ?? 0;
                 var mensajeSrv = p.Get<string>("SRV_Message");
 
+                // 2) Si el SP falló, no cambiar MFA
+                if (resultado == 0)
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Data = resultado;
+                    resp.Mensaje = !string.IsNullOrWhiteSpace(mensajeSrv) ? mensajeSrv : "No fue posible actualizar el usuario.";
+                    return resp;
+                }
+
+                // 3) ✅ Cambiar MFA SOLO si vino un valor (es decir: el admin lo envió)
+                if (V_Estado2Fa.HasValue)
+                {
+                    var mfaResp = await _mfaWs.ChangeMfaAsync(
+                        V_Identificacion,
+                        V_UsuarioInst,
+                        V_Estado2Fa.Value,
+                        V_Maquina,
+                        V_UsuarioAudita  // 👈 auditor: el logueado (no el objetivo)
+                    );
+
+                    // Si MFA falla, avisar
+                    if (mfaResp.CodigoExito != 1)
+                    {
+                        // informar fallo MFA pero NO tumbar el guardado del usuario
+                        resp.IdRespuesta = 1;
+                        resp.Data = resultado;
+                        resp.Mensaje = $"Usuario actualizado, pero no fue posible cambiar MFA: {mfaResp.Mensaje}";
+                        return resp;
+                    }
+                }
+
                 resp.IdRespuesta = 1;
                 resp.Data = resultado;
                 resp.Mensaje = !string.IsNullOrWhiteSpace(mensajeSrv)
                     ? mensajeSrv
-                    : (resultado == 1 ? "Registro grabado exitosamente" : "No fue posible actualizar el usuario.");
+                    : "Registro grabado exitosamente";
+
+                return resp;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "Error Dapper en {Operacion} | Identificacion={Identificacion} | Bloqueado={Bloqueado} | UsuarioAudita={UsuarioAudita} | Maquina={Maquina}",
-                    resp.Operacion, V_Identificacion, V_Bloqueado, V_Usuario, V_Maquina);
+                    resp.Operacion, V_Identificacion, V_Bloqueado, V_UsuarioAudita, V_Maquina);
 
                 resp.IdRespuesta = 0;
                 resp.Data = 0;
                 resp.Mensaje = ex.Message;
                 resp.Operacion = "0";
+                return resp;
             }
-
-            return resp;
         }
+
+
+
+
 
         #endregion
 

@@ -14,7 +14,7 @@ namespace Negocio.Interfaz.Reportes
     {
 
 
-        Task<DtoResultado<List<DtoAnio>>> F_GetAniosIrisP1();
+        Task<DtoResultado<List<DtoAnioR>>> F_GetAniosIrisP1();
 
 
         Task<DtoResultado<List<DtoGeneralIrisp>>> F_GetReporteGeneral(string roles, Int32? unidad, int anio);

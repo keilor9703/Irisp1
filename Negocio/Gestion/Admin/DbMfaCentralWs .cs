@@ -155,7 +155,7 @@ namespace Negocio.Gestion.Admin
         }
 
 
-        public async Task<DtoResultado<int>> ChangeMfaAsync(long identificacion, string usuario,int estado2Fa, string ip, long userAudit)
+        public async Task<DtoResultado<int>> ChangeMfaAsync(long identificacion, string usuario,int? estado2Fa, string ip, long userAudit)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
             return await _ws.ChangeMfaAsync(new DtoMfaResetReq

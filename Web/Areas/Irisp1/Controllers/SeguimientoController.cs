@@ -27,15 +27,13 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IDbSeguimientoIris _iDbSeguimientoIris;
         private readonly IDbFuncionarios _iDbFuncionarios;
         private readonly IConfiguration _configuration;
-
         private readonly IDbDominios _IDbDominios;
-     
+
 
 
         #endregion
 
         #region Constructor
-
         public SeguimientoController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbSeguimientoIris iDbSeguimientoIris, IDbFuncionarios iDbFuncionarios, IDbDominios idbDominios)
         {
 
@@ -44,7 +42,7 @@ namespace Web.Areas.Irisp1.Controllers
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = iConfiguration;
             _IDbDominios = idbDominios;
-            //_strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
+
         }
         #endregion
         public async Task<ActionResult> Seguimiento()
@@ -63,7 +61,7 @@ namespace Web.Areas.Irisp1.Controllers
             ViewBag.ddlTipoDependencia2 = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlTipoTarea = new SelectList((await _IDbDominios.F_GetDominiosIris(51)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             var dominios = (await _IDbDominios.F_GetDominiosIris(58)).Data?.Where(x => x.Descripcion == "Aceptada" || x.Descripcion == "Rechazada").OrderBy(x => x.Descripcion).ToList();
-            
+
 
             ViewBag.ddlTipoEvalTarea = new SelectList(dominios, "IdDominio", "Descripcion");
 
@@ -135,9 +133,6 @@ namespace Web.Areas.Irisp1.Controllers
 
 
         #endregion
-
-
-
 
 
 

@@ -507,7 +507,7 @@ function F_GetDetalleIris(registro) {   // 👈 ahora recibe directamente el obj
                 $('#Modal_DetalleIris').modal("show");
                // F_GetRelacionIris();
                 F_GetIntegrantesIris(registro.CriminalidadId);
-                P_GetUbicacionIris(registro.CriminalidadId);
+                F_GetUbicacionIris(registro.CriminalidadId);
                 F_GetDelitosIris(registro.CriminalidadId);
                 F_GetInfoAdiconalIris(registro.CriminalidadId);
                 //F_GetResponsableIris();
@@ -675,7 +675,7 @@ function GetGrillaIntegrantesIris(Datos) {
         info: false
     });
 }
-function P_GetUbicacionIris(CrininalidadId) {
+function F_GetUbicacionIris(CrininalidadId) {
 
 
     $.ajax({
@@ -761,7 +761,7 @@ function P_DelUbicacionIris(UbicacionId) {
 
                     if (result.success) {
 
-                        P_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                        F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
 
                         Swal.fire({
                             type: 'success',
@@ -2089,7 +2089,7 @@ function P_InsUbicacionModal() {
 
             if (resp.success) {
 
-                P_GetUbicacionIris($("#txtCriminalidadIdModal").val());
+                F_GetUbicacionIris($("#txtCriminalidadIdModal").val());
                 $('#myModal2').modal('hide');
 
             } else {

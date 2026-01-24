@@ -41,12 +41,12 @@ namespace Negocio.Gestion.Irisp1
         // ================================================================
         // F_GetAniosIrisP1
         // ================================================================
-        public async Task<DtoResultado<List<SeguimientoIrisDto>>> F_GetAniosIrisP1()
+        public async Task<DtoResultado<List<DtoAnio>>> F_GetAniosIrisP1()
         {
-            var resp = new DtoResultado<List<SeguimientoIrisDto>>
+            var resp = new DtoResultado<List<DtoAnio>>
             {
                 Operacion = "F_GetAniosIrisP1",
-                Data = new List<SeguimientoIrisDto>()
+                Data = new List<DtoAnio>()
             };
 
             try
@@ -62,14 +62,14 @@ namespace Negocio.Gestion.Irisp1
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<SeguimientoIrisDto>(
+                var lista = (await connection.QueryAsync<DtoAnio>(
                     sql,
                     p,
                     commandType: CommandType.Text,
                     commandTimeout: 120
                 )).AsList();
 
-                resp.Data = lista ?? new List<SeguimientoIrisDto>();
+                resp.Data = lista ?? new List<DtoAnio>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
                 resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encuentran registros en base de datos";
             }
@@ -78,14 +78,14 @@ namespace Negocio.Gestion.Irisp1
                 _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"OracleException: {oex.Message}";
-                resp.Data = new List<SeguimientoIrisDto>();
+                resp.Data = new List<DtoAnio>();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = ex.Message;
-                resp.Data = new List<SeguimientoIrisDto>();
+                resp.Data = new List<DtoAnio>();
             }
 
             return resp;
@@ -175,7 +175,7 @@ namespace Negocio.Gestion.Irisp1
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_id", V_Criminalidad, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
               
 
@@ -224,7 +224,7 @@ namespace Negocio.Gestion.Irisp1
         {
             var resp = new DtoResultado<List<DtoIrispCriminalidad>>
             {
-                Operacion = "P_GetResponsables",
+                Operacion = "F_GetResponsables",
                 Data = new List<DtoIrispCriminalidad>()
             };
 
@@ -234,14 +234,14 @@ namespace Negocio.Gestion.Irisp1
 
                 var p = new OracleDynamicParameters();
                 p.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
            
 
                 await connection.OpenAsync();
 
                 var lista = (await connection.QueryAsync<DtoIrispCriminalidad>(
-                    "PK_SEGUIMIENTO_IRIS.P_GetResponsables",
+                    "PK_SEGUIMIENTO_IRIS.F_GetResponsables",
                     p,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120

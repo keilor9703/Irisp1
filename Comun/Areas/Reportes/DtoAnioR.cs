@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Comun.Areas.Reportes
 {
-    public class DtoAnio
+    public class DtoAnioR
     {
 
 

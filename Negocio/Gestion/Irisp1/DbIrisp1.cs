@@ -44,12 +44,12 @@ namespace Negocio.Gestion.Irisp1
         #region Métodos de Consulta (Dapper)
 
 
-        public async Task<DtoResultado<List<DtoIrisp1>>> F_GetAniosIrisP1()
+        public async Task<DtoResultado<List<DtoAnio>>> F_GetAniosIrisP1()
         {
-            var resp = new DtoResultado<List<DtoIrisp1>>
+            var resp = new DtoResultado<List<DtoAnio>>
             {
                 Operacion = "F_GetAniosIrisP1",
-                Data = new List<DtoIrisp1>()
+                Data = new List<DtoAnio>()
             };
 
             try
@@ -62,9 +62,9 @@ namespace Negocio.Gestion.Irisp1
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoIrisp1>("PK_CONSULTA_IRISP.F_GetAniosIrisP1", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+                var lista = (await connection.QueryAsync<DtoAnio>("PK_CONSULTA_IRISP.F_GetAniosIrisP1", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
 
-                resp.Data = lista ?? new List<DtoIrisp1>();
+                resp.Data = lista ?? new List<DtoAnio>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
                 resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
 
@@ -161,11 +161,11 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
-        public async Task<DtoResultado<List<DtoCuadrantes>>> P_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
+        public async Task<DtoResultado<List<DtoCuadrantes>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
         {
             var resp = new DtoResultado<List<DtoCuadrantes>>
             {
-                Operacion = "P_GetCuadrantes",
+                Operacion = "F_GetCuadrantes",
                 Data = new List<DtoCuadrantes>()
             };
 
@@ -180,11 +180,11 @@ namespace Negocio.Gestion.Irisp1
                
 
                 // RefCursor de salida
-                parametros.Add("p_resultados", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoCuadrantes>("PK_REGISTRO_IRIS.P_GetCuadrantes", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+                var lista = (await connection.QueryAsync<DtoCuadrantes>("PK_REGISTRO_IRIS.F_GetCuadrantes", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
 
                 resp.Data = lista ?? new List<DtoCuadrantes>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
@@ -316,11 +316,11 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
-        public async Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantes (string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantes(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoIntegrantes>>
             {
-                Operacion = "P_GetIntegrantes",
+                Operacion = "F_GetIntegrantes",
                 Data = new List<DtoIntegrantes>()
             };
 
@@ -333,11 +333,11 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
                
                 // RefCursor de salida
-                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoIntegrantes>("PK_REGISTRO_IRIS.P_GetIntegrantes", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+                var lista = (await connection.QueryAsync<DtoIntegrantes>("PK_REGISTRO_IRIS.F_GetIntegrantes", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
 
                 resp.Data = lista ?? new List<DtoIntegrantes>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
@@ -370,11 +370,11 @@ namespace Negocio.Gestion.Irisp1
 
 
 
-        public async Task<DtoResultado<List<DtoIntegrantes>>> P_GetIntegrantesPreliminar(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoIntegrantes>>> F_GetIntegrantesPreliminar(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoIntegrantes>>
             {
-                Operacion = "P_GetIntegrantesPreliminar",
+                Operacion = "F_GetIntegrantesPreliminar",
                 Data = new List<DtoIntegrantes>()
             };
 
@@ -387,11 +387,11 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
 
                 // RefCursor de salida
-                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoIntegrantes>("PK_REGISTRO_IRIS.P_GetIntegrantesPreliminar", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+                var lista = (await connection.QueryAsync<DtoIntegrantes>("PK_REGISTRO_IRIS.F_GetIntegrantesPreliminar", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
 
                 resp.Data = lista ?? new List<DtoIntegrantes>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
@@ -423,11 +423,11 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
-        public async Task<DtoResultado<List<DtoDelitosIris>>> P_GetDelitosIris(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoDelitosIris>>> F_GetDelitosIris(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoDelitosIris>>
             {
-                Operacion = "P_GetDelitosIris",
+                Operacion = "F_GetDelitosIris",
                 Data = new List<DtoDelitosIris>()
             };
 
@@ -440,11 +440,11 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
 
                 // RefCursor de salida
-                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
-                var lista = (await connection.QueryAsync<DtoDelitosIris>("PK_REGISTRO_IRIS.P_GetDelitosIris", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+                var lista = (await connection.QueryAsync<DtoDelitosIris>("PK_REGISTRO_IRIS.F_GetDelitosIris", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
 
                 resp.Data = lista ?? new List<DtoDelitosIris>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
@@ -478,11 +478,11 @@ namespace Negocio.Gestion.Irisp1
 
 
 
-        public async Task<DtoResultado<List<DtoCriminalidadFoto>>> P_GetCriminalidadFotos(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoCriminalidadFoto>>> F_GetCriminalidadFotos(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoCriminalidadFoto>>
             {
-                Operacion = "P_GetCriminalidadFotos",
+                Operacion = "F_GetCriminalidadFotos",
                 Data = new List<DtoCriminalidadFoto>()
             };
 
@@ -494,12 +494,12 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
 
                 // RefCursor de salida (en tu SP se llama P_Result)
-                parametros.Add("P_Result", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
                 var lista = (await connection.QueryAsync<DtoCriminalidadFoto>(
-                    "PK_REGISTRO_IRIS.P_GetCriminalidadFotos",
+                    "PK_REGISTRO_IRIS.F_GetCriminalidadFotos",
                     parametros,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120
@@ -556,11 +556,11 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
-        public async Task<DtoResultado<List<DtoInfoAdicional>>> P_GetInfoAdicional(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoInfoAdicional>>> F_GetInfoAdicional(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoInfoAdicional>>
             {
-                Operacion = "P_GetInfoAdicional",
+                Operacion = "F_GetInfoAdicional",
                 Data = new List<DtoInfoAdicional>()
             };
 
@@ -572,12 +572,12 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
 
                 // RefCursor de salida
-                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
                 var lista = (await connection.QueryAsync<DtoInfoAdicional>(
-                    "PK_REGISTRO_IRIS.P_GetInfoAdicional",
+                    "PK_REGISTRO_IRIS.F_GetInfoAdicional",
                     parametros,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120
@@ -620,7 +620,7 @@ namespace Negocio.Gestion.Irisp1
 
             var parameters = new OracleDynamicParameters();
             parameters.Add("P_Criminalidad_Id", criminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
-            parameters.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
             var lista = (await connection.QueryAsync<DtoDocumentoIris>(
                 "PK_REGISTRO_IRIS.F_GetDocIris",
@@ -685,11 +685,11 @@ namespace Negocio.Gestion.Irisp1
 
 
 
-        public async Task<DtoResultado<List<DtoUbicacionIris>>> P_GetUbicacionIris(string V_CriminalidadId)
+        public async Task<DtoResultado<List<DtoUbicacionIris>>> F_GetUbicacionIris(string V_CriminalidadId)
         {
             var resp = new DtoResultado<List<DtoUbicacionIris>>
             {
-                Operacion = "P_GetUbicacionIris",
+                Operacion = "F_GetUbicacionIris",
                 Data = new List<DtoUbicacionIris>()
             };
 
@@ -701,12 +701,12 @@ namespace Negocio.Gestion.Irisp1
                 parametros.Add("P_Criminalidad_Id", V_CriminalidadId, OracleMappingType.Varchar2, ParameterDirection.Input);
 
                 // RefCursor de salida
-                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 
                 var lista = (await connection.QueryAsync<DtoUbicacionIris>(
-                    "PK_REGISTRO_IRIS.P_GetUbicacionIris",
+                    "PK_REGISTRO_IRIS.F_GetUbicacionIris",
                     parametros,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 120

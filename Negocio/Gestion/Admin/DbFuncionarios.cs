@@ -68,6 +68,7 @@ namespace Negocio.Gestion.Admin
                     return resp;
                 }
 
+
                 // Mapear respuesta PIP -> DtoUsuario
                 var retorno = new DtoUsuario
                 {
@@ -81,6 +82,8 @@ namespace Negocio.Gestion.Admin
                     Fisica = respuestaPIP.Respuesta.SiglaFisica,
                     IdUndeLaborando = respuestaPIP.Respuesta.UndeConsecutivoLaborando
                 };
+
+
 
                 resp.Data = retorno;
                 resp.IdRespuesta = 1;
@@ -97,6 +100,9 @@ namespace Negocio.Gestion.Admin
                 resp.Mensaje = ex.Message;
                 return resp;
             }
+
+            
+
         }
 
         public async Task<DtoResultado<List<DtoFuncionarios>>> F_GetEmpleadoIntel(string V_Busqueda)

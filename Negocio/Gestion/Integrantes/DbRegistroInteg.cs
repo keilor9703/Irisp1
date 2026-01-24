@@ -41,8 +41,7 @@ namespace Negocio.Gestion.Integrantes
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
 
-                // Si tu función NO recibe parámetros y retorna un refcursor,
-                // esta forma (bloque PL/SQL) suele funcionar bien.
+
                 var p = new OracleDynamicParameters();
                 p.Add("RESULT", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
@@ -101,7 +100,7 @@ namespace Negocio.Gestion.Integrantes
                 p.Add("P_Identificacion", V_Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
 
                 // Cursor salida (si tu función exige ReturnValue, dime y lo cambiamos a ReturnValue)
-                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 await connection.OpenAsync();
 

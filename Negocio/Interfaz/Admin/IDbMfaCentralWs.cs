@@ -16,7 +16,7 @@ namespace Negocio.Interfaz.Admin
         Task<DtoResultado<int>> IsTrustedAsync(long identificacion, string usuario, string deviceId);
 
         Task<DtoResultado<int>> ResetAsync(long identificacion, string usuario, string ip, long userAudit);
-        Task<DtoResultado<int>> ChangeMfaAsync(long identificacion, string usuario, int V_Estado2Fa, string ip, long userAudit);
+        Task<DtoResultado<int>> ChangeMfaAsync(long identificacion, string usuario, int? V_Estado2Fa, string ip, long userAudit);
         
         Task<DtoResultado<int>> ResetRequestAsync(long identificacion, string usuario, string ip, long userAudit);
         

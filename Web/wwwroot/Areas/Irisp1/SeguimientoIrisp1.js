@@ -714,7 +714,7 @@ function F_GetDetalleIris(registro) {
                 $('#Modal_AsignarIris').modal("show");
 
                
-                P_GetUbicacionIris(registro.CriminalidadId);
+                F_GetUbicacionIris(registro.CriminalidadId);
                 F_GetIntegrantesIris(registro.CriminalidadId);
                 F_GetDelitosIris(registro.CriminalidadId);
                 F_GetDocumentosIris(registro.CriminalidadId);
@@ -788,7 +788,7 @@ function RenderEstadoBadge(estadoTexto) {
 
 // 2️⃣ Función principal de detalle
 
-function P_GetUbicacionIris(CrininalidadId) {
+function F_GetUbicacionIris(CrininalidadId) {
 
 
     $.ajax({

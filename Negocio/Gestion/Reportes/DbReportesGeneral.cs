@@ -39,9 +39,9 @@ namespace Negocio.Gestion.Reportes
 
         }
 
-        public async Task<DtoResultado<List<DtoAnio>>> F_GetAniosIrisP1()
+        public async Task<DtoResultado<List<DtoAnioR>>> F_GetAniosIrisP1()
         {
-            var resultado = new DtoResultado<List<DtoAnio>>();
+            var resultado = new DtoResultado<List<DtoAnioR>>();
 
             try
             {
@@ -51,7 +51,7 @@ namespace Negocio.Gestion.Reportes
              
                 parametros.Add("V_CONSULTA", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
-                var lista = (await conexion.QueryAsync<DtoAnio>(
+                var lista = (await conexion.QueryAsync<DtoAnioR>(
                     "PK_CONSULTA_IRISP.F_GetAniosIrisP1",
                     parametros,
                     commandType: CommandType.StoredProcedure

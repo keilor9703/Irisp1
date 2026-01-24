@@ -43,7 +43,7 @@ namespace Negocio.Gestion.Admin
                 if (!resp.Estado || string.IsNullOrWhiteSpace(resp.Respuesta))
                 {
                     _logger.LogWarning(
-                        "{Operacion} | Token no válido | Estado={Estado} | Codigo={Codigo} | Mensaje={Mensaje}",
+                        "{Operacion} | Token no válido   | Estado={Estado} | Codigo={Codigo} | Mensaje={Mensaje}",
                         operacion, resp.Estado, resp.Codigo, resp.Mensaje);
                 }
 
