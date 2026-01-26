@@ -130,10 +130,27 @@
                             <div class="form-horizontal">
                                 <div class="form-group row" style="margin-bottom: 0px;">
                                     <label class="col-md-7 col-form-label Labels" style="margin-top:0px;">
-                                        Activar MFA (Doble factor de autenticación):
+                                        Activar Doble Factor de Autenticación (2FA):
                                     </label>
                                     <div class="col-md-5 text-left" style="padding-left:0px;">
                                         <input tabindex="12" type="checkbox" checked data-toggle="toggle" id="chkMfaActivo">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+
+                    @if (User.IsInRole("1"))
+                    {
+                        <div class="col-md-4 MargFloatBoos" id="contenedorTrusted">
+                            <div class="form-horizontal">
+                                <div class="form-group row" style="margin-bottom: 0px;">
+                                    <label class="col-md-7 col-form-label Labels" style="margin-top:0px;">
+                                        Limpiar Dispositivos Confialbes (2FA):
+                                    </label>
+                                    <div class="col-md-5 text-left" style="padding-left:0px;">
+                                        <input tabindex="12" type="checkbox" checked data-toggle="toggle" id="chkTrustedActivo">
                                     </div>
                                 </div>
                             </div>

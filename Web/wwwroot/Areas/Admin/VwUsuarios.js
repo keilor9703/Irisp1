@@ -401,9 +401,11 @@ function P_InsUdpUsuarios() {
 
     var _Bloq = 0;
     var _2FA = null; // importante: null = "no cambiar MFA"
+    var CleanTrusted = null; // importante: null = "no cambiar MFA"
 
     const chkActivoEl = document.getElementById('chkActivo');
     const chkMfaEl = document.getElementById('chkMfaActivo'); // puede ser null si no es rol 1 super usuario
+    const chkTrusted = document.getElementById('chkTrustedActivo'); // puede ser null si no es rol 1 super usuario
 
     // Bloqueo (siempre existe)
     _Bloq = (chkActivoEl && chkActivoEl.checked) ? 0 : 1;
@@ -415,10 +417,17 @@ function P_InsUdpUsuarios() {
         _2FA = chkMfaEl.checked ? 1 : 0;
     }
 
+    if (chkTrusted == null) {
+        CleanTrusted = 1;
+    } else {
+        CleanTrusted = chkTrusted.checked ? 1 : 0;
+    }
+
     var DtoUsuario = {
         Identificacion: $("#txtIdentificacion").val(),
         Bloqueado: _Bloq,
         Estado2Fa: _2FA,  
+        LimpiarDispConfiable: CleanTrusted, 
         Usuario: $("#txtUserName").val(),
     };
 
@@ -616,6 +625,8 @@ function Limpiar() {
     $("#txtCargo").val("");
     $("#txtIdentificacion").val("");
     $('#chkActivo').prop('checked', 0).trigger('change');
+    $('#chkTrustedActivo').prop('checked', 0).trigger('change');
+    
 
     var uno = document.getElementById('btnGrabar');
     uno.innerHTML = '<span class="fa ico_grabar faa-wrench animated"></span>Guardar';

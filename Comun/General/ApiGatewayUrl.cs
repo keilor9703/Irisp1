@@ -26,10 +26,11 @@
             MfaIsTrusted = $"{MfaBase}api/ApiMfa/IsTrusted";
             MfaSaveTrusted = $"{MfaBase}api/ApiMfa/SaveTrusted";
             MfaReset = $"{MfaBase}api/ApiMfa/Reset";
-            MfaChangeMfa = $"{MfaBase}api/ApiMfa/ChangeMfa";
+            MfaChangeMfa = $"{MfaBase}api/ApiMfa/Admin/ChangeMfa";
             MfaResetRequest = $"{MfaBase}api/ApiMfa/ResetRequest";
             MfaResetConfirm = $"{MfaBase}api/ApiMfa/ResetConfirm";
             MfaResetExecute = $"{MfaBase}api/ApiMfa/ResetExecute";
+            MfaTrustCleanUser = $"{MfaBase}api/ApiMfa/Admin/TrustClearUser";
         }
 
 
@@ -54,5 +55,6 @@
         public readonly string? MfaResetRequest;
         public readonly string? MfaResetConfirm;
         public readonly string? MfaResetExecute;
+        public readonly string? MfaTrustCleanUser;
     }
 }

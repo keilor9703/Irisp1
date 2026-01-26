@@ -7,7 +7,7 @@ public interface IMfaWebServices
     Task<DtoResultado<DtoMfaState>> StateAsync(long identificacion, string usuario, string bearer);
 
     Task<DtoResultado<DtoMfaEnrollStartResp>> EnrollStartAsync(DtoMfaEnrollStartReq req, string bearer);
-    Task<DtoResultado<bool>> EnrollConfirmAsync(DtoMfaEnrollConfirmReq req, string bearer);
+    Task<DtoResultado<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(DtoMfaEnrollConfirmReq req, string bearer);
 
     Task<DtoResultado<DtoMfaVerifyResp>> VerifyAsync(DtoMfaVerifyReq req, string bearer);
 
@@ -21,7 +21,10 @@ public interface IMfaWebServices
 
     Task<DtoResultado<int>> ResetExecuteAsync(DtoMfaResetExecuteReq req, string bearer);
 
+    Task<DtoResultado<int>> TrustClearUserAsync(DtoMfaTrustClearReq req, string bearer);
 
-  
+
+
+
 
 }

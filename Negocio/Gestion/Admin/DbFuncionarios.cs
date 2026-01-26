@@ -119,8 +119,7 @@ namespace Negocio.Gestion.Admin
 
                 var parametros = new OracleDynamicParameters();
 
-                // En tu código original el cursor estaba como ReturnValue.
-                // En Dapper.Oracle puedes mapearlo como Output RefCursor con el mismo nombre.
+                
                 parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
 
                 parametros.Add("V_Busqueda", V_Busqueda, OracleMappingType.Varchar2, ParameterDirection.Input);

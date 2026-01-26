@@ -61,6 +61,30 @@ namespace Web.Areas.Admin.Controllers
         }
 
 
+
+        public async Task<IActionResult> F_TrustClearUserAsync(long identificacion, string usuario)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+            var usuarioAudita = Convert.ToInt64(User.FindFirstValue("Identificacion"));
+
+            var resp = await _iDbAdministracion.F_TrustClearUserAsync(identificacion, usuario, ip, usuarioAudita);
+
+            if (resp.CodigoExito != 1)
+                return Json(new { ok = false, msg = resp.Mensaje ?? "No fue posible revocar dispositivos." });
+
+            // Opcional: si el usuario afectado es el mismo que está en esta sesión, borra cookie local
+            var identClaim = User.FindFirstValue("Identificacion");
+            if (!string.IsNullOrEmpty(identClaim) && long.TryParse(identClaim, out var identAdmin))
+            {
+                if (identAdmin == identificacion) { }
+                    //Response.Cookies.Delete(CookieTrusted);
+            }
+
+            return Json(new { ok = true, msg = "Dispositivos confiables revocados." });
+        }
+
+
+
         public async Task<IActionResult> F_GetListUsuarios()
         {
             var Resultado = await _iDbAdministracion.F_GetListUsuarios();
@@ -125,10 +149,11 @@ namespace Web.Areas.Admin.Controllers
                 var Resultado = await _iDbAdministracion.P_InsUdpUsuarios(
                     obj.Identificacion,
                     obj.Bloqueado,
-                    obj.Estado2Fa,              // <-- nullable
+                    obj.Estado2Fa,   
                     obj.Usuario,
                     Convert.ToInt64(User.FindFirstValue("Identificacion")),
-                    HttpContext.Session.GetString("IpMaquina")
+                    HttpContext.Session.GetString("IpMaquina"),
+                    obj.LimpiarDispConfiable// <-- nullable
                 );
 
                 if (Resultado.IdRespuesta > 0)

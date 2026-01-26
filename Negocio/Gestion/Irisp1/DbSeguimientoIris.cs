@@ -19,8 +19,6 @@ namespace Negocio.Gestion.Irisp1
     {
         #region Propiedades
         private readonly IConfiguration _iConfiguration;
-        private readonly string _strConexionIris_Test;
-        private readonly string _strConexionTelepol;
         private readonly string _strConexionIris_Disec;
         private readonly ILogger<DbSeguimientoIris> _logger;
         #endregion
@@ -29,8 +27,6 @@ namespace Negocio.Gestion.Irisp1
         public DbSeguimientoIris(IConfiguration iConfiguration, ILogger<DbSeguimientoIris> logger)
         {
             _iConfiguration = iConfiguration;
-            _strConexionIris_Test = _iConfiguration.GetConnectionString("strConexionIris_Test");
-            _strConexionTelepol = _iConfiguration.GetConnectionString("strConexionTelepol");
             _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
         }

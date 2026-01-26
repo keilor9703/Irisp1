@@ -63,6 +63,9 @@ namespace Comun.Areas.Admin
         [JsonPropertyName("Estado2Fa")]
         public int? Estado2Fa { get; set; }
 
+        [JsonPropertyName("LimpiarDispConfiable")]
+        public int? LimpiarDispConfiable { get; set; }
+
 
 
         [JsonPropertyName("Celular")]

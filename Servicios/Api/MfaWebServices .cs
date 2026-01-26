@@ -78,11 +78,11 @@ public class MfaWebServices : IMfaWebServices
         return await ReadAsAsync<DtoResultado<DtoMfaEnrollStartResp>>(resp);
     }
 
-    public async Task<DtoResultado<bool>> EnrollConfirmAsync(DtoMfaEnrollConfirmReq req, string bearer)
+    public async Task<DtoResultado<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(DtoMfaEnrollConfirmReq req, string bearer)
     {
         using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaEnrollConfirm!, req, bearer);
         using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
-        return await ReadAsAsync<DtoResultado<bool>>(resp);
+        return await ReadAsAsync<DtoResultado<DtoMfaEnrrollConfirmResp>>(resp);
     }
 
     public async Task<DtoResultado<DtoMfaVerifyResp>> VerifyAsync(DtoMfaVerifyReq req, string bearer)
@@ -111,6 +111,13 @@ public class MfaWebServices : IMfaWebServices
     public async Task<DtoResultado<int>> ChangeMfaAsync(DtoMfaResetReq req, string bearer)
     {
         using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaChangeMfa!, req, bearer);
+        using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
+        return await ReadAsAsync<DtoResultado<int>>(resp);
+    }
+
+    public async Task<DtoResultado<int>> TrustClearUserAsync(DtoMfaTrustClearReq req, string bearer)
+    {
+        using var httpReq = BuildJsonRequest(HttpMethod.Post, _urls.MfaTrustCleanUser!, req, bearer);
         using var resp = await _http.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead);
         return await ReadAsAsync<DtoResultado<int>>(resp);
     }

@@ -25,7 +25,7 @@ namespace Web.Controllers
         private readonly IDbMfaCentralWs _mfaWs;
 
 
-        private bool Admin = false;
+        private bool SuperUsuario = false;
 
         // ===== TempData keys (cookie-based) =====
         private const string TdLoginUserData = "LOGIN_USERDATA";
@@ -35,8 +35,7 @@ namespace Web.Controllers
         private const string SessEnrollSecret = "MFA_ENROLL_SECRET";
         private const string SessEnrollQr = "MFA_ENROLL_QR";
 
-        // ===== Cookies =====
-       // private const string CookieTrusted = "IRISP_MFA_DEVICE";
+       
 
 
 
@@ -123,12 +122,12 @@ namespace Web.Controllers
                 return View("InicioSesion", loginUsuario);
 
             // OUD
-            var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
-            if (!respuestaOud.Respuesta)
-            {
-                ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
-                return View("InicioSesion", loginUsuario);
-            }
+            //var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
+            //if (!respuestaOud.Respuesta)
+            //{
+            //    ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
+            //    return View("InicioSesion", loginUsuario);
+            //}
 
             // IP
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -157,15 +156,13 @@ namespace Web.Controllers
                 return View("InicioSesion", loginUsuario);
             }
 
-            Admin = Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1);
+            SuperUsuario = Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1);
 
+        
             // ============================================================
-            // ✅ MFA (NO USAR SESSION para el estado del MFA)
+            // ✅ MFA CENTRALIZADO 
             // ============================================================
-            // ============================================================
-            // ✅ MFA CENTRALIZADO (solo si requiereMfa)
-            // ============================================================
-            // bool requiereMfa = Admin; // tu política actual
+            // bool requiereMfa = Admin; // definir política 
 
             var requiereMfa = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
 
@@ -215,9 +212,7 @@ namespace Web.Controllers
                 }
 
                 // ¿Debe enrolar?
-                bool debeEnrollar =
-                    (mfaState.Data?.MfaHabilitado != 1) ||
-                    (mfaState.Data?.RequireReenroll == 1);
+                bool debeEnrollar = (mfaState.Data?.MfaHabilitado != 1) || (mfaState.Data?.RequireReenroll == 1);
 
                 ViewBag.MfaShow = true;
 
@@ -255,7 +250,7 @@ namespace Web.Controllers
             // ============================================================
             // NO MFA -> flujo normal (menú, claims, SignIn)
             // ============================================================
-            var menuNormal = Admin
+            var menuNormal = SuperUsuario
                 ? await _iDbAdministracion.F_GetMenu(1, Usuario.Data.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, Usuario.Data.Identificacion);
 
@@ -323,9 +318,30 @@ namespace Web.Controllers
                 pending.Identificacion
             );
 
-            if (resp.CodigoExito != 1 || resp.Data != true)
+           
+            // 1) PRIORIDAD: si viene bloqueo, mostrar modal blocked
+            DateTime? bloqueoHasta = resp?.Data?.BloqueoHasta;
+
+            if (resp?.CodigoError == 9 || (bloqueoHasta.HasValue && bloqueoHasta.Value > DateTime.Now))
             {
-                TempData["MfaError"] = resp.Mensaje ?? "No fue posible activar MFA.";
+                ViewBag.MfaShow = true;
+                ViewBag.MfaMode = "blocked";
+                ViewBag.BloqueoHasta = bloqueoHasta; // puede ser null, está bien
+                return View("InicioSesion", loginUsuario);
+            }
+
+
+            // 2) Código incorrecto (pero NO bloqueado)
+            if (resp?.CodigoError == 2)
+            {
+                TempData["MfaError"] = resp.Mensaje ?? "Código inválido";
+                return View("InicioSesion", loginUsuario);
+            }
+
+            // 3) Otros errores (token inválido/expirado, etc.)
+            if (resp?.CodigoExito != 1 || resp.Data?.Ok != true)
+            {
+                TempData["MfaError"] = resp?.Mensaje ?? "No fue posible activar MFA.";
                 return View("InicioSesion", loginUsuario);
             }
 
@@ -334,15 +350,12 @@ namespace Web.Controllers
             TempData.Remove(TdEnrollQr);
             TempData.Remove(TdEnrollManualKey);
 
-            // Pasa a verify
-            ViewBag.MfaShow = true;
-            ViewBag.MfaMode = "verify";
-
             TempData.Keep(TdLoginUserData);
             TempData.Keep(TdMfaPending);
 
-            return View("InicioSesion", loginUsuario);
+            return await FinalizeMfaLoginInternal();
         }
+
 
 
         // ============================================================
@@ -391,6 +404,19 @@ namespace Web.Controllers
                 pending.Identificacion
             );
 
+
+            // 1) PRIORIDAD: si viene bloqueo, mostrar modal blocked
+            DateTime? bloqueoHasta = verify?.Data?.BloqueoHasta;
+
+            if (verify?.CodigoError == 9 || (bloqueoHasta.HasValue && bloqueoHasta.Value > DateTime.Now))
+            {
+                ViewBag.MfaShow = true;
+                ViewBag.MfaMode = "blocked";
+                ViewBag.BloqueoHasta = bloqueoHasta; // puede ser null, está bien
+                return View("InicioSesion", new DtoCredenciales());
+            }
+
+
             if (verify.CodigoExito != 1 || verify.Data?.Ok != true)
             {
                 ModelState.AddModelError("", verify.Mensaje ?? "Código inválido.");
@@ -403,6 +429,8 @@ namespace Web.Controllers
 
                 return View("InicioSesion", new DtoCredenciales());
             }
+
+
 
             // Si RememberDevice, set cookie (la API ya guardó el trusted device)
             if (RememberDevice && !string.IsNullOrWhiteSpace(deviceId))
@@ -419,8 +447,8 @@ namespace Web.Controllers
             // Finalizar login normal del sistema (menú + claims + SignIn)
             HttpContext.Session.SetString("IpMaquina", pending.Ip ?? "0.0.0.0");
 
-            bool admin = AdminOrFromUser(userData);
-            var menu = admin
+            bool SuperUsuario = SuperUsuarioOrFromUser(userData);
+            var menu = SuperUsuario
                 ? await _iDbAdministracion.F_GetMenu(1, userData.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, userData.Identificacion);
 
@@ -474,9 +502,9 @@ namespace Web.Controllers
 
             HttpContext.Session.SetString("IpMaquina", pending.Ip ?? "0.0.0.0");
 
-            bool admin = AdminOrFromUser(userData);
+            bool SuperUsuario = SuperUsuarioOrFromUser(userData);
 
-            var menu = admin
+            var menu = SuperUsuario
                 ? await _iDbAdministracion.F_GetMenu(1, userData.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, userData.Identificacion);
 
@@ -567,7 +595,7 @@ namespace Web.Controllers
             catch { return null; }
         }
 
-        private static bool AdminOrFromUser(DtoUsuario userData)
+        private static bool SuperUsuarioOrFromUser(DtoUsuario userData)
             => userData.DtoUserRoles?.Any(x => x.IdRol == 1) == true;
 
         // ============================================================
@@ -609,6 +637,7 @@ namespace Web.Controllers
 
         [Authorize]
         public async Task<IActionResult> FotoPerfil()
+        
         {
             try
             {
@@ -694,8 +723,6 @@ namespace Web.Controllers
                 return FotoPorDefecto();
             }
         }
-
-
 
         // ============================================================
         // MFA - PERDÍ MI AUTENTICADOR

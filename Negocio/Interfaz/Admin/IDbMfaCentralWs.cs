@@ -6,10 +6,13 @@ namespace Negocio.Interfaz.Admin
     public interface IDbMfaCentralWs
     {
         Task<DtoResultado<DtoMfaState>> StateAsync(long identificacion, string usuario);
+        // Task<DtoResultado<DtoMfaTrustClearReq>> TrustClearUserAsync(long identificacion, string usuario);
+
+        Task<DtoResultado<int>> TrustClearUserAsync(long identificacion, string usuario, string ip, long usuarioAudita);
 
         Task<DtoResultado<DtoMfaEnrollStartResp>> EnrollStartAsync(long identificacion, string usuario);
 
-        Task<DtoResultado<bool>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip, long userAudit);
+        Task<DtoResultado<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip, long userAudit);
 
         Task<DtoResultado<DtoMfaVerifyResp>> VerifyAsync(long identificacion, string usuario, string code, bool rememberDevice, string? deviceId, string ip, long userAudit);
 

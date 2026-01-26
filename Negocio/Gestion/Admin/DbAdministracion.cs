@@ -1,4 +1,5 @@
 ﻿using Comun.Areas.Admin;
+using Comun.DtoMfa;
 using Comun.General;
 using Dapper;
 using Dapper.Oracle;
@@ -297,6 +298,44 @@ namespace Negocio.Gestion.Admin
 
 
 
+        public async Task<DtoResultado<DtoMfaTrustClearReq>> F_TrustClearUserAsync(long V_Identificacion, string V_Usuario, string V_Maquina, long V_UsuarioAudita)
+        {
+            var resp = new DtoResultado<DtoMfaTrustClearReq>
+            {
+                Operacion = "F_TrustClearUserAsync"
+            };
+
+            try
+            {
+                var EliminarConfiable = await _mfaWs.TrustClearUserAsync(V_Identificacion, V_Usuario, V_Maquina, V_UsuarioAudita);
+                if (EliminarConfiable?.CodigoExito != 1)
+                {
+
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = "Dispositivos eliminados correctamente";
+
+                }
+
+            }
+            catch (OracleException ex)
+            {
+                _logger.LogError(ex, "Error Oracle en F_TrustClearUserAsync");
+                resp.IdRespuesta = -1;
+                resp.Mensaje = "Error de base de datos al validar el usuario";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general en F_TrustClearUserAsync");
+                resp.IdRespuesta = -1;
+                resp.Mensaje = "Ocurrió un error inesperado al validar el usuario";
+            }
+
+            return resp;
+        }
+
+
+
+
         public async Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string usuario, string maquina)
         {
             var resp = new DtoResultado<DtoUsuario>
@@ -550,7 +589,7 @@ namespace Negocio.Gestion.Admin
         }
 
         public async Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, int? V_Estado2Fa,
-                                                     string V_UsuarioInst, long V_UsuarioAudita, string V_Maquina)
+                                                     string V_UsuarioInst, long V_UsuarioAudita, string V_Maquina, int? V_LimpiarDispConfiable)
         {
             var resp = new DtoResultado<int>
             {
@@ -612,6 +651,27 @@ namespace Negocio.Gestion.Admin
                         resp.IdRespuesta = 1;
                         resp.Data = resultado;
                         resp.Mensaje = $"Usuario actualizado, pero no fue posible cambiar MFA: {mfaResp.Mensaje}";
+                        return resp;
+                    }
+                }
+
+                // 4) ✅ Limpiar Dispositivos confiables SOLO si vino un valor (es decir: el admin lo envió)
+                if (V_LimpiarDispConfiable.HasValue)
+                {
+                    var TrustedClean = await _mfaWs.TrustClearUserAsync(
+                        V_Identificacion,
+                        V_UsuarioInst,
+                        V_Maquina,
+                        V_UsuarioAudita  // 👈 auditor: el logueado (no el objetivo)
+                    );
+
+                    // Si MFA falla, avisar
+                    if (TrustedClean.CodigoExito != 1)
+                    {
+                        // informar fallo MFA pero NO tumbar el guardado del usuario
+                        resp.IdRespuesta = 1;
+                        resp.Data = resultado;
+                        resp.Mensaje = $"Usuario actualizado, pero no fue posible eliminar dispositivos confiables para 2FA: {TrustedClean.Mensaje}";
                         return resp;
                     }
                 }

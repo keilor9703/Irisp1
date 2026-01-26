@@ -106,7 +106,7 @@ namespace Negocio.Gestion.Admin
             }, bearer);
         }
 
-        public async Task<DtoResultado<bool>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip, long userAudit)
+        public async Task<DtoResultado<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip, long userAudit)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
             return await _ws.EnrollConfirmAsync(new DtoMfaEnrollConfirmReq
@@ -165,6 +165,19 @@ namespace Negocio.Gestion.Admin
                 Estado2FA = estado2Fa,
                 IpMaquina = ip,
                 UserAudit = userAudit,
+                Sistema = _sistema
+            }, bearer);
+        }
+
+        public async Task<DtoResultado<int>> TrustClearUserAsync(long identificacion, string usuario,string ip, long usuarioAudita)
+        {
+            var bearer = await GetBearerAsync(usuario, usuarioAudita); // ojo cambiar el usuario y la cedula que solciita el token, por los datos del funcionario logueado, no del funcionario a modificar
+            return await _ws.TrustClearUserAsync(new DtoMfaTrustClearReq
+            {
+                Identificacion = identificacion,
+                Usuario = usuario,
+                IpMaquina = ip,
+                UserAudit = usuarioAudita,
                 Sistema = _sistema
             }, bearer);
         }

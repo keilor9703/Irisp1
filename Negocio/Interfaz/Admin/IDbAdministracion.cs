@@ -1,6 +1,8 @@
 ﻿using Comun.Areas.Admin;
+using Comun.DtoMfa;
 using Comun.General;
 using System.Data;
+// using Microsoft.AspNetCore.Mvc;
 
 namespace Negocio.Interfaz.Admin
 {
@@ -17,6 +19,9 @@ namespace Negocio.Interfaz.Admin
         public Task<DtoResultado<DtoUserRoles>> F_GetEstadoMfa(long V_Identificacion, string V_Usuario);
 
 
+        public  Task<DtoResultado<DtoMfaTrustClearReq>> F_TrustClearUserAsync(long V_Identificacion, string V_Usuario, string V_Maquina , long V_UsuarioAudita);
+
+
         public string ConvertirBase64Bytes(string texto);
         public string Decript(string message, string key);
         #endregion
@@ -24,7 +29,7 @@ namespace Negocio.Interfaz.Admin
         #region Métodos de Inserción y Actualización
         public Task<DtoResultado<int>> P_InsAuditoria(long V_Identificacion, string V_Evento, string V_Descripcion, long V_Identificador, string V_Maquina);
         public Task<DtoResultado<int>> P_InsRolesUser(DtoInsUserRoles obj, long V_Usuario, string V_Maquina);
-        public Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, int? V_Estado2Fa,string V_UsuarioInst,long V_Usuario, string V_Maquina);
+        public Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, int? V_Estado2Fa,string V_UsuarioInst,long V_Usuario, string V_Maquina, int? V_LimpiarDispConfiable);
 
        
 

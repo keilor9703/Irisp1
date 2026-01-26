@@ -290,7 +290,7 @@
         <!-- Login -->
         <div class="LoginA auth-wrapper d-flex no-block justify-content-center align-items-center">
             <div class="LoginB auth-box on-sidebar bg-white m-0">
-                <div id="loginform" style="margin-top:33px;">
+                <div id="loginBox" style="margin-top:33px;">
                     <div class="logo text-center" style="margin-bottom:-33px">
                         <span class="text-center h3" style="color: white">Policía Nacional</span>
                         <br />
@@ -709,8 +709,8 @@
                             @if (bh.HasValue)
                             {
                                 <div class="mt-2">
-                                    <small class="text-muted">
-                                        (Hora del servidor) — se habilitará automáticamente cuando expire el tiempo.
+                                    <small class="fw-bold">
+                                       Se habilitará automáticamente cuando expire el tiempo.
                                     </small>
                                 </div>
                             }
@@ -722,9 +722,7 @@
                             <button type="button" class="btn btn-outline-secondary" onclick="mfaCancel()">
                                 Volver al inicio de sesión
                             </button>
-                            <button type="button" class="btn btn-danger" onclick="window.location.reload()">
-                                Reintentar
-                            </button>
+                            
                         </div>
 
                         <div class="mfa-help mt-3">
@@ -742,26 +740,51 @@
     <script src="~/lib/jquery/dist/jquery2024.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        // Oculta preloader
-        $(".preloader").fadeOut();
 
+
+
+
+    <script>
+        $(".preloader").fadeOut();
         $("#Process").hide();
-        $('#btnIngresar').click(function () {
-            $("#Process").show();
-            setTimeout(function () {
+
+        // OJO: usa submit del FORM, no click del botón
+        $(document).on("submit", "form#loginform", function (e) {
+
+            // Valida HTML5 (required, etc.)
+            if (!this.checkValidity()) {
+                // evita submit
+                e.preventDefault();
+                e.stopPropagation();
+
+                // muestra los mensajes nativos del navegador
+                this.reportValidity();
+
+                // asegúrate de NO mostrar loader
                 $("#Process").hide();
-                $('#btnIngresar').show();
-            }, 48000);
+                return false;
+            }
+
+            // Si es válido, ahora sí muestra loader
+            $("#Process").show();
+            // (opcional) deshabilita el botón para evitar doble click
+            $("#btnIngresar").prop("disabled", true);
         });
+    </script>
+
+
+
+
+    <script>
+     
 
         // Cancelar MFA: va a una acción que limpie la sesión MFA_PENDING
         function mfaCancel() {
             window.location.href = '@Url.Action("MfaCancel", "Cuenta")';
         }
 
+        
         // Abrir modal según el servidor
-               // Abrir modal según el servidor
         (function () {
             var show = '@(mfaShow ? "1" : "0")';
             var mode = '@mfaMode'.toLowerCase(); // normalizamos a minúsculas

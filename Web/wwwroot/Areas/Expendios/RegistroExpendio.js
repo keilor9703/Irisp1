@@ -153,8 +153,6 @@ $(document).ready(function () {
         AbrirModalNuevoExpendio();
     });
 
-
-
     $("#btnGrabar").on("click", function (e) {
         e.preventDefault();
 
@@ -476,7 +474,7 @@ function GetGrillaExpendios(Datos) {
             [15, 25, 50, -1],
             ['15 registros', '25 registros', '50 registros', 'Todos']
         ],
-        ordering: false,
+        ordering: true,
         pageLength: 15,
         bLengthChange: true,
         searching: true,
