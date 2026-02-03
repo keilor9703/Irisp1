@@ -92,7 +92,8 @@ namespace Web.Areas.Integrantes.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportarExcelListaIris(Int64 V_Identificacion)
         {
-
+            if (V_Identificacion == 0)
+                return Json(new { success = false, message = "Debe registrar Identificación, revise" });
 
             // Auditoría institucional
             await _iDbAdministracion.P_InsAuditoria(
@@ -195,6 +196,9 @@ namespace Web.Areas.Integrantes.Controllers
         public async Task<IActionResult> ExportarExcelUbicaciones(Int64 V_Identificacion)
         {
 
+            if (V_Identificacion == 0)
+                return Json(new { success = false, message = "Debe registrar Identificación, revise" });
+
             // Auditoría institucional
             await _iDbAdministracion.P_InsAuditoria(
                 Convert.ToInt64(User.FindFirstValue("Identificacion")),
@@ -262,6 +266,10 @@ namespace Web.Areas.Integrantes.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportarPdfListaIris(Int32 V_Identificacion)
         {
+
+            if (V_Identificacion == 0)
+                return Json(new { success = false, message = "Debe registrar Identificación, revise" });
+
             // Auditoría institucional
             await _iDbAdministracion.P_InsAuditoria(
                 Convert.ToInt64(User.FindFirstValue("Identificacion")),
@@ -288,6 +296,10 @@ namespace Web.Areas.Integrantes.Controllers
 
         private byte[] GeneratePdfListaIris(List<DtoListaIrisGeneral> data)
         {
+
+
+
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -352,6 +364,10 @@ namespace Web.Areas.Integrantes.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportarPdfUbicaciones(Int32 V_Identificacion)
         {
+
+            if (V_Identificacion == 0)
+                return Json(new { success = false, message = "Debe registrar Identificación, revise" });
+
             await _iDbAdministracion.P_InsAuditoria(
                 Convert.ToInt64(User.FindFirstValue("Identificacion")),
                 "Exportar Reporte",

@@ -19,7 +19,7 @@ namespace Negocio.Interfaz.Admin
         public Task<DtoResultado<DtoUserRoles>> F_GetEstadoMfa(long V_Identificacion, string V_Usuario);
 
 
-        public  Task<DtoResultado<DtoMfaTrustClearReq>> F_TrustClearUserAsync(long V_Identificacion, string V_Usuario, string V_Maquina , long V_UsuarioAudita);
+        //public  Task<DtoResultado<DtoMfaTrustClearReq>> F_TrustClearUserAsync(long V_Identificacion, string V_Usuario, string V_Maquina , long V_UsuarioAudita);
 
 
         public string ConvertirBase64Bytes(string texto);

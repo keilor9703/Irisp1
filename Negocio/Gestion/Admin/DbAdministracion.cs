@@ -298,40 +298,40 @@ namespace Negocio.Gestion.Admin
 
 
 
-        public async Task<DtoResultado<DtoMfaTrustClearReq>> F_TrustClearUserAsync(long V_Identificacion, string V_Usuario, string V_Maquina, long V_UsuarioAudita)
-        {
-            var resp = new DtoResultado<DtoMfaTrustClearReq>
-            {
-                Operacion = "F_TrustClearUserAsync"
-            };
+        //public async Task<DtoResultado<DtoMfaTrustClearReq>> F_TrustClearUserAsync(long V_Identificacion, string V_Usuario, string V_Maquina, long V_UsuarioAudita)
+        //{
+        //    var resp = new DtoResultado<DtoMfaTrustClearReq>
+        //    {
+        //        Operacion = "F_TrustClearUserAsync"
+        //    };
 
-            try
-            {
-                var EliminarConfiable = await _mfaWs.TrustClearUserAsync(V_Identificacion, V_Usuario, V_Maquina, V_UsuarioAudita);
-                if (EliminarConfiable?.CodigoExito != 1)
-                {
+        //    try
+        //    {
+        //        var EliminarConfiable = await _mfaWs.TrustClearUserAsync(V_Identificacion, V_Usuario, V_Maquina, V_UsuarioAudita);
+        //        if (EliminarConfiable?.CodigoExito != 1)
+        //        {
 
-                    resp.IdRespuesta = 1;
-                    resp.Mensaje = "Dispositivos eliminados correctamente";
+        //            resp.IdRespuesta = 1;
+        //            resp.Mensaje = "Dispositivos eliminados correctamente";
 
-                }
+        //        }
 
-            }
-            catch (OracleException ex)
-            {
-                _logger.LogError(ex, "Error Oracle en F_TrustClearUserAsync");
-                resp.IdRespuesta = -1;
-                resp.Mensaje = "Error de base de datos al validar el usuario";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error general en F_TrustClearUserAsync");
-                resp.IdRespuesta = -1;
-                resp.Mensaje = "Ocurrió un error inesperado al validar el usuario";
-            }
+        //    }
+        //    catch (OracleException ex)
+        //    {
+        //        _logger.LogError(ex, "Error Oracle en F_TrustClearUserAsync");
+        //        resp.IdRespuesta = -1;
+        //        resp.Mensaje = "Error de base de datos al validar el usuario";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error general en F_TrustClearUserAsync");
+        //        resp.IdRespuesta = -1;
+        //        resp.Mensaje = "Ocurrió un error inesperado al validar el usuario";
+        //    }
 
-            return resp;
-        }
+        //    return resp;
+        //}
 
 
 

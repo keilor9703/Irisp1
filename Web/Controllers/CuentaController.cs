@@ -136,6 +136,8 @@ namespace Web.Controllers
             
             HttpContext.Session.SetString("IpMaquina", ip);
 
+
+
             var Usuario = await _iDbAdministracion.P_GetValidaUser(loginUsuario.UsuarioEmpresarial, ip);
 
             if (Usuario.Data.Identificacion == 0)
@@ -689,8 +691,6 @@ namespace Web.Controllers
             var bytes = System.IO.File.ReadAllBytes(ruta);
             return File(bytes, "image/png");
         }
-
-
 
 
         [Authorize]

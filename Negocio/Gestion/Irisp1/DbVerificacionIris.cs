@@ -155,6 +155,10 @@ namespace Negocio.Gestion.Irisp1
                     commandTimeout: 120
                 )).ToList();
 
+
+
+
+
                 resp.Data = lista ?? new List<DtoTareasIris>();
                 resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
                 resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";

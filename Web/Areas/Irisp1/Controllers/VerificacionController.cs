@@ -134,30 +134,35 @@ namespace Web.Areas.Irisp1.Controllers
             var resultado = await _iDbVerificacionIris.F_GetInfoGrillas(V_Anio, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta > 0)
-                return Json(new { success = true, data = resultado.Data });
-            else
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { success = false, message = resultado.Mensaje });
-        }
-
-
-
-        [HttpGet]
-        public async Task<IActionResult> F_GetTareas(string V_Criminalidad)
-        {
-            var resultado = await _iDbVerificacionIris.F_GetTareas(V_Criminalidad);
-
-            if (resultado.IdRespuesta > 0)
             {
+                // ✅ Datos encontrados
                 return Json(new { success = true, data = resultado.Data });
             }
             else
             {
-              //  return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-                return Json(new { success = false, data = resultado.Data });
-
+                // ⚠️ No hubo datos, pero no es error → devolver 200 con mensaje
+                return Ok(new { success = false, message = resultado.Mensaje, data = resultado.Data });
             }
         }
+
+
+
+            [HttpGet]
+            public async Task<IActionResult> F_GetTareas(string V_Criminalidad)
+            {
+                var resultado = await _iDbVerificacionIris.F_GetTareas(V_Criminalidad);
+
+                if (resultado.IdRespuesta > 0)
+                {
+                    return Json(new { success = true, data = resultado.Data });
+                }
+                else
+                {
+                  //  return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
+                    return Json(new { success = false, data = resultado.Data });
+
+                }
+            }
 
         [AllowAnonymous]
         [HttpGet]

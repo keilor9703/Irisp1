@@ -47,14 +47,14 @@ namespace Web.Controllers
             {
             
                 var slidersView = new List<DtoSlider>
-        {
-            new DtoSlider
-            {
-                IMAGENES_CONSECUTIVO = 19957,
-                FILENAME = "ARTE4_polired.jpg",
-                RUTA = "~/img/Carrusel/19957.jpg"
-            }
-        };
+                                    {
+                                        new DtoSlider
+                                        {
+                                            IMAGENES_CONSECUTIVO = 19957,
+                                            FILENAME = "ARTE4_polired.jpg",
+                                            RUTA = "~/img/Carrusel/19957.jpg"
+                                        }
+                                    };
                 return View(slidersView);
             }
         }
