@@ -10,6 +10,8 @@
     string? mfaManualKey = ViewBag.MfaManualKey as string;
 
     string? mfaError = TempData["MfaError"] as string;
+
+    string? mfaSvcMsg = ViewBag.MfaSvcMsg as string;
 }
 
 @if (TempData["MfaInfo"] != null)
@@ -735,6 +737,58 @@
 
 
 
+    <!-- ===========================
+     MODAL: MFA SERVICE DOWN
+     =========================== -->
+    <div class="modal fade mfa-modal" id="mfaServiceDownModal" tabindex="-1" aria-hidden="true"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:580px;">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);">
+                    <h5 class="modal-title">
+                        <span class="mfa-icon">⚠️</span>
+                        Servicio de doble autenticación no disponible
+                    </h5>
+                    <button type="button" class="btn-close" aria-label="Close" onclick="mfaCancel()"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mfa-card">
+                        <div class="fw-bold mb-2">No es posible iniciar sesión en este momento.</div>
+
+                        <div class="mfa-help mb-3">
+                            El servicio de <b>Doble Autenticación (2FA/MFA)</b> está presentando fallas o no se pudo establecer conexión.
+                            Por política de seguridad, el acceso queda temporalmente restringido hasta que el servicio se restablezca.
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(mfaSvcMsg))
+                        {
+                            <div class="alert alert-danger mb-3">
+                                <b>Detalle:</b> @mfaSvcMsg
+                            </div>
+                        }
+
+                        <div class="alert alert-warning mb-0">
+                            <b>Acción requerida:</b> por favor tomar contacto con el <b>Administrador Funcional</b> del sistema o con el
+                            <b>técnico GUTIC</b> de su unidad.
+                        </div>
+
+                        <div class="mfa-divider"></div>
+
+                        <div class="mfa-actions d-grid gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="mfaCancel()">
+                                Volver al inicio de sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
     <!-- JS -->
     <script src="~/lib/jquery/dist/jquery2024.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -799,7 +853,10 @@
                 modalId = 'mfaResetModal';
             } else if (mode === "blocked") {
                 modalId = 'mfaBlockedModal';
+            } else if (mode === "svcdown") {
+                modalId = 'mfaServiceDownModal';
             }
+
 
             if (modalId) {
                 var el = document.getElementById(modalId);

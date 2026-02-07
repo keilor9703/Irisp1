@@ -263,26 +263,63 @@ function F_GetEstadoMfa(P_Identificacion, P_Usuario) {
         dataType: 'json',
         cache: false,
         success: function (respuesta) {
-            if (respuesta.success) {
-               
-                var _Habilitado = respuesta.data.EstadoMfa;
 
-                $('#chkMfaActivo').prop('checked', _Habilitado).trigger('change');
-
-
-            } else {
-               
+            // ✅ Validaciones para cuando MFA está caído o el backend devuelve data=null
+            if (!respuesta) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'Respuesta inválida del servicio de MFA.'
+                });
+                $('#chkMfaActivo').prop('checked', false).prop('disabled', true).trigger('change');
+                return;
             }
+
+            // Si tu backend usa { success: true/false, data, message }
+            if (respuesta.success !== true) {
+                const msg = respuesta.message || respuesta.mensaje || 'No fue posible consultar el estado de MFA (servicio no disponible).';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: msg
+                });
+                $('#chkMfaActivo').prop('checked', false).prop('disabled', true).trigger('change');
+                return;
+            }
+
+            // success=true pero data llega null
+            if (!respuesta.data) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Señor(a) Funcionario(a):',
+                    text: 'MFA Central no disponible. No fue posible obtener el estado.'
+                });
+                $('#chkMfaActivo').prop('checked', false).prop('disabled', true).trigger('change');
+                return;
+            }
+
+            // ✅ Ya es seguro leer EstadoMfa
+            var habilitado = (respuesta.data.EstadoMfa === true);
+
+            $('#chkMfaActivo')
+                .prop('checked', habilitado)
+                .prop('disabled', false)
+                .trigger('change');
         },
-        error: function () {
+        error: function (xhr, status, err) {
+            // Error de red / 500 / etc.
             Swal.fire({
-                type: 'error',
-                title: 'Señor(a) Funcionario(a:)',
-                text: 'No es posible consultar MFA, revise!!'
+                icon: 'error',
+                title: 'Señor(a) Funcionario(a):',
+                text: 'No es posible consultar MFA en este momento (servicio no disponible).'
             });
+
+            // Dejar el control en un estado coherente
+            $('#chkMfaActivo').prop('checked', false).prop('disabled', true).trigger('change');
         }
     });
 }
+
 //Funciones de Inserción y Actualización     AISGNAR ROLES ADMINISTRACION DE USUARIOS
 function P_InsRoles() {
 

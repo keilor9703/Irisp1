@@ -160,15 +160,33 @@ namespace Web.Controllers
 
             SuperUsuario = Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1);
 
-        
-            // ============================================================
-            // ✅ MFA CENTRALIZADO 
-            // ============================================================
-            // bool requiereMfa = Admin; // definir política 
 
-            var requiereMfa = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+            // ============================================================
+            // ✅ MFA CENTRALIZADO (no permitir login si MFA está caído)
+            // ============================================================
+            var mfaState = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
 
-            if (requiereMfa.Data?.MfaHabilitado == 1)
+            // 1) Si el servicio está abajo (o falla conectividad), bloquear
+            if (mfaState.CodigoExito != 1)
+            {
+                // Detecta el caso “servicio caído” por prefijo
+                var msg = mfaState.Mensaje ?? "No fue posible validar MFA en este momento.";
+
+                if (msg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                {
+                    ViewBag.MfaShow = true;
+                    ViewBag.MfaMode = "svcdown";
+                    ViewBag.MfaSvcMsg = msg.Replace("MFA_SVC_DOWN|", "");
+                    return View("InicioSesion", loginUsuario);
+                }
+
+                // Otros errores (config / negocio)
+                ModelState.AddModelError("", $"No fue posible consultar estado MFA: {msg}");
+                return View("InicioSesion", loginUsuario);
+            }
+
+            // 2) Si MFA habilitado = 1 → entrar a flujo MFA normal
+            if (mfaState.Data?.MfaHabilitado == 1)
             {
                 TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
 
@@ -176,21 +194,13 @@ namespace Web.Controllers
                 {
                     IdUsuario = Usuario.Data.IdUsuario,
                     Identificacion = Usuario.Data.Identificacion,
-                    Usuario = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString(), // usuario empresarial preferido
+                    Usuario = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString(),
                     Funcionario = Usuario.Data.Funcionario ?? "",
                     Ip = ip
                 });
 
                 TempData.Keep(TdLoginUserData);
                 TempData.Keep(TdMfaPending);
-
-                // Estado MFA central
-                var mfaState = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
-                if (mfaState.CodigoExito != 1)
-                {
-                    ModelState.AddModelError("", $"No fue posible consultar estado MFA: {mfaState.Mensaje}");
-                    return View("InicioSesion", loginUsuario);
-                }
 
                 // Bloqueo?
                 if (mfaState.Data?.BloqueoHasta.HasValue == true && mfaState.Data.BloqueoHasta.Value > DateTime.Now)
@@ -206,9 +216,25 @@ namespace Web.Controllers
                 if (!string.IsNullOrWhiteSpace(deviceId))
                 {
                     var trustedResp = await _mfaWs.IsTrustedAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "", deviceId);
+
+                    if (trustedResp.CodigoExito != 1)
+                    {
+                        // Si MFA está caído aquí también → bloquear
+                        var tmsg = trustedResp.Mensaje ?? "";
+                        if (tmsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ViewBag.MfaShow = true;
+                            ViewBag.MfaMode = "svcdown";
+                            ViewBag.MfaSvcMsg = tmsg.Replace("MFA_SVC_DOWN|", "");
+                            return View("InicioSesion", loginUsuario);
+                        }
+
+                        ModelState.AddModelError("", $"No fue posible validar equipo confiable: {tmsg}");
+                        return View("InicioSesion", loginUsuario);
+                    }
+
                     if (trustedResp.CodigoExito == 1 && trustedResp.Data == 1)
                     {
-                        // Finaliza login directo
                         return await FinalizeMfaLoginInternal();
                     }
                 }
@@ -220,10 +246,19 @@ namespace Web.Controllers
 
                 if (debeEnrollar)
                 {
-                    // Pedir QR y token de enrolamiento al WS
                     var enrollStart = await _mfaWs.EnrollStartAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+
                     if (enrollStart.CodigoExito != 1 || enrollStart.Data == null)
                     {
+                        var emsg = enrollStart.Mensaje ?? "";
+                        if (emsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ViewBag.MfaShow = true;
+                            ViewBag.MfaMode = "svcdown";
+                            ViewBag.MfaSvcMsg = emsg.Replace("MFA_SVC_DOWN|", "");
+                            return View("InicioSesion", loginUsuario);
+                        }
+
                         ModelState.AddModelError("", $"No fue posible iniciar enrolamiento MFA: {enrollStart.Mensaje}");
                         return View("InicioSesion", loginUsuario);
                     }
@@ -247,6 +282,7 @@ namespace Web.Controllers
 
                 return View("InicioSesion", loginUsuario);
             }
+
 
 
             // ============================================================

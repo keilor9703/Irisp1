@@ -42,10 +42,64 @@ namespace Negocio.Gestion.Admin
 
 
 
+
+
+
+
+
         private string CacheKey(string usuario, long identificacion)
         {
             usuario = (usuario ?? "").Trim().ToUpperInvariant();
             return $"MFA_CENTRAL_BEARER::{_sistema}::{identificacion}::{usuario}";
+        }
+
+
+        private static bool IsConnectivityException(Exception ex)
+        {
+            // HttpRequestException: DNS, refused, connection reset, etc.
+            // TaskCanceledException: timeout típico en HttpClient
+            return ex is HttpRequestException
+                || ex is TaskCanceledException
+                || (ex.InnerException != null && IsConnectivityException(ex.InnerException));
+        }
+
+        private DtoResultado<T> FailMfa<T>(string mensajeUsuario, Exception? ex = null)
+        {
+            if (ex != null)
+                _logger.LogError(ex, "MFA CENTRAL no disponible / error de conectividad.");
+
+            return new DtoResultado<T>
+            {
+                CodigoExito = 0,
+                Mensaje = $"MFA_SVC_DOWN|{mensajeUsuario}",
+                Data = default
+            };
+        }
+
+        private async Task<(bool ok, string? bearer, DtoResultado<string>? error)> TryGetBearerAsync(string usuario, long identificacion)
+        {
+            try
+            {
+                var token = await GetBearerAsync(usuario, identificacion);
+                return (true, token, null);
+            }
+            catch (Exception ex) when (IsConnectivityException(ex))
+            {
+                return (false, null, FailMfa<string>(
+                    "El servicio de Doble Autenticación (MFA) está presentando fallas. No es posible continuar.",
+                    ex));
+            }
+            catch (Exception ex)
+            {
+                // Errores no necesariamente de conectividad (firma, config, etc.)
+                _logger.LogError(ex, "Error interno al obtener token MFA central.");
+                return (false, null, new DtoResultado<string>
+                {
+                    CodigoExito = 0,
+                    Mensaje = $"MFA_ERROR|No fue posible validar MFA en este momento: {ex.Message}",
+                    Data = null
+                });
+            }
         }
 
 
@@ -90,20 +144,52 @@ namespace Negocio.Gestion.Admin
             return Convert.ToHexString(hash);
         }
 
+        //public async Task<DtoResultado<DtoMfaState>> StateAsync(long identificacion, string usuario)
+        //{
+        //    var bearer = await GetBearerAsync(usuario, identificacion);
+        //    return await _ws.StateAsync(identificacion, usuario, bearer);
+        //}
+
+
         public async Task<DtoResultado<DtoMfaState>> StateAsync(long identificacion, string usuario)
         {
-            var bearer = await GetBearerAsync(usuario, identificacion);
-            return await _ws.StateAsync(identificacion, usuario, bearer);
+            var (ok, bearer, err) = await TryGetBearerAsync(usuario, identificacion);
+            if (!ok)
+                return new DtoResultado<DtoMfaState> { CodigoExito = err!.CodigoExito, Mensaje = err.Mensaje, Data = null };
+
+            try
+            {
+                return await _ws.StateAsync(identificacion, usuario, bearer!);
+            }
+            catch (Exception ex) when (IsConnectivityException(ex))
+            {
+                return FailMfa<DtoMfaState>(
+                    "El servicio de Doble Autenticación (MFA) está presentando fallas. No es posible iniciar sesión.",
+                    ex);
+            }
         }
 
         public async Task<DtoResultado<DtoMfaEnrollStartResp>> EnrollStartAsync(long identificacion, string usuario)
         {
-            var bearer = await GetBearerAsync(usuario, identificacion);
+            // var bearer = await GetBearerAsync(usuario, identificacion);
+
+            var (ok, bearer, err) = await TryGetBearerAsync(usuario, identificacion);
+            if (!ok)
+                return new DtoResultado<DtoMfaEnrollStartResp> { CodigoExito = err!.CodigoExito, Mensaje = err.Mensaje, Data = null };
+            try { 
             return await _ws.EnrollStartAsync(new DtoMfaEnrollStartReq
             {
                 Identificacion = identificacion,
                 Usuario = usuario
             }, bearer);
+            }
+            catch (Exception ex) when (IsConnectivityException(ex))
+            {
+                return FailMfa<DtoMfaEnrollStartResp>(
+                    "El servicio de Doble Autenticación (MFA) está presentando fallas. No es posible iniciar sesión.",
+                    ex);
+
+            }
         }
 
         public async Task<DtoResultado<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip, long userAudit)
@@ -171,7 +257,7 @@ namespace Negocio.Gestion.Admin
 
         public async Task<DtoResultado<int>> TrustClearUserAsync(long identificacion, string usuario,string ip, long usuarioAudita)
         {
-            var bearer = await GetBearerAsync(usuario, usuarioAudita); // ojo cambiar el usuario y la cedula que solciita el token, por los datos del funcionario logueado, no del funcionario a modificar
+            var bearer = await GetBearerAsync(usuario, usuarioAudita); 
             return await _ws.TrustClearUserAsync(new DtoMfaTrustClearReq
             {
                 Identificacion = identificacion,

@@ -153,7 +153,7 @@ namespace Web.Areas.Admin.Controllers
                     obj.Usuario,
                     Convert.ToInt64(User.FindFirstValue("Identificacion")),
                     HttpContext.Session.GetString("IpMaquina"),
-                    obj.LimpiarDispConfiable// <-- nullable
+                    obj.LimpiarDispConfiable
                 );
 
                 if (Resultado.IdRespuesta > 0)
