@@ -141,10 +141,7 @@ namespace Web.Areas.Admin.Controllers
 
             try
             {
-                //bool esSuperUsuario = User.IsInRole("1");
-
-                // Si no es SuperUsuario, no se cambia MFA (ignorar lo que venga)
-                //int? estado2FaPermitido = esSuperUsuario ? (int?)obj.Estado2Fa : null;
+                
 
                 var Resultado = await _iDbAdministracion.P_InsUdpUsuarios(
                     obj.Identificacion,

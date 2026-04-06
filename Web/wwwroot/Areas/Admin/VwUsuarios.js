@@ -299,7 +299,7 @@ function F_GetEstadoMfa(P_Identificacion, P_Usuario) {
             }
 
             // ✅ Ya es seguro leer EstadoMfa
-            var habilitado = (respuesta.data.EstadoMfa === true);
+            var habilitado = (respuesta.data.EstadoMfa === 1);
 
             $('#chkMfaActivo')
                 .prop('checked', habilitado)
@@ -455,7 +455,7 @@ function P_InsUdpUsuarios() {
     }
 
     if (chkTrusted == null) {
-        CleanTrusted = 1;
+        CleanTrusted = 0;
     } else {
         CleanTrusted = chkTrusted.checked ? 1 : 0;
     }

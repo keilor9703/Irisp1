@@ -102,22 +102,7 @@ namespace Web.Areas.Irisp1.Controllers
         #region Métodos de Consulta
 
 
-        //[HttpGet]
-        //public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
-        //{
-        //    var resultado = await _iDbVerificacionIris.F_GetInfoGrillas(V_Anio);
-
-        //    if (resultado.IdRespuesta > 0)
-        //    {
-        //        return Json(new { success = true, data = resultado.Data });
-        //    }
-        //    else
-        //    {
-        //        // return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = resultado.Mensaje });
-        //        return Json(new { success = false, data = resultado.Data });
-        //    }
-        //}
-
+      
 
         [HttpGet]
         public async Task<IActionResult> F_GetInfoGrillas(Int32 V_Anio)
