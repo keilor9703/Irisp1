@@ -121,13 +121,13 @@ namespace Web.Controllers
             if (!ModelState.IsValid)
                 return View("InicioSesion", loginUsuario);
 
-           // OUD
-           //var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
-           // if (!respuestaOud.Respuesta)
-           // {
-           //     ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
-           //     return View("InicioSesion", loginUsuario);
-           // }
+            // OUD
+            var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
+            if (!respuestaOud.Respuesta)
+            {
+                ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
+                return View("InicioSesion", loginUsuario);
+            }
 
             // IP
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
