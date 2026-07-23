@@ -40,7 +40,7 @@ namespace Web.Areas.Reportes.Controllers
 
             var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Reportes/ReportesGeneral", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
             var ddlAnioIris = (await _IDbReportesGeneral.F_GetAniosIrisP1()).Data.ToList();
-            var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
+            var anioActual = ddlAnioIris.Any() ? ddlAnioIris.Max(x => x.AnoIrisp1) : (int?)null;
 
             //  Crea el SelectList con el año actual seleccionado por defecto
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);

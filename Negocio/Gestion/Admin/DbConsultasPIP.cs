@@ -1,5 +1,4 @@
 ﻿using Comun.Areas.Admin;
-using Comun.Areas.Admin.Comun.Areas.Admin;
 using Comun.Enumeraciones;
 using Comun.General;
 using Microsoft.Extensions.Logging;

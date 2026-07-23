@@ -28,13 +28,14 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IDbFuncionarios _iDbFuncionarios;
         private readonly IConfiguration _configuration;
         private readonly IDbDominios _IDbDominios;
+        private readonly ILogger<SeguimientoController> _logger;
 
 
 
         #endregion
 
         #region Constructor
-        public SeguimientoController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbSeguimientoIris iDbSeguimientoIris, IDbFuncionarios iDbFuncionarios, IDbDominios idbDominios)
+        public SeguimientoController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbSeguimientoIris iDbSeguimientoIris, IDbFuncionarios iDbFuncionarios, IDbDominios idbDominios, ILogger<SeguimientoController> logger)
         {
 
             _iDbAdministracion = iDbAdministracion;
@@ -42,6 +43,7 @@ namespace Web.Areas.Irisp1.Controllers
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = iConfiguration;
             _IDbDominios = idbDominios;
+            _logger = logger;
 
         }
         #endregion
@@ -50,7 +52,7 @@ namespace Web.Areas.Irisp1.Controllers
 
             var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo IrisP1/Seguimiento", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
             var ddlAnioIris = (await _iDbSeguimientoIris.F_GetAniosIrisP1()).Data.ToList();
-            var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
+            var anioActual = ddlAnioIris.Any() ? ddlAnioIris.Max(x => x.AnoIrisp1) : (int?)null;
 
             //  Crea el SelectList con el año actual seleccionado por defecto
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
@@ -156,7 +158,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsResponsable");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -185,7 +188,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_UpdUnidadResponsable");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -248,7 +252,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_DelUnidadResponsable");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -276,7 +281,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_EvalTarea");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -302,7 +308,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_ReasignarTarea");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }

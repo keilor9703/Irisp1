@@ -36,13 +36,14 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IDbDominios _IDbDominios;
         private readonly string _strConexionIris_Test;
         private readonly string _strConexionIris_Disec;
+        private readonly ILogger<VerificacionController> _logger;
 
 
         #endregion
 
         #region Constructor
 
-        public VerificacionController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbVerificacionIris iDbVerificacionIris, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios)
+        public VerificacionController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbVerificacionIris iDbVerificacionIris, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios, ILogger<VerificacionController> logger)
         {
 
             _iDbAdministracion = iDbAdministracion;
@@ -50,6 +51,7 @@ namespace Web.Areas.Irisp1.Controllers
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = configuration;
             _IDbDominios = idbDominios;
+            _logger = logger;
             _strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
             _strConexionIris_Disec = configuration.GetConnectionString("strConexionIris_Disec");
         }
@@ -61,7 +63,7 @@ namespace Web.Areas.Irisp1.Controllers
 
             var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo IrisP1/Verificación", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
             var ddlAnioIris = (await _iDbVerificacionIris.F_GetAniosIrisP1()).Data.ToList();
-            var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
+            var anioActual = ddlAnioIris.Any() ? ddlAnioIris.Max(x => x.AnoIrisp1) : (int?)null;
 
             //  Crea el SelectList con el año actual seleccionado por defecto
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
@@ -290,7 +292,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsResultadoIris");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -314,7 +317,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsTareaRespuesta");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 

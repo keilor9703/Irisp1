@@ -88,7 +88,9 @@ namespace Negocio.Gestion.Irisp1
         }
 
         // ================================================================
-        // F_GetInfoGrillas
+        // F_GetInfoGrillas — llama a PK_CONSULTA_IRISP.F_GetInfoGrillas, el mismo paquete que usa DbIrisp1.
+        // PK_VERIFICACION_IRIS.F_GetInfoGrillas (usado por DbVerificacionIris) es una implementación Oracle
+        // aparte del mismo propósito; sincronizar manualmente cualquier cambio de regla de visibilidad.
         // ================================================================
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(int V_Anio, string RolesUsuario, long CodigoUnidad)
         {

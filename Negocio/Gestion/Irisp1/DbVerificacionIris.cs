@@ -79,6 +79,9 @@ namespace Negocio.Gestion.Irisp1
 
         // ================================================================
         // 2) PK_VERIFICACION_IRIS.F_GetInfoGrillas (FUNCTION con parámetros -> RETURN SYS_REFCURSOR)
+        // OJO: es un paquete PL/SQL independiente de PK_CONSULTA_IRISP.F_GetInfoGrillas (usado por DbIrisp1 y
+        // DbSeguimientoIris) con el mismo nombre y propósito. Mantener las reglas de filtrado sincronizadas
+        // manualmente entre los tres paquetes Oracle hasta que se unifiquen en uno solo.
         // ================================================================
         public async Task<DtoResultado<List<DtoIrispCriminalidad>>> F_GetInfoGrillas(int V_Anio, string RolesUsuario, long CodigoUnidad)
         {

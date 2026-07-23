@@ -40,20 +40,22 @@ namespace Web.Areas.Irisp1.Controllers
         private readonly IDbDominios _IDbDominios;
         private readonly string _strConexionIris_Test;
         private readonly string _strConexionIris_Disec;
-      
+        private readonly ILogger<RegistrosIrisp1Controller> _logger;
+
 
         #endregion
 
         #region Constructor
 
-        public RegistrosIrisp1Controller(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbIrisp1 iDbIrisp1, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios)
+        public RegistrosIrisp1Controller(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbIrisp1 iDbIrisp1, IDbFuncionarios iDbFuncionarios, IConfiguration configuration, IDbDominios idbDominios, ILogger<RegistrosIrisp1Controller> logger)
         {
-          
+
             _iDbAdministracion = iDbAdministracion;
             _iDbIrisp1 = iDbIrisp1;
             _iDbFuncionarios = iDbFuncionarios;
             _configuration = configuration;
             _IDbDominios = idbDominios;
+            _logger = logger;
             _strConexionIris_Test = configuration.GetConnectionString("strConexionIris_Test");
             _strConexionIris_Disec = configuration.GetConnectionString("strConexionIris_Disec");
         }
@@ -575,8 +577,7 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                // Loguear el error
-                //_logger.LogError(ex, "Error en GuardarFotoConRegistro");
+                _logger.LogError(ex, "Error en GuardarFotoConRegistro");
                 return StatusCode(500, new { exito = false, mensaje = "Error interno al guardar la foto." });
             }
         }
@@ -602,7 +603,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsIntegrantes");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -612,7 +614,7 @@ namespace Web.Areas.Irisp1.Controllers
         public async Task<IActionResult> P_InsIntegrantesPreliminar(DtoIntegrantes Obj_Integrante)
         {
 
-            
+
             try
             {
                 var Resultado = await _iDbIrisp1.P_InsIntegrantesPreliminar(Obj_Integrante, User.FindFirstValue("Identificacion"), HttpContext.Session.GetString("IpMaquina"));
@@ -628,7 +630,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsIntegrantesPreliminar");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -927,7 +930,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsDelitosIris");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -955,7 +959,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsInfoAdicionalIris");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }

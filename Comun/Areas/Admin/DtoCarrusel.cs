@@ -7,25 +7,18 @@ using System.Threading.Tasks;
 
 namespace Comun.Areas.Admin
 {
-    using System.Text.Json.Serialization;
-
-    namespace Comun.Areas.Admin
+    public class DtoCarrusel
     {
-        public class DtoCarrusel
-        {
-            [JsonPropertyName("consecutivo")]
-            public int consecutivo { get; set; }  // ✅ antes string
+        [JsonPropertyName("consecutivo")]
+        public int consecutivo { get; set; }
 
-            [JsonPropertyName("contentType")]
-            public string? contentType { get; set; }
+        [JsonPropertyName("contentType")]
+        public string? contentType { get; set; }
 
-            [JsonPropertyName("fileName")]
-            public string? fileName { get; set; }
+        [JsonPropertyName("fileName")]
+        public string? fileName { get; set; }
 
-            [JsonPropertyName("foto")]
-            public string? foto { get; set; }
-        }
+        [JsonPropertyName("foto")]
+        public string? foto { get; set; }
     }
-
-
 }

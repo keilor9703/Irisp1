@@ -129,6 +129,9 @@ namespace Negocio.Gestion.Irisp1
 
                 await connection.OpenAsync();
 
+                // OJO: DbVerificacionIris.F_GetInfoGrillas llama a PK_VERIFICACION_IRIS.F_GetInfoGrillas, un paquete PL/SQL
+                // distinto con el mismo propósito (grilla filtrada por año/rol/unidad). Un cambio de regla de visibilidad
+                // aquí debe replicarse manualmente en ese paquete en Oracle o las pantallas quedarán desincronizadas.
                 var lista = (await connection.QueryAsync<DtoIrispCriminalidad>( "PK_CONSULTA_IRISP.F_GetInfoGrillas", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120 )).AsList();
 
                 resp.Data = lista ?? new List<DtoIrispCriminalidad>();

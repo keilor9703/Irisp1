@@ -20,7 +20,6 @@ namespace Web.Controllers
 
         #region Métodos de Consulta
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> F_GetFuncionarios(Int64 V_Identificacion)
         {
             var Resultado = await _iDbFuncionarios.F_GetFuncionarios(V_Identificacion);
@@ -34,7 +33,6 @@ namespace Web.Controllers
             }
         }
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> F_GetEmpleadoIntel(string V_Busqueda)
         {
             var Resultado = await _iDbFuncionarios.F_GetEmpleadoIntel(V_Busqueda);

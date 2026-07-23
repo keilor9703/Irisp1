@@ -31,9 +31,10 @@ namespace Web.Areas.Expendios.Controllers
         private readonly IDbSeguimientoIris _iDbSeguimientoIris;
 
         private readonly IDbDominios _iDbDominios;
+        private readonly ILogger<RegistrosController> _logger;
 
 
-        public RegistrosController(IConfiguration iConfiguration, IDbAdministracion dbAdministracion , IDbDominios iDbDominios, IDbRegistroExpendio iRegistroExpendio, IDbSeguimientoIris iSegimientoIris)
+        public RegistrosController(IConfiguration iConfiguration, IDbAdministracion dbAdministracion , IDbDominios iDbDominios, IDbRegistroExpendio iRegistroExpendio, IDbSeguimientoIris iSegimientoIris, ILogger<RegistrosController> logger)
         {
 
             _iConfiguration = iConfiguration;
@@ -41,6 +42,7 @@ namespace Web.Areas.Expendios.Controllers
             _iDbDominios = iDbDominios;
             _iDbRegistroExpendio = iRegistroExpendio;
             _iDbSeguimientoIris = iSegimientoIris;
+            _logger = logger;
         }
 
         public async Task<ActionResult> Registros()
@@ -528,7 +530,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsRegistroExpendio");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -555,7 +558,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsIntegrante");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -578,7 +582,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsIntegrantePreliminar");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -602,7 +607,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsDelito");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -625,7 +631,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsBitacora");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -648,7 +655,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsResultados");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -681,7 +689,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_UpdExpendio");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -704,7 +713,8 @@ namespace Web.Areas.Expendios.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_UpdIntegrante");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 

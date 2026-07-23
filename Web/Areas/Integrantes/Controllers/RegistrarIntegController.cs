@@ -25,14 +25,16 @@ namespace Web.Areas.Integrantes.Controllers
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IDbRegistroInteg _iDbRegistroInteg;
         private readonly IDbDominios _iDbDominios;
+        private readonly ILogger<RegistrarIntegController> _logger;
 
 
-        public RegistrarIntegController(IConfiguration iConfiguration, IDbAdministracion dbAdministracion,IDbRegistroInteg dbRegistroInteg, IDbDominios iDbDominios)
+        public RegistrarIntegController(IConfiguration iConfiguration, IDbAdministracion dbAdministracion,IDbRegistroInteg dbRegistroInteg, IDbDominios iDbDominios, ILogger<RegistrarIntegController> logger)
         {
             _iConfiguration = iConfiguration;
             _iDbAdministracion = dbAdministracion;
             _iDbRegistroInteg = dbRegistroInteg;
             _iDbDominios = iDbDominios;
+            _logger = logger;
         }
 
 
@@ -104,7 +106,8 @@ namespace Web.Areas.Integrantes.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsOrUpdReincidente");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -129,7 +132,8 @@ namespace Web.Areas.Integrantes.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_UpdReincidente");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }
@@ -156,7 +160,8 @@ namespace Web.Areas.Integrantes.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_DellReincidente");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
 
         }

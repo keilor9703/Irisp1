@@ -15,11 +15,13 @@ namespace Web.Areas.Admin.Controllers
     {
         #region Propiedades
         private readonly IDbAdministracion _iDbAdministracion;
+        private readonly ILogger<UsuariosController> _logger;
         #endregion
         #region Constructor
-        public UsuariosController(IDbAdministracion iDbAdministracion)
+        public UsuariosController(IDbAdministracion iDbAdministracion, ILogger<UsuariosController> logger)
         {
             _iDbAdministracion = iDbAdministracion;
+            _logger = logger;
         }
         #endregion
 
@@ -131,7 +133,8 @@ namespace Web.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsRoles");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
         public async Task<IActionResult> P_InsUdpUsuarios(DtoUsuario obj)
@@ -160,7 +163,8 @@ namespace Web.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_InsUdpUsuarios");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
 
@@ -191,7 +195,8 @@ namespace Web.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, data = 0, message = "Error: no es posible guardar, revise " + ex });
+                _logger.LogError(ex, "Error en P_DelRoles");
+                return Json(new { success = false, data = 0, message = "Error: no fue posible guardar, intente nuevamente." });
             }
         }
         #endregion
