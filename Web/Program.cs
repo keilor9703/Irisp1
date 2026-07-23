@@ -25,12 +25,16 @@ using Servicios.Api;
 using Servicios.ApiInterfaz;
 using Web;
 
+// Librería MFA
+using Ponal.Seguridad.MfaCliente.Extensions;
+using Ponal.Seguridad.MfaCliente.Interfaces; 
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
-// Add services to the container.
-builder.Services.AddControllersWithViews();
 
+// Agregamos controladores de la librería
+builder.Services.AddControllersWithViews()
+    .AddApplicationPart(typeof(Ponal.Seguridad.MfaCliente.Controllers.MfaOrquestadorController).Assembly);
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -38,86 +42,74 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/Cuenta/InicioSesion";
         options.AccessDeniedPath = "/Cuenta/CerrarSesion";
         options.LogoutPath = "/Cuenta/CerrarSesion";
-
         options.Cookie.Name = "Web";
-
-        // 🔒 Recomendado para SSO/MFA en subdominios o flujos externos:
-        options.Cookie.SameSite = SameSiteMode.None;   // <-- ANTES: Lax
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // <-- ANTES: SameAsRequest
-
-
-        //options.Cookie.SameSite = SameSiteMode.Lax;
-        //options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-
-
-        // (Opcional, si usas subdominios)
-        // options.Cookie.Domain = ".policia.gov.co";
-
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.HttpOnly = true;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.Cookie.MaxAge = options.ExpireTimeSpan;
         options.SlidingExpiration = true;
     });
 
-
-
-
 DefaultTypeMap.MatchNamesWithUnderscores = true;
-
 QuestPDF.Settings.License = LicenseType.Community;
 
-//cadena conexión
+
+
+// ❌ AQUÍ BORRAMOS EL BLOQUE VIEJO DE ApiGatewayUrl QUE CAUSABA EL ERROR ❌
+
+
+
+
+// ... 
 builder.Services.AddHttpClient();
 
+// ✅ RESTAURAMOS EL MODELO ORIGINAL PARA EL PIP
 builder.Services.AddSingleton(sp =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
+
     var pipBase = cfg.GetValue<string>("ApiGatewayUrl")
                  ?? throw new InvalidOperationException("Falta ApiGatewayUrl en configuración.");
-    var mfaBase = cfg.GetValue<string>("MfaCentral:BaseUrl")
-                 ?? throw new InvalidOperationException("Falta MfaCentral:BaseUrl en configuración.");
 
+    var mfaBase = cfg.GetValue<string>("MfaCentral:BaseUrl") ?? "";
+
+    // Retornamos el modelo de Comun.General que usa PipWebServices
     return new ApiGatewayUrl(pipBase, mfaBase);
 });
 
+// Configuracion log de mensajes
 
-//configuracion log de mensajes
+// ...
+
+
+
+
+// Configuración log de mensajes
 var logger = new LoggerConfiguration()
-.ReadFrom.Configuration(builder.Configuration)
-.Enrich.FromLogContext()
-.CreateLogger();
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
-
-//builder.Services.AddDataProtection()
-//    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\IRISP1\DataProtectionKeys"))
-//    .SetApplicationName("IRIS-P1");
-
-
-
 var dpConn = builder.Configuration.GetConnectionString("strConexionIris_Disec");
-
-
-
 
 builder.Services.AddDataProtection()
     .SetApplicationName("IRIS-P1");
-
 
 builder.Services.AddHttpContextAccessor();
 
 // Seguridad
 builder.Services.AddScoped<IDbConsultasPIP, DbConsultasPIP>();
-//builder.Services.AddScoped<IGestionOUD, GestionOUD>();
 builder.Services.AddScoped<IPipWebServices, PipWebServices>();
 
-//Áreas
+// Áreas
 builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
 builder.Services.AddScoped<IDbIrisp1, DbIrisp1>();
 builder.Services.AddScoped<IDbFuncionarios, DbFuncionarios>();
 builder.Services.AddScoped<IDbDominios, DbDominios>();
-
 builder.Services.AddScoped<IDbVerificacionIris, DbVerificacionIris>();
 builder.Services.AddScoped<IDbSeguimientoIris, DbSeguimientoIris>();
 builder.Services.AddScoped<IDbRegistroExpendio, DbRegistroExpendio>();
@@ -127,37 +119,16 @@ builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
 builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
 builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
 
-
-builder.Services.AddScoped<IDbMfaCentralWs, DbMfaCentralWs>();
-
-
-
+// ✅ INYECCIÓN DE LA LIBRERÍA MFA (Ella misma inyectará sus URLs)
 builder.Services.AddMemoryCache();
-
-
+builder.Services.AddPonalMfa(builder.Configuration);
 
 // httpClient
 builder.Services.AddHttpClient<IPipWebServices, PipWebServices>();
-builder.Services.AddHttpClient<IMfaWebServices, MfaWebServices>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(20);
-    client.DefaultRequestVersion = new Version(1, 1);
-    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-})
-.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-{
-    PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-    PooledConnectionIdleTimeout = TimeSpan.FromSeconds(30),
-    MaxConnectionsPerServer = 50,
-    AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
-});
 
-
-//Variables de Sesión
+// Variables de Sesión
 builder.Services.AddMvc();
-
-
-builder.Services.AddDistributedMemoryCache(); // 
+builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddSession(options =>
 {
@@ -165,36 +136,14 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = ".IRISP1.Session";
     options.Cookie.IsEssential = true;
     options.Cookie.HttpOnly = true;
-
-    //if (builder.Environment.IsDevelopment())
-    //{
-    //    options.Cookie.SameSite = SameSiteMode.Lax;
-    //    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    //}
-    //else
-    //{
-    //    options.Cookie.SameSite = SameSiteMode.None;
-    //    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    //}
-
-
-
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-
 });
 
-
-
-
-
-//AppSettings
+// AppSettings
 builder.Services.AddOptions();
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.Configure<CredencialesPipOptions>(builder.Configuration.GetSection("CredencialesPip"));
-
-
-
 
 var RutaVisualizador = builder.Configuration.GetValue<string>("Visualizador");
 
@@ -208,16 +157,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
-// ✅ Session DEBE ir aquí (después de Routing y antes de Auth)
 app.UseSession();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ✅ Tu middleware de validación de sesión debe ir DESPUÉS de UseSession
 app.Use(async (context, next) =>
 {
     var url = context.Request.Path.Value ?? "";
@@ -228,9 +173,8 @@ app.Use(async (context, next) =>
         var obj = context.Session.GetObject<List<DtoMenu>>("ListaMenu");
         var ipMaquina = context.Session.GetString("IpMaquina");
 
-        bool esRutaMfa =
-            url.Contains("/Cuenta/Mfa", StringComparison.OrdinalIgnoreCase) ||
-            url.Contains("/Mfa", StringComparison.OrdinalIgnoreCase);
+        bool esRutaMfa = url.Contains("/Cuenta/Mfa", StringComparison.OrdinalIgnoreCase) ||
+                         url.Contains("/Mfa", StringComparison.OrdinalIgnoreCase);
 
         bool esRutaCuenta = url.Contains("/Cuenta", StringComparison.OrdinalIgnoreCase);
 
@@ -243,11 +187,9 @@ app.Use(async (context, next) =>
             }
         }
     }
-
     await next();
 });
 
-// ✅ Endpoints al final
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
@@ -257,5 +199,3 @@ app.MapControllerRoute(
     pattern: "{controller=Cuenta}/{action=InicioSesion}/{id?}");
 
 app.Run();
-
-

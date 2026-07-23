@@ -24,7 +24,8 @@
     <ProjectReference Include="..\Comun\Comun.csproj" />
     <ProjectReference Include="..\Datos\Datos.csproj" />
     <ProjectReference Include="..\Negocio\Negocio.csproj" />
+    <ProjectReference Include="..\Servicios\Servicios.csproj" />
+    <ProjectReference Include="..\Ponal.Seguridad.MfaCliente\Ponal.Seguridad.MfaCliente.csproj" />
   </ItemGroup>
-
 
 </Project>

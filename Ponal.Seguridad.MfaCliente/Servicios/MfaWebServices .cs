@@ -1,22 +1,21 @@
-﻿using Ponal.Seguridad.MfaCliente.Modelos.DtoMfa;
-using Comun.General;
-using Servicios.ApiInterfaz;
+﻿
+using Ponal.Seguridad.MfaCliente.Modelos;
+using Ponal.Seguridad.MfaCliente.Modelos.DtoMfa;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Ponal.Seguridad.MfaCliente.Modelos;
 
 public class MfaWebServices : IMfaWebServices
 {
     private readonly HttpClient _http;
-    private readonly ApiGatewayUrl _urls;
+    private readonly ApiGatewayUrls _urls;
 
     private static readonly JsonSerializerOptions _jsonOpts = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public MfaWebServices(HttpClient httpClient, ApiGatewayUrl apiGatewayUrl)
+    public MfaWebServices(HttpClient httpClient, ApiGatewayUrls apiGatewayUrl)
     {
         _http = httpClient;
         _urls = apiGatewayUrl;

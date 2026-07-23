@@ -4,14 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Comun.DtoMfa
+namespace Ponal.Seguridad.MfaCliente.Modelos.DtoMfa
 {
-    public class DtoMfaEnrrollConfirmResp
+    public class DtoMfaVerifyResp
     {
-
         public bool Ok { get; set; }
         public DateTime? BloqueoHasta { get; set; }
-
-        
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Comun.Areas.Admin;
-using Comun.DtoMfa;
+
 using Comun.General;
 using Dapper;
 using Dapper.Oracle;
@@ -12,35 +12,38 @@ using System.Data;
 using System.Security.Cryptography;
 using System.Text;
 
+// AGREGAMOS ESTE USING PARA QUE ENCUENTRE LA INTERFAZ DE LA LIBRERÍA
+using Ponal.Seguridad.MfaCliente.Interfaces;
+
 namespace Negocio.Gestion.Admin
 {
     public class DbAdministracion : IDbAdministracion
     {
         #region Propiedades
         private readonly IConfiguration _iConfiguration;
-        
         private readonly string _strConexionIris_Disec;
-        private readonly ILogger _logger;
+        private readonly ILogger<DbAdministracion> _logger;
         private readonly IDbConsultasPIP _iDbConsultasPIP;
+
+        // RESTAURAMOS ESTA VARIABLE PERO AHORA LEERÁ DE LA LIBRERÍA
         private readonly IDbMfaCentralWs _mfaWs;
         #endregion
 
         #region Constructor
         public DbAdministracion(IConfiguration iConfiguration,
                                 IDbConsultasPIP dbConsultasPIP,
-                                IDbMfaCentralWs mfaWs,
-                                ILogger<DbAdministracion> logger
-                                )
+                                ILogger<DbAdministracion> logger,
+                                IDbMfaCentralWs mfaWs) // LO INYECTAMOS NUEVAMENTE
         {
             _iConfiguration = iConfiguration;
             _iDbConsultasPIP = dbConsultasPIP;
-            _mfaWs = mfaWs;
-             _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
             _logger = logger;
+            _strConexionIris_Disec = _iConfiguration.GetConnectionString("strConexionIris_Disec");
+
+            // ASIGNAMOS
+            _mfaWs = mfaWs;
         }
         #endregion
-
-
 
         // Convierte Base64 → Texto (como en proyecto viejo)
         public string ConvertirBase64Bytes(string texto)
@@ -70,7 +73,6 @@ namespace Negocio.Gestion.Admin
                 return Encoding.UTF8.GetString(decryptedData);
             }
         }
-
 
         #region Metodos de Consulta     
 
@@ -127,8 +129,6 @@ namespace Negocio.Gestion.Admin
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-                // connection.BindByName = true;
-
                 var p = new OracleDynamicParameters();
 
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
@@ -173,8 +173,6 @@ namespace Negocio.Gestion.Admin
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-
-
                 var p = new OracleDynamicParameters();
 
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
@@ -208,8 +206,6 @@ namespace Negocio.Gestion.Admin
             return resp;
         }
 
-       
-
         public async Task<DtoResultado<List<DtoUserRoles>>> F_GetUserRoles(long V_Identificacion)
         {
             var resp = new DtoResultado<List<DtoUserRoles>>
@@ -221,7 +217,6 @@ namespace Negocio.Gestion.Admin
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-
                 var p = new OracleDynamicParameters();
 
                 p.Add("P_Identificacion", V_Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
@@ -256,7 +251,6 @@ namespace Negocio.Gestion.Admin
 
             return resp;
         }
-
 
         public async Task<DtoResultado<DtoUserRoles>> F_GetEstadoMfa(long V_Identificacion, string V_Usuario)
         {
@@ -294,10 +288,6 @@ namespace Negocio.Gestion.Admin
 
             return resp;
         }
-
-
-
-
 
         public async Task<DtoResultado<DtoUsuario>> P_GetValidaUser(string usuario, string maquina)
         {
@@ -355,9 +345,7 @@ namespace Negocio.Gestion.Admin
             }
             catch (OracleException ex)
             {
-                // Ideal: log técnico
                 _logger.LogError(ex, "Error Oracle en P_GetValidaUser");
-
                 resp.IdRespuesta = -1;
                 resp.Mensaje = "Error de base de datos al validar el usuario";
                 resp.Data = null;
@@ -366,14 +354,12 @@ namespace Negocio.Gestion.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error general en P_GetValidaUser");
-
                 resp.IdRespuesta = -1;
                 resp.Mensaje = "Ocurrió un error inesperado al validar el usuario";
                 resp.Data = null;
                 return resp;
             }
         }
-
 
         public async Task<DtoValidaUserDb> ValidarUsuarioDbAsync(string usuario, string maquina)
         {
@@ -389,8 +375,6 @@ namespace Negocio.Gestion.Admin
             p.Add("CursorRoles", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
             p.Add("P_Resultado", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
 
-
-            // QueryAsync lee el cursor (CursorRoles) como resultset
             var roles = (await cn.QueryAsync<DtoUserRoles>(
                 "PKS_ADMINISTRACION_IRIS.P_GetValidaUser",
                 param: p,
@@ -409,13 +393,10 @@ namespace Negocio.Gestion.Admin
             };
         }
 
-
-
-
         #endregion
 
         #region Métodos de Inserción y Actualización
-        public async Task<DtoResultado<int>> P_InsAuditoria(long V_Identificacion,string V_Evento, string V_Descripcion,long V_Identificador, string V_Maquina)
+        public async Task<DtoResultado<int>> P_InsAuditoria(long V_Identificacion, string V_Evento, string V_Descripcion, long V_Identificador, string V_Maquina)
         {
             var resp = new DtoResultado<int>
             {
@@ -426,13 +407,12 @@ namespace Negocio.Gestion.Admin
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-                //connection.BindByName = true;
 
                 var p = new OracleDynamicParameters();
 
                 // Inputs
-                p.Add("P_Evento", (V_Evento ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input );
-                p.Add("P_Descripcion", (V_Descripcion ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input );
+                p.Add("P_Evento", (V_Evento ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_Descripcion", (V_Descripcion ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Identificador", V_Identificador, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Usuario", V_Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Maquina", (V_Maquina ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
@@ -443,7 +423,6 @@ namespace Negocio.Gestion.Admin
 
                 await connection.OpenAsync();
 
-                // Inserción / ejecución
                 await connection.ExecuteAsync(
                     "PKS_ADMINISTRACION_IRIS.P_InsAuditoria",
                     p,
@@ -451,11 +430,10 @@ namespace Negocio.Gestion.Admin
                     commandTimeout: 120
                 );
 
-                // Leer OUTs
                 var resultado = p.Get<int?>("P_Resultado") ?? 0;
                 var mensajeSrv = p.Get<string>("SRV_Message");
 
-                resp.IdRespuesta = resultado;          
+                resp.IdRespuesta = resultado;
                 resp.Data = resultado;
                 resp.Mensaje = !string.IsNullOrWhiteSpace(mensajeSrv)
                     ? mensajeSrv
@@ -498,23 +476,16 @@ namespace Negocio.Gestion.Admin
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-              //  connection.BindByName = true;
 
                 var p = new OracleDynamicParameters();
 
-                // IN
                 p.Add("P_IdUsuario", obj.IdUsuario, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_IdRol", obj.IdRol, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_Justificacion", (obj.Justificacion ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input, size: 2000);
-
-                // FechaFin: si puede venir null, ideal que el DTO sea DateTime? y se envíe null
-                // Si NO es nullable, envía el valor tal cual.
                 p.Add("P_FechaFin", obj.FechaFin, OracleMappingType.Date, ParameterDirection.Input);
-
                 p.Add("P_Usuario", V_Usuario, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Maquina", (V_Maquina ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input, size: 200);
 
-                // OUT
                 p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 2000);
                 p.Add("P_Resultado", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
 
@@ -552,7 +523,7 @@ namespace Negocio.Gestion.Admin
         }
 
         public async Task<DtoResultado<int>> P_InsUdpUsuarios(long V_Identificacion, int V_Bloqueado, int? V_Estado2Fa,
-                                                     string V_UsuarioInst, long V_UsuarioAudita, string V_Maquina, int? V_LimpiarDispConfiable)
+                                                             string V_UsuarioInst, long V_UsuarioAudita, string V_Maquina, int? V_LimpiarDispConfiable)
         {
             var resp = new DtoResultado<int>
             {
@@ -568,7 +539,6 @@ namespace Negocio.Gestion.Admin
 
                 p.Add("P_Identificacion", V_Identificacion, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Bloqueado", V_Bloqueado, OracleMappingType.Int32, ParameterDirection.Input);
-
                 p.Add("P_Usuario", V_UsuarioAudita, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Maquina", (V_Maquina ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input, size: 200);
 
@@ -587,7 +557,6 @@ namespace Negocio.Gestion.Admin
                 var resultado = p.Get<int?>("P_Resultado") ?? 0;
                 var mensajeSrv = p.Get<string>("SRV_Message");
 
-                // 2) Si el SP falló, no cambiar MFA
                 if (resultado == 0)
                 {
                     resp.IdRespuesta = 0;
@@ -596,21 +565,19 @@ namespace Negocio.Gestion.Admin
                     return resp;
                 }
 
-                // 3) ✅ Cambiar MFA SOLO si vino un valor (es decir: el admin lo envió)
+                // 3) ✅ Cambiar MFA SOLO si vino un valor
                 if (V_Estado2Fa != null)
                 {
                     var mfaResp = await _mfaWs.ChangeMfaAsync(
                         V_Identificacion,
                         V_UsuarioInst,
                         V_Estado2Fa.Value,
-                        V_Maquina,
-                        V_UsuarioAudita  // 👈 auditor: el logueado (no el objetivo)
+                        V_Maquina
+                      
                     );
 
-                    // Si MFA falla, avisar
                     if (mfaResp.CodigoExito != 1)
                     {
-                        // informar fallo MFA pero NO tumbar el guardado del usuario
                         resp.IdRespuesta = 1;
                         resp.Data = resultado;
                         resp.Mensaje = $"Usuario actualizado, pero no fue posible cambiar MFA: {mfaResp.Mensaje}";
@@ -618,20 +585,18 @@ namespace Negocio.Gestion.Admin
                     }
                 }
 
-                // 4) ✅ Limpiar Dispositivos confiables SOLO si vino un valor (es decir: el admin lo envió)
+                // 4) ✅ Limpiar Dispositivos confiables SOLO si vino un valor
                 if (V_LimpiarDispConfiable != null)
                 {
                     var TrustedClean = await _mfaWs.TrustClearUserAsync(
                         V_Identificacion,
                         V_UsuarioInst,
-                        V_Maquina,
-                        V_UsuarioAudita  // 👈 auditor: el logueado (no el objetivo)
+                        V_Maquina
+                      
                     );
 
-                    // Si MFA falla, avisar
                     if (TrustedClean.CodigoExito != 1)
                     {
-                        // informar fallo MFA pero NO tumbar el guardado del usuario
                         resp.IdRespuesta = 1;
                         resp.Data = resultado;
                         resp.Mensaje = $"Usuario actualizado, pero no fue posible eliminar dispositivos confiables para 2FA: {TrustedClean.Mensaje}";
@@ -660,11 +625,6 @@ namespace Negocio.Gestion.Admin
                 return resp;
             }
         }
-
-
-
-
-
         #endregion
 
         #region Métodos de Eliminación
@@ -679,18 +639,13 @@ namespace Negocio.Gestion.Admin
             try
             {
                 using var connection = new OracleConnection(_strConexionIris_Disec);
-               // connection.BindByName = true;
-
                 var p = new OracleDynamicParameters();
 
-                // IN
                 p.Add("P_IdUserRol", obj.IdUserRol, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_Justificacion", (obj.Justificacion ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input, size: 2000);
-
                 p.Add("P_Usuario", V_Usuario, OracleMappingType.Int64, ParameterDirection.Input);
                 p.Add("P_Maquina", (V_Maquina ?? string.Empty).Trim(), OracleMappingType.Varchar2, ParameterDirection.Input, size: 200);
 
-                // OUT
                 p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 2000);
                 p.Add("P_Resultado", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
 

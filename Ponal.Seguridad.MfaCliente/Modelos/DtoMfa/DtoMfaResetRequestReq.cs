@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Comun.DtoMfa
+namespace Ponal.Seguridad.MfaCliente.Modelos.DtoMfa
 {
     public class DtoMfaResetRequestReq
     {

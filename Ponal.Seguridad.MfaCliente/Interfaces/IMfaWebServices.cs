@@ -1,6 +1,6 @@
-﻿using Ponal.Seguridad.MfaCliente.Modelos.DtoMfa;
-using Comun.General;
+﻿
 using Ponal.Seguridad.MfaCliente.Modelos;
+using Ponal.Seguridad.MfaCliente.Modelos.DtoMfa;
 
 public interface IMfaWebServices
 {

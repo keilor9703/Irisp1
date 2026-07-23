@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -10,6 +10,8 @@
     <ProjectReference Include="..\Comun\Comun.csproj" />
     <ProjectReference Include="..\Datos\Datos.csproj" />
     <ProjectReference Include="..\Servicios\Servicios.csproj" />
+    <!-- 👇 ESTA ES LA LÍNEA MÁGICA QUE FALTABA 👇 -->
+    <ProjectReference Include="..\Ponal.Seguridad.MfaCliente\Ponal.Seguridad.MfaCliente.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.0.11205.157 d18.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37012.4 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.0 UL", "1.0 UL", "{E8C27D9A-9952-4BEA-9953-7071C891CA28}"
 EndProject
@@ -25,6 +25,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Comun", "Comun\Comun.csproj", "{F806B4CE-22DD-4139-A707-6D97E23D5B6D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Servicios", "Servicios\Servicios.csproj", "{DEE81314-B278-498B-B3BA-B363C55312F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ponal.Seguridad.MfaCliente", "Ponal.Seguridad.MfaCliente\Ponal.Seguridad.MfaCliente.csproj", "{46825A75-A606-4644-AC7E-98E4B18072E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +54,10 @@ Global
 		{DEE81314-B278-498B-B3BA-B363C55312F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEE81314-B278-498B-B3BA-B363C55312F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEE81314-B278-498B-B3BA-B363C55312F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46825A75-A606-4644-AC7E-98E4B18072E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46825A75-A606-4644-AC7E-98E4B18072E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46825A75-A606-4644-AC7E-98E4B18072E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46825A75-A606-4644-AC7E-98E4B18072E3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,14 +1,16 @@
 ﻿using Comun.Areas.Admin;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Negocio.Gestion.Admin;
 using Negocio.Interfaz.Admin;
 using Newtonsoft.Json;
 using System.Security.Claims;
-using Web;
+
+// Usamos la librería
+using Ponal.Seguridad.MfaCliente.Interfaces;
+using Ponal.Seguridad.MfaCliente.Modelos.DtoMfa;
 
 namespace Web.Controllers
 {
@@ -19,72 +21,48 @@ namespace Web.Controllers
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IDbConsultasPIP _iDbConsultasPIP;
         private readonly IConfiguration _iConfiguration;
-
-        // ✅ MFA
-        private readonly IMfaTotpService _totp;
         private readonly IDbMfaCentralWs _mfaWs;
-
 
         private bool SuperUsuario = false;
 
-        // ===== TempData keys (cookie-based) =====
         private const string TdLoginUserData = "LOGIN_USERDATA";
         private const string TdMfaPending = "MFA_PENDING";
-
-        // ===== Session keys (solo después de login OK) =====
-        private const string SessEnrollSecret = "MFA_ENROLL_SECRET";
-        private const string SessEnrollQr = "MFA_ENROLL_QR";
-
-       
-
-
-
-        private const string TdEnrollToken = "MFA_ENROLL_TOKEN";
-        private const string TdEnrollQr = "MFA_ENROLL_QR";
-        private const string TdEnrollManualKey = "MFA_ENROLL_MANUALKEY";
         private const string CookieTrusted = "IRISP_MFA_DEVICE";
 
-
         public CuentaController(
-            IHttpContextAccessor iHttpContextAccessor,
-            IConfiguration iConfiguration,
-            IDbAdministracion iDbAdministracion,
-            IDbConsultasPIP idbConsultasPIP,
-            
-            IMfaTotpService totp,
-            IDbMfaCentralWs mfaWs
-        )
+           IHttpContextAccessor iHttpContextAccessor,
+           IConfiguration iConfiguration,
+           IDbAdministracion iDbAdministracion,
+           IDbConsultasPIP idbConsultasPIP,
+           IDbMfaCentralWs mfaWs)
         {
             _iHttpContextAccessor = iHttpContextAccessor;
             _iConfiguration = iConfiguration;
             _iDbAdministracion = iDbAdministracion;
             _iDbConsultasPIP = idbConsultasPIP;
-
-            
-            _totp = totp;
-
             _mfaWs = mfaWs;
         }
 
-        // ============================================================
-        // LOGIN GET
-        // ============================================================
+        private bool MfaEnabled() =>
+            _iConfiguration.GetValue<bool>("MfaCentral:Enabled");
+
+
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> InicioSesion(string returnurl = null, string _mensaje = null)
+        public async Task<IActionResult> InicioSesion(string? returnurl = null, string? _mensaje = null)
         {
             try
             {
                 if (!string.IsNullOrEmpty(_mensaje))
                 {
-                    // PARA INICIO DESDE SISEC
-                    string key = _iConfiguration["Encryption:Key"];
+                    string? key = _iConfiguration["Encryption:Key"];
+                    if (string.IsNullOrEmpty(key)) return View("ErrorGeneral");
 
                     string mensajeRecibido = _iDbAdministracion.ConvertirBase64Bytes(_mensaje);
                     string mensajeDesencriptado = _iDbAdministracion.Decript(mensajeRecibido, key);
 
-                    DtoCredencialesSisec loginDTO =
-                        JsonConvert.DeserializeObject<DtoCredencialesSisec>(mensajeDesencriptado);
+                    DtoCredencialesSisec? loginDTO = JsonConvert.DeserializeObject<DtoCredencialesSisec>(mensajeDesencriptado);
+                    if (loginDTO == null) return View("ErrorGeneral");
 
                     string claveBase64 = _iDbAdministracion.ConvertirBase64Bytes(loginDTO.Clave);
                     string claveDesencriptada = _iDbAdministracion.Decript(claveBase64, key);
@@ -107,36 +85,27 @@ namespace Web.Controllers
             }
         }
 
-        // ============================================================
-        // LOGIN POST (credenciales)
-        // ============================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AllowAnonymous]
-        public async Task<IActionResult> InicioSesionAsync(DtoCredenciales loginUsuario, string returnurl = null)
+        public async Task<IActionResult> InicioSesionAsync(DtoCredenciales loginUsuario, string? returnurl = null)
         {
             ViewData["ReturnUrl"] = returnurl;
-            returnurl = returnurl ?? Url.Action(nameof(HomeController.Index), "Home");
+            returnurl ??= Url.Action(nameof(HomeController.Index), "Home") ?? "/Home";
 
-            if (!ModelState.IsValid)
-                return View("InicioSesion", loginUsuario);
+            if (!ModelState.IsValid) return View("InicioSesion", loginUsuario);
 
-            // OUD
             var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
+     
             if (!respuestaOud.Respuesta)
             {
                 ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
                 return View("InicioSesion", loginUsuario);
             }
 
-            // IP
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (string.IsNullOrWhiteSpace(ip)) ip = "0.0.0.0";
-
-            
             HttpContext.Session.SetString("IpMaquina", ip);
-
-
 
             var Usuario = await _iDbAdministracion.P_GetValidaUser(loginUsuario.UsuarioEmpresarial, ip);
 
@@ -160,18 +129,18 @@ namespace Web.Controllers
 
             SuperUsuario = Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1);
 
-
             // ============================================================
-            // ✅ MFA CENTRALIZADO (no permitir login si MFA está caído)
+            // ✅ MFA CENTRALIZADO 
             // ============================================================
-            var mfaState = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
 
-            // 1) Si el servicio está abajo (o falla conectividad), bloquear
+            bool skipMfa = !MfaEnabled();
+
+            if (!skipMfa) { 
+                var mfaState = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+
             if (mfaState.CodigoExito != 1)
             {
-                // Detecta el caso “servicio caído” por prefijo
                 var msg = mfaState.Mensaje ?? "No fue posible validar MFA en este momento.";
-
                 if (msg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
                 {
                     ViewBag.MfaShow = true;
@@ -180,16 +149,13 @@ namespace Web.Controllers
                     return View("InicioSesion", loginUsuario);
                 }
 
-                // Otros errores (config / negocio)
                 ModelState.AddModelError("", $"No fue posible consultar estado MFA: {msg}");
                 return View("InicioSesion", loginUsuario);
             }
 
-            // 2) Si MFA habilitado = 1 → entrar a flujo MFA normal
             if (mfaState.Data?.MfaHabilitado == 1)
             {
                 TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
-
                 TempData[TdMfaPending] = JsonConvert.SerializeObject(new MfaPendingDto
                 {
                     IdUsuario = Usuario.Data.IdUsuario,
@@ -202,7 +168,6 @@ namespace Web.Controllers
                 TempData.Keep(TdLoginUserData);
                 TempData.Keep(TdMfaPending);
 
-                // Bloqueo?
                 if (mfaState.Data?.BloqueoHasta.HasValue == true && mfaState.Data.BloqueoHasta.Value > DateTime.Now)
                 {
                     ViewBag.MfaShow = true;
@@ -211,7 +176,6 @@ namespace Web.Controllers
                     return View("InicioSesion", loginUsuario);
                 }
 
-                // Trusted device?
                 var deviceId = Request.Cookies[CookieTrusted];
                 if (!string.IsNullOrWhiteSpace(deviceId))
                 {
@@ -219,16 +183,12 @@ namespace Web.Controllers
 
                     if (trustedResp.CodigoExito != 1)
                     {
-                        // Si MFA está caído aquí también → bloquear
                         var tmsg = trustedResp.Mensaje ?? "";
                         if (tmsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
                         {
-                            ViewBag.MfaShow = true;
-                            ViewBag.MfaMode = "svcdown";
-                            ViewBag.MfaSvcMsg = tmsg.Replace("MFA_SVC_DOWN|", "");
+                            ViewBag.MfaShow = true; ViewBag.MfaMode = "svcdown"; ViewBag.MfaSvcMsg = tmsg.Replace("MFA_SVC_DOWN|", "");
                             return View("InicioSesion", loginUsuario);
                         }
-
                         ModelState.AddModelError("", $"No fue posible validar equipo confiable: {tmsg}");
                         return View("InicioSesion", loginUsuario);
                     }
@@ -239,9 +199,7 @@ namespace Web.Controllers
                     }
                 }
 
-                // ¿Debe enrolar?
                 bool debeEnrollar = (mfaState.Data?.MfaHabilitado != 1) || (mfaState.Data?.RequireReenroll == 1);
-
                 ViewBag.MfaShow = true;
 
                 if (debeEnrollar)
@@ -253,9 +211,7 @@ namespace Web.Controllers
                         var emsg = enrollStart.Mensaje ?? "";
                         if (emsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
                         {
-                            ViewBag.MfaShow = true;
-                            ViewBag.MfaMode = "svcdown";
-                            ViewBag.MfaSvcMsg = emsg.Replace("MFA_SVC_DOWN|", "");
+                            ViewBag.MfaMode = "svcdown"; ViewBag.MfaSvcMsg = emsg.Replace("MFA_SVC_DOWN|", "");
                             return View("InicioSesion", loginUsuario);
                         }
 
@@ -263,17 +219,12 @@ namespace Web.Controllers
                         return View("InicioSesion", loginUsuario);
                     }
 
-                    TempData[TdEnrollToken] = enrollStart.Data.EnrollToken;
-                    TempData[TdEnrollQr] = enrollStart.Data.QrBase64;
-                    TempData[TdEnrollManualKey] = enrollStart.Data.ManualKey;
-
-                    TempData.Keep(TdEnrollToken);
-                    TempData.Keep(TdEnrollQr);
-                    TempData.Keep(TdEnrollManualKey);
-
                     ViewBag.MfaMode = "enroll";
                     ViewBag.MfaQrBase64 = enrollStart.Data.QrBase64;
                     ViewBag.MfaManualKey = enrollStart.Data.ManualKey;
+
+                    TempData["MFA_ENROLL_TOKEN"] = enrollStart.Data.EnrollToken;
+                    TempData.Keep("MFA_ENROLL_TOKEN");
                 }
                 else
                 {
@@ -282,286 +233,77 @@ namespace Web.Controllers
 
                 return View("InicioSesion", loginUsuario);
             }
-
-
-
-            // ============================================================
-            // NO MFA -> flujo normal (menú, claims, SignIn)
-            // ============================================================
+             }
+            // Flujo normal sin MFA
             var menuNormal = SuperUsuario
                 ? await _iDbAdministracion.F_GetMenu(1, Usuario.Data.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, Usuario.Data.Identificacion);
 
             HttpContext.Session.SetObject("ListaMenu", menuNormal.Data);
-
             var claims = BuildClaims(Usuario.Data);
-
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
             await _iDbAdministracion.P_InsAuditoria(
-                Convert.ToInt64(Usuario.Data.Identificacion),
-                "Inicio Sesion",
-                "Inicio sesion Sistema",
-                Convert.ToInt64(Usuario.Data.Identificacion),
-                HttpContext.Session.GetString("IpMaquina")
+                Convert.ToInt64(Usuario.Data.Identificacion), "Inicio Sesion", "Inicio sesion Sistema", Convert.ToInt64(Usuario.Data.Identificacion), HttpContext.Session.GetString("IpMaquina")
             );
 
             return RedirectToAction("Index", "Home");
         }
 
-        // ============================================================
-        // MFA - ENROLL CONFIRM (POST desde MODAL en el LOGIN)
-        // ============================================================
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MfaEnrollConfirm(DtoCredenciales loginUsuario, string Code)
-        {
-            var pending = GetPendingFromTempData(keep: true);
-            if (pending == null)
-                return RedirectToAction("InicioSesion");
-
-            var enrollToken = TempData[TdEnrollToken] as string;
-            var qr = TempData[TdEnrollQr] as string;
-            var manualKey = TempData[TdEnrollManualKey] as string;
-
-            TempData.Keep(TdEnrollToken);
-            TempData.Keep(TdEnrollQr);
-            TempData.Keep(TdEnrollManualKey);
-
-            ViewBag.MfaShow = true;
-            ViewBag.MfaMode = "enroll";
-            ViewBag.MfaQrBase64 = qr;
-            ViewBag.MfaManualKey = manualKey;
-
-            if (string.IsNullOrWhiteSpace(enrollToken))
-            {
-                TempData["MfaError"] = "La sesión de enrolamiento expiró. Inicie sesión nuevamente.";
-                return View("InicioSesion", loginUsuario);
-            }
-
-            if (string.IsNullOrWhiteSpace(Code))
-            {
-                TempData["MfaError"] = "Ingrese el código de 6 dígitos.";
-                return View("InicioSesion", loginUsuario);
-            }
-
-            var resp = await _mfaWs.EnrollConfirmAsync(
-                pending.Identificacion,
-                pending.Usuario,
-                enrollToken,
-                Code,
-                pending.Ip,
-                pending.Identificacion
-            );
-
-           
-            // 1) PRIORIDAD: si viene bloqueo, mostrar modal blocked
-            DateTime? bloqueoHasta = resp?.Data?.BloqueoHasta;
-
-            if (resp?.CodigoError == 9 || (bloqueoHasta.HasValue && bloqueoHasta.Value > DateTime.Now))
-            {
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "blocked";
-                ViewBag.BloqueoHasta = bloqueoHasta; // puede ser null, está bien
-                return View("InicioSesion", loginUsuario);
-            }
-
-
-            // 2) Código incorrecto (pero NO bloqueado)
-            if (resp?.CodigoError == 2)
-            {
-                TempData["MfaError"] = resp.Mensaje ?? "Código inválido";
-                return View("InicioSesion", loginUsuario);
-            }
-
-            // 3) Otros errores (token inválido/expirado, etc.)
-            if (resp?.CodigoExito != 1 || resp.Data?.Ok != true)
-            {
-                TempData["MfaError"] = resp?.Mensaje ?? "No fue posible activar MFA.";
-                return View("InicioSesion", loginUsuario);
-            }
-
-            // Limpieza enrolamiento
-            TempData.Remove(TdEnrollToken);
-            TempData.Remove(TdEnrollQr);
-            TempData.Remove(TdEnrollManualKey);
-
-            TempData.Keep(TdLoginUserData);
-            TempData.Keep(TdMfaPending);
-
-            return await FinalizeMfaLoginInternal();
-        }
-
-
-
-        // ============================================================
-        // MFA - VERIFY CONFIRM (POST desde MODAL en el LOGIN)
-        // ============================================================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [AllowAnonymous]
-        public async Task<IActionResult> MfaVerifyConfirm(string Code, bool RememberDevice)
-        {
-            var pending = GetPendingFromTempData(keep: true);
-            var userData = GetUserFromTempData(keep: true);
-
-            if (pending == null || userData == null)
-            {
-                ModelState.AddModelError("", "La sesión de verificación expiró. Inicie sesión nuevamente.");
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-            if (string.IsNullOrWhiteSpace(Code))
-            {
-                ModelState.AddModelError("", "Ingrese el código.");
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "verify";
-                TempData.Keep(TdLoginUserData);
-                TempData.Keep(TdMfaPending);
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-            // DeviceId: si quiere recordar, crea/usa uno
-            string? deviceId = null;
-            if (RememberDevice)
-            {
-                deviceId = Request.Cookies[CookieTrusted];
-                if (string.IsNullOrWhiteSpace(deviceId))
-                    deviceId = Guid.NewGuid().ToString("N");
-            }
-
-            var verify = await _mfaWs.VerifyAsync(
-                pending.Identificacion,
-                pending.Usuario,
-                Code,
-                RememberDevice,
-                deviceId,
-                pending.Ip,
-                pending.Identificacion
-            );
-
-
-            // 1) PRIORIDAD: si viene bloqueo, mostrar modal blocked
-            DateTime? bloqueoHasta = verify?.Data?.BloqueoHasta;
-
-            if (verify?.CodigoError == 9 || (bloqueoHasta.HasValue && bloqueoHasta.Value > DateTime.Now))
-            {
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "blocked";
-                ViewBag.BloqueoHasta = bloqueoHasta; // puede ser null, está bien
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-
-            if (verify.CodigoExito != 1 || verify.Data?.Ok != true)
-            {
-                ModelState.AddModelError("", verify.Mensaje ?? "Código inválido.");
-                ViewBag.VerifyError = verify.Mensaje ?? "Código inválido.";
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "verify";
-
-                TempData.Keep(TdLoginUserData);
-                TempData.Keep(TdMfaPending);
-
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-
-
-            // Si RememberDevice, set cookie (la API ya guardó el trusted device)
-            if (RememberDevice && !string.IsNullOrWhiteSpace(deviceId))
-            {
-                Response.Cookies.Append(CookieTrusted, deviceId, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = Request.IsHttps,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.Now.AddDays(30)
-                });
-            }
-
-            // Finalizar login normal del sistema (menú + claims + SignIn)
-            HttpContext.Session.SetString("IpMaquina", pending.Ip ?? "0.0.0.0");
-
-            bool SuperUsuario = SuperUsuarioOrFromUser(userData);
-            var menu = SuperUsuario
-                ? await _iDbAdministracion.F_GetMenu(1, userData.Identificacion)
-                : await _iDbAdministracion.F_GetMenu(0, userData.Identificacion);
-
-            HttpContext.Session.SetObject("ListaMenu", menu.Data);
-
-            var claims = BuildClaims(userData);
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
-
-            TempData.Remove(TdLoginUserData);
-            TempData.Remove(TdMfaPending);
-
-            return RedirectToAction("Index", "Home");
-        }
-
-        // ============================================================
-        // MFA - CANCEL
-        // ============================================================
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult MfaCancel()
-        {
-            TempData.Remove(TdLoginUserData);
-            TempData.Remove(TdMfaPending);
-
-            HttpContext.Session.Remove(SessEnrollSecret);
-            HttpContext.Session.Remove(SessEnrollQr);
-
-            return RedirectToAction("InicioSesion");
-        }
-
-        // ============================================================
-        // (Opcional) Endpoint, pero ya no es necesario.
-        // Si lo llamas desde trusted device, funciona también.
-        // ============================================================
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> FinalizeMfaLogin()
-        {
-            var result = await FinalizeMfaLoginInternal();
-            return result;
-        }
-
-        private async Task<IActionResult> FinalizeMfaLoginInternal()
         {
             var pending = GetPendingFromTempData(keep: false);
             var userData = GetUserFromTempData(keep: false);
 
             if (pending == null || userData == null)
+            {
+                TempData["MfaError"] = "La sesión expiró. Inicie sesión nuevamente.";
+                return RedirectToAction("InicioSesion");
+            }
+
+            var mfaPassed = HttpContext.Session.GetString($"MFA_PASSED_{pending.Identificacion}");
+
+            if (mfaPassed == "true")
+            {
+                HttpContext.Session.Remove($"MFA_PASSED_{pending.Identificacion}");
+            }
+            else
+            {
+                // Protección extra: Si intenta entrar aquí sin la bandera del orquestador, lo sacamos.
+                return RedirectToAction("InicioSesion");
+            }
+
+            return await FinalizeMfaLoginInternal(pending, userData);
+        }
+
+        private async Task<IActionResult> FinalizeMfaLoginInternal(MfaPendingDto? pending = null, DtoUsuario? userData = null)
+        {
+            if (pending == null) pending = GetPendingFromTempData(keep: false);
+            if (userData == null) userData = GetUserFromTempData(keep: false);
+
+            if (pending == null || userData == null)
                 return RedirectToAction("InicioSesion");
 
             HttpContext.Session.SetString("IpMaquina", pending.Ip ?? "0.0.0.0");
 
-            bool SuperUsuario = SuperUsuarioOrFromUser(userData);
+            bool superUsuario = SuperUsuarioOrFromUser(userData);
 
-            var menu = SuperUsuario
+            var menu = superUsuario
                 ? await _iDbAdministracion.F_GetMenu(1, userData.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, userData.Identificacion);
 
             HttpContext.Session.SetObject("ListaMenu", menu.Data);
 
             var claims = BuildClaims(userData);
-
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity)
-            );
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
+            string ipMaquina = pending.Ip ?? "0.0.0.0";
             await _iDbAdministracion.P_InsAuditoria(
-                Convert.ToInt64(userData.Identificacion),
-                "Inicio Sesion",
-                "Inicio sesión Sistema (MFA OK)",
-                Convert.ToInt64(userData.Identificacion),
-                pending.Ip ?? "0.0.0.0"
+                Convert.ToInt64(userData.Identificacion), "Inicio Sesion", "Inicio sesión Sistema (MFA OK)", Convert.ToInt64(userData.Identificacion), ipMaquina
             );
 
             TempData.Remove(TdLoginUserData);
@@ -570,9 +312,6 @@ namespace Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // ============================================================
-        // CERRAR SESIÓN
-        // ============================================================
         [AllowAnonymous]
         public async Task<IActionResult> CerrarSesion()
         {
@@ -584,13 +323,8 @@ namespace Web.Controllers
                 if (!string.IsNullOrEmpty(idClaim))
                     long.TryParse(idClaim, out identificacion);
 
-                await _iDbAdministracion.P_InsAuditoria(
-                    identificacion,
-                    "Cierre Sesión",
-                    "Cierre Sesión Sistema",
-                    identificacion,
-                    HttpContext.Session.GetString("IpMaquina")
-                );
+                string ipMaquina = HttpContext.Session.GetString("IpMaquina") ?? "0.0.0.0";
+                await _iDbAdministracion.P_InsAuditoria(identificacion, "Cierre Sesión", "Cierre Sesión Sistema", identificacion, ipMaquina);
             }
             catch { }
 
@@ -601,23 +335,68 @@ namespace Web.Controllers
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> SesionExpirada()
+        public IActionResult SesionExpirada()
         {
             return RedirectToAction("InicioSesion", "Cuenta", new { _mensaje = "" });
         }
 
         public ActionResult Perfil() => View();
 
-        // ============================================================
-        // HELPERS TempData
-        // ============================================================
+        [Authorize]
+        public async Task<IActionResult> FotoPerfil()
+        {
+            try
+            {
+                var identificacionClaim = User.FindFirst("Identificacion")?.Value;
+                if (string.IsNullOrWhiteSpace(identificacionClaim) || !long.TryParse(identificacionClaim, out long identificacion))
+                    return FotoPorDefecto();
+
+                var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(identificacion);
+
+                if (!foto_empl.Estado || string.IsNullOrWhiteSpace(foto_empl.Respuesta))
+                    return FotoPorDefecto();
+
+                byte[] bytes;
+                try { bytes = Convert.FromBase64String(foto_empl.Respuesta); }
+                catch { return FotoPorDefecto(); }
+
+                return File(bytes, "image/jpeg");
+            }
+            catch { return FotoPorDefecto(); }
+        }
+
+        private IActionResult FotoPorDefecto()
+        {
+            var ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "Avatar.png");
+            var bytes = System.IO.File.ReadAllBytes(ruta);
+            return File(bytes, "image/png");
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> FotoFuncionario(long identificacion)
+        {
+            try
+            {
+                var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(identificacion);
+
+                if (!foto_empl.Estado || string.IsNullOrWhiteSpace(foto_empl.Respuesta))
+                    return FotoPorDefecto();
+
+                byte[] bytes;
+                try { bytes = Convert.FromBase64String(foto_empl.Respuesta); }
+                catch { return FotoPorDefecto(); }
+
+                return File(bytes, "image/jpeg");
+            }
+            catch { return FotoPorDefecto(); }
+        }
+
         private MfaPendingDto? GetPendingFromTempData(bool keep)
         {
             var json = TempData[TdMfaPending] as string;
             if (string.IsNullOrWhiteSpace(json)) return null;
-
             if (keep) TempData.Keep(TdMfaPending);
-
             try { return JsonConvert.DeserializeObject<MfaPendingDto>(json); }
             catch { return null; }
         }
@@ -626,9 +405,7 @@ namespace Web.Controllers
         {
             var json = TempData[TdLoginUserData] as string;
             if (string.IsNullOrWhiteSpace(json)) return null;
-
             if (keep) TempData.Keep(TdLoginUserData);
-
             try { return JsonConvert.DeserializeObject<DtoUsuario>(json); }
             catch { return null; }
         }
@@ -636,9 +413,6 @@ namespace Web.Controllers
         private static bool SuperUsuarioOrFromUser(DtoUsuario userData)
             => userData.DtoUserRoles?.Any(x => x.IdRol == 1) == true;
 
-        // ============================================================
-        // HELPERS Claims
-        // ============================================================
         private static List<Claim> BuildClaims(DtoUsuario userData)
         {
             var claims = new List<Claim>
@@ -667,275 +441,7 @@ namespace Web.Controllers
                     claims.Add(new Claim(ClaimTypes.Actor, Convert.ToString(rol.Descripcion)));
                 }
             }
-
             return claims;
         }
-
-
-
-        [Authorize]
-        public async Task<IActionResult> FotoPerfil()
-        
-        {
-            try
-            {
-                // 1. Obtener identificación desde el claim
-                var identificacionClaim = User.FindFirst("Identificacion")?.Value;
-
-                if (string.IsNullOrWhiteSpace(identificacionClaim))
-                {
-                    return FotoPorDefecto();
-                }
-
-                if (!long.TryParse(identificacionClaim, out long identificacion))
-                {
-                    return FotoPorDefecto();
-                }
-
-                // 2. Llamar el servicio que trae la foto
-                var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(identificacion);
-
-                if (!foto_empl.Estado || string.IsNullOrWhiteSpace(foto_empl.Respuesta))
-                {
-                    return FotoPorDefecto();
-                }
-
-                // 3. Convertir Base64 a bytes
-                byte[] bytes;
-                try
-                {
-                    bytes = Convert.FromBase64String(foto_empl.Respuesta);
-                }
-                catch
-                {
-                    return FotoPorDefecto();
-                }
-
-                // 4. Devolver como archivo de imagen
-                return File(bytes, "image/jpeg");
-            }
-            catch
-            {
-                return FotoPorDefecto();
-            }
-        }
-
-        private IActionResult FotoPorDefecto()
-        {
-            // Ruta a una imagen por defecto en wwwroot/images
-            var ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "Avatar.png");
-            var bytes = System.IO.File.ReadAllBytes(ruta);
-            return File(bytes, "image/png");
-        }
-
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> FotoFuncionario(long identificacion)
-        {
-            try
-            {
-                var foto_empl = await _iDbConsultasPIP.ObtenerFotoFuncinarioAsync(identificacion);
-
-                if (!foto_empl.Estado || string.IsNullOrWhiteSpace(foto_empl.Respuesta))
-                {
-                    return FotoPorDefecto();
-                }
-
-                byte[] bytes;
-                try
-                {
-                    bytes = Convert.FromBase64String(foto_empl.Respuesta);
-                }
-                catch
-                {
-                    return FotoPorDefecto();
-                }
-
-                return File(bytes, "image/jpeg");
-            }
-            catch
-            {
-                return FotoPorDefecto();
-            }
-        }
-
-        // ============================================================
-        // MFA - PERDÍ MI AUTENTICADOR
-        // ============================================================
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MfaLostDevice()
-        {
-            var pending = GetPendingFromTempData(keep: true);
-
-            if (pending == null)
-            {
-                TempData["MfaError"] = "La sesión expiró. Inicie sesión nuevamente.";
-                return RedirectToAction("InicioSesion");
-            }
-
-            var reset = await _mfaWs.ResetAsync(
-                pending.Identificacion,
-                pending.Usuario,
-                pending.Ip,
-                pending.Identificacion
-            );
-
-            if (reset.CodigoExito != 1)
-            {
-                TempData["MfaError"] = reset.Mensaje ?? "No fue posible reiniciar MFA.";
-                return RedirectToAction("InicioSesion");
-            }
-
-            // Limpieza local
-            TempData.Remove(TdLoginUserData);
-            TempData.Remove(TdMfaPending);
-            TempData.Remove(TdEnrollToken);
-            TempData.Remove(TdEnrollQr);
-            TempData.Remove(TdEnrollManualKey);
-
-            TempData["MfaInfo"] = "Se restableció la verificación en dos pasos. Inicie sesión nuevamente para activar su nuevo autenticador.";
-
-            return RedirectToAction("InicioSesion");
-        }
-
-
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MfaResetRequest()
-        {
-            var pending = GetPendingFromTempData(keep: true);
-            if (pending == null)
-            {
-                TempData["MfaError"] = "La sesión expiró. Inicie sesión nuevamente.";
-                return RedirectToAction("InicioSesion");
-            }
-
-            var resp = await _mfaWs.ResetRequestAsync(pending.Identificacion, pending.Usuario, pending.Ip, pending.Identificacion);
-
-            ViewBag.MfaShow = true;
-            ViewBag.MfaMode = "reset"; // seguimos en verify, y el usuario abre el modal reset
-            ViewBag.ResetInfo = resp.CodigoExito == 1 ? resp.Mensaje : null;
-            ViewBag.ResetError = resp.CodigoExito != 1 ? (resp.Mensaje ?? "No fue posible enviar el código.") : null;
-
-            TempData.Keep(TdLoginUserData);
-            TempData.Keep(TdMfaPending);
-
-            return View("InicioSesion", new DtoCredenciales());
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MfaResetConfirm(string Code)
-        {
-            var pending = GetPendingFromTempData(keep: true);
-            if (pending == null)
-            {
-                TempData["MfaError"] = "La sesión expiró. Inicie sesión nuevamente.";
-                return RedirectToAction("InicioSesion");
-            }
-
-            if (string.IsNullOrWhiteSpace(Code) || Code.Length != 6)
-            {
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "reset";
-                ViewBag.ResetError = "Ingrese el código de 6 dígitos.";
-                TempData.Keep(TdLoginUserData);
-                TempData.Keep(TdMfaPending);
-                return View("InicioSesion", new DtoCredenciales());
-
-            }
-
-            var resp = await _mfaWs.ResetConfirmAsync(pending.Identificacion, pending.Usuario, Code, pending.Ip, pending.Identificacion);
-
-            ViewBag.MfaShow = true;
-            ViewBag.MfaMode = "verify";
-
-            if (resp.CodigoExito != 1)
-            {
-                ViewBag.MfaMode = "reset";
-                ViewBag.ResetError = resp.Mensaje ?? "Código inválido o expirado.";
-            }
-            else
-            {
-                // resp.Data podría traer AvailableAt (recomendado)
-                //ViewBag.MfaMode = "reset";
-                // ViewBag.ResetInfo = resp.Mensaje;
-                await MfaResetExecute();
-
-
-            }
-
-            TempData.Keep(TdLoginUserData);
-            TempData.Keep(TdMfaPending);
-
-            return View("InicioSesion", new DtoCredenciales());
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MfaResetExecute()
-        {
-            var pending = GetPendingFromTempData(keep: true);
-            if (pending == null) return RedirectToAction("InicioSesion");
-
-            var resp = await _mfaWs.ResetExecuteAsync(pending.Identificacion, pending.Usuario, pending.Ip, pending.Identificacion);
-
-            if (resp.CodigoExito != 1)
-            {
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "reset";
-                ViewBag.ResetError = resp.Mensaje ?? "Aún no disponible.";
-                TempData.Keep(TdLoginUserData);
-                TempData.Keep(TdMfaPending);
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-            // listo para reenrolar: iniciamos EnrollStart y mostramos modal enroll
-            var enrollStart = await _mfaWs.EnrollStartAsync(pending.Identificacion, pending.Usuario);
-            if (enrollStart.CodigoExito != 1 || enrollStart.Data == null)
-            {
-                ViewBag.MfaShow = true;
-                ViewBag.MfaMode = "verify";
-                ViewBag.ResetError = "Reset OK, pero no fue posible iniciar enrolamiento. Intente nuevamente.";
-                TempData.Keep(TdLoginUserData);
-                TempData.Keep(TdMfaPending);
-                return View("InicioSesion", new DtoCredenciales());
-            }
-
-            TempData[TdEnrollToken] = enrollStart.Data.EnrollToken;
-            TempData[TdEnrollQr] = enrollStart.Data.QrBase64;
-            TempData[TdEnrollManualKey] = enrollStart.Data.ManualKey;
-
-            TempData.Keep(TdEnrollToken);
-            TempData.Keep(TdEnrollQr);
-            TempData.Keep(TdEnrollManualKey);
-            TempData.Keep(TdLoginUserData);
-            TempData.Keep(TdMfaPending);
-
-            ViewBag.MfaShow = true;
-            ViewBag.MfaMode = "enroll";
-            ViewBag.MfaQrBase64 = enrollStart.Data.QrBase64;
-            ViewBag.MfaManualKey = enrollStart.Data.ManualKey;
-
-            return View("InicioSesion", new DtoCredenciales());
-        }
-
-
-
-
-
     }
-
-
-
-
-
-
 }

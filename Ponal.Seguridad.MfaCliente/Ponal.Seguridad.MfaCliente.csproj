@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <Authors>Oficina de Telemática - PONAL</Authors>
+    <Company>Policía Nacional de Colombia</Company>
+    <Product>Ponal.Seguridad.MfaCliente</Product>
+    <Description>Librería cliente para la integración centralizada con el servicio de Doble Autenticación (MFA).</Description>
+    <PackageId>Ponal.Seguridad.MfaCliente</PackageId>
+    <Version>1.0.0</Version>
+    <Title>Ponal.Seguridad.MfaCliente</Title>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

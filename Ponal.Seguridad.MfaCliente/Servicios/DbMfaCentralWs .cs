@@ -1,17 +1,16 @@
-﻿using Comun.Areas.Admin;
-using Comun.DtoMfa;
-using Comun.General;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Negocio.Interfaz.Admin;
-using Servicios.ApiInterfaz;
-using System.Security.Cryptography;
-using System.Text;
-
-namespace Negocio.Gestion.Admin
+﻿namespace Ponal.Seguridad.MfaCliente.Servicios
 {
+    using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
+
+    using Ponal.Seguridad.MfaCliente.Interfaces;
+    using Ponal.Seguridad.MfaCliente.Modelos;
+    using Ponal.Seguridad.MfaCliente.Modelos.DtoMfa;
+    using System.Security.Cryptography;
+    using System.Text;
+
     /// <summary>
     /// Clase encargada de gestionar la integración con el servicio central de MFA (Doble Autenticación).
     /// Maneja autenticación, cache de tokens y consumo de servicios externos.
@@ -82,14 +81,14 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Construye una respuesta estándar cuando el servicio MFA no está disponible
         /// </summary>
-        private DtoResultado<T> FailMfa<T>(string mensajeUsuario, Exception? ex = null)
+        private MfaWsResponse<T> FailMfa<T>(string mensajeUsuario, Exception? ex = null)
         {
             // Log del error si existe excepción
             if (ex != null)
                 _logger.LogError(ex, "MFA CENTRAL no disponible / error de conectividad.");
 
             // Retorna respuesta controlada para el cliente
-            return new DtoResultado<T>
+            return new MfaWsResponse<T>
             {
                 CodigoExito = 0,
                 Mensaje = $"MFA_SVC_DOWN|{mensajeUsuario}",
@@ -102,7 +101,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Intenta obtener el token bearer manejando errores de forma controlada
         /// </summary>
-        private async Task<(bool ok, string? bearer, DtoResultado<string>? error)> TryGetBearerAsync(string usuario, long identificacion)
+        private async Task<(bool ok, string? bearer, MfaWsResponse<string>? error)> TryGetBearerAsync(string usuario, long identificacion)
         {
             try
             {
@@ -121,7 +120,7 @@ namespace Negocio.Gestion.Admin
             {
                 // Otros errores (firma, configuración, etc.)
                 _logger.LogError(ex, "Error interno al obtener token MFA central.");
-                return (false, null, new DtoResultado<string>
+                return (false, null, new MfaWsResponse<string>
                 {
                     CodigoExito = 0,
                     Mensaje = $"MFA_ERROR|No fue posible validar MFA en este momento: {ex.Message}",
@@ -166,8 +165,8 @@ namespace Negocio.Gestion.Admin
             if (resp.CodigoExito != 1 || string.IsNullOrWhiteSpace(resp.Data))
                 throw new Exception($"No se pudo obtener token MFA central: {resp.Mensaje}");
 
-            // Guarda en cache por 10 minutos
-            _cache.Set(key, resp.Data, TimeSpan.FromMinutes(10));
+            // Guarda en cache por 5 minutos
+            _cache.Set(key, resp.Data, TimeSpan.FromMinutes(5));
 
             return resp.Data;
         }
@@ -195,13 +194,13 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Consulta el estado MFA del usuario
         /// </summary>
-        public async Task<DtoResultado<DtoMfaState>> StateAsync(long identificacion, string usuario)
+        public async Task<MfaWsResponse<DtoMfaState>> StateAsync(long identificacion, string usuario)
         {
             var (ok, bearer, err) = await TryGetBearerAsync(usuario, identificacion);
 
             // Si no se pudo obtener token
             if (!ok)
-                return new DtoResultado<DtoMfaState> { CodigoExito = err!.CodigoExito, Mensaje = err.Mensaje, Data = null };
+                return new MfaWsResponse<DtoMfaState> { CodigoExito = err!.CodigoExito, Mensaje = err.Mensaje, Data = null };
 
             try
             {
@@ -218,12 +217,12 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Inicia el proceso de enrolamiento MFA
         /// </summary>
-        public async Task<DtoResultado<DtoMfaEnrollStartResp>> EnrollStartAsync(long identificacion, string usuario)
+        public async Task<MfaWsResponse<DtoMfaEnrollStartResp>> EnrollStartAsync(long identificacion, string usuario)
         {
             var (ok, bearer, err) = await TryGetBearerAsync(usuario, identificacion);
 
             if (!ok)
-                return new DtoResultado<DtoMfaEnrollStartResp> { CodigoExito = err!.CodigoExito, Mensaje = err.Mensaje, Data = null };
+                return new MfaWsResponse<DtoMfaEnrollStartResp> { CodigoExito = err!.CodigoExito, Mensaje = err.Mensaje, Data = null };
 
             try
             {
@@ -240,7 +239,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Confirma el enrolamiento MFA
         /// </summary>
-        public async Task<DtoResultado<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip, long userAudit)
+        public async Task<MfaWsResponse<DtoMfaEnrrollConfirmResp>> EnrollConfirmAsync(long identificacion, string usuario, string enrollToken, string code, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -251,14 +250,14 @@ namespace Negocio.Gestion.Admin
                 EnrollToken = enrollToken,
                 Code = code,
                 IpMaquina = ip,
-                UserAudit = userAudit
+                
             }, bearer);
         }
 
         /// <summary>
         /// Verifica el código MFA
         /// </summary>
-        public async Task<DtoResultado<DtoMfaVerifyResp>> VerifyAsync(long identificacion, string usuario, string code, bool rememberDevice, string? deviceId, string ip, long userAudit)
+        public async Task<MfaWsResponse<DtoMfaVerifyResp>> VerifyAsync(long identificacion, string usuario, string code, bool rememberDevice, string? deviceId, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -270,14 +269,14 @@ namespace Negocio.Gestion.Admin
                 RememberDevice = rememberDevice,
                 DeviceId = deviceId,
                 IpMaquina = ip,
-                UserAudit = userAudit
+               
             }, bearer);
         }
 
         /// <summary>
         /// Verifica si un dispositivo es confiable
         /// </summary>
-        public async Task<DtoResultado<int>> IsTrustedAsync(long identificacion, string usuario, string deviceId)
+        public async Task<MfaWsResponse<int>> IsTrustedAsync(long identificacion, string usuario, string deviceId)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
             return await _ws.IsTrustedAsync(identificacion, usuario, deviceId, bearer);
@@ -286,7 +285,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Resetea MFA del usuario
         /// </summary>
-        public async Task<DtoResultado<int>> ResetAsync(long identificacion, string usuario, string ip, long userAudit)
+        public async Task<MfaWsResponse<int>> ResetAsync(long identificacion, string usuario, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -295,7 +294,7 @@ namespace Negocio.Gestion.Admin
                 Identificacion = identificacion,
                 Usuario = usuario,
                 IpMaquina = ip,
-                UserAudit = userAudit,
+              
                 Sistema = _sistema
             }, bearer);
         }
@@ -303,7 +302,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Cambia el estado del MFA (activar/desactivar)
         /// </summary>
-        public async Task<DtoResultado<int>> ChangeMfaAsync(long identificacion, string usuario, int? estado2Fa, string ip, long userAudit)
+        public async Task<MfaWsResponse<int>> ChangeMfaAsync(long identificacion, string usuario, int? estado2Fa, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -313,7 +312,7 @@ namespace Negocio.Gestion.Admin
                 Usuario = usuario,
                 Estado2FA = estado2Fa,
                 IpMaquina = ip,
-                UserAudit = userAudit,
+               
                 Sistema = _sistema
             }, bearer);
         }
@@ -321,16 +320,16 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Limpia dispositivos confiables del usuario
         /// </summary>
-        public async Task<DtoResultado<int>> TrustClearUserAsync(long identificacion, string usuario, string ip, long usuarioAudita)
+        public async Task<MfaWsResponse<int>> TrustClearUserAsync(long identificacion, string usuario, string ip)
         {
-            var bearer = await GetBearerAsync(usuario, usuarioAudita);
+            var bearer = await GetBearerAsync(usuario, identificacion);
 
             return await _ws.TrustClearUserAsync(new DtoMfaTrustClearReq
             {
                 Identificacion = identificacion,
                 Usuario = usuario,
                 IpMaquina = ip,
-                UserAudit = usuarioAudita,
+                
                 Sistema = _sistema
             }, bearer);
         }
@@ -338,7 +337,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Solicita reset de MFA
         /// </summary>
-        public async Task<DtoResultado<int>> ResetRequestAsync(long identificacion, string usuario, string ip, long userAudit)
+        public async Task<MfaWsResponse<int>> ResetRequestAsync(long identificacion, string usuario, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -347,7 +346,7 @@ namespace Negocio.Gestion.Admin
                 Identificacion = identificacion,
                 Usuario = usuario,
                 IpMaquina = ip,
-                UserAudit = userAudit,
+               
                 Sistema = _sistema
             }, bearer);
         }
@@ -355,7 +354,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Confirma reset de MFA
         /// </summary>
-        public async Task<DtoResultado<DtoMfaResetConfirmResp>> ResetConfirmAsync(long identificacion, string usuario, string code, string ip, long userAudit)
+        public async Task<MfaWsResponse<DtoMfaResetConfirmResp>> ResetConfirmAsync(long identificacion, string usuario, string code, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -365,7 +364,7 @@ namespace Negocio.Gestion.Admin
                 Usuario = usuario,
                 Code = code,
                 IpMaquina = ip,
-                UserAudit = userAudit,
+           
                 Sistema = _sistema
             }, bearer);
         }
@@ -373,7 +372,7 @@ namespace Negocio.Gestion.Admin
         /// <summary>
         /// Ejecuta el reset definitivo de MFA
         /// </summary>
-        public async Task<DtoResultado<int>> ResetExecuteAsync(long identificacion, string usuario, string ip, long userAudit)
+        public async Task<MfaWsResponse<int>> ResetExecuteAsync(long identificacion, string usuario, string ip)
         {
             var bearer = await GetBearerAsync(usuario, identificacion);
 
@@ -382,7 +381,7 @@ namespace Negocio.Gestion.Admin
                 Identificacion = identificacion,
                 Usuario = usuario,
                 IpMaquina = ip,
-                UserAudit = userAudit,
+               
                 Sistema = _sistema
             }, bearer);
         }
