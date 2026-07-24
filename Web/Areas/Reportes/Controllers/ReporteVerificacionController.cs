@@ -39,12 +39,15 @@ namespace Web.Areas.Reportes.Controllers
             return View();
         }
 
+        private string RolesUsuario() => string.Join(",",
+            User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
+        private long CodigoUnidad() => Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
         [HttpGet]
         public async Task<IActionResult> F_GetReporteVerificacion()
         {
-            var res = await _IDbReporteVerificacion.F_GetReporteVerificacion();
+            var res = await _IDbReporteVerificacion.F_GetReporteVerificacion(RolesUsuario(), CodigoUnidad());
 
             if (res.IdRespuesta > 0)
                 return Json(new { success = true, data = res.Data });
@@ -66,7 +69,7 @@ namespace Web.Areas.Reportes.Controllers
                 HttpContext.Session.GetString("IpMaquina")
             );
 
-            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion();
+            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion(RolesUsuario(), CodigoUnidad());
 
             if (resultado.IdRespuesta == 0)
                 return StatusCode(500, new { success = false, message = resultado.Mensaje });
@@ -171,7 +174,7 @@ namespace Web.Areas.Reportes.Controllers
                 HttpContext.Session.GetString("IpMaquina")
             );
 
-            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion();
+            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion(RolesUsuario(), CodigoUnidad());
 
             if (resultado.IdRespuesta == 0)
                 return StatusCode(500, new { success = false, message = resultado.Mensaje });

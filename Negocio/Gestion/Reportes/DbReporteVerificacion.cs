@@ -38,7 +38,7 @@ namespace Negocio.Gestion.Reportes
 
         }
 
-        public async Task<DtoResultado<List<DtoReporteVerificacion>>> F_GetReporteVerificacion()
+        public async Task<DtoResultado<List<DtoReporteVerificacion>>> F_GetReporteVerificacion(string RolesUsuario, long CodigoUnidad)
         {
             var resultado = new DtoResultado<List<DtoReporteVerificacion>>();
 
@@ -50,6 +50,8 @@ namespace Negocio.Gestion.Reportes
 
                 // ESTE ES EL CORRECTO PARA FUNCIONES
                 parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+                parametros.Add("P_Roles", RolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
+                parametros.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
 
                 var lista = (await conexion.QueryAsync<DtoReporteVerificacion>(
                     "PK_REPORTES_IRIS.F_GetReporteVerificacion",

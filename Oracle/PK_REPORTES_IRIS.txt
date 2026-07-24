@@ -190,14 +190,36 @@ END P_GetReporteGeneral;
 ---*******************************************************************************************************************************************************************************************************************
 
 
-FUNCTION F_GetReporteVerificacion
+FUNCTION F_GetReporteVerificacion(
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  )
   RETURN SYS_REFCURSOR
   IS
     P_CURSOR_OUT SYS_REFCURSOR;
+    V_Sigla      VARCHAR2(20);
   BEGIN
 
+    ------------------------------------------------------------------
+    -- Obtener SIGLA_PAPA de la unidad del usuario (igual que P_GetReporteGeneral)
+    ------------------------------------------------------------------
+    BEGIN
+        SELECT sig.sigla_papa
+        INTO V_Sigla
+        FROM VM_UNIDADES sig
+        WHERE sig.consecutivo = P_CodigoUnidad;
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+        V_Sigla := NULL;
+    END;
+
     OPEN P_CURSOR_OUT FOR
-      WITH DELITOS AS (
+      WITH
+      ROLES_LIST AS (
+          SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+          FROM dual
+          CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      ),
+      DELITOS AS (
           SELECT 
               d.criminalidad_id,
               SUM(CASE WHEN d.id_tipo = 1 THEN 1 ELSE 0 END) AS delitos_principal,
@@ -267,6 +289,17 @@ FUNCTION F_GetReporteVerificacion
       LEFT JOIN RESPONSABLE resp ON c.criminalidad_id = resp.criminalidad_id
       
       WHERE c.vigente = 1
+
+        ------------------------------------------------------------
+        -- FILTRO DE ROLES (igual que P_GetReporteGeneral en este mismo paquete)
+        ------------------------------------------------------------
+        AND (
+                 EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1,2))
+
+              OR (EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 7)
+                  AND c.SIGLA_UNIDAD = V_Sigla)
+            )
+
       ORDER BY c.codigo DESC;
 
     RETURN P_CURSOR_OUT;
