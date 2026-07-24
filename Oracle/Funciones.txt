@@ -1,0 +1,302 @@
+create or replace function F_Consultar_UndeConsecutivo(p_UnidadCons in vm_unidades.consecutivo%type)
+  return varchar2 is
+  FunctionResult varchar2(80);
+begin
+  select t.unde_consecutivo
+    into FunctionResult
+    from vm_unidades t
+   where t.consecutivo = p_UnidadCons;
+  return FunctionResult;
+exception
+  when no_data_found then
+    return null;
+end F_Consultar_UndeConsecutivo;
+
+
+
+
+
+create or replace function F_Consultar_Unidad(p_Unidad in vm_unidades.consecutivo%type) return nvarchar2 is
+  FunctionResult varchar2(130);
+begin
+  select t.descripcion_dependencia ||' - '|| t.sigla_depende into FunctionResult from vm_unidades t where t.consecutivo = p_Unidad;
+
+  return(FunctionResult);
+  exception
+    when no_data_found then
+      return (null);
+end F_Consultar_Unidad;
+
+
+
+create or replace function F_Consultar_Unidad_Funcionario(p_Identificacion in vm_rehu_personal.identificacion%type) return varchar2 is
+  FunctionResult varchar2(100);
+begin
+  select t.descripcion_dependencia ||' - '|| t.sigla_papa into FunctionResult from vm_rehu_personal t where t.identificacion = p_Identificacion;
+
+  return(FunctionResult);
+  exception
+    when no_data_found then
+      return (null);
+end F_Consultar_Unidad_Funcionario;
+
+
+
+create or replace function F_Consultar_Valor_id_region(p_Unidad_Id in vm_unidades.consecutivo%type)
+  return varchar2 is
+  FunctionResult varchar2(130);
+begin
+  select t.cod_regional as descripcion_dependencia
+    into FunctionResult
+    from vm_unidades t
+   where t.consecutivo = p_Unidad_Id;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Consultar_Valor_id_region;
+
+
+
+
+create or replace function F_Consultar_Valor_sigla(p_Unidad_Id in vm_unidades.consecutivo%type)
+  return varchar2 is
+  FunctionResult varchar2(130);
+begin
+  select t.sigla_fisica as descripcion_dependencia
+    into FunctionResult
+    from vm_unidades t
+   where t.consecutivo = p_Unidad_Id;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Consultar_Valor_sigla;
+
+
+
+
+CREATE OR REPLACE FUNCTION F_Consultar_Valor_Dominio_IRISP1(
+    p_Dominio_Id IN irisp_ctrl_dominio.dominio_id%TYPE
+) RETURN irisp_ctrl_dominio.descripcion%TYPE
+IS
+    FunctionResult irisp_ctrl_dominio.descripcion%TYPE;
+BEGIN
+    -- Validar si el parámetro es nulo o vacío
+    IF p_Dominio_Id IS NULL OR TRIM(p_Dominio_Id) = '' THEN
+        RETURN NULL;
+    END IF;
+
+    -- Intentar obtener la descripción del dominio
+    SELECT t.descripcion
+      INTO FunctionResult
+      FROM irisp_ctrl_dominio t
+     WHERE t.dominio_id = p_Dominio_Id;
+
+    RETURN FunctionResult;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+    WHEN OTHERS THEN
+        RETURN NULL;  -- Captura cualquier otro error inesperado
+END F_Consultar_Valor_Dominio_IRISP1;
+
+
+
+
+create or replace function F_Unidad_Asig_Inves(p_Criminalidad_Id in irisp_respon_validacion.criminalidad_id%type)
+  return nvarchar2 is
+  FunctionResult varchar2(130);
+begin
+  select f_consultar_unidad(j.id_unidad_respon)
+    into FunctionResult
+    from (select rownum as cons, k.id_unidad_respon, k.fecha_creacion
+            from (select t.id_unidad_respon, it.fecha_creacion
+                    from irisp_respon_validacion t, irisp_tarea it
+                   where t.criminalidad_id = p_Criminalidad_Id
+                     and it.respon_validacion_id = t.respon_validacion_id
+                     and it.id_lista_tareas = 71 -- 71 es igual a Tarea Investigacion
+                     and t.vigente = 1
+                     and it.vigente = 1
+                   order by it.fecha_creacion desc) k) j
+   where j.cons = 1;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Unidad_Asig_Inves;
+
+
+
+
+create or replace function F_Unidad_Verif_Existe(p_Criminalidad_Id in irisp_respon_validacion.criminalidad_id%type)
+  return nvarchar2 is
+  FunctionResult varchar2(130);
+begin
+select f_consultar_unidad(j.id_unidad_respon)
+    into FunctionResult
+    from (select rownum as cons, k.id_unidad_respon, k.fecha_creacion
+            from (select t.id_unidad_respon, it.fecha_creacion
+                    from irisp_respon_validacion t, irisp_tarea it
+                   where t.criminalidad_id = p_Criminalidad_Id
+                     and it.respon_validacion_id = t.respon_validacion_id
+                     and it.id_lista_tareas = 52 -- 52 es igual a Tarea Verificacion
+                     and t.vigente = 1
+                     and it.vigente = 1
+                   order by it.fecha_creacion desc) k) j
+   where j.cons = 1;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Unidad_Verif_Existe;
+
+
+
+
+
+
+create or replace function F_Fecha_Verif_Existe(p_Criminalidad_Id in irisp_respon_validacion.criminalidad_id%type)
+  return date is
+  FunctionResult date;
+begin
+  select j.fecha_creacion
+    into FunctionResult
+    from (select rownum as cons, k.id_unidad_respon, k.fecha_creacion
+            from (select t.id_unidad_respon, it.fecha_creacion
+                    from irisp_respon_validacion t, irisp_tarea it
+                   where t.criminalidad_id = p_Criminalidad_Id
+                     and it.respon_validacion_id = t.respon_validacion_id
+                     and it.id_lista_tareas = 52 -- 52 es igual a Tarea Verificacion
+                     and t.vigente = 1
+                     and it.vigente = 1
+                   order by it.fecha_creacion desc) k) j
+   where j.cons = 1;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Fecha_Verif_Existe;
+
+
+
+
+
+create or replace function F_Fecha_Respuesta_Existe(p_Criminalidad_Id in irisp_respon_validacion.criminalidad_id%type)
+  return date is
+  FunctionResult date;
+begin
+  select j.fecha_modifica
+    into FunctionResult
+    from (select rownum as cons, k.id_unidad_respon, k.fecha_modifica
+            from (select t.id_unidad_respon, it.fecha_modifica
+                    from irisp_respon_validacion t, irisp_tarea it
+                   where t.criminalidad_id = p_Criminalidad_Id
+                     and it.respon_validacion_id = t.respon_validacion_id
+                     and it.id_lista_tareas = 52 -- 52 es igual a Tarea Verificacion
+                     and it.fecha_modifica is not null
+                     and t.vigente = 1
+                     and it.vigente = 1
+                   order by it.fecha_modifica desc) k) j
+   where j.cons = 1;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Fecha_Respuesta_Existe;
+
+
+
+
+
+create or replace function F_Fecha_Asig_Inves(p_Criminalidad_Id in irisp_respon_validacion.criminalidad_id%type)
+  return date is
+  FunctionResult date;
+begin
+  select j.fecha_creacion
+    into FunctionResult
+    from (select rownum as cons, k.id_unidad_respon, k.fecha_creacion
+            from (select t.id_unidad_respon, it.fecha_creacion
+                    from irisp_respon_validacion t, irisp_tarea it
+                   where t.criminalidad_id = p_Criminalidad_Id
+                     and it.respon_validacion_id = t.respon_validacion_id
+                     and it.id_lista_tareas = 71 -- 71 es igual a Tarea Investigacion
+                     and t.vigente = 1
+                     and it.vigente = 1
+                   order by it.fecha_creacion desc) k) j
+   where j.cons = 1;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Fecha_Asig_Inves;
+
+
+
+
+
+
+
+
+
+create or replace function F_Fecha_Respuesta_Inves(p_Criminalidad_Id in irisp_respon_validacion.criminalidad_id%type)
+  return date is
+  FunctionResult date;
+begin
+  select j.fecha_modifica
+    into FunctionResult
+    from (select rownum as cons, k.id_unidad_respon, k.fecha_modifica
+            from (select t.id_unidad_respon, it.fecha_modifica
+                    from irisp_respon_validacion t, irisp_tarea it
+                   where t.criminalidad_id = p_Criminalidad_Id
+                     and it.respon_validacion_id = t.respon_validacion_id
+                     and it.id_lista_tareas = 71 -- 71 es igual a Tarea Investigacion
+                     and it.fecha_modifica is not null
+                     and t.vigente = 1
+                     and it.vigente = 1
+                   order by it.fecha_modifica desc) k) j
+   where j.cons = 1;
+  return(FunctionResult);
+exception
+  when no_data_found then
+    return(null);
+end F_Fecha_Respuesta_Inves;
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION f_tiempo_verificacion(p_id IN varchar2) RETURN VARCHAR2 IS
+    f_ini DATE := f_fecha_verif_existe(p_id);
+    f_resp DATE := f_fecha_respuesta_existe(p_id);
+BEGIN
+    IF f_ini IS NULL THEN
+        RETURN 'No asignado';
+    ELSIF f_resp IS NOT NULL THEN
+        RETURN 'Se respondió en ' || ROUND(f_resp - f_ini) || ' días - ' ||
+               TRUNC(MOD((f_resp - f_ini) * 24, 24)) || ' horas';
+    ELSE
+        RETURN 'Se asignó hace ' || ROUND(SYSDATE - f_ini) || ' días - ' ||
+               TRUNC(MOD((SYSDATE - f_ini) * 24, 24)) || ' horas';
+    END IF;
+END;
+
+
+
+
+CREATE OR REPLACE FUNCTION f_tiempo_investigacion(p_id IN varchar2) RETURN VARCHAR2 IS
+    f_ini DATE := f_fecha_asig_inves(p_id);
+    f_resp DATE := f_fecha_respuesta_inves(p_id);
+BEGIN
+    IF f_ini IS NULL THEN
+        RETURN 'No asignado';
+    ELSIF f_resp IS NOT NULL THEN
+        RETURN 'Se respondió en ' || ROUND(f_resp - f_ini) || ' días - ' ||
+               TRUNC(MOD((f_resp - f_ini) * 24, 24)) || ' horas';
+    ELSE
+        RETURN 'Se asignó hace ' || ROUND(SYSDATE - f_ini) || ' días - ' ||
+               TRUNC(MOD((SYSDATE - f_ini) * 24, 24)) || ' horas';
+    END IF;
+END;
