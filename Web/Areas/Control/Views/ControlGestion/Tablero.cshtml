@@ -2,10 +2,72 @@
     ViewData["Title"] = "Control de Gestión";
 }
 
+@section styles {
+    <style>
+        .stat-card {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            height: 100%;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            border-left: 4px solid #ccc;
+        }
+        .stat-card.st-secondary { border-left-color: #6c757d; }
+        .stat-card.st-success   { border-left-color: #28a745; }
+        .stat-card.st-warning   { border-left-color: #ffc107; }
+        .stat-card.st-danger    { border-left-color: #dc3545; }
+        .stat-card.st-info      { border-left-color: #08a6cb; }
+        .stat-card .stat-icon {
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+            margin-right: 12px;
+        }
+        .stat-icon.bg-secondary { background: #6c757d; }
+        .stat-icon.bg-success   { background: #28a745; }
+        .stat-icon.bg-warning   { background: #ffc107; color: #212529; }
+        .stat-icon.bg-danger    { background: #dc3545; }
+        .stat-icon.bg-info      { background: #08a6cb; }
+        .stat-card .stat-body h3 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.4rem;
+            line-height: 1.2;
+        }
+        .stat-card .stat-body p {
+            margin: 0;
+            color: #6c757d;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            font-weight: 600;
+        }
+        .stat-card .stat-body small {
+            display: block;
+            color: #9aa0a6;
+            font-size: .7rem;
+        }
+        #rangoFechasTablero {
+            font-size: .85rem;
+            color: #002a66;
+            font-weight: bold;
+        }
+    </style>
+}
+
 @section scripts {
     <script src="~/TemplateMonster_bt5/assets/libs/chart.js/dist/Chart.min.js"></script>
     <script>
         var UrlGetTareasControlGestion = "@Url.Action("F_GetTareasControlGestion", "ControlGestion", new { Area = "Control" })";
+        var UrlGetKpisTiempoGestion = "@Url.Action("F_GetKpisTiempoGestion", "ControlGestion", new { Area = "Control" })";
     </script>
     <script src="~/Areas/Control/ControlGestion.js"></script>
 }
@@ -20,54 +82,102 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-3">
+<div class="row align-items-end">
+    <div class="col-md-3 MargFloatBoos">
         <div class="form-group has-float-label">
             @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
                      htmlAttributes: new { id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
-            <label>Año</label>
+            <label class="Labels">Año</label>
+        </div>
+    </div>
+    <div class="col-md-6 MargFloatBoos">
+        <span id="rangoFechasTablero"></span>
+    </div>
+    <div class="col-md-3 MargFloatBoos text-right">
+        <a href="@Url.Action("Mapa", "ControlGestion", new { Area = "Control" })" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar">
+            <i class="fas fa-map-marked-alt"></i> Ver mapa de puntos
+        </a>
+    </div>
+</div>
+
+<h6 class="text-muted mb-2"><i class="fas fa-tasks"></i> Cumplimiento de SLA por tarea</h6>
+<div class="row mb-3">
+    <div class="col-md-2 mb-3">
+        <div class="stat-card st-secondary">
+            <div class="stat-icon bg-secondary"><i class="fas fa-list"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiTotal">0</h3>
+                <p>Total tareas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="stat-card st-success">
+            <div class="stat-icon bg-success"><i class="fas fa-check"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiATiempo">0</h3>
+                <p>A tiempo</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="stat-card st-warning">
+            <div class="stat-icon bg-warning"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiEnRiesgo">0</h3>
+                <p>En riesgo</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="stat-card st-danger">
+            <div class="stat-icon bg-danger"><i class="fas fa-times"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiVencido">0</h3>
+                <p>Vencidas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="stat-card st-secondary">
+            <div class="stat-icon bg-secondary"><i class="fas fa-question"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiSinSla">0</h3>
+                <p>Sin SLA definido</p>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-2">
-        <div class="card border-secondary text-center">
-            <div class="card-body">
-                <h6>Total tareas</h6>
-                <h3 id="kpiTotal">0</h3>
+<h6 class="text-muted mb-2"><i class="fas fa-stopwatch"></i> Tiempo de gestión por caso IRISP1</h6>
+<div class="row mb-3">
+    <div class="col-md-4 mb-3">
+        <div class="stat-card st-info">
+            <div class="stat-icon bg-info"><i class="fas fa-flag-checkered"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiTiempoTotalCaso">-</h3>
+                <p>Tiempo total (creación a finalización)</p>
+                <small id="kpiTiempoTotalCasoSub"></small>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card border-success text-center">
-            <div class="card-body">
-                <h6>A tiempo</h6>
-                <h3 id="kpiATiempo">0</h3>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card st-info">
+            <div class="stat-icon bg-info"><i class="fas fa-search"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiTiempoVerificacion">-</h3>
+                <p>Tiempo promedio — Verificación</p>
+                <small id="kpiTiempoVerificacionSub"></small>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card border-warning text-center">
-            <div class="card-body">
-                <h6>En riesgo</h6>
-                <h3 id="kpiEnRiesgo">0</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-2">
-        <div class="card border-danger text-center">
-            <div class="card-body">
-                <h6>Vencidas</h6>
-                <h3 id="kpiVencido">0</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-2">
-        <div class="card border-secondary text-center">
-            <div class="card-body">
-                <h6>Sin SLA definido</h6>
-                <h3 id="kpiSinSla">0</h3>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card st-info">
+            <div class="stat-icon bg-info"><i class="fas fa-user-secret"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiTiempoInvestigacion">-</h3>
+                <p>Tiempo promedio — Investigación</p>
+                <small id="kpiTiempoInvestigacionSub"></small>
             </div>
         </div>
     </div>
@@ -75,22 +185,26 @@
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header"><h4 class="card-title">Promedio de horas por unidad</h4></div>
+        <div class="card border-info">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-chart-bar text-white"></i> Promedio de horas por unidad</h4>
+            </div>
             <div class="card-body">
-                <canvas id="graficoPromedioUnidad" height="80"></canvas>
+                <div style="position:relative; height:320px;">
+                    <canvas id="graficoPromedioUnidad"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card">
+<div class="card border-info">
     <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Tareas y estado de SLA</h4>
+        <h4 class="card-title text-white"><i class="mr-2 fas fa-clipboard-list text-white"></i> Tareas y estado de SLA</h4>
     </div>
     <div class="card-body">
-        <div class="dt-container" style="width:100%;">
-            <table id="tbTareasControlGestion" class="table table-bordered table-striped" width="100%"></table>
+        <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+            <table id="tbTareasControlGestion" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
         </div>
     </div>
 </div>

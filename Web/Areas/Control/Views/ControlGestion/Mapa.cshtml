@@ -1,0 +1,129 @@
+@{
+    ViewData["Title"] = "Mapa de casos IRISP1";
+}
+
+@section styles {
+    <link rel="stylesheet" href="~/lib/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="~/lib/leaflet/MarkerCluster.css" />
+    <link rel="stylesheet" href="~/lib/leaflet/MarkerCluster.Default.css" />
+    <style>
+        #mapaIrisp1 {
+            width: 100%;
+            height: 560px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        .btn-modo-mapa.active {
+            background: linear-gradient(90deg, #cdff00, #08a6cb) !important;
+            color: #151b3b !important;
+        }
+        .mapa-stat {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            text-align: center;
+        }
+        .mapa-stat h3 { margin: 0; font-weight: 700; color: #002a66; }
+        .mapa-stat p { margin: 0; font-size: .72rem; text-transform: uppercase; color: #6c757d; font-weight: 600; }
+    </style>
+}
+
+@section scripts {
+    <script src="~/lib/leaflet/leaflet.js"></script>
+    <script src="~/lib/leaflet/leaflet.markercluster.js"></script>
+    <script src="~/lib/leaflet/leaflet-heat.js"></script>
+    <script src="~/TemplateMonster_bt5/assets/libs/chart.js/dist/Chart.min.js"></script>
+    <script>
+        var UrlGetMapaIrisp1 = "@Url.Action("F_GetMapaIrisp1", "ControlGestion", new { Area = "Control" })";
+    </script>
+    <script src="~/Areas/Control/MapaIrisp1.js"></script>
+}
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio </span></a></li>
+            <li><a href="@Url.Action("Tablero", "ControlGestion", new { Area = "Control" })">Control de Gestión</a></li>
+            <li class="active">Mapa de casos IRISP1 @(!string.IsNullOrWhiteSpace(ViewBag.Unidad as string) ? " - " + ViewBag.Unidad : "")</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card border-info">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="mr-2 fas fa-map-marked-alt text-white"></i> Focalización geográfica de casos IRISP1</h4>
+    </div>
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input type="text" id="txtFechaInicioMapa" class="Calendario form-control InputPading" placeholder=" " />
+                    <label class="Labels">Fecha inicio</label>
+                </div>
+            </div>
+            <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input type="text" id="txtFechaFinMapa" class="Calendario form-control InputPading" placeholder=" " />
+                    <label class="Labels">Fecha fin</label>
+                </div>
+            </div>
+            <div class="col-md-3 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    @Html.DropDownList("ddlSiglaUnidad", null, String.Format("Todas las unidades"),
+                             htmlAttributes: new { id = "ddlSiglaUnidad", @class = "form-control select2", style = "width: 100%;" })
+                    <label class="Labels">Sigla de unidad</label>
+                </div>
+            </div>
+            <div class="col-md-3 MargFloatBoos">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary btn-modo-mapa active" data-modo="puntos"><i class="fas fa-map-pin"></i> Puntos</button>
+                    <button type="button" class="btn btn-outline-secondary btn-modo-mapa" data-modo="cluster"><i class="fas fa-layer-group"></i> Cluster</button>
+                    <button type="button" class="btn btn-outline-secondary btn-modo-mapa" data-modo="calor"><i class="fas fa-fire"></i> Calor</button>
+                </div>
+            </div>
+            <div class="col-md-2 MargFloatBoos text-right">
+                <button type="button" id="btnAplicarFiltroMapa" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+                    <i class="fas fa-filter"></i> Aplicar
+                </button>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiTotal">0</h3><p>Casos georreferenciados</p></div></div>
+            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiUnidades">0</h3><p>Unidades distintas</p></div></div>
+            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiMunicipios">0</h3><p>Municipios distintos</p></div></div>
+            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiDelito">-</h3><p>Delito más frecuente</p></div></div>
+        </div>
+
+        <div id="mapaIrisp1"></div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card border-info">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-calendar-week text-white"></i> Casos por día de la semana</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:260px;">
+                    <canvas id="graficoPorDiaSemana"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-info">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-clock text-white"></i> Casos por hora del día</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:260px;">
+                    <canvas id="graficoPorHora"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

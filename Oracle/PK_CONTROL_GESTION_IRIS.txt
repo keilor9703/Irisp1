@@ -49,6 +49,30 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR;
 
+  -- KPIs de tiempo de gestión a NIVEL DE CASO (no de tarea): una fila por IRISP1 del año, con
+  -- el tiempo total de creación a finalización y el tiempo por etapa (Verificación/Investigación).
+  -- Calculado de forma set-based (ROW_NUMBER analítico) en vez de invocar por fila las funciones
+  -- escalares F_Fecha_Verif_Existe/F_Fecha_Respuesta_Existe/F_Fecha_Asig_Inves/F_Fecha_Respuesta_Inves
+  -- (mismo patrón N+1 ya corregido en F_GetInfoGrillas).
+  FUNCTION F_GetCasosControlGestion(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR;
+
+  -- Catálogo de siglas de unidad (IRISP_CRIMINALIDAD.SIGLA_UNIDAD) para el filtro del mapa de puntos.
+  FUNCTION F_GetSiglasUnidadIrisp1 RETURN SYS_REFCURSOR;
+
+  -- Puntos de georreferenciación de casos IRISP1 (mapa de calor/cluster/puntos), filtrables por
+  -- unidad (SIGLA_UNIDAD), rango de fechas y rol.
+  FUNCTION F_GetMapaIrisp1(
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR;
+
 END PK_CONTROL_GESTION_IRIS;
 /
 
@@ -291,6 +315,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.CODIGO                  AS Codigo,
         r.RESPON_VALIDACION_ID    AS IdResponsable,
         u.DESCRIPCION_DEPENDENCIA AS Unidad,
+        u.SIGLA_DEPENDE           AS UnidadSigla,
         t.TAREA_ID                AS TareaId,
         t.ID_LISTA_TAREAS         AS IdListaTareas,
         lt.DESCRIPCION            AS DescListaTarea,
@@ -354,7 +379,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       OPEN l_rc FOR
         SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS IdResponsable, NULL AS Unidad,
-               NULL AS TareaId, NULL AS IdListaTareas, NULL AS DescListaTarea,
+               NULL AS UnidadSigla, NULL AS TareaId, NULL AS IdListaTareas, NULL AS DescListaTarea,
                NULL AS IdEstadoTarea, NULL AS DescEstadoTarea, NULL AS FechaCreacion,
                NULL AS FechaModifica, NULL AS HorasTranscurridas, NULL AS TiempoAlertaHoras,
                NULL AS TiempoMaximoHoras, NULL AS EstadoSla
@@ -362,6 +387,266 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       RETURN l_rc;
   END F_GetTareasControlGestion;
+
+  --------------------------------------------------------------------------
+  -- KPIs de tiempo de gestión a nivel de caso (creación->finalización) y por etapa
+  -- (Verificación/Investigación). Reimplementa en un único query set-based la lógica de
+  -- F_Fecha_Verif_Existe / F_Fecha_Respuesta_Existe / F_Fecha_Asig_Inves / F_Fecha_Respuesta_Inves
+  -- (ver Oracle/Funciones.txt): por caso, toma la tarea de ese tipo creada más recientemente como
+  -- inicio de etapa, y la respuesta (fecha_modifica) más reciente como fin de etapa.
+  --------------------------------------------------------------------------
+  FUNCTION F_GetCasosControlGestion(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR IS
+
+    l_rc        SYS_REFCURSOR;
+    V_NuevaUnde NUMBER := P_CodigoUnidad;
+    V_Count     NUMBER := 0;
+    V_TempUnde  NUMBER;
+
+  BEGIN
+    FOR i IN 1..3 LOOP
+      SELECT COUNT(*) INTO V_Count
+        FROM IRISP_RESPON_VALIDACION c
+        JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
+       WHERE c.vigente = 1
+         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
+
+      EXIT WHEN V_Count > 0;
+
+      BEGIN
+        V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
+        IF V_TempUnde IS NOT NULL THEN
+          V_NuevaUnde := V_TempUnde;
+        ELSE
+          EXIT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN EXIT;
+      END;
+    END LOOP;
+
+    OPEN l_rc FOR
+      WITH
+      ROLES_LIST AS (
+        SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+          FROM dual
+        CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      ),
+      RESP AS (
+        SELECT rv.*
+          FROM (
+            SELECT r.*, ROW_NUMBER() OVER (PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
+              FROM IRISP_RESPON_VALIDACION r
+             WHERE r.vigente = 1
+          ) rv
+         WHERE rv.rn = 1
+      ),
+      VERIF_INI AS (
+        SELECT criminalidad_id, fecha_creacion FROM (
+          SELECT r.criminalidad_id, it.fecha_creacion,
+                 ROW_NUMBER() OVER (PARTITION BY r.criminalidad_id ORDER BY it.fecha_creacion DESC) rn
+            FROM IRISP_RESPON_VALIDACION r
+            JOIN IRISP_TAREA it ON it.respon_validacion_id = r.respon_validacion_id
+           WHERE it.id_lista_tareas = 52 AND r.vigente = 1 AND it.vigente = 1
+        ) WHERE rn = 1
+      ),
+      VERIF_FIN AS (
+        SELECT criminalidad_id, fecha_modifica FROM (
+          SELECT r.criminalidad_id, it.fecha_modifica,
+                 ROW_NUMBER() OVER (PARTITION BY r.criminalidad_id ORDER BY it.fecha_modifica DESC) rn
+            FROM IRISP_RESPON_VALIDACION r
+            JOIN IRISP_TAREA it ON it.respon_validacion_id = r.respon_validacion_id
+           WHERE it.id_lista_tareas = 52 AND it.fecha_modifica IS NOT NULL AND r.vigente = 1 AND it.vigente = 1
+        ) WHERE rn = 1
+      ),
+      INVES_INI AS (
+        SELECT criminalidad_id, fecha_creacion FROM (
+          SELECT r.criminalidad_id, it.fecha_creacion,
+                 ROW_NUMBER() OVER (PARTITION BY r.criminalidad_id ORDER BY it.fecha_creacion DESC) rn
+            FROM IRISP_RESPON_VALIDACION r
+            JOIN IRISP_TAREA it ON it.respon_validacion_id = r.respon_validacion_id
+           WHERE it.id_lista_tareas = 71 AND r.vigente = 1 AND it.vigente = 1
+        ) WHERE rn = 1
+      ),
+      INVES_FIN AS (
+        SELECT criminalidad_id, fecha_modifica FROM (
+          SELECT r.criminalidad_id, it.fecha_modifica,
+                 ROW_NUMBER() OVER (PARTITION BY r.criminalidad_id ORDER BY it.fecha_modifica DESC) rn
+            FROM IRISP_RESPON_VALIDACION r
+            JOIN IRISP_TAREA it ON it.respon_validacion_id = r.respon_validacion_id
+           WHERE it.id_lista_tareas = 71 AND it.fecha_modifica IS NOT NULL AND r.vigente = 1 AND it.vigente = 1
+        ) WHERE rn = 1
+      )
+      SELECT
+        c.CRIMINALIDAD_ID         AS CriminalidadId,
+        c.CODIGO                  AS Codigo,
+        u.DESCRIPCION_DEPENDENCIA AS Unidad,
+        u.SIGLA_DEPENDE           AS UnidadSigla,
+        c.FECHA_CREACION          AS FechaCreacion,
+        c.ID_ESTADO               AS IdEstado,
+        CASE WHEN c.ID_ESTADO = 5 THEN c.FECHA_MODIFICA ELSE NULL END AS FechaFinalizacion,
+        CASE WHEN c.ID_ESTADO = 5
+             THEN ROUND((c.FECHA_MODIFICA - c.FECHA_CREACION) * 24, 1)
+             ELSE NULL END AS HorasTotalCaso,
+        vi.fecha_creacion         AS VerifInicio,
+        vf.fecha_modifica         AS VerifFin,
+        CASE WHEN vi.fecha_creacion IS NOT NULL AND vf.fecha_modifica IS NOT NULL
+             THEN ROUND((vf.fecha_modifica - vi.fecha_creacion) * 24, 1)
+             ELSE NULL END AS HorasVerificacion,
+        ii.fecha_creacion         AS InvesInicio,
+        invf.fecha_modifica       AS InvesFin,
+        CASE WHEN ii.fecha_creacion IS NOT NULL AND invf.fecha_modifica IS NOT NULL
+             THEN ROUND((invf.fecha_modifica - ii.fecha_creacion) * 24, 1)
+             ELSE NULL END AS HorasInvestigacion
+
+      FROM IRISP_CRIMINALIDAD c
+      LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
+      LEFT JOIN VM_UNIDADES u ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+      LEFT JOIN VERIF_INI vi ON vi.criminalidad_id = c.CRIMINALIDAD_ID
+      LEFT JOIN VERIF_FIN vf ON vf.criminalidad_id = c.CRIMINALIDAD_ID
+      LEFT JOIN INVES_INI ii ON ii.criminalidad_id = c.CRIMINALIDAD_ID
+      LEFT JOIN INVES_FIN invf ON invf.criminalidad_id = c.CRIMINALIDAD_ID
+
+      WHERE c.VIGENTE = 1
+        AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+        AND c.FECHA_CREACION <  TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+
+        AND (
+                 EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
+
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
+                   AND r.ID_UNIDAD_RESPON = V_NuevaUnde
+                 )
+            )
+
+      ORDER BY c.FECHA_CREACION DESC;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetCasosControlGestion',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR
+        SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS Unidad, NULL AS UnidadSigla,
+               NULL AS FechaCreacion, NULL AS IdEstado, NULL AS FechaFinalizacion,
+               NULL AS HorasTotalCaso, NULL AS VerifInicio, NULL AS VerifFin, NULL AS HorasVerificacion,
+               NULL AS InvesInicio, NULL AS InvesFin, NULL AS HorasInvestigacion
+          FROM dual WHERE 1 = 0;
+
+      RETURN l_rc;
+  END F_GetCasosControlGestion;
+
+  --------------------------------------------------------------------------
+  FUNCTION F_GetSiglasUnidadIrisp1 RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      SELECT DISTINCT c.SIGLA_UNIDAD AS SiglaUnidad
+        FROM IRISP_CRIMINALIDAD c
+       WHERE c.VIGENTE = 1
+         AND c.SIGLA_UNIDAD IS NOT NULL
+       ORDER BY c.SIGLA_UNIDAD;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetSiglasUnidadIrisp1',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR SELECT NULL AS SiglaUnidad FROM dual WHERE 1 = 0;
+      RETURN l_rc;
+  END F_GetSiglasUnidadIrisp1;
+
+  --------------------------------------------------------------------------
+  -- Mapa de puntos: reutiliza VM_GENERAL_IRISP (misma fuente que PK_REPORTES_IRIS.P_GetReporteGeneral),
+  -- que ya trae latitud/longitud validadas por regex y SIGLA_UNIDAD resuelta.
+  --------------------------------------------------------------------------
+  FUNCTION F_GetMapaIrisp1(
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR IS
+    l_rc    SYS_REFCURSOR;
+    V_Sigla VARCHAR2(20);
+  BEGIN
+    BEGIN
+      SELECT sig.sigla_papa INTO V_Sigla FROM VM_UNIDADES sig WHERE sig.consecutivo = P_CodigoUnidad;
+    EXCEPTION WHEN NO_DATA_FOUND THEN V_Sigla := NULL;
+    END;
+
+    OPEN l_rc FOR
+      WITH
+      ROLES_LIST AS (
+        SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+          FROM dual
+        CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      )
+      SELECT
+        c.CRIMINALIDAD_ID       AS CriminalidadId,
+        c.codigo_irisp          AS Codigo,
+        c.SIGLA_UNIDAD          AS SiglaUnidad,
+        c.MUNICIPIO             AS Municipio,
+        c.BARRIO                AS Barrio,
+        c.DELITO_PRINCIPAL      AS DelitoPrincipal,
+        c.ESTADO                AS Estado,
+        c.ESTADO_EXISTENCIA     AS EstadoExistencia,
+        c.FECHA_CREACION_IRISP1 AS FechaCreacion,
+        c.latitud                AS Latitud,
+        c.longitud               AS Longitud
+      FROM VM_GENERAL_IRISP c
+      WHERE REGEXP_LIKE(c.latitud, '^[0-9\.\-]+$')
+        AND REGEXP_LIKE(c.longitud, '^[0-9\.\-]+$')
+        AND c.FECHA_CREACION_IRISP1 >= P_FechaInicio
+        AND c.FECHA_CREACION_IRISP1 <  (P_FechaFin + 1)
+        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (
+                 EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
+
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
+                   AND c.SIGLA_UNIDAD = V_Sigla
+                 )
+            )
+      ORDER BY c.FECHA_CREACION_IRISP1 DESC;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetMapaIrisp1',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR
+        SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS SiglaUnidad, NULL AS Municipio,
+               NULL AS Barrio, NULL AS DelitoPrincipal, NULL AS Estado, NULL AS EstadoExistencia,
+               NULL AS FechaCreacion, NULL AS Latitud, NULL AS Longitud
+          FROM dual WHERE 1 = 0;
+
+      RETURN l_rc;
+  END F_GetMapaIrisp1;
 
 END PK_CONTROL_GESTION_IRIS;
 /

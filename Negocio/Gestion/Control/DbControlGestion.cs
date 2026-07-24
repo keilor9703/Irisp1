@@ -122,6 +122,150 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
+        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(int anio, string rolesUsuario, long codigoUnidad)
+        {
+            var resp = new DtoResultado<List<DtoCasoControlGestion>>
+            {
+                Operacion = "F_GetCasosControlGestion",
+                Data = new List<DtoCasoControlGestion>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+                p.Add("P_Anio", anio, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoCasoControlGestion>(
+                    "PK_CONTROL_GESTION_IRIS.F_GetCasosControlGestion",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoCasoControlGestion>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar los tiempos de gestión por caso.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar los tiempos de gestión por caso.";
+            }
+
+            return resp;
+        }
+
+        public async Task<DtoResultado<List<DtoSiglaUnidad>>> F_GetSiglasUnidadIrisp1()
+        {
+            var resp = new DtoResultado<List<DtoSiglaUnidad>>
+            {
+                Operacion = "F_GetSiglasUnidadIrisp1",
+                Data = new List<DtoSiglaUnidad>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoSiglaUnidad>(
+                    "PK_CONTROL_GESTION_IRIS.F_GetSiglasUnidadIrisp1",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoSiglaUnidad>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar las siglas de unidad.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar las siglas de unidad.";
+            }
+
+            return resp;
+        }
+
+        public async Task<DtoResultado<List<DtoMapaIrisp1>>> F_GetMapaIrisp1(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        {
+            var resp = new DtoResultado<List<DtoMapaIrisp1>>
+            {
+                Operacion = "F_GetMapaIrisp1",
+                Data = new List<DtoMapaIrisp1>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+                p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoMapaIrisp1>(
+                    "PK_CONTROL_GESTION_IRIS.F_GetMapaIrisp1",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoMapaIrisp1>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar los puntos del mapa.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar los puntos del mapa.";
+            }
+
+            return resp;
+        }
+
         #endregion
 
         #region Métodos de Inserción/Actualización/Eliminación

@@ -1,5 +1,15 @@
 $(document).ready(function () {
 
+    // El <select> de tipo de tarea vive dentro de un modal Bootstrap: select2 necesita
+    // dropdownParent para que el dropdown se pinte dentro del modal y no detrás de él
+    // (esto era lo que causaba el <select> "roto" superpuesto con el label flotante).
+    $('#ddlTipoTarea').select2({
+        dropdownParent: $('#ModalSla'),
+        placeholder: "Seleccione",
+        allowClear: true,
+        width: '100%'
+    });
+
     F_GetSlaConfig();
 
     $("#btnNuevaSla").on("click", function () {
@@ -16,7 +26,7 @@ $(document).ready(function () {
 
 function LimpiarFormSla() {
     $("#SlaConfigId").val("");
-    $("#ddlTipoTarea").val("");
+    $("#ddlTipoTarea").val("").trigger("change");
     $("#txtTiempoAlertaHoras").val("");
     $("#txtTiempoMaximoHoras").val("");
     $("#txtJustificacionSla").val("");
@@ -73,7 +83,7 @@ function EditarSla(slaConfigId) {
     if (!item) return;
 
     $("#SlaConfigId").val(item.SlaConfigId);
-    $("#ddlTipoTarea").val(item.IdListaTareas);
+    $("#ddlTipoTarea").val(item.IdListaTareas).trigger("change");
     $("#txtTiempoAlertaHoras").val(item.TiempoAlertaHoras);
     $("#txtTiempoMaximoHoras").val(item.TiempoMaximoHoras);
     $("#txtJustificacionSla").val(item.Justificacion);

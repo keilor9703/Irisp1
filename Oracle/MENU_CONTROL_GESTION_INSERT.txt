@@ -26,11 +26,16 @@ VALUES ((SELECT NVL(MAX(ID_MENU),0)+1 FROM CTR_MENU_IRIS), :ID_MENU_PADRE, 1, 'C
 INSERT INTO CTR_MENU_IRIS (ID_MENU, IDPADRE, POSICION, CONTROLADOR, VISTA, AREA, VIGENTE)
 VALUES ((SELECT NVL(MAX(ID_MENU),0)+1 FROM CTR_MENU_IRIS), :ID_MENU_PADRE, 2, 'ConfiguracionSla', 'VwConfiguracionSla', 'Control', 1);
 
--- 4) Asociar los 3 ítems anteriores a los roles que deben verlos.
---    Tablero: roles 1,2,8 (mismos del [Authorize] de ControlGestionController)
+-- 3b) Ítem hijo "Mapa de casos IRISP1" -> /Control/ControlGestion/Mapa (también accesible desde el
+--     botón "Ver mapa de puntos" del Tablero, pero se agrega al menú para que sea navegable directamente)
+INSERT INTO CTR_MENU_IRIS (ID_MENU, IDPADRE, POSICION, CONTROLADOR, VISTA, AREA, VIGENTE)
+VALUES ((SELECT NVL(MAX(ID_MENU),0)+1 FROM CTR_MENU_IRIS), :ID_MENU_PADRE, 3, 'ControlGestion', 'Mapa', 'Control', 1);
+
+-- 4) Asociar los ítems anteriores a los roles que deben verlos.
+--    Tablero y Mapa: roles 1,2,8 (mismos del [Authorize] de ControlGestionController)
 --    Configuración de SLA: roles 1,2 (mismos del [Authorize] de ConfiguracionSlaController)
 -- INSERT INTO CTR_MENU_ROLES_IRIS (ID_MENU, ID_ROL) VALUES (:ID_MENU_PADRE, 1);
 -- INSERT INTO CTR_MENU_ROLES_IRIS (ID_MENU, ID_ROL) VALUES (:ID_MENU_PADRE, 2);
--- ... repetir para cada ítem y cada rol correspondiente (8 solo para "Tablero").
+-- ... repetir para cada ítem y cada rol correspondiente (8 para "Tablero" y "Mapa", no para "Configuración de SLA").
 
 COMMIT;

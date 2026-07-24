@@ -16,6 +16,9 @@ namespace Comun.Areas.Control
         [JsonPropertyName("Unidad")]
         public string? Unidad { get; set; }
 
+        [JsonPropertyName("UnidadSigla")]
+        public string? UnidadSigla { get; set; }
+
         [JsonPropertyName("TareaId")]
         public string? TareaId { get; set; }
 

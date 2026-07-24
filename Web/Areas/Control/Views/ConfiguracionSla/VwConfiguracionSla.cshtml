@@ -21,16 +21,16 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card border-info">
     <div class="card-header d-flex align-items-center">
-        <h4 class="card-title text-white"><i class="fas fa-stopwatch"></i> Configuración de SLA</h4>
+        <h4 class="card-title text-white"><i class="mr-2 fas fa-stopwatch text-white"></i> Configuración de SLA</h4>
         <div class="card-actions ms-auto">
-            <button type="button" id="btnNuevaSla" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nueva configuración</button>
+            <button type="button" id="btnNuevaSla" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad btn-sm"><i class="fas fa-plus"></i> Nueva configuración</button>
         </div>
     </div>
     <div class="card-body">
-        <div class="dt-container" style="width:100%;">
-            <table id="tbSlaConfig" class="table table-bordered table-striped" width="100%"></table>
+        <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
+            <table id="tbSlaConfig" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
         </div>
     </div>
 </div>
@@ -40,36 +40,49 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header d-flex align-items-center">
-                <h5 class="modal-title" id="ModalSlaLabel">Configuración de SLA</h5>
+                <h5 class="modal-title" id="ModalSlaLabel"><i class="mr-2 fas fa-stopwatch"></i> Configuración de SLA</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="SlaConfigId" />
 
-                <div class="form-group has-float-label mb-3">
-                    @Html.DropDownList("ddlTipoTarea", null, String.Format("Seleccione"),
-                             htmlAttributes: new { id = "ddlTipoTarea", @class = "form-control select2", style = "width: 100%;" })
-                    <label>Tipo de tarea</label>
+                <div class="row">
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            @Html.DropDownList("ddlTipoTarea", null, String.Format("Seleccione"),
+                                     htmlAttributes: new { id = "ddlTipoTarea", @class = "form-control select2", style = "width: 100%;" })
+                            <label class="Labels">Tipo de tarea</label>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group has-float-label mb-3">
-                    <input type="number" min="1" id="txtTiempoAlertaHoras" class="form-control" autocomplete="off" />
-                    <label>Tiempo de alerta (horas) — "en riesgo" a partir de aquí</label>
+                <div class="row">
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input type="number" min="1" id="txtTiempoAlertaHoras" class="form-control InputPading" autocomplete="off" placeholder=" " />
+                            <label class="Labels">Alerta (horas) — "en riesgo"</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <input type="number" min="1" id="txtTiempoMaximoHoras" class="form-control InputPading" autocomplete="off" placeholder=" " />
+                            <label class="Labels">Máximo (horas) — "vencido"</label>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group has-float-label mb-3">
-                    <input type="number" min="1" id="txtTiempoMaximoHoras" class="form-control" autocomplete="off" />
-                    <label>Tiempo máximo (horas) — "vencido" a partir de aquí</label>
-                </div>
-
-                <div class="form-group has-float-label mb-3">
-                    <textarea id="txtJustificacionSla" class="form-control" autocomplete="off"></textarea>
-                    <label>Justificación</label>
+                <div class="row">
+                    <div class="col-md-12 MargFloatBoos">
+                        <div class="form-group has-float-label">
+                            <textarea id="txtJustificacionSla" class="form-control" style="height:80px;" autocomplete="off" placeholder=" "></textarea>
+                            <label class="Labels">Justificación</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" id="btnGuardarSla" class="btn btn-primary">Guardar</button>
+                <button type="button" id="btnGuardarSla" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad"><span class="fa ico_grabar faa-wrench animated"></span> Guardar</button>
             </div>
         </div>
     </div>

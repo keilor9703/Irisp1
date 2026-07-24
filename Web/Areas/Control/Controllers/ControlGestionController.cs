@@ -46,6 +46,22 @@ namespace Web.Areas.Control.Controllers
             return View();
         }
 
+        public async Task<ActionResult> Mapa()
+        {
+            await _iDbAdministracion.P_InsAuditoria(
+                Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Control/Mapa",
+                Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+
+            var siglas = (await _iDbControlGestion.F_GetSiglasUnidadIrisp1()).Data
+                .Where(s => !string.IsNullOrWhiteSpace(s.SiglaUnidad))
+                .ToList();
+
+            ViewBag.ddlSiglaUnidad = new SelectList(siglas, "SiglaUnidad", "SiglaUnidad");
+            ViewBag.Unidad = User.FindFirstValue("Dependencia");
+
+            return View();
+        }
+
         #region Métodos de Consulta
 
         [HttpGet]
@@ -62,6 +78,43 @@ namespace Web.Areas.Control.Controllers
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoTareaControlGestion>(), kpis = ArmarKpis(new List<DtoTareaControlGestion>()) });
 
             return Json(new { success = true, data = resultado.Data, kpis = ArmarKpis(resultado.Data) });
+        }
+
+        // KPIs a nivel de caso (no de tarea): tiempo total de creación a finalización, y tiempo
+        // por etapa (Verificación/Investigación). Se consulta aparte de F_GetTareasControlGestion
+        // porque es un dataset distinto (un caso IRISP1 puede tener varias tareas).
+        [HttpGet]
+        public async Task<IActionResult> F_GetKpisTiempoGestion(int V_Anio)
+        {
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            var rolesUsuario = string.Join(",",
+                User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
+
+            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(V_Anio, rolesUsuario, codigoUnidad);
+
+            if (resultado.IdRespuesta <= 0)
+                return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisCasos(new List<DtoCasoControlGestion>()) });
+
+            return Json(new { success = true, kpis = ArmarKpisCasos(resultado.Data) });
+        }
+
+        private static object ArmarKpisCasos(List<DtoCasoControlGestion> casos)
+        {
+            var finalizados = casos.Where(c => c.HorasTotalCaso.HasValue).ToList();
+            var verificacion = casos.Where(c => c.HorasVerificacion.HasValue).ToList();
+            var investigacion = casos.Where(c => c.HorasInvestigacion.HasValue).ToList();
+
+            return new
+            {
+                totalCasos = casos.Count,
+                casosFinalizados = finalizados.Count,
+                promedioTotalHoras = finalizados.Count > 0 ? Math.Round(finalizados.Average(c => c.HorasTotalCaso!.Value), 1) : (decimal?)null,
+                casosVerificacion = verificacion.Count,
+                promedioVerificacionHoras = verificacion.Count > 0 ? Math.Round(verificacion.Average(c => c.HorasVerificacion!.Value), 1) : (decimal?)null,
+                casosInvestigacion = investigacion.Count,
+                promedioInvestigacionHoras = investigacion.Count > 0 ? Math.Round(investigacion.Average(c => c.HorasInvestigacion!.Value), 1) : (decimal?)null
+            };
         }
 
         // Agrega, en memoria, los indicadores que alimentan las tarjetas y el gráfico del tablero
@@ -81,7 +134,7 @@ namespace Web.Areas.Control.Controllers
 
             var promedioPorUnidad = tareas
                 .Where(t => t.HorasTranscurridas.HasValue)
-                .GroupBy(t => t.Unidad ?? "Sin unidad")
+                .GroupBy(t => !string.IsNullOrWhiteSpace(t.UnidadSigla) ? t.UnidadSigla! : (t.Unidad ?? "Sin unidad"))
                 .Select(g => new { unidad = g.Key, promedioHoras = Math.Round(g.Average(x => x.HorasTranscurridas!.Value), 1) })
                 .ToList();
 
@@ -92,6 +145,26 @@ namespace Web.Areas.Control.Controllers
                 promedioPorTipo,
                 promedioPorUnidad
             };
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetMapaIrisp1(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
+        {
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            var rolesUsuario = string.Join(",",
+                User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
+
+            // Por defecto, si el usuario no filtra por fecha: últimos 12 meses hasta hoy.
+            var fechaFin = V_FechaFin ?? DateTime.Today;
+            var fechaInicio = V_FechaInicio ?? fechaFin.AddMonths(-12);
+
+            var resultado = await _iDbControlGestion.F_GetMapaIrisp1(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+
+            if (resultado.IdRespuesta <= 0)
+                return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoMapaIrisp1>() });
+
+            return Json(new { success = true, data = resultado.Data, fechaInicio, fechaFin });
         }
 
         #endregion
