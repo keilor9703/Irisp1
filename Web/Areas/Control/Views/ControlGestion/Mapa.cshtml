@@ -13,9 +13,50 @@
             border-radius: 8px;
             border: 1px solid #ccc;
         }
+        /* site.css fuerza ".btn { color: white !important; }" en todos los botones — en un
+           btn-outline-secondary sin seleccionar eso deja texto blanco sobre fondo claro
+           (invisible). Se fuerza el color de vuelta solo para estos botones de modo. */
+        .btn-modo-mapa {
+            color: #495057 !important;
+            background: #fff;
+            border-color: #6c757d;
+        }
         .btn-modo-mapa.active {
             background: linear-gradient(90deg, #cdff00, #08a6cb) !important;
+            border-color: #08a6cb;
             color: #151b3b !important;
+        }
+
+        /* El widget Kendo (fondo verdoso, forma de píldora) no combina con el resto de campos
+           .form-control del sistema (gris, borde izquierdo de color, 34px de alto). Se le da la
+           misma apariencia para que "Fecha inicio/fin" luzcan igual que "Sigla de unidad". */
+        .k-datepicker.k-widget {
+            width: 100% !important;
+        }
+        .k-datepicker .k-picker-wrap {
+            border: 1px solid #ccc !important;
+            border-left: 5px solid #08a6cb !important;
+            border-radius: 4px !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            height: 34px !important;
+        }
+        .k-datepicker .k-picker-wrap.k-state-focused {
+            border-color: #cacd3a !important;
+            border-left: 5px solid #f18f08 !important;
+        }
+        .k-datepicker .k-picker-wrap .k-input {
+            height: 32px !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding-top: 6px !important;
+            font-size: 14px !important;
+        }
+        .k-datepicker .k-picker-wrap .k-select {
+            background: transparent !important;
+            border: none !important;
+            border-left: 1px solid #eee !important;
         }
         .mapa-stat {
             background: #fff;
