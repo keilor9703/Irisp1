@@ -56,16 +56,26 @@
         <h4 class="card-title text-white"><i class="mr-2 fas fa-map-marked-alt text-white"></i> Focalización geográfica de casos IRISP1</h4>
     </div>
     <div class="card-body">
+        @if (ViewBag.SiglasCargadasError == true)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                No fue posible cargar el catálogo de unidades (columna SIGLA_UNIDAD de IRISP_CRIMINALIDAD).
+                Verifique que el script <code>Oracle/PK_CONTROL_GESTION_IRIS.txt</code> esté actualizado en la
+                base de datos (funciones <code>F_GetSiglasUnidadIrisp1</code>, <code>F_GetMapaIrisp1</code>,
+                <code>F_GetCasosControlGestion</code>), o que existan casos con datos de unidad.
+            </div>
+        }
         <div class="row align-items-end">
             <div class="col-md-2 MargFloatBoos">
                 <div class="form-group has-float-label">
-                    <input type="text" id="txtFechaInicioMapa" class="Calendario form-control InputPading" placeholder=" " />
+                    <input type="text" id="txtFechaInicioMapa" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
                     <label class="Labels">Fecha inicio</label>
                 </div>
             </div>
             <div class="col-md-2 MargFloatBoos">
                 <div class="form-group has-float-label">
-                    <input type="text" id="txtFechaFinMapa" class="Calendario form-control InputPading" placeholder=" " />
+                    <input type="text" id="txtFechaFinMapa" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
                     <label class="Labels">Fecha fin</label>
                 </div>
             </div>
@@ -95,6 +105,10 @@
             <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiUnidades">0</h3><p>Unidades distintas</p></div></div>
             <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiMunicipios">0</h3><p>Municipios distintos</p></div></div>
             <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiDelito">-</h3><p>Delito más frecuente</p></div></div>
+        </div>
+
+        <div id="mapaAvisoSinDatos" class="alert alert-info" style="display:none;">
+            <i class="fas fa-info-circle"></i> <span id="mapaAvisoSinDatosTexto"></span>
         </div>
 
         <div id="mapaIrisp1"></div>

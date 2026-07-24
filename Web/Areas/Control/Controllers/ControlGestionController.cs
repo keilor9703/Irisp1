@@ -52,12 +52,17 @@ namespace Web.Areas.Control.Controllers
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Control/Mapa",
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
-            var siglas = (await _iDbControlGestion.F_GetSiglasUnidadIrisp1()).Data
+            var resultadoSiglas = await _iDbControlGestion.F_GetSiglasUnidadIrisp1();
+            var siglas = resultadoSiglas.Data
                 .Where(s => !string.IsNullOrWhiteSpace(s.SiglaUnidad))
                 .ToList();
 
             ViewBag.ddlSiglaUnidad = new SelectList(siglas, "SiglaUnidad", "SiglaUnidad");
             ViewBag.Unidad = User.FindFirstValue("Dependencia");
+            // resultadoSiglas.IdRespuesta == 0 puede significar "no hay datos" o "el paquete Oracle
+            // PK_CONTROL_GESTION_IRIS aún no se recompiló con las funciones nuevas" (F_GetSiglasUnidadIrisp1,
+            // F_GetCasosControlGestion, F_GetMapaIrisp1) — se avisa en la vista para no confundir ambos casos.
+            ViewBag.SiglasCargadasError = resultadoSiglas.IdRespuesta <= 0;
 
             return View();
         }

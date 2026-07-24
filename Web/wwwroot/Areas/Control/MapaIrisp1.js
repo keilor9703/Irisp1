@@ -79,13 +79,29 @@ function F_GetMapaIrisp1() {
         dataType: "json",
         success: function (response) {
             puntosCargados = (response && response.success === true) ? (response.data || []) : [];
+            mostrarAvisoSinDatos(response && response.success === false ? response.message : null);
             renderizarPuntos();
         },
         error: function () {
             puntosCargados = [];
+            mostrarAvisoSinDatos("No fue posible consultar el mapa. Verifique la conexión o que el paquete Oracle PK_CONTROL_GESTION_IRIS esté actualizado.");
             renderizarPuntos();
         }
     });
+}
+
+function mostrarAvisoSinDatos(mensajeError) {
+    var $aviso = $("#mapaAvisoSinDatos");
+
+    if (mensajeError) {
+        $("#mapaAvisoSinDatosTexto").text(mensajeError);
+        $aviso.removeClass("alert-info").addClass("alert-warning").show();
+    } else if (puntosCargados.length === 0) {
+        $("#mapaAvisoSinDatosTexto").text("No se encontraron casos georreferenciados con los filtros seleccionados.");
+        $aviso.removeClass("alert-warning").addClass("alert-info").show();
+    } else {
+        $aviso.hide();
+    }
 }
 
 function renderizarPuntos() {
