@@ -1,4 +1,4 @@
-﻿using Comun.Areas.AplicacionDTO;
+﻿//using Comun.Areas.AplicacionDTO;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
 using Dapper;

@@ -1,0 +1,455 @@
+create or replace package body PK_CONSULTA_IRISP AS
+
+  procedure PR_ConsultaIrispGeneral(P_Cantidad                   IN NUMBER,
+                                    P_NumeroPagina               IN NUMBER,
+                                    P_Busqueda                   IN VARCHAR2,
+                                    O_ContadorRegistrosFiltrados OUT NUMBER,
+                                    O_ContadorRegistrosTotal     OUT NUMBER,
+                                    O_Salida                     OUT SYS_REFCURSOR) is
+  
+    L_Start                      NUMBER;
+    L_Length                     NUMBER;
+    L_SearchValue                VARCHAR2(50);
+    L_ContadorRegistrosTotal     NUMBER;
+    L_ContadorRegistrosFiltrados NUMBER;
+  
+  begin
+  
+    L_Start                      := P_NumeroPagina;
+    L_Length                     := P_Cantidad;
+    L_SearchValue                := P_Busqueda;
+    L_ContadorRegistrosTotal     := 0;
+    L_ContadorRegistrosFiltrados := 0;
+  
+    select COUNT(*) into L_ContadorRegistrosTotal from vm_general_irisp t;
+    O_ContadorRegistrosTotal := L_ContadorRegistrosTotal;
+  
+    if (L_SearchValue is not null) then
+    
+      select COUNT(*)
+        into L_ContadorRegistrosFiltrados
+        from vm_general_irisp t
+       where t.sigla_unidad like '%' || L_SearchValue || '%'
+          or t.codigo_irisp like '%' || L_SearchValue || '%'
+          or t.municipio like '%' || L_SearchValue || '%'
+          or t.estado like '%' || L_SearchValue || '%'
+          or t.estado_existencia like '%' || L_SearchValue || '%'
+          or t.unidad like '%' || L_SearchValue || '%';
+    
+      open O_Salida for
+        SELECT *
+          FROM vm_general_irisp t
+         where t.sigla_unidad like '%' || L_SearchValue || '%'
+            or t.codigo_irisp like '%' || L_SearchValue || '%'
+            or t.municipio like '%' || L_SearchValue || '%'
+            or t.estado like '%' || L_SearchValue || '%'
+            or t.estado_existencia like '%' || L_SearchValue || '%'
+            or t.unidad like '%' || L_SearchValue || '%'
+         ORDER BY t.sigla_unidad,
+                  t.fecha_creacion_irisp1 OFFSET(L_Start - 1) || '0' ROWS
+         FETCH NEXT L_Length ROWS ONLY;
+    
+    else
+    
+      open O_Salida for
+        SELECT *
+          FROM vm_general_irisp t
+         ORDER BY t.sigla_unidad,
+                  t.fecha_creacion_irisp1 OFFSET(L_Start - 1) || '0' ROWS
+         FETCH NEXT L_Length ROWS ONLY;
+    
+    end if;
+  
+    O_ContadorRegistrosFiltrados := L_ContadorRegistrosFiltrados;
+  
+  exception
+    when no_data_found then
+      open O_Salida for
+        select 'No se encontraron registros' from dual;
+    
+  end PR_ConsultaIrispGeneral;
+
+  procedure PR_ConsultaIrispPorUnidad(P_Unidad                     IN VARCHAR2,
+                                      P_Cantidad                   IN NUMBER,
+                                      P_NumeroPagina               IN NUMBER,
+                                      P_Busqueda                   IN VARCHAR2,
+                                      O_ContadorRegistrosFiltrados OUT NUMBER,
+                                      O_ContadorRegistrosTotal     OUT NUMBER,
+                                      O_Salida                     OUT SYS_REFCURSOR) is
+  
+    L_Unidad                     VARCHAR2(10);
+    L_Start                      NUMBER;
+    L_Length                     NUMBER;
+    L_SearchValue                VARCHAR2(50);
+    L_ContadorRegistrosTotal     NUMBER;
+    L_ContadorRegistrosFiltrados NUMBER;
+  
+  begin
+  
+    L_Unidad                     := P_Unidad;
+    L_Start                      := P_NumeroPagina;
+    L_Length                     := P_Cantidad;
+    L_SearchValue                := P_Busqueda;
+    L_ContadorRegistrosTotal     := 0;
+    L_ContadorRegistrosFiltrados := 0;
+  
+    select COUNT(*)
+      into L_ContadorRegistrosTotal
+      from vm_general_irisp t
+     where t.sigla_unidad = L_Unidad;
+    O_ContadorRegistrosTotal := L_ContadorRegistrosTotal;
+  
+    if (L_SearchValue is not null) then
+    
+      select COUNT(*)
+        into L_ContadorRegistrosFiltrados
+        from vm_general_irisp t
+       where t.sigla_unidad = L_Unidad
+         and (t.codigo_irisp like '%' || L_SearchValue || '%' or
+             t.municipio like '%' || L_SearchValue || '%' or
+             t.estado like '%' || L_SearchValue || '%' or
+             t.estado_existencia like '%' || L_SearchValue || '%' or
+             t.unidad like '%' || L_SearchValue || '%');
+    
+      open O_Salida for
+        SELECT *
+          FROM vm_general_irisp t
+         where t.sigla_unidad = L_Unidad
+           and (t.codigo_irisp like '%' || L_SearchValue || '%' or
+               t.municipio like '%' || L_SearchValue || '%' or
+               t.estado like '%' || L_SearchValue || '%' or
+               t.estado_existencia like '%' || L_SearchValue || '%' or
+               t.unidad like '%' || L_SearchValue || '%')
+         ORDER BY t.sigla_unidad,
+                  t.fecha_creacion_irisp1 OFFSET(L_Start - 1) || '0' ROWS
+         FETCH NEXT L_Length ROWS ONLY;
+    
+    else
+    
+      open O_Salida for
+        SELECT *
+          FROM vm_general_irisp t
+         WHERE t.sigla_unidad = L_Unidad
+         ORDER BY t.sigla_unidad,
+                  t.fecha_creacion_irisp1 OFFSET(L_Start - 1) || '0' ROWS
+         FETCH NEXT L_Length ROWS ONLY;
+    
+    end if;
+  
+    O_ContadorRegistrosFiltrados := L_ContadorRegistrosFiltrados;
+  
+  exception
+    when no_data_found then
+      open O_Salida for
+        select 'No se encontraron registros' from dual;
+    
+  end PR_ConsultaIrispPorUnidad;
+
+  ---------------- consultar años del iris-------------------------------------------------------------------------------------------------------------------------------------
+
+  FUNCTION F_GetAniosIrisP1 RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+  BEGIN
+    OPEN V_CONSULTA FOR
+      SELECT DISTINCT EXTRACT(YEAR FROM FECHA_CREACION) AS AnoIrisp1
+        FROM IRISP_CRIMINALIDAD
+       WHERE FECHA_CREACION IS NOT NULL
+         AND EXTRACT(YEAR FROM FECHA_CREACION) BETWEEN 1900 AND 2100
+       ORDER BY AnoIrisp1 desc;
+  
+    RETURN V_CONSULTA;
+  END F_GetAniosIrisP1;
+
+  --------------------------------------ESTADOS ----------------------------------------------
+
+  FUNCTION F_GetEstadosIrisP1 RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+  BEGIN
+    OPEN V_CONSULTA FOR
+      SELECT t.descripcion AS DescripcionEstado,
+             t.DOMINIO_ID  AS CodigoDominio
+        FROM IRISP_CTRL_DOMINIO t
+       WHERE t.PADRE_ID = 1
+       ORDER BY t.descripcion ASC;
+  
+    RETURN V_CONSULTA;
+  END F_GetEstadosIrisP1;
+
+  --------------------------------------FIN ESTADOS----------------------------------------------
+
+ FUNCTION F_GetInfoGrillas(P_Anio IN NUMBER,
+                            P_Roles IN VARCHAR2,
+                            P_CodigoUnidad IN NUMBER) RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+    
+    V_Sigla  varchar2(20);
+    V_Region  varchar2(2);
+    V_NuevaUnde  NUMBER := P_CodigoUnidad; -- ?? Código inicial de dependencia
+    V_Count   NUMBER := 0;   
+    V_TempUnde    NUMBER;           -- ?? Para verificar si hay resultados
+    
+  BEGIN
+    
+    DBMS_OUTPUT.PUT_LINE('Inicio función F_GetInfoGrillas');
+ ------------------------------------------------------------------------
+    -- 1??  Obtener Sigla y Región
+    ------------------------------------------------------------------------
+    BEGIN
+        SELECT sig.sigla_papa, sig.regi_codigo
+          INTO V_Sigla, V_Region
+          FROM VM_UNIDADES sig
+         WHERE sig.consecutivo = P_CodigoUnidad;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            V_Sigla := NULL;
+            V_Region := NULL;
+    END;
+
+    DBMS_OUTPUT.PUT_LINE('Sigla: ' || NVL(V_Sigla,'NULL') || ' | Región: ' || NVL(V_Region,'NULL'));
+
+    -------------------------------------------------------------------------
+    -- 2??  BUCLE PARA SUBIR NIVELES HASTA 3 VECES (Unidad ? Padre ? Abuelo)
+    -------------------------------------------------------------------------
+    FOR i IN 1..3 LOOP
+        SELECT COUNT(*) INTO V_Count
+          FROM IRISP_CRIMINALIDAD c
+          JOIN VM_UNIDADES f ON c.id_unidad = f.consecutivo
+         WHERE c.vigente = 1
+           AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+           AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+           AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
+
+        DBMS_OUTPUT.PUT_LINE('Nivel ' || i || ' ? Unidad: ' || V_NuevaUnde || ' ? Registros: ' || V_Count);
+
+        EXIT WHEN V_Count > 0; -- ? Si ya hay registros, no seguimos subiendo
+
+        -- Si no hay registros, intentar subir un nivel
+        
+        BEGIN
+            V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
+            IF V_TempUnde IS NOT NULL THEN
+                V_NuevaUnde := V_TempUnde;
+                DBMS_OUTPUT.PUT_LINE('? Subiendo a nivel superior, nueva unidad: ' || V_NuevaUnde);
+            ELSE
+                DBMS_OUTPUT.PUT_LINE('? No se encontró nivel superior. Deteniendo búsqueda.');
+                EXIT;
+            END IF;
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE('Error al consultar F_Consultar_UndeConsecutivo: ' || SQLERRM);
+                EXIT;
+        END;
+    END LOOP;
+
+    DBMS_OUTPUT.PUT_LINE('Unidad final usada para filtro: ' || V_NuevaUnde);
+
+
+    
+    
+     DBMS_OUTPUT.PUT_LINE('Abriendo cursor...');
+  
+    OPEN V_CONSULTA FOR
+        WITH
+        -- ?? Convertimos la lista separada por comas a filas individuales
+        ROLES_LIST AS (
+            SELECT TO_NUMBER(Trim(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+              FROM Dual
+            CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+        ),
+        MAX_FECHAS AS (
+            SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+              FROM VM_UNIDADES
+             GROUP BY consecutivo
+        ),
+      RESULTADOS AS
+       (SELECT r.criminalidad_id,
+               MAX(CASE
+                     WHEN r.id_tipo = 70 THEN
+                      r.nro_spoa_siedco
+                   END) AS NumeroSiedco,
+               MAX(CASE
+                     WHEN r.id_tipo = 69 THEN
+                      r.nro_spoa_siedco
+                   END) AS NumeroSpoa
+          FROM IRISP_RESULTADO r
+         WHERE r.vigente = 1
+         GROUP BY r.criminalidad_id)
+     
+       
+         
+      SELECT c.CRIMINALIDAD_ID        AS CriminalidadId,
+             res.respon_validacion_id AS IdResponsable,
+             c.id_unidad              AS IdUnidad,
+             res.id_unidad_respon     AS IdUnidadResponsable,
+             
+             -- Unidad responsable usando función personalizada
+             f_unidad_verif_existe(c.CRIMINALIDAD_ID) AS UnidadResponsable,
+             
+             -- Fechas de verificación
+            f_fecha_verif_existe(c.criminalidad_id) as FechaVerificacionExistencia,
+            f_fecha_respuesta_existe(c.criminalidad_id) as FechaRespuestaVerificacion,
+             
+             -- Contador de verificación con "No asignado"
+             f_tiempo_verificacion(c.CRIMINALIDAD_ID) AS ContadorVerificacionExistencia,
+
+             -- Unidad y fechas del proceso investigativo
+             F_Unidad_Asig_Inves(c.CRIMINALIDAD_ID) AS UnidadProcesoInvestigativo,
+             f_fecha_asig_inves(c.criminalidad_id) AS FechaProcesoInvestigativo,
+             f_fecha_respuesta_inves(c.criminalidad_id) AS FechaRespuestaInvestigativo,
+             
+             -- Contador de proceso investigativo
+            f_tiempo_investigacion(c.CRIMINALIDAD_ID) AS ContadorProcesoInvestigativo,
+
+             
+             -- Datos de ubicación e identificación
+             c.ID_ZONA                   AS IdZona,
+             c.IDENTIFICACION_INFORMA    AS IdentificacionInforma,
+             c.CELULAR                   AS Celular,
+             c.ID_TIPO_SERVICIO          AS IdTipoServicio,
+             c.ID_CUADRANTE              AS IdCuadrante,
+             c.ID_CLASE                  AS IdClase,
+             c.NOMBRE_CLASE              AS NombreClase,
+             c.FECHA_INICIO_EXISTENCIA   AS FechaInicioExistencia,
+             c.CANTIDAD_INTEGRANTE       AS CantidadIntegrantes,
+             c.CARACTERISTICAS_GENERALES AS CaracteristicasGenerales,
+             
+             -- Metadatos
+             c.VIGENTE                 AS Vigente,
+             c.FECHA_CREACION          AS FechaCreacion,
+             c.IDENTIFICACION_CREA     AS IdentificacionCrea,
+             c.MAQUINA_CREACION        AS MaquinaCrea,
+             c.FECHA_MODIFICA          AS FechaModifica,
+             c.IDENTIFICACION_MODIFICA AS IdentificacionModifica,
+             c.MAQUINA_MODIFICA        AS MaquinaModifica,
+             c.CODIGO                  AS Codigo,
+             c.CONSECUTIVO_CODIGO      AS ConsecutivoCodigo,
+             c.SIGLA_UNIDAD            AS SiglaUnidad,
+             c.ID_ESTADO               AS IdEstado,
+             c.ID_FUENTE               AS IdFuente,
+             c.ID_ESTADO_EXISTENCIA    AS IdEstadoExistencia,
+             c.DESCRIPCION_TRAMITE     AS DescripcionTramite,
+             d.DESCRIPCION             AS EstadoDescripcion,
+             e.DESCRIPCION             AS EstadoExistenciaDescripcion,
+             
+             -- Geografía
+             f.municipio   AS Municipio,
+             g.descripcion AS Zona,
+             h.descripcion AS TipoServicio,
+             i.descripcion AS Fuente,
+             j.descripcion AS Clase,
+             
+             -- Cuadrantes
+             cu.codigo_cuadrante AS Cuadrante,
+             cu.dependencia AS DependCuadrante,
+             cu.estacion AS Estacioncuadrante,
+             cu.nivel_1 AS Nivel1cuadrante,
+             cu.numero_celular_cuadrante AS CelularCuadrante,
+             c.SIGLA_UNIDAD || ' - ' || f.descripcion_dependencia AS Dependencia,
+             
+            -- RESULTADOS PIVOTADOS
+             NVL(rst.NumeroSiedco, '0') AS NumeroSiedco,
+             NVL(rst.NumeroSpoa, '0') AS NumeroSpoa,
+             CASE
+               WHEN rst.NumeroSiedco IS NULL AND rst.NumeroSpoa IS NULL THEN
+                'No tiene resultados'
+               ELSE
+                'Tiene resultados (SIEDCO: ' || NVL(rst.NumeroSiedco, '0') ||
+                ' - SPOA: ' || NVL(rst.NumeroSpoa, '0') || ')'
+             END AS Resultados
+      
+        FROM IRISP_CRIMINALIDAD c
+        
+        LEFT JOIN IRISP_CTRL_DOMINIO d
+          ON c.ID_ESTADO = d.DOMINIO_ID
+         AND d.PADRE_ID = 1
+         AND d.vigente = 1
+         
+        LEFT JOIN IRISP_CTRL_DOMINIO e
+          ON c.ID_ESTADO_EXISTENCIA = e.DOMINIO_ID
+         AND e.PADRE_ID = 63
+         AND e.vigente = 1
+         
+        LEFT JOIN MAX_FECHAS mf
+          ON c.id_unidad = mf.consecutivo
+          
+        LEFT JOIN VM_UNIDADES f
+          ON c.id_unidad = f.consecutivo
+         AND f.vigente = 'SI'
+         AND f.FECHA_ACTUALIZA = mf.FECHA_MAX
+                  
+        LEFT JOIN IRISP_CTRL_DOMINIO g
+          ON c.ID_ZONA = g.DOMINIO_ID
+         AND g.PADRE_ID = 6
+         AND g.vigente = 1
+         
+        LEFT JOIN IRISP_CTRL_DOMINIO h
+          ON c.id_tipo_servicio = h.DOMINIO_ID
+         AND h.PADRE_ID = 9
+         AND h.vigente = 1
+         
+        LEFT JOIN IRISP_CTRL_DOMINIO i
+          ON c.id_fuente = i.DOMINIO_ID
+         AND i.PADRE_ID = 16
+         AND i.vigente = 1
+         
+        LEFT JOIN IRISP_CTRL_DOMINIO j
+          ON c.id_clase = j.DOMINIO_ID
+         AND j.PADRE_ID = 12
+         AND j.vigente = 1
+         
+        LEFT JOIN VM_CUADRANTES cu
+          ON c.id_cuadrante = cu.cuadrante_id
+          
+        LEFT JOIN (SELECT rv.*
+                     FROM (SELECT r.*,
+                                  ROW_NUMBER() OVER(PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
+                             FROM IRISP_RESPON_VALIDACION r
+                            WHERE r.vigente = 1) rv
+                    WHERE rv.rn = 1) res
+          ON c.criminalidad_id = res.criminalidad_id
+          
+        LEFT JOIN RESULTADOS rst
+          ON c.criminalidad_id = rst.criminalidad_id
+       
+       WHERE c.FECHA_CREACION IS NOT NULL
+         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION <
+             TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND c.vigente = 1
+         
+          -- ?? Aquí aplicamos el filtro dinámico según rol
+         AND (
+                -- ?? Administradores (1,2)
+                EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
+                  -- ?? Regional (10)
+                or(    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10) AND NVL(f.REGI_CODIGO, 0) = V_Region)
+                 -- ?? Unidad (5,7)
+                 or(   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5,7)) AND f.SIGLA_PAPA = V_Sigla)
+                 -- ?? Dependencia (6)
+                -- or(   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 6)  AND NVL(f.CONSECUTIVO, 0) = P_CodigoUnidad)
+                 
+                  -- Dependencia: primero original, luego fallback
+                OR (EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 6) AND NVL(f.CONSECUTIVO,0) = NVL(V_NuevaUnde,P_CodigoUnidad))
+              )
+
+         
+         
+         
+         
+       ORDER BY c.FECHA_CREACION DESC, c.codigo DESC;
+  
+  
+  DBMS_OUTPUT.PUT_LINE('Cursor abierto correctamente.');
+  
+    RETURN V_CONSULTA;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error general: ' || SQLERRM);
+        RAISE;
+  END F_GetInfoGrillas;
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  
+  
+
+end PK_CONSULTA_IRISP;

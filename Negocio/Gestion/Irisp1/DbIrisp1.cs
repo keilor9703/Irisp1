@@ -1,5 +1,5 @@
 ﻿using Comun.Areas.Admin;
-using Comun.Areas.AplicacionDTO;
+//using Comun.Areas.AplicacionDTO;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
 using Comun.General;
@@ -7,7 +7,7 @@ using Dapper;
 using Dapper.Oracle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Negocio.Gestion.Utilidades;
+//using Negocio.Gestion.Utilidades;
 using Negocio.Interfaz.Irisp1;
 using Oracle.ManagedDataAccess.Client;
 using System;

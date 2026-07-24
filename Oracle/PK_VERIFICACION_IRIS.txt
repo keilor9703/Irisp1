@@ -1,0 +1,686 @@
+CREATE OR REPLACE PACKAGE BODY PK_VERIFICACION_IRIS IS
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+ FUNCTION F_Generar_UUID RETURN NVARCHAR2 IS
+    v_raw  RAW(16);
+    v_uuid NVARCHAR2(36);
+  BEGIN
+    v_raw := SYS_GUID();
+  
+    v_uuid := REGEXP_REPLACE(LOWER(RAWTOHEX(v_raw)),
+                             '(.{8})(.{4})(.{4})(.{4})(.{12})',
+                             '\1-\2-\3-\4-\5');
+  
+    RETURN v_uuid;
+  END;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+FUNCTION F_GetInfoGrillas(
+        P_Anio IN NUMBER,
+        P_Roles IN VARCHAR2,
+        P_CodigoUnidad IN NUMBER
+) RETURN SYS_REFCURSOR IS
+
+    V_CONSULTA SYS_REFCURSOR;
+
+    -- Variables nuevas tomadas del Método 1
+    V_Sigla     VARCHAR2(20);
+    V_Region    VARCHAR2(2);
+    V_NuevaUnde NUMBER := P_CodigoUnidad;
+    V_Count     NUMBER := 0;
+    V_TempUnde  NUMBER;
+
+BEGIN
+   DBMS_OUTPUT.PUT_LINE('Inicio función F_GetInfoGrillas');
+ ------------------------------------------------------------------------
+    -- 1??  Obtener Sigla y Región
+    ------------------------------------------------------------------------
+    BEGIN
+        SELECT sig.sigla_papa, sig.regi_codigo
+          INTO V_Sigla, V_Region
+          FROM VM_UNIDADES sig
+         WHERE sig.consecutivo = P_CodigoUnidad;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            V_Sigla := NULL;
+            V_Region := NULL;
+    END;
+
+    DBMS_OUTPUT.PUT_LINE('Sigla: ' || NVL(V_Sigla,'NULL') || ' | Región: ' || NVL(V_Region,'NULL'));
+
+    -------------------------------------------------------------------------
+    -- 2??  BUCLE PARA SUBIR NIVELES HASTA 3 VECES (Unidad ? Padre ? Abuelo)
+    -------------------------------------------------------------------------
+    FOR i IN 1..3 LOOP
+        SELECT COUNT(*) INTO V_Count
+          FROM IRISP_RESPON_VALIDACION c
+          JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
+         WHERE c.vigente = 1
+           AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+           AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+           AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
+
+        DBMS_OUTPUT.PUT_LINE('Nivel ' || i || ' ? Unidad: ' || V_NuevaUnde || ' ? Registros: ' || V_Count);
+
+        EXIT WHEN V_Count > 0; -- ? Si ya hay registros, no seguimos subiendo
+
+        -- Si no hay registros, intentar subir un nivel
+        
+        BEGIN
+            V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
+            IF V_TempUnde IS NOT NULL THEN
+                V_NuevaUnde := V_TempUnde;
+                DBMS_OUTPUT.PUT_LINE('? Subiendo a nivel superior, nueva unidad: ' || V_NuevaUnde);
+            ELSE
+                DBMS_OUTPUT.PUT_LINE('? No se encontró nivel superior. Deteniendo búsqueda.');
+                EXIT;
+            END IF;
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE('Error al consultar F_Consultar_UndeConsecutivo: ' || SQLERRM);
+                EXIT;
+        END;
+    END LOOP;
+
+    DBMS_OUTPUT.PUT_LINE('Unidad final usada para filtro: ' || V_NuevaUnde);
+
+
+    
+    
+     DBMS_OUTPUT.PUT_LINE('Abriendo cursor...');
+
+    ------------------------------------------------------------------
+    -- 3. Query 
+    ------------------------------------------------------------------
+    OPEN V_CONSULTA FOR
+        WITH
+        ROLES_LIST AS (
+            SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+              FROM dual
+            CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+        ),
+        MAX_FECHAS_UNIDADES AS (
+           SELECT consecutivo, MAX(fecha_actualiza) AS FECHA_MAX
+             FROM VM_UNIDADES
+            WHERE vigente = 'SI'
+            GROUP BY consecutivo
+        ),
+        RESULTADOS AS (
+           SELECT r.criminalidad_id,
+                  MAX(CASE WHEN r.id_tipo = 70 THEN r.nro_spoa_siedco END) AS NumeroSiedco,
+                  MAX(CASE WHEN r.id_tipo = 69 THEN r.nro_spoa_siedco END) AS NumeroSpoa
+             FROM IRISP_RESULTADO r
+            WHERE r.vigente = 1
+            GROUP BY r.criminalidad_id
+        )
+        SELECT 
+             c.CRIMINALIDAD_ID        AS CriminalidadId,
+             resp.respon_validacion_id  as IdResponsable,
+             c.ID_ESTADO              AS IdEstado,
+             d.DESCRIPCION            AS EstadoDescripcion,
+             c.ID_ESTADO_EXISTENCIA   AS IdEstadoExistencia,
+             e.DESCRIPCION            AS EstadoExistenciaDescripcion,
+             c.CODIGO                 AS Codigo,
+             c.ID_UNIDAD              AS IdUnidad,
+             f.descripcion_dependencia AS Unidad,
+             c.SIGLA_UNIDAD || ' - ' || f.descripcion_dependencia AS Dependencia,
+             f.municipio              AS Municipio,
+             c.FECHA_INICIO_EXISTENCIA AS FechaInicioExistencia,
+             c.ID_CLASE               AS IdClase,
+             j.descripcion            AS Clase,
+             c.NOMBRE_CLASE           AS NombreClase,
+             c.CANTIDAD_INTEGRANTE    AS CantidadIntegrantes,
+             c.CARACTERISTICAS_GENERALES AS CaracteristicasGenerales,
+             c.DESCRIPCION_TRAMITE    AS DescripcionTramite,
+             c.ID_ZONA                AS IdZona,
+             g.descripcion            AS Zona,
+             h.descripcion            AS TipoServicio,
+             c.ID_FUENTE              AS IdFuente,
+             i.descripcion            AS Fuente,
+             c.FECHA_CREACION         AS FechaCreacion,
+             c.IDENTIFICACION_INFORMA AS IdentificacionInforma,
+             c.CELULAR                AS Celular,
+             c.ID_TIPO_SERVICIO       AS IdTipoServicio,
+             c.ID_CUADRANTE           AS IdCuadrante,
+             cu.codigo_cuadrante      AS Cuadrante,
+             cu.estacion              AS Estacioncuadrante,
+
+             NVL(rst.NumeroSiedco, '0') AS NumeroSiedco,
+             NVL(rst.NumeroSpoa, '0') AS NumeroSpoa,
+
+             CASE 
+               WHEN rst.NumeroSiedco IS NULL AND rst.NumeroSpoa IS NULL 
+                    THEN 'No tiene resultados'
+               ELSE 'Tiene resultados (SIEDCO: ' || NVL(rst.NumeroSiedco,'0') ||
+                    ' - SPOA: '   || NVL(rst.NumeroSpoa,'0') || ')'
+             END AS EstadoResultados
+
+        FROM IRISP_CRIMINALIDAD c
+        LEFT JOIN IRISP_CTRL_DOMINIO d ON c.ID_ESTADO = d.DOMINIO_ID AND d.PADRE_ID = 1
+        LEFT JOIN IRISP_CTRL_DOMINIO e ON c.ID_ESTADO_EXISTENCIA = e.DOMINIO_ID AND e.PADRE_ID = 63
+        LEFT JOIN MAX_FECHAS_UNIDADES mf ON c.ID_UNIDAD = mf.consecutivo
+        LEFT JOIN VM_UNIDADES f 
+               ON c.ID_UNIDAD = f.consecutivo
+              AND f.vigente = 'SI'
+              AND f.fecha_actualiza = mf.FECHA_MAX
+        LEFT JOIN IRISP_CTRL_DOMINIO g ON c.ID_ZONA = g.DOMINIO_ID AND g.PADRE_ID = 6
+        LEFT JOIN IRISP_CTRL_DOMINIO h ON c.ID_TIPO_SERVICIO = h.DOMINIO_ID AND h.PADRE_ID = 9
+        LEFT JOIN IRISP_CTRL_DOMINIO i ON c.ID_FUENTE = i.DOMINIO_ID AND i.PADRE_ID = 16
+        LEFT JOIN IRISP_CTRL_DOMINIO j ON c.ID_CLASE = j.DOMINIO_ID AND j.PADRE_ID = 12
+        LEFT JOIN VM_CUADRANTES cu ON c.ID_CUADRANTE = cu.cuadrante_id
+        LEFT JOIN RESULTADOS rst ON c.CRIMINALIDAD_ID = rst.criminalidad_id
+        left join IRISP_RESPON_VALIDACION resp on c.criminalidad_id = resp.criminalidad_id and resp.vigente = 1
+
+        WHERE c.VIGENTE = 1
+          AND EXTRACT(YEAR FROM c.FECHA_CREACION) = P_Anio
+          
+       -- (1) SOLO REGISTROS CON RESPONSABLE (aplica SIEMPRE)
+              AND EXISTS (
+                     SELECT 1 
+                       FROM IRISP_RESPON_VALIDACION rv
+                      WHERE rv.CRIMINALIDAD_ID = c.CRIMINALIDAD_ID
+                        AND rv.VIGENTE = 1
+              )
+
+              -- (2) FILTRO DINÁMICO POR ROL
+              AND (
+                     -- ADMINISTRADORES (1,2): ven todo lo que tiene responsable
+                     EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
+
+                     -- ROL 8: ven solo responsables de su unidad
+                     OR (
+                         EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
+                         AND EXISTS (
+                             SELECT 1 
+                               FROM IRISP_RESPON_VALIDACION rv2
+                              WHERE rv2.CRIMINALIDAD_ID = c.CRIMINALIDAD_ID
+                                AND rv2.ID_UNIDAD_RESPON = V_NuevaUnde
+                                AND rv2.VIGENTE = 1
+                         )
+                     )
+              )
+
+
+        ORDER BY c.FECHA_CREACION DESC;
+
+    RETURN V_CONSULTA;
+
+END F_GetInfoGrillas;
+
+
+
+  --********************************************************************************************************************************************************************************************************************************************
+ FUNCTION F_GetTareas (P_Criminalidad_id IN VARCHAR2)
+  RETURN SYS_REFCURSOR
+IS
+  l_rc SYS_REFCURSOR;
+BEGIN
+  OPEN l_rc FOR
+    SELECT 
+           t.tarea_id,
+           t.respon_validacion_id,
+           t.id_lista_tareas,
+           lt.descripcion AS DescListaTarea,
+           t.observacion,
+           t.fecha_verifica,
+           t.justificacion,
+           t.vigente,
+           t.fecha_creacion,
+           t.identificacion_creacion,
+           t.maquina_creacion,
+           t.fecha_modifica,
+           t.identificacion_modifica,
+           t.maquina_modifica,
+           t.id_estado_tarea,
+           et.descripcion AS DescEstadoTarea,
+           und.descripcion_dependencia AS unidad,
+           F_Consultar_Unidad(res.id_unidad_respon) AS UnidadCompleta,
+           CASE
+             WHEN t.fecha_modifica IS NOT NULL THEN
+              lt.descripcion || ' / ' || et.descripcion || ' / ' ||
+              'Se respondió en ' ||
+              ROUND(t.fecha_modifica - t.fecha_creacion) || ' días - ' ||
+              TRUNC(MOD((t.fecha_modifica - t.fecha_creacion) * 24, 24)) ||
+              ' horas'
+             ELSE
+              lt.descripcion || ' / ' || et.descripcion || ' / ' ||
+              'Se asignó hace ' || ROUND(SYSDATE - t.fecha_creacion) ||
+              ' días - ' ||
+              TRUNC(MOD((SYSDATE - t.fecha_creacion) * 24, 24)) ||
+              ' horas'
+           END AS EstadoTareasGrilla,
+           NVL((SELECT doc.url
+                  FROM IRISP_DOCUMENTO doc
+                 WHERE doc.documento_id = ev.documento_id
+                   AND doc.vigente = 1
+                   AND ROWNUM = 1),
+               'No tiene') AS Evidencia
+    FROM IRISP_TAREA t
+    JOIN IRISP_RESPON_VALIDACION res
+      ON t.respon_validacion_id = res.respon_validacion_id
+     AND res.criminalidad_id = P_Criminalidad_id
+     AND res.vigente = 1
+    LEFT JOIN IRISP_CTRL_DOMINIO lt
+      ON t.id_lista_tareas = lt.DOMINIO_ID
+     AND lt.PADRE_ID = 51
+     AND lt.vigente = 1
+    LEFT JOIN IRISP_CTRL_DOMINIO et
+      ON t.id_estado_tarea = et.DOMINIO_ID
+     AND et.PADRE_ID = 58
+     AND et.vigente = 1
+    LEFT JOIN IRISP_TAREA_DOCUMENTO ev
+      ON t.tarea_id = ev.tarea_id
+     AND ev.vigente = 1
+    LEFT JOIN VM_UNIDADES und
+      ON res.id_unidad_respon = und.consecutivo
+    LEFT JOIN IRISP_CRIMINALIDAD cri
+      ON res.criminalidad_id = cri.criminalidad_id
+   WHERE t.vigente = 1;
+
+  RETURN l_rc;
+END F_GetTareas;
+
+
+
+
+  --********************************************************************************************************************************************************************************************************************************************
+ FUNCTION F_GetResultados (
+  P_Ciminalidad_id IN VARCHAR2
+)
+  RETURN SYS_REFCURSOR
+IS
+  l_rc SYS_REFCURSOR;
+BEGIN
+
+  OPEN l_rc FOR
+    SELECT
+      r.resultado_id,
+      r.id_tipo,
+      cd.descripcion       AS DescTipoResultado,
+      r.nro_spoa_siedco    AS NroSpoaSiedco,
+      r.observacion        AS ObservacionResultado,
+      r.fecha_creacion    AS FechaCreaResultado,
+      r.fecha             AS FechaResultado
+    FROM IRISP_RESULTADO r
+    LEFT JOIN IRISP_CTRL_DOMINIO cd
+      ON cd.dominio_id = r.id_tipo
+     AND cd.padre_id   = 68
+     AND cd.vigente    = 1
+   WHERE r.criminalidad_id = P_Ciminalidad_id
+     AND r.vigente = 1
+   ORDER BY r.fecha_creacion DESC, r.resultado_id;
+
+  RETURN l_rc;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Retorna cursor vacío en caso de error
+    OPEN l_rc FOR
+      SELECT NULL AS resultado_id,
+             NULL AS id_tipo,
+             NULL AS DescTipoResultado,
+             NULL AS NroSpoaSiedco,
+             NULL AS ObservacionResultado,
+             NULL AS FechaCreaResultado,
+             NULL AS FechaResultado
+        FROM dual
+       WHERE 1 = 0;
+
+    RETURN l_rc;
+END F_GetResultados;
+
+
+  --********************************************************************************************************************************************************************************************************************************************
+ FUNCTION F_GetResponsablesTareasIris (
+    P_Criminalidad_id IN VARCHAR2
+) RETURN SYS_REFCURSOR
+IS
+    l_rc SYS_REFCURSOR;
+BEGIN
+    OPEN l_rc FOR
+        SELECT 
+            r.respon_validacion_id AS IdResponsable,
+            r.id_unidad_respon AS IdUnidadResponsable,
+            u.descripcion_dependencia AS DescUnidad,
+            c.sigla_unidad || ' - ' || u.descripcion_dependencia AS UnidadCompleta,
+
+            CASE
+                WHEN MAX(CASE WHEN UPPER(et.descripcion) = 'ACEPTADA' THEN 1 ELSE 0 END) = 1 THEN 'SI'
+                ELSE 'NO'
+            END AS Aceptada,
+
+            -- Seguimiento con botón condicional
+            CASE
+                WHEN COUNT(t.tarea_id) > 0 THEN
+                    TO_CLOB('<ul style="list-style:none; padding-left:0;">') ||
+                    NVL(
+                        (
+                            SELECT XMLAGG(
+                                       XMLELEMENT(e,
+                                           '<li style="margin-bottom:10px;">' ||
+                                           '<div style="font-weight:bold; margin-bottom:4px;">' ||
+                                               NVL('&#8226;&nbsp;' || tt2.descripcion, 'Tarea sin nombre') ||
+                                           '</div>' ||
+
+                                           '<span style="background-color:#0d6efd; color:white; padding:2px 6px; border-radius:4px; font-size:0.8rem;">' ||
+                                               'Fecha asignación tarea: ' ||
+                                               TO_CHAR(t2.fecha_creacion, 'DD/MM/YYYY hh:mi:ss a.m.') ||
+                                           '</span>' ||
+
+                                           '<br>' ||
+
+                                           -- Estado
+                                           '<span style="background-color:' ||
+                                               CASE t2.id_estado_tarea
+                                                   WHEN 59 THEN '#c53a1d'
+                                                   WHEN 60 THEN '#0d6efd'
+                                                   WHEN 61 THEN '#236305'
+                                                   WHEN 62 THEN '#c53a1d'
+                                                   ELSE '#808080'
+                                               END ||
+                                               '; color:white; padding:2px 6px; border-radius:4px; font-size:0.8rem;">' ||
+                                               NVL(et2.descripcion || ' - '|| t2.fecha_modifica , 'SIN ESTADO') ||
+                                           '</span>' ||
+
+                                           '<br>' ||
+
+                                           NVL('<b>Observación:</b> ' || t2.observacion || '<br>', '') ||
+                                           NVL('<b>Justificación:</b> ' || t2.justificacion || '<br>', '') ||
+
+                                           '<b>Evidencia:</b> ' ||
+                                           CASE
+                                               WHEN doc2.url IS NOT NULL THEN
+                                                   '<a href="/Irisp1/Verificacion/descargar?ruta=' || doc2.url || '" target="_blank" ' ||
+                                                   'style="background-color:#236305; color:white; padding:2px 6px; font-size:0.8rem; border-radius:4px; text-decoration:none; display:inline-block;">Descargar</a>'
+                                               ELSE
+                                                   '<span style="background-color:#c53a1d; color:white; padding:2px 6px; border-radius:4px; font-size:0.8rem;">No tiene</span>'
+                                           END ||
+
+                                           CASE
+                                               WHEN t2.fecha_modifica IS NOT NULL THEN
+                                                   '<br><span style="background-color:#0d6efd; color:white; padding:2px 6px; border-radius:4px;">' ||
+                                                   'Se respondió en ' || ROUND(t2.fecha_modifica - t2.fecha_creacion) || ' días - ' ||
+                                                   TRUNC(MOD((t2.fecha_modifica - t2.fecha_creacion) * 24, 24)) || ' horas'
+                                               ELSE
+                                                   '<br><span style="background-color:#c53a1d; color:white; padding:2px 6px; border-radius:4px;">' ||
+                                                   'Se asignó hace ' || ROUND(SYSDATE - t2.fecha_creacion) || ' días - ' ||
+                                                   TRUNC(MOD((SYSDATE - t2.fecha_creacion) * 24, 24)) || ' horas'
+                                           END ||
+                                           '</span></li>'
+                                       ) ORDER BY t2.fecha_creacion
+                                   ).GETCLOBVAL()
+                            FROM IRISP_TAREA t2
+                            LEFT JOIN IRISP_CTRL_DOMINIO et2 
+                                ON t2.id_estado_tarea = et2.DOMINIO_ID
+                               AND et2.PADRE_ID = 58
+                               AND et2.vigente = 1
+                            LEFT JOIN IRISP_CTRL_DOMINIO tt2 
+                                ON t2.ID_LISTA_TAREAS = tt2.DOMINIO_ID
+                               AND tt2.PADRE_ID = 51
+                               AND tt2.vigente = 1
+                            LEFT JOIN IRISP_TAREA_DOCUMENTO ev2 
+                                ON t2.tarea_id = ev2.tarea_id
+                               AND ev2.vigente = 1
+                            LEFT JOIN IRISP_DOCUMENTO doc2 
+                                ON ev2.documento_id = doc2.documento_id
+                               AND doc2.vigente = 1
+                            WHERE t2.respon_validacion_id = r.respon_validacion_id
+                              AND t2.vigente = 1
+                        ),
+                        TO_CLOB('<li>Sin tareas asignadas</li>')
+                    ) ||
+                    TO_CLOB('</ul>')
+                ELSE
+                    TO_CLOB('<span style="background-color:#808080; color:white; padding:3px 8px; border-radius:5px;">Sin tareas asignadas</span>')
+            END AS Seguimiento
+
+        FROM IRISP_RESPON_VALIDACION r
+        LEFT JOIN VM_UNIDADES u 
+            ON r.id_unidad_respon = u.consecutivo
+        LEFT JOIN IRISP_CRIMINALIDAD c 
+            ON r.criminalidad_id = c.criminalidad_id
+        LEFT JOIN IRISP_TAREA t 
+            ON r.respon_validacion_id = t.respon_validacion_id
+           AND t.vigente = 1
+        LEFT JOIN IRISP_CTRL_DOMINIO et 
+            ON t.id_estado_tarea = et.DOMINIO_ID
+           AND et.PADRE_ID = 58
+           AND et.vigente = 1
+        WHERE r.criminalidad_id = P_Criminalidad_id
+          AND r.vigente = 1
+        GROUP BY 
+            r.respon_validacion_id,
+            r.id_unidad_respon,
+            u.descripcion_dependencia,
+            c.sigla_unidad;
+
+    RETURN l_rc;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- logging opcional (tu procedimiento)
+        Pks_Administracion_IRIS.P_InsErrorsystem(
+            P_Procedimiento => 'F_GetResponsablesTareasIris_Fn',
+            P_Descripcion   => 'Error ' || SQLERRM,
+            P_IdDocumento   => 0,
+            P_Usuario       => 0
+        );
+
+        -- retornar cursor vacío para no reventar al consumidor
+        OPEN l_rc FOR
+            SELECT NULL AS IdResponsable,
+                   NULL AS IdUnidadResponsable,
+                   NULL AS DescUnidad,
+                   NULL AS UnidadCompleta,
+                   NULL AS Aceptada,
+                   TO_CLOB(NULL) AS Seguimiento
+              FROM dual
+             WHERE 1 = 0;
+
+        RETURN l_rc;
+END F_GetResponsablesTareasIris;
+
+
+
+
+  --********************************************************************************************************************************************************************************************************************************************
+  
+  PROCEDURE P_InsResultado(
+    P_CRIMINALIDAD_ID       IN VARCHAR2,
+    P_ID_TIPO               IN NUMBER,
+    P_NRO_SPOA_SIEDCO       IN VARCHAR2,
+    P_OBSERVACION           IN VARCHAR2,
+    P_FECHA                 IN DATE,
+    P_IDENTIFICACION_CREA   IN NUMBER,
+    P_MAQUINA_CREACION      IN VARCHAR2,
+    P_RESULTADO             OUT NUMBER,
+    SRV_Message             OUT VARCHAR2
+) IS
+    v_resultado_id VARCHAR2(40);
+BEGIN
+    v_resultado_id := F_Generar_UUID;
+
+    INSERT INTO IRISP_RESULTADO
+        (RESULTADO_ID,
+         CRIMINALIDAD_ID,
+         ID_TIPO,
+         NRO_SPOA_SIEDCO,
+         OBSERVACION,
+         VIGENTE,
+         FECHA_CREACION,
+         IDENTIFICACION_CREA,
+         MAQUINA_CREACION,
+         FECHA)
+    VALUES
+        (v_resultado_id,
+         P_CRIMINALIDAD_ID,
+         P_ID_TIPO,
+         P_NRO_SPOA_SIEDCO,
+         P_OBSERVACION,
+         1,
+         SYSDATE,
+         P_IDENTIFICACION_CREA,
+         P_MAQUINA_CREACION,
+         P_FECHA);
+
+    P_RESULTADO := 1;
+    SRV_Message := 'Resultado insertado correctamente';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        P_RESULTADO := 0;
+        SRV_Message := 'Error al insertar resultado: ' || SQLERRM;
+        -- logging opcional
+        BEGIN
+            Pks_Administracion_IRIS.P_InsErrorsystem(
+                P_Procedimiento => 'P_InsResultado',
+                P_Descripcion   => SRV_Message,
+                P_IdDocumento   => P_IDENTIFICACION_CREA,
+                P_Usuario       => P_IDENTIFICACION_CREA
+            );
+        EXCEPTION
+            WHEN OTHERS THEN NULL;
+        END;
+END P_InsResultado;
+
+  
+  
+  --********************************************************************************************************************************************************************************************************************************************
+    
+ PROCEDURE P_GuardarDocumentoTarea(
+    P_TAREA_ID               IN VARCHAR2,
+    P_NOMBRE                 IN VARCHAR2,
+    P_URL                    IN VARCHAR2,
+    P_IDENTIFICACION_CREACION IN NUMBER,
+    P_MAQUINA_CREACION        IN VARCHAR2,
+    
+    P_RESULTADO              OUT NUMBER,
+    SRV_Message                OUT VARCHAR2
+) IS
+    V_DOCUMENTO_ID VARCHAR2(40);
+BEGIN
+    -- Generar UUID
+    V_DOCUMENTO_ID := F_Generar_UUID;
+
+    -- Insertar en IRISP_DOCUMENTO
+    INSERT INTO IRISP_DOCUMENTO (
+        DOCUMENTO_ID,
+        NOMBRE,
+        URL,
+        VIGENTE,
+        FECHA_CREACION,
+        IDENTIFICACION_CREACION,
+        MAQUINA_CREACION
+    ) VALUES (
+        V_DOCUMENTO_ID,
+        P_NOMBRE,
+        P_URL,
+        1,
+        SYSDATE,
+        P_IDENTIFICACION_CREACION,
+        P_MAQUINA_CREACION
+    );
+
+    -- Insertar relación en IRISP_TAREA_DOCUMENTO
+    INSERT INTO IRISP_TAREA_DOCUMENTO (
+        TAREA_ID,
+        DOCUMENTO_ID,
+        VIGENTE
+    ) VALUES (
+        P_TAREA_ID,
+        V_DOCUMENTO_ID,
+        1
+    );
+
+    P_RESULTADO := 1;
+    SRV_Message := 'Documento guardado correctamente';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        P_RESULTADO := 0;
+        SRV_Message := 'Error al guardar documento: ' || SQLERRM;
+                       
+        ROLLBACK;
+        Pks_Administracion_IRIS.P_InsErrorsystem(
+            P_Procedimiento => 'P_GuardarDocumentoTarea',
+            P_Descripcion   => SRV_Message,
+            P_IdDocumento   => P_IDENTIFICACION_CREACION,
+            P_Usuario       => P_IDENTIFICACION_CREACION
+        );
+END P_GuardarDocumentoTarea;
+
+
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+ PROCEDURE P_InsTareaRespuesta (
+    P_CRIMINALIDAD_ID        IN VARCHAR2,
+    P_TAREA_ID               IN VARCHAR2,
+    P_ESTADO_EXISTENCIA      IN NUMBER,
+    P_JUSTIFICACION          IN NVARCHAR2,
+    P_FECHA_VERIFICA         IN DATE,
+    P_IDENTIFICACION_MODIFICA IN NUMBER,
+    P_MAQUINA_MODIFICA       IN VARCHAR2,
+    P_RESULTADO              OUT NUMBER,
+    SRV_Message                OUT VARCHAR2
+) AS
+    v_rows_tarea NUMBER := 0;
+    v_rows_crimi NUMBER := 0;
+BEGIN
+    -- Actualiza la tarea
+    UPDATE IRISP_TAREA
+       SET JUSTIFICACION           = P_JUSTIFICACION,
+           FECHA_VERIFICA          = P_FECHA_VERIFICA,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA,
+           ID_ESTADO_TAREA         = 60
+     WHERE TAREA_ID = P_TAREA_ID
+       AND VIGENTE = 1;
+
+    v_rows_tarea := SQL%ROWCOUNT;
+
+    -- Actualiza el estado de existencia en la criminalidad
+    UPDATE IRISP_CRIMINALIDAD
+       SET ID_ESTADO_EXISTENCIA = P_ESTADO_EXISTENCIA
+     WHERE CRIMINALIDAD_ID = P_CRIMINALIDAD_ID
+       AND VIGENTE = 1;
+
+    v_rows_crimi := SQL%ROWCOUNT;
+
+    -- Validación de resultados
+    IF v_rows_tarea > 0 AND v_rows_crimi > 0 THEN
+        P_RESULTADO := 1;
+        SRV_Message  := 'Tarea respondida y actualizada correctamente';
+    ELSIF v_rows_tarea > 0 THEN
+        P_RESULTADO := 1;
+        SRV_Message  := 'Tarea respondida, pero no se actualizó la criminalidad';
+    ELSIF v_rows_crimi > 0 THEN
+        P_RESULTADO := 1;
+        SRV_Message  := 'Criminalidad actualizada, pero no se encontró la tarea';
+    ELSE
+        P_RESULTADO := 0;
+        SRV_Message  := 'No se encontraron registros para actualizar';
+    END IF;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        P_RESULTADO := -1;
+        SRV_Message  := 'Error: ' || SQLERRM;
+
+        ROLLBACK;
+
+        Pks_Administracion_IRIS.P_InsErrorsystem(
+            P_Procedimiento => 'P_InsTareaRespuesta',
+            P_Descripcion   => SRV_Message,
+            P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+            P_Usuario       => P_MAQUINA_MODIFICA
+        );
+END P_InsTareaRespuesta;
+
+
+
+
+END PK_VERIFICACION_IRIS;

@@ -1,0 +1,497 @@
+create or replace package body PK_INTEGRANTES_IRIS is
+
+  FUNCTION F_Generar_UUID RETURN NVARCHAR2 IS
+    v_raw  RAW(16);
+    v_uuid NVARCHAR2(36);
+  BEGIN
+    v_raw := SYS_GUID();
+  
+    v_uuid := REGEXP_REPLACE(LOWER(RAWTOHEX(v_raw)),
+                             '(.{8})(.{4})(.{4})(.{4})(.{12})',
+                             '\1-\2-\3-\4-\5');
+  
+    RETURN v_uuid;
+  END;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+  FUNCTION F_GetReincidentes RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+  BEGIN
+    OPEN V_CONSULTA FOR
+      SELECT t.reincidente_id,
+             t.alias,
+             t.nombre,
+             t.apellido,
+             t.identificacion,
+             t.vigente,
+             t.observacion,
+             d.descripcion AS tipoid
+        FROM irisp_reincidente t
+        LEFT JOIN irisp_ctrl_dominio d
+          ON t.id_tipo = d.dominio_id
+       WHERE t.vigente = 1
+       order by t.fecha_creacion desc;
+  
+    RETURN V_CONSULTA;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- Registrar el error en la bitácora
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_INTEGRANTES_IRIS.F_GetReincidentes',
+                                                 P_Descripcion   => 'Error en F_GetReincidentes: ' ||
+                                                                    SQLERRM,
+                                                 P_IdDocumento   => NULL,
+                                                 P_Usuario       => NULL);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL; -- Evitar que falle la captura de errores
+      END;
+    
+      RETURN V_CONSULTA;
+  END F_GetReincidentes;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+  FUNCTION F_GetReincidentesPorId(P_Identificacion IN NUMBER)
+    RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+  BEGIN
+    OPEN V_CONSULTA FOR
+      SELECT t.reincidente_id,
+             t.alias,
+             t.nombre,
+             t.apellido,
+             t.identificacion,
+             t.vigente,
+             t.observacion,
+             d.descripcion AS tipoid
+        FROM irisp_reincidente t
+        LEFT JOIN irisp_ctrl_dominio d
+          ON t.id_tipo = d.dominio_id
+       WHERE t.identificacion = P_Identificacion;
+  
+    RETURN V_CONSULTA;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- Registrar el error en la bitácora
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_INTEGRANTES_IRIS.F_GetReincidentesPorId',
+                                                 P_Descripcion   => 'Error en F_GetReincidentesPorId: ' ||
+                                                                    SQLERRM,
+                                                 P_IdDocumento   => P_Identificacion,
+                                                 P_Usuario       => NULL);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL; -- Evitar que falle la captura de errores
+      END;
+    
+      RETURN V_CONSULTA;
+  END F_GetReincidentesPorId;
+
+  --********************************************************************************************************************************************************************************************************************************************
+  PROCEDURE P_InsOrUpdReincidente(P_IDENTIFICACION IN NUMBER,
+                                  P_ALIAS          IN VARCHAR2,
+                                  P_NOMBRE         IN VARCHAR2,
+                                  P_APELLIDO       IN VARCHAR2,
+                                  P_OBSERVACION    IN VARCHAR2,
+                                  P_ID_TIPO        IN NUMBER,
+                                  P_USUARIO        IN NUMBER,
+                                  P_MAQUINA        IN VARCHAR2,
+                                  
+                                  P_RESULTADO OUT NUMBER,
+                                  SRV_Message OUT VARCHAR2) IS
+    V_REINCIDENTE_ID VARCHAR2(40);
+    V_EXISTE         NUMBER;
+  BEGIN
+    -- Verificar si existe reincidente con IDENTIFICACION y VIGENTE = 0
+    SELECT COUNT(*)
+      INTO V_EXISTE
+      FROM IRISP_REINCIDENTE
+     WHERE IDENTIFICACION = P_IDENTIFICACION;
+    --AND VIGENTE = 0;
+  
+    IF V_EXISTE = 0 THEN
+      -- No existe inactivo, insertar nuevo
+      V_REINCIDENTE_ID := F_Generar_UUID;
+    
+      INSERT INTO IRISP_REINCIDENTE
+        (REINCIDENTE_ID,
+         ALIAS,
+         NOMBRE,
+         APELLIDO,
+         IDENTIFICACION,
+         VIGENTE,
+         FECHA_CREACION,
+         IDENTIFICACION_CREACION,
+         MAQUINA_CREACION,
+         OBSERVACION,
+         ID_TIPO)
+      VALUES
+        (V_REINCIDENTE_ID,
+         UPPER(P_ALIAS),
+         UPPER(P_NOMBRE),
+         UPPER(P_APELLIDO),
+         P_IDENTIFICACION,
+         1, -- Vigente por defecto
+         SYSDATE, -- Fecha de creación
+         P_USUARIO,
+         P_MAQUINA,
+         P_OBSERVACION,
+         P_ID_TIPO);
+    
+      P_RESULTADO := 1;
+      SRV_Message := 'Reincidente insertado correctamente';
+    ELSE
+      -- Existe inactivo, actualizarlo
+      UPDATE IRISP_REINCIDENTE
+         SET ID_TIPO                 = P_ID_TIPO,
+             ALIAS                   = UPPER(P_ALIAS),
+             OBSERVACION             = P_OBSERVACION,
+             VIGENTE                 = 1,
+             IDENTIFICACION_MODIFICA = P_USUARIO,
+             MAQUINA_MODIFICA        = P_MAQUINA,
+             FECHA_MODIFICA          = SYSDATE
+       WHERE IDENTIFICACION = P_IDENTIFICACION;
+      --AND VIGENTE = 1;
+    
+      P_RESULTADO := 1;
+      SRV_Message := 'Reincidente actualizado correctamente';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al insertar/actualizar en IRISP_REINCIDENTE: ' ||
+                     SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_INTEGRANTES_IRIS.P_InsOrUpdReincidente',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_USUARIO,
+                                                 P_Usuario       => P_USUARIO);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_InsOrUpdReincidente;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_UpdReincidente(P_REINCIDENTE_ID IN VARCHAR2,
+                             P_ALIAS          IN VARCHAR2,
+                             
+                             P_OBSERVACION IN VARCHAR2,
+                             P_ID_TIPO     IN NUMBER,
+                             P_USUARIO     IN NUMBER,
+                             P_MAQUINA     IN VARCHAR2,
+                             
+                             P_RESULTADO OUT NUMBER,
+                             SRV_Message OUT VARCHAR2) IS
+  
+  BEGIN
+    -- Existe inactivo, actualizarlo
+    UPDATE IRISP_REINCIDENTE
+       SET ID_TIPO                 = P_ID_TIPO,
+           ALIAS                   = UPPER(P_ALIAS),
+           OBSERVACION             = P_OBSERVACION,
+           VIGENTE                 = 1,
+           IDENTIFICACION_MODIFICA = P_USUARIO,
+           MAQUINA_MODIFICA        = P_MAQUINA,
+           FECHA_MODIFICA          = SYSDATE
+     WHERE REINCIDENTE_ID = P_REINCIDENTE_ID;
+    --  AND VIGENTE = 1;
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Reincidente Actualizado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró un reincidente vigente con el ID proporcionado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al actualizar en IRISP_REINCIDENTE: ' ||
+                     SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_INTEGRANTES_IRIS.P_UpdReincidente',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_USUARIO,
+                                                 P_Usuario       => P_USUARIO);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_UpdReincidente;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_DellReincidente(P_REINCIDENTE_ID IN VARCHAR2,
+                              P_USUARIO        IN NUMBER,
+                              P_MAQUINA        IN VARCHAR2,
+                              P_RESULTADO      OUT NUMBER,
+                              SRV_Message      OUT VARCHAR2) IS
+  BEGIN
+    -- Intentar actualizar el registro
+    UPDATE IRISP_REINCIDENTE
+       SET VIGENTE                 = 0,
+           IDENTIFICACION_MODIFICA = P_USUARIO,
+           MAQUINA_MODIFICA        = P_MAQUINA,
+           FECHA_MODIFICA          = SYSDATE
+     WHERE REINCIDENTE_ID = P_REINCIDENTE_ID
+       AND VIGENTE = 1; -- condición para asegurar que solo se actualicen registros vigentes
+  
+    -- Validar si realmente se afectó alguna fila
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Reincidente eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró un reincidente vigente con el ID proporcionado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar en IRISP_REINCIDENTE: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_INTEGRANTES_IRIS.P_DellReincidente',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_USUARIO,
+                                                 P_Usuario       => P_USUARIO);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DellReincidente;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+  FUNCTION F_GetIntegrantesPorId(P_IDENTIFICACION IN NUMBER)
+    RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+  BEGIN
+    OPEN V_CONSULTA FOR
+      SELECT t.alias, t.nombre, t.apellido, t.observacion
+        FROM V_IRISP1_INTEGRANTE t
+      
+       WHERE t.vigente = 1
+         and t.cedula = P_IDENTIFICACION;
+  
+    RETURN V_CONSULTA;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- Registrar el error en la bitácora
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_INTEGRANTES_IRIS.F_GetIntegrantesPorId',
+                                                 P_Descripcion   => 'Error en F_GetIntegrantesPorId: ' ||
+                                                                    SQLERRM,
+                                                 P_IdDocumento   => NULL,
+                                                 P_Usuario       => NULL);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL; -- Evitar que falle la captura de errores
+      END;
+    
+      RETURN V_CONSULTA;
+  END F_GetIntegrantesPorId;
+
+  --********************************************************************************************************************************************************************************************************************************************
+
+  FUNCTION F_GetListaIris(P_Identificacion in number)
+RETURN SYS_REFCURSOR IS
+    V_CONSULTA SYS_REFCURSOR;
+  
+
+  BEGIN
+  
+    OPEN V_CONSULTA FOR
+      WITH
+    
+      MAX_FECHAS AS
+       (SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         GROUP BY consecutivo),
+      RESULTADOS AS
+       (SELECT r.criminalidad_id,
+               MAX(CASE
+                     WHEN r.id_tipo = 70 THEN
+                      r.nro_spoa_siedco
+                   END) AS NumeroSiedco,
+               MAX(CASE
+                     WHEN r.id_tipo = 69 THEN
+                      r.nro_spoa_siedco
+                   END) AS NumeroSpoa
+          FROM IRISP_RESULTADO r
+         WHERE r.vigente = 1
+         GROUP BY r.criminalidad_id)
+      
+      SELECT d.DESCRIPCION AS EstadoDescripcion,
+             e.DESCRIPCION AS EstadoExistenciaDescripcion,
+             c.CODIGO AS Codigo,
+             c.SIGLA_UNIDAD || ' - ' || f.descripcion_dependencia AS Dependencia,
+             
+             f.municipio   AS Municipio,
+             g.descripcion AS Zona,
+             j.descripcion AS Clase,
+             
+             i.descripcion               AS Fuente,
+             c.NOMBRE_CLASE              AS NombreClase,
+             c.FECHA_INICIO_EXISTENCIA   AS FechaInicioExistencia,
+             c.CANTIDAD_INTEGRANTE       AS CantidadIntegrantes,
+             c.CARACTERISTICAS_GENERALES AS CaracteristicasGenerales,
+             h.descripcion               AS TipoServicio,
+             -- Unidad responsable usando función personalizada
+             f_unidad_verif_existe(c.CRIMINALIDAD_ID) AS UnidadResponsable,
+             -- Fechas de verificación
+             f_fecha_verif_existe(c.criminalidad_id) as FechaVerificacionExistencia,
+             f_fecha_respuesta_existe(c.criminalidad_id) as FechaRespuestaVerificacion,
+             -- Contador de verificación con "No asignado"
+             f_tiempo_verificacion(c.CRIMINALIDAD_ID) AS ContadorVerificacionExistencia,
+             -- Unidad y fechas del proceso investigativo
+             F_Unidad_Asig_Inves(c.CRIMINALIDAD_ID) AS UnidadProcesoInvestigativo,
+             f_fecha_asig_inves(c.criminalidad_id) AS FechaProcesoInvestigativo,
+             f_fecha_respuesta_inves(c.criminalidad_id) AS FechaRespuestaInvestigativo,
+             -- Contador de proceso investigativo
+             f_tiempo_investigacion(c.CRIMINALIDAD_ID) AS ContadorProcesoInvestigativo,
+             
+             -- RESULTADOS PIVOTADOS
+             NVL(rst.NumeroSiedco, '0') AS NumeroSiedco,
+             NVL(rst.NumeroSpoa, '0') AS NumeroSpoa,
+             CASE
+               WHEN rst.NumeroSiedco IS NULL AND rst.NumeroSpoa IS NULL THEN
+                'No tiene resultados'
+               ELSE
+                'Tiene resultados (SIEDCO: ' || NVL(rst.NumeroSiedco, '0') ||
+                ' - SPOA: ' || NVL(rst.NumeroSpoa, '0') || ')'
+             END AS Resultados
+      
+        FROM IRISP_CRIMINALIDAD c
+      
+        join IRISP_INTEGRANTE integ
+          on c.criminalidad_id = integ.criminalidad_id
+      
+        LEFT JOIN IRISP_CTRL_DOMINIO d
+          ON c.ID_ESTADO = d.DOMINIO_ID
+         AND d.PADRE_ID = 1
+         AND d.vigente = 1
+      
+        LEFT JOIN IRISP_CTRL_DOMINIO e
+          ON c.ID_ESTADO_EXISTENCIA = e.DOMINIO_ID
+         AND e.PADRE_ID = 63
+         AND e.vigente = 1
+      
+        LEFT JOIN MAX_FECHAS mf
+          ON c.id_unidad = mf.consecutivo
+      
+        LEFT JOIN VM_UNIDADES f
+          ON c.id_unidad = f.consecutivo
+         AND f.vigente = 'SI'
+         AND f.FECHA_ACTUALIZA = mf.FECHA_MAX
+      
+        LEFT JOIN IRISP_CTRL_DOMINIO g
+          ON c.ID_ZONA = g.DOMINIO_ID
+         AND g.PADRE_ID = 6
+         AND g.vigente = 1
+      
+        LEFT JOIN IRISP_CTRL_DOMINIO h
+          ON c.id_tipo_servicio = h.DOMINIO_ID
+         AND h.PADRE_ID = 9
+         AND h.vigente = 1
+      
+        LEFT JOIN IRISP_CTRL_DOMINIO i
+          ON c.id_fuente = i.DOMINIO_ID
+         AND i.PADRE_ID = 16
+         AND i.vigente = 1
+      
+        LEFT JOIN IRISP_CTRL_DOMINIO j
+          ON c.id_clase = j.DOMINIO_ID
+         AND j.PADRE_ID = 12
+         AND j.vigente = 1
+      
+        LEFT JOIN VM_CUADRANTES cu
+          ON c.id_cuadrante = cu.cuadrante_id
+      
+        LEFT JOIN (SELECT rv.*
+                     FROM (SELECT r.*,
+                                  ROW_NUMBER() OVER(PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
+                             FROM IRISP_RESPON_VALIDACION r
+                            WHERE r.vigente = 1) rv
+                    WHERE rv.rn = 1) res
+          ON c.criminalidad_id = res.criminalidad_id
+      
+        LEFT JOIN RESULTADOS rst
+          ON c.criminalidad_id = rst.criminalidad_id
+      
+       WHERE c.FECHA_CREACION IS NOT NULL
+         AND c.vigente = 1
+         and integ.cedula = P_Identificacion
+      
+       ORDER BY c.FECHA_CREACION DESC, c.codigo DESC;
+  
+    DBMS_OUTPUT.PUT_LINE('Cursor abierto correctamente.');
+  
+    RETURN V_CONSULTA;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('Error general: ' || SQLERRM);
+      RAISE;
+  END F_GetListaIris;
+
+--********************************************************************************************************************************************************************************************************************************************
+
+ FUNCTION F_GetLogPorIdentificacion(
+    P_Identificacion IN NUMBER
+)
+RETURN SYS_REFCURSOR
+IS
+    V_CURSOR SYS_REFCURSOR;
+BEGIN
+    OPEN V_CURSOR FOR
+        SELECT 
+            NOMBRES,
+            APELLIDOS,
+            IDENTIFICACION,
+            LATITUD,
+            LONGITUD,
+            FECHA_CREACION,
+            CLASE
+        FROM V_LOG_IRISP
+        WHERE IDENTIFICACION = P_Identificacion
+        ORDER BY FECHA_CREACION DESC;
+
+    RETURN V_CURSOR;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Se registra en bitácora (si lo desea)
+        BEGIN
+            PKS_ADMINISTRACION_IRIS.P_InsErrorSystem(
+                P_Procedimiento => 'PK_INTEGRANTES_IRIS.F_GetLogPorIdentificacion',
+                P_Descripcion   => 'Error: ' || SQLERRM,
+                P_IdDocumento   => NULL,
+                P_Usuario       => NULL
+            );
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
+
+        RETURN V_CURSOR;
+END F_GetLogPorIdentificacion;
+
+
+
+
+--********************************************************************************************************************************************************************************************************************************************
+
+--********************************************************************************************************************************************************************************************************************************************
+
+--********************************************************************************************************************************************************************************************************************************************
+
+--********************************************************************************************************************************************************************************************************************************************
+
+end PK_INTEGRANTES_IRIS;

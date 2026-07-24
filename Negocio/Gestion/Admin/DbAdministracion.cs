@@ -5,7 +5,7 @@ using Dapper;
 using Dapper.Oracle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Negocio.Gestion.Utilidades;
+//using Negocio.Gestion.Utilidades;
 using Negocio.Interfaz.Admin;
 using Oracle.ManagedDataAccess.Client;
 using System.Data;

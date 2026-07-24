@@ -1,0 +1,279 @@
+create or replace package body PK_REPORTES_IRIS is
+
+  
+  PROCEDURE P_GetReporteGeneral(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER,
+    P_CURSOR_OUT    OUT SYS_REFCURSOR
+) AS
+
+    V_Sigla        VARCHAR2(20);
+    --V_Region       VARCHAR2(2);
+    V_NuevaUnde    NUMBER := P_CodigoUnidad;
+    V_Count        NUMBER := 0;
+    V_TempUnde     NUMBER;
+
+BEGIN
+    ------------------------------------------------------------------
+    -- 1. Obtener SIGLA_PAPA y REGIÓN de la unidad del usuario
+    ------------------------------------------------------------------
+    BEGIN
+        SELECT sig.sigla_papa
+        INTO V_Sigla
+        FROM VM_UNIDADES sig
+        WHERE sig.consecutivo = P_CodigoUnidad;
+
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+        V_Sigla := NULL;
+      
+    END;
+  DBMS_OUTPUT.PUT_LINE('Sigla: ' || NVL(V_Sigla,'NULL') );
+    ------------------------------------------------------------------
+    -- 2. Subir niveles hasta encontrar registros (máx 3)
+    ------------------------------------------------------------------
+    FOR i IN 1..3 LOOP
+        
+        SELECT COUNT(*)
+        INTO V_Count
+        FROM IRISP_CRIMINALIDAD c
+        JOIN VM_UNIDADES f ON c.ID_UNIDAD = f.consecutivo
+        WHERE c.vigente = 1
+          AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+          AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+          AND f.consecutivo = NVL(V_NuevaUnde, 0);
+
+        EXIT WHEN V_Count > 0;
+
+        BEGIN
+            V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
+            IF V_TempUnde IS NOT NULL THEN
+                V_NuevaUnde := V_TempUnde;
+            ELSE
+                EXIT;
+            END IF;
+        EXCEPTION
+            WHEN OTHERS THEN EXIT;
+        END;
+    END LOOP;
+
+
+    ------------------------------------------------------------------
+    -- 3. Cursor con CTE + roles + filtros
+    ------------------------------------------------------------------
+    OPEN P_CURSOR_OUT FOR
+
+        WITH 
+        ROLES_LIST AS (
+            SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+            FROM dual
+            CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+        ),
+
+        MAX_FECHAS AS (
+            SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+            FROM VM_UNIDADES
+            GROUP BY consecutivo
+        ),
+
+
+        RESP AS (
+            SELECT rv.*
+            FROM (
+                SELECT r.*,
+                       ROW_NUMBER() OVER(PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
+                FROM IRISP_RESPON_VALIDACION r
+                WHERE r.vigente = 1
+            ) rv
+            WHERE rv.rn = 1
+        )
+
+
+        SELECT
+            -- IDENTIFICADORES
+            c.CRIMINALIDAD_ID                  AS criminalidad_id,
+            c.codigo_irisp                           AS codigo,
+            c.SIGLA_UNIDAD                     AS sigla_unidad,
+            C.DELITO_PRINCIPAL,
+            c.UNIDAD                           AS unidad,
+            c.MUNICIPIO                        AS municipio,
+            c.MUNICIPIO_2                      AS municipio_2,
+            c.ZONA                              AS zona,
+            c.CLASE                             AS clase,
+            c.FUENTE                            AS fuente,
+            c.NOMBRE_CLASE                      AS nombre_clase,
+
+            -- FECHAS
+            c.FECHA_INICIO_EXISTENCIA           AS fecha_inicio_existencia,
+            c.FECHA_CREACION_IRISP1             AS fecha_creacion_irisp1,
+            c.FECHA_ACTUALIZA_VM                AS fecha_actualiza_vm,
+            c.FECHA_ASIG_TAREA_VERIFICA         AS fecha_asig_tarea_verifica,
+            c.FECHA_RESP_TAREA_VERIFICA         AS fecha_resp_tarea_verifica,
+            c.FECHA_ASIG_TAREA_INVES            AS fecha_asig_tarea_inves,
+            c.FECHA_RESP_TAREA_INVES            AS fecha_resp_tarea_inves,
+
+            -- CAMPOS NUMÉRICOS
+            c.CANTIDAD_INTEGRANTE               AS cantidad_integrante,
+            c.CANTIDAD_SIEDCO                   AS cantidad_siedco,
+            c.CANTIDAD_SPOA                     AS cantidad_spoa,
+
+            -- TEXTOS
+            c.DESCRIPCION_TRAMITE               AS descripcion_tramite,
+            c.CARACTERISTICAS_GENERALES         AS caracteristicas_generales,
+            c.BARRIO                            AS barrio,
+            c.DIRECCION                         AS direccion,
+            c.NUNC                               AS nunc,
+
+            -- VERIFICACIÓN
+            c.ESTADO                             AS estado,
+            c.ESTADO_EXISTENCIA                  AS estado_existencia,
+
+           
+
+            -- UNIDAD RESPONSABLE
+            f_unidad_verif_existe(c.CRIMINALIDAD_ID) AS unidad_verifica,
+
+            -- PROCESO INVESTIGATIVO
+            f_unidad_asig_inves(c.CRIMINALIDAD_ID) AS unidad_asig_inves,
+
+            -- FUNCIONARIO INFORMA
+            c.funcionario_informa,
+            c.identificacion_informa,
+            c.unidad_funcionario_informa,
+
+            -- GEO
+           CASE 
+                WHEN REGEXP_LIKE(c.latitud, '^[0-9\.\-]+$') THEN c.latitud
+                ELSE NULL 
+            END AS latitud,
+
+            CASE 
+                WHEN REGEXP_LIKE(c.longitud, '^[0-9\.\-]+$') THEN c.longitud
+                ELSE NULL 
+            END AS longitud,
+
+            c.nro_cuadrante,
+            c.region_p,
+            c.tipo_servicio
+
+        FROM VM_GENERAL_IRISP c
+       
+        LEFT JOIN RESP res ON res.criminalidad_id = c.CRIMINALIDAD_ID
+       -- LEFT JOIN VM_UNIDADES f ON f.consecutivo = c.unidad
+
+        WHERE  
+            EXTRACT(YEAR FROM c.FECHA_CREACION_IRISP1) = NVL(P_Anio, EXTRACT(YEAR FROM SYSDATE))
+           
+
+            ------------------------------------------------------------
+            -- ?? FILTRO DE ROLES 
+            ------------------------------------------------------------
+           AND (
+
+                    -- Administradores (1,2)
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1,2))
+
+              
+
+              OR  -- Unidad (5,7)
+                    (EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 7)
+                      AND C.SIGLA_UNIDAD = V_Sigla
+                       )
+
+               
+                )
+
+        ORDER BY c.FECHA_CREACION_IRISP1 DESC, c.codigo_irisp DESC;
+
+END P_GetReporteGeneral;
+
+---*******************************************************************************************************************************************************************************************************************
+
+
+FUNCTION F_GetReporteVerificacion
+  RETURN SYS_REFCURSOR
+  IS
+    P_CURSOR_OUT SYS_REFCURSOR;
+  BEGIN
+
+    OPEN P_CURSOR_OUT FOR
+      WITH DELITOS AS (
+          SELECT 
+              d.criminalidad_id,
+              SUM(CASE WHEN d.id_tipo = 1 THEN 1 ELSE 0 END) AS delitos_principal,
+              SUM(CASE WHEN d.id_tipo = 2 THEN 1 ELSE 0 END) AS delitos_conexo
+          FROM IRISP_DELITO d
+          WHERE d.vigente = 1
+          GROUP BY d.criminalidad_id
+      ),
+      DOCUMENTOS AS (
+          SELECT criminalidad_id, COUNT(*) AS documentos
+          FROM IRISP_CRIMINALIDAD_DOCUMENTO
+          WHERE vigente = 1
+          GROUP BY criminalidad_id
+      ),
+      INFORMACION AS (
+          SELECT criminalidad_id, COUNT(*) AS informacion
+          FROM IRISP_INFORMACION
+          WHERE vigente = 1
+          GROUP BY criminalidad_id
+      ),
+      INTEGRANTES AS (
+          SELECT criminalidad_id, COUNT(*) AS integrantes
+          FROM IRISP_INTEGRANTE
+          WHERE vigente = 1
+          GROUP BY criminalidad_id
+      ),
+      UBICACIONES AS (
+          SELECT criminalidad_id, COUNT(*) AS ubicaciones
+          FROM IRISP_CRIMINALIDAD_UBICACION
+          WHERE vigente = 1
+          GROUP BY criminalidad_id
+      ),
+      UNIDAD_RESP AS (
+          SELECT criminalidad_id, COUNT(*) AS unidad_responsable
+          FROM IRISP_RESPON_VALIDACION
+          WHERE vigente = 1
+          GROUP BY criminalidad_id
+      ),
+      RESPONSABLE AS (
+          SELECT criminalidad_id, COUNT(*) AS responsable
+          FROM IRISP_RESPONSABLE
+          WHERE vigente = 1
+          GROUP BY criminalidad_id
+      )
+      
+      SELECT 
+          c.criminalidad_id,
+          c.codigo AS codigo_irisp,
+          
+          NVL(d.delitos_principal,0) AS cuenta_delitos_p,
+          NVL(d.delitos_conexo,0) AS cuenta_delitos_c,
+          NVL(doc.documentos,0) AS cuenta_documentos,
+          NVL(info.informacion,0) AS cuenta_informacion,
+          NVL(intg.integrantes,0) AS cuenta_integrantes,
+          NVL(ubi.ubicaciones,0) AS cuenta_ubicaciones,
+          NVL(ur.unidad_responsable,0) AS cuenta_unidad_responsable,
+          NVL(resp.responsable,0) AS cuenta_responsable
+          
+      FROM IRISP_CRIMINALIDAD c
+
+      LEFT JOIN DELITOS d ON c.criminalidad_id = d.criminalidad_id
+      LEFT JOIN DOCUMENTOS doc ON c.criminalidad_id = doc.criminalidad_id
+      LEFT JOIN INFORMACION info ON c.criminalidad_id = info.criminalidad_id
+      LEFT JOIN INTEGRANTES intg ON c.criminalidad_id = intg.criminalidad_id
+      LEFT JOIN UBICACIONES ubi ON c.criminalidad_id = ubi.criminalidad_id
+      LEFT JOIN UNIDAD_RESP ur ON c.criminalidad_id = ur.criminalidad_id
+      LEFT JOIN RESPONSABLE resp ON c.criminalidad_id = resp.criminalidad_id
+      
+      WHERE c.vigente = 1
+      ORDER BY c.codigo DESC;
+
+    RETURN P_CURSOR_OUT;
+
+  EXCEPTION WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('ERROR F_GetReporteVerificacion: ' || SQLERRM);
+      RAISE;
+  END F_GetReporteVerificacion;
+  
+end PK_REPORTES_IRIS;

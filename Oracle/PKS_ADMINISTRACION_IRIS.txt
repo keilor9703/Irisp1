@@ -1,0 +1,1076 @@
+create or replace package body PKS_ADMINISTRACION_IRIS is
+ -------------------------------------------------------------------------------------------------------------- 
+  --Insertar Errores del Sistema 
+  Procedure P_InsErrorSystem(P_Procedimiento In Varchar2,
+                             P_Descripcion   In Varchar2,
+                             P_IdDocumento   In Varchar2,
+                             P_Usuario       In Number) Is
+  
+  Begin
+    Insert Into CTR_ERRORES_SYSTEM_IRIS
+      (id_error,
+       procedimiento,
+       descripcion,
+       id_documento,
+       usuario_creacion,
+       fecha_creacion)
+    Values
+      (CTR_ERRORES_SYSTEM_IRIS_SEQ.NEXTVAL,
+       p_procedimiento,
+       p_descripcion,
+       P_IdDocumento,
+       P_Usuario,
+       Sysdate);
+    Commit Work;
+  Exception
+    When Others Then
+      Rollback;
+      Null;
+  End P_InsErrorSystem;
+  
+    Function F_GetDominiosIris(P_Id In Number) Return Sys_Refcursor Is
+     V_CONSULTA Sys_Refcursor;
+     Begin
+       Open V_CONSULTA For
+         Select p.Dominio_id  IdDominio, 
+                p.Descripcion   
+           From IRISP_CTRL_DOMINIO p
+          Where p.padre_id  = P_Id
+            And p.vigente=1;
+       Return(V_CONSULTA);
+       Rollback;
+       Close V_CONSULTA;
+     Exception
+       When Others Then
+         Null;
+         Return(Null);
+  End F_GetDominiosIris;
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+ --Valida Usuario
+  Procedure P_GetValidaUser(P_Usuario               In Varchar2,
+                            P_Maquina               In Varchar2,
+                             Out_Identificacion           Out Number,
+                            Out_IdUsuario           Out Number,
+                            Out_Bloqueado           Out Number,
+                            CursorRoles             Out Sys_Refcursor,
+                            P_Resultado             Out Number) Is
+  
+    SRV_Message Varchar2(2555);
+  Begin
+    Out_Identificacion :=0;
+    Out_IdUsuario           := 0;
+   
+    Out_Bloqueado           := '0';
+   
+    P_Resultado             := 0;
+    --Consulta datos del funcionario 
+    Begin
+      Select us.identificacion,
+      
+             nvl(us.id_usuario, 0),
+             
+             nvl(us.Bloqueado, 1)
+           
+            
+        Into 
+        Out_Identificacion,
+             Out_IdUsuario,
+            
+             Out_Bloqueado
+            
+        From ctr_usuarios_IRIS us
+       where us.USERNAME =  lower(P_Usuario);
+      P_Resultado := 1;
+      --Actualizar Datos del Usuario
+      /*Begin
+        Update ctr_usuarios_IRIS us
+           Set us.Codigocargo      = Out_IdCargo,
+               US.GRAD_ALFABETICO  = Out_GradAlfabetico,
+               us.funcionario      = Out_Funcionario,
+               us.unde_laborando   = Out_IdUndeLaborando,
+               US.USUARIO_MODIFICA = Out_Identificacion,
+               US.FECHA_MODIFICA   = Sysdate,
+               US.MAQUINA_MODIFICA = P_Maquina
+         Where us.identificacion = Out_Identificacion;
+        Commit Work;
+      Exception
+        When Others Then
+          Null;
+      End;*/
+    Exception
+      When NO_DATA_FOUND Then
+        P_Resultado := 0;
+        SRV_Message := 'Error reportado por la BD [' || TO_CHAR(Sqlcode) || '] ' ||
+                       Sqlerrm;
+        Goto ExitPaquete;
+      When TOO_MANY_ROWS Then
+        P_Resultado := 0;
+        SRV_Message := 'Error reportado por la BD [' || TO_CHAR(Sqlcode) || '] ' ||
+                       Sqlerrm;
+        Goto ExitPaquete;
+      When Others Then
+        P_Resultado := 0;
+        SRV_Message := 'Error reportado por la BD [' || TO_CHAR(Sqlcode) || '] ' ||
+                       Sqlerrm;
+        Goto ExitPaquete;
+    End;
+    --Cursor Roles asignados
+    Begin
+      Open CursorRoles For
+        Select ru.Id_Rol IdRol, r.Descripcion
+          From CTR_ROLES_USER_IRIS ru
+          Join ctr_roles_iris r
+            On (r.id_rol = ru.id_rol)
+         Where ru.Id_Usuario = Out_IdUsuario;
+      Rollback;
+    Exception
+      When Others Then
+        SRV_Message := 'Error reportado por la BD [' || TO_CHAR(Sqlcode) || '] ' ||
+                       Sqlerrm;
+        Goto ExitPaquete;
+    End;
+    ----Finaliza Paqueta
+    <<ExitPaquete>>
+    If P_Resultado > 0 Then
+      Commit Work;
+    Else
+      P_Resultado := 0;
+      Pks_Administracion_iris.P_InsErrorsystem(P_Procedimiento => 'PKS_ADMINISTRACION_iris.F_GetValidaUser',
+       P_Descripcion   => SRV_Message,
+      P_IdDocumento   => 0,
+      P_Usuario       => Out_Identificacion);
+      Rollback;
+    End If;
+  End P_GetValidaUser;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Function F_GetMenu(
+    P_IdRol          In Number,
+    P_Identificacion In Number
+) Return Sys_Refcursor Is
+    V_CONSULTA Sys_Refcursor;
+    V_Bloqueado Number;
+Begin
+    -- Validar si el usuario está bloqueado
+    Select u.Bloqueado
+      Into V_Bloqueado
+      From CTR_USUARIOS_IRIS u
+     Where u.Identificacion = P_Identificacion;
+
+    If V_Bloqueado = 1 Then
+        -- Usuario bloqueado: no devolver menú
+        Open V_CONSULTA For
+            Select null IdMenu, null Descripcion, null IdPadre, null Posicion,
+                   null Icono, null Detalle, null Tipo, null Controlador,
+                   null Vista, null Area
+              From Dual
+             Where 1 = 0; -- Cursor vacío
+        Return V_CONSULTA;
+    End If;
+
+    -- Caso Superusuario
+    If P_IdRol = 1 Then
+        Open V_CONSULTA For
+            Select m.ID_MENU IdMenu,
+                   m.Descripcion,
+                   m.IdPadre,
+                   m.Posicion,
+                   m.Icono,
+                   m.Detalle,
+                   m.Tipo,
+                   M.Controlador,
+                   M.Vista,
+                   m.Area
+              From CTR_MENU_IRIS m, CTR_MENU_ROLES_IRIS mr
+             Where mr.id_rol = 1
+               And mr.id_menu = m.ID_MENU
+               And m.Vigente = 1
+            Union
+            Select m.ID_MENU IdMenu,
+                   m.Descripcion,
+                   m.Idpadre,
+                   m.Posicion,
+                   m.Icono,
+                   m.Detalle,
+                   m.Tipo,
+                   M.Controlador,
+                   M.Vista,
+                   m.Area
+              From CTR_MENU_IRIS m
+            Connect By Prior m.IdPadre = m.ID_MENU
+             Start With m.ID_MENU In (Select me.id_menu
+                                        From ctr_menu_iris me
+                                       Where me.vigente = 1)
+             Order By IdPadre, POSICION;
+        Return V_CONSULTA;
+
+    -- Caso otros roles
+    Else
+        Open V_CONSULTA For
+
+            -- Menús asignados directamente al rol
+            Select m.ID_MENU       As IdMenu,
+                   m.Descripcion,
+                   m.IdPadre,
+                   m.Posicion,
+                   m.Icono,
+                   m.Detalle,
+                   m.Tipo,
+                   m.Controlador,
+                   m.Vista,
+                   m.Area
+              From CTR_MENU_IRIS m
+              Join CTR_MENU_ROLES_IRIS mr On mr.ID_MENU = m.ID_MENU
+             Where mr.ID_ROL = P_IdRol
+               And m.Vigente = 1
+
+            Union
+
+            -- Menús asignados al usuario por sus roles
+            Select m.ID_MENU       As IdMenu,
+                   m.Descripcion,
+                   m.IdPadre,
+                   m.Posicion,
+                   m.Icono,
+                   m.Detalle,
+                   m.Tipo,
+                   m.Controlador,
+                   m.Vista,
+                   m.Area
+              From CTR_MENU_IRIS m
+            Connect By Prior m.IdPadre = m.ID_MENU
+             Start With m.ID_MENU In (
+                Select rm.ID_MENU
+                  From CTR_MENU_ROLES_IRIS rm
+                  Join CTR_ROLES_USER_IRIS ru On ru.ID_ROL = rm.ID_ROL
+                  Join CTR_USUARIOS_IRIS   u  On u.ID_USUARIO = ru.ID_USUARIO
+                  Join CTR_MENU_IRIS       me On me.ID_MENU = rm.ID_MENU
+                 Where me.Vigente = 1
+                   And u.Identificacion = P_Identificacion
+                   And u.Bloqueado = 0
+             )
+
+            Union
+
+            -- Menús por lista de roles (si P_IdRol contiene varios separados por coma)
+            Select m.ID_MENU       As IdMenu,
+                   m.Descripcion,
+                   m.IdPadre,
+                   m.Posicion,
+                   m.Icono,
+                   m.Detalle,
+                   m.Tipo,
+                   m.Controlador,
+                   m.Vista,
+                   m.Area
+              From CTR_MENU_IRIS m
+            Connect By Prior m.IdPadre = m.ID_MENU
+             Start With m.ID_MENU In (
+                Select p.ID_MENU
+                  From CTR_MENU_ROLES_IRIS p
+                  Join CTR_MENU_IRIS me On me.ID_MENU = p.ID_MENU
+                 Where me.Vigente = 1
+                   And p.ID_ROL In (
+                        Select To_Number(r.Rol)
+                          From (
+                              With CTE As (Select P_IdRol Temp From Dual)
+                              Select Trim(REGEXP_SUBSTR(Temp, '[^,]+', 1, Level)) Rol
+                                From CTE
+                              Connect By Level <= REGEXP_COUNT(Temp, '[^,]+')
+                          ) r
+                    )
+             );
+
+        Return V_CONSULTA;
+    End If;
+End F_GetMenu;
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--Insertar Auditoria
+  Procedure P_InsAuditoria(P_Evento        In Varchar2,
+                           P_Descripcion   In Varchar2,
+                           P_Identificador In Number,
+                           P_Usuario       In Number,
+                           P_Maquina       In Varchar2,
+                           SRV_Message     Out Varchar2,
+                           P_Resultado     Out Number) As
+  Begin
+    P_Resultado := 0;
+    Begin
+      Insert Into ctr_auditoria_IRIS
+        (id_auditoria,
+         evento,
+         descripcion,
+         ano,
+         identificador,
+         usuario_creacion,
+         fecha_creacion,
+         maquina_creacion)
+      Values
+        (ctr_auditoria_iris_SEQ.NEXTVAL,
+         P_Evento,
+         P_Descripcion,
+         TO_NUMBER(TO_CHAR(Sysdate, 'YYYY')),
+         P_Identificador,
+        
+         P_Usuario,
+         Sysdate,
+         P_Maquina)
+      Returning id_auditoria Into P_Resultado;
+      SRV_Message := 'El registro se grabó exitosamente';
+      Commit Work;
+    Exception
+      When Others Then
+        P_Resultado := 0;
+        SRV_Message := 'Error durante la insercion del registro, reportado por la BD [' ||
+                       TO_CHAR(Sqlcode) || '] ' || Sqlerrm;
+        Goto ExitPaquete;
+    End;
+    -- End Code -------------------------
+    <<ExitPaquete>>
+    If P_Resultado > 0 Then
+      Commit;
+    Else
+      Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PKS_ADMINISTRACION_IRIS.P_InsAuditoria',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => 0,
+                                               P_Usuario       => P_Usuario);
+      Rollback;
+    End If;
+  End P_InsAuditoria;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  --Obtener Roles
+  Function F_GetRoles Return Sys_Refcursor Is
+    V_CONSULTA Sys_Refcursor;
+  Begin
+    Open V_CONSULTA For
+      Select r.id_rol         IdRol,
+             r.Descripcion,
+             r.fecha_creacion FechaCreacion,
+             r.Vigente
+        From ctr_roles_iris r;
+    Return(v_consulta);
+    Rollback;
+    Close v_consulta;
+  End F_GetRoles;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+  --Obtener Roles Usuario
+  Function F_GetUserRoles(P_Identificacion In Number) Return Sys_Refcursor Is
+    V_CONSULTA Sys_Refcursor;
+  Begin
+  
+    Open V_CONSULTA For
+      Select to_number(nvl(R.ID_ROL, 0)) IdRol,
+             to_number(nvl(ru.id_user_rol, 0)) IdUserRol,
+             to_number(nvl(us.id_usuario, 0)) IdUsuario,
+             nvl(r.Descripcion, 'NR') Descripcion,
+             nvl(to_char(ru.fecha_creacion, 'dd/mm/yyyy hh24:mi'), 'NR') FechaCreacion,
+             NVL(em.grad_alfabetico ||' '|| em.apellidos || ' '|| em.nombres, 'NR') FuncionarioCreacion,
+             NVL(to_char(ad.fecha_fin, 'dd/mm/yyyy hh24:mi'), 'NR') FechaFin,
+             NVL(ad.Justificacion, 'NR') Justificacion,
+             to_number(nvl(us.Bloqueado, 0)) Bloqueado,
+             us.username as UsuarioInst
+        From CTR_ROLES_USER_iris ru
+       Right Join ctr_usuarios_iris us
+          On (us.id_usuario = ru.id_usuario)
+        Left Join ctr_roles_iris r
+          On (r.id_rol = ru.id_rol)
+        Left Join VM_REHU_PERSONAL em
+          On (em.identificacion = ru.usuario_creacion)
+        Left Join ctr_roles_user_admin_IRIS ad
+          On (ad.id_roluser_admin = ru.id_user_rol)
+       Where us.identificacion = P_Identificacion;
+    Return(v_consulta);
+    Rollback;
+    Close v_consulta;
+  End F_GetUserRoles;
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Consultar Lista Usuarios + Roles
+FUNCTION F_GetUsuarios RETURN SYS_REFCURSOR IS
+  v_consulta SYS_REFCURSOR;
+BEGIN
+  OPEN v_consulta FOR
+    SELECT
+      t.grad_alfabetico              AS GradAlfabetico,
+      t.funcionario                  AS Funcionario,
+      t.identificacion               AS Identificacion,
+      t.codigocargo                  AS IdCargo,
+      u.cargo_actual                 AS Cargo,
+
+      -- Roles agregados (texto)
+      NVL((
+        SELECT LISTAGG(NVL(r.descripcion, 'NR'), ' • ')
+               WITHIN GROUP (ORDER BY r.descripcion)
+          FROM ctr_usuarios_iris us
+          LEFT JOIN ctr_roles_user_iris ru
+                 ON ru.id_usuario = us.id_usuario
+          LEFT JOIN ctr_roles_iris r
+                 ON r.id_rol = ru.id_rol
+         WHERE us.identificacion = t.identificacion
+      ), 'SIN ROLES')               AS Roles
+
+    FROM ctr_usuarios_iris t
+    LEFT JOIN vm_rehu_personal u
+           ON u.identificacion = t.identificacion;
+
+  RETURN v_consulta;
+END F_GetUsuarios;
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--Insertar Actualizar Usuarios
+  Procedure P_InsUdpUsuarios(P_Identificacion In ctr_usuarios_iris.identificacion%Type,
+                             P_Bloqueado      In ctr_usuarios_iris.bloqueado%Type,
+                             P_Usuario        In ctr_usuarios_iris.usuario_creacion%Type,
+                             P_Maquina        In ctr_usuarios_iris.maquina_creacion%Type,
+                             SRV_Message      Out Varchar2,
+                             P_Resultado      Out Number) Is
+  
+    V_Existe         Number;
+    v_usuario        Varchar2(255);
+    v_apellidos      Varchar2(255);
+    v_nombres        Varchar2(255);
+    v_IdCargo        Number;
+    V_GradAlfabetico Varchar2(255);
+    V_UndeLaborando  Number;
+    V_Funcionario    Varchar2(255);
+    V_IdUsuario      Number;
+  Begin
+    --Validar si el usuario existe
+    Begin
+      Select us.id_usuario
+        Into V_IdUsuario
+        From ctr_usuarios_iris us
+       Where us.identificacion = P_Identificacion
+         And RowNum = 1;
+      V_Existe := 1;
+    Exception
+      When NO_DATA_FOUND Then
+        V_Existe := 0;
+    End;
+    --Buscar Información del Funcionario
+    Begin
+      Select 
+             em.usuario_empresarial ,
+             em.nombres,
+             em.apellidos,
+             em.codigo_cargo ,
+             em.grad_alfabetico ,
+             --em.UndeLaborando,
+             em.unde_consecutivo_laborando,
+             em.grad_alfabetico ||' '|| em.apellidos || ' '|| em.nombres as Funcionario
+        Into v_usuario,
+             v_nombres,
+             v_apellidos,
+             v_IdCargo,
+             V_GradAlfabetico,
+             V_UndeLaborando,
+             V_Funcionario
+        From VM_REHU_PERSONAL em
+       Where em.identificacion = P_Identificacion;
+    End;
+    If V_Existe > 0 Then
+      Begin
+        Update ctr_usuarios_iris us
+           Set us.Codigocargo      = v_IdCargo,
+               US.GRAD_ALFABETICO  = V_GradAlfabetico,
+               us.funcionario      = V_Funcionario,
+               us.unde_laborando   = V_UndeLaborando,
+               US.USUARIO_MODIFICA = P_Usuario,
+               US.FECHA_MODIFICA   = Sysdate,
+               US.MAQUINA_MODIFICA = P_Maquina,
+               us.bloqueado        = P_Bloqueado
+         Where us.identificacion = P_Identificacion;
+        If Sql%Rowcount > 0 Then
+          P_Resultado := V_IdUsuario;
+          SRV_Message := 'Registro actualizado exitosamente';
+        Else
+          P_Resultado := 0;
+          SRV_Message := 'No es posible actualizar, revise';
+        End If;
+        Commit Work;
+      Exception
+        When Others Then
+          P_Resultado := 0;
+          SRV_Message := 'No es posible actualizar, revise';
+          Goto ExitPaquete;
+      End;
+    Else
+      Begin
+        Insert Into ctr_usuarios_iris
+          (id_usuario,
+           bloqueado,
+           username,
+           identificacion,
+           Grad_Alfabetico,
+           apellidos,
+           nombres,
+           Funcionario,
+           Unde_Laborando,
+           codigocargo,
+           fecha_creacion,
+           usuario_creacion,
+           maquina_creacion)
+        Values
+          (CTR_USUARIOS_IRIS_SEQ.NEXTVAL,
+           P_Bloqueado,
+           v_usuario,
+           P_Identificacion,
+           V_GradAlfabetico,
+           v_apellidos,
+           v_nombres,
+           V_Funcionario,
+           V_UndeLaborando,
+           v_IdCargo,
+           Sysdate,
+           P_Usuario,
+           P_Maquina)
+        Returning id_usuario Into P_Resultado;
+        SRV_Message := 'El usuario se creó exitosamente';
+        Commit Work;
+      Exception
+        When Others Then
+          P_Resultado := 0;
+          SRV_Message := 'Error durante la insercion del registro, reportado por la BD [' ||
+                         TO_CHAR(Sqlcode) || '] ' || Sqlerrm;
+          Goto ExitPaquete;
+      End;
+    End If;
+    ----------------Finalización del Procedimiento--------
+    <<ExitPaquete>>
+    If P_Resultado > 0 Then
+      Commit;
+    Else
+      Rollback;
+      Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PKS_ADMINISTRACION_IRIS.P_InsUdpUsuarios',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => 0,
+                                               P_Usuario       => P_Usuario);
+    End If;
+  End P_InsUdpUsuarios;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--Insertar Roles a los usuarios
+  Procedure P_InsRolesUser(P_IdUsuario     In Number,
+                           P_IdRol         In Number,
+                           P_Justificacion In Varchar2,
+                           P_FechaFin      In Date,
+                           P_Usuario       In Number,
+                           P_Maquina       In Varchar2,
+                           SRV_Message     Out Varchar2,
+                           P_Resultado     Out Number) Is
+  
+    V_Existe        Number;
+    V_NombreRol     Varchar2(255);
+    V_IdUserRol     Number;
+    V_IdCargo       Number;
+    V_UndeLaborando Number;
+  
+  Begin
+    If P_FechaFin = to_date('01/01/0001', 'dd/mm/rrrr') Then
+      P_Resultado := 0;
+      SRV_Message := 'Debe registrar fecha';
+      Goto ExitPaquete;
+    Else
+      --Verificar si tiene rol asignado 
+      Begin
+        Select e.id_user_rol
+          Into V_IdUserRol
+          From CTR_ROLES_USER_IRIS e
+         Where e.id_usuario = P_IdUsuario
+           And e.id_rol = P_IdRol
+           And RowNum = 1;
+        V_Existe := 1;
+      Exception
+        When NO_DATA_FOUND Then
+          V_Existe := 0;
+      End;
+    
+      If V_Existe > 0 Then
+        P_Resultado := 0;
+        SRV_Message := 'El usuario ya tiene el rol asignado';
+        Goto ExitPaquete;
+      Else
+        --Buscar Información del Funcionario
+        Begin
+          Select em.codigo_cargo, em.unde_consecutivo_laborando
+            Into V_IdCargo, V_UndeLaborando
+            From VM_REHU_PERSONAL em
+            Join ctr_usuarios_iris us
+              On (us.identificacion = em.Identificacion)
+           Where us.id_usuario = P_IdUsuario;
+        End;
+      
+        Begin
+          Select r.descripcion
+            Into V_NombreRol
+            From ctr_roles_Iris r
+           Where r.id_rol = P_IdRol;
+        End;
+        --Insertar el Rol
+        Begin
+          Insert Into CTR_ROLES_USER_IRIS
+            (id_user_rol,
+             id_usuario,
+             id_rol,
+             fecha_creacion,
+             usuario_creacion,
+             Maquina_creacion)
+          Values
+            (CTR_ROLES_USER_IRIS_SEQ.NEXTVAL,
+             to_number(P_IdUsuario),
+             to_number(P_IdRol),
+             Sysdate,
+             P_Usuario,
+             P_Maquina)
+          Returning id_user_rol Into P_Resultado;
+          SRV_Message := 'El registro se grabó exitosamente';
+          Commit Work;
+          --Insertar la Auditoria del Rol
+          P_InsUdpRolesUserAudit(P_Resultado,
+                                 P_IdUsuario,
+                                 P_IdRol,
+                                 P_Justificacion,
+                                 1,
+                                 P_FechaFin,
+                                 P_Usuario,
+                                 P_Maquina,
+                                 V_UndeLaborando,
+                                 V_IdCargo,
+                                 SRV_Message,
+                                 P_Resultado);
+          -- PK_CORREO.ENVIO_CORREO_ASIGROL(P_IdUsuario, v_consecutivo);        
+          --Actualizar ultima modificación del usuario
+          Begin
+            Update ctr_usuarios_iris us
+               Set us.fecha_modifica   = Sysdate,
+                   us.usuario_modifica = P_Usuario
+             Where us.id_usuario = P_IdUsuario;
+            Commit Work;
+          End;
+        Exception
+          When Others Then
+            SRV_Message := 'Error durante la actualización del registro, reportado por la BD [' ||
+                           TO_CHAR(Sqlcode) || '] ' || Sqlerrm;
+            Goto ExitPaquete;
+        End;
+      End If;
+    End If;
+    <<ExitPaquete>>
+    If P_Resultado > 0 Then
+      Commit;
+    Else
+      Rollback;
+      Pks_Administracion_iris.P_InsErrorsystem(P_Procedimiento => 'PKS_ADMINISTRACION_IRIS.P_InsRoles',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => P_IdRol,
+                                               P_Usuario       => P_Usuario);
+    End If;
+  End P_InsRolesUser;
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--Insertar Roles Auditoria  
+  Procedure P_InsUdpRolesUserAudit(P_IdUserRole    In Number,
+                                   P_IdUsuario     In Number,
+                                   P_IdRol         In Number,
+                                   P_Justificacion In Varchar2,
+                                   P_Vigente       In Number,
+                                   P_FechaFin      In Date,
+                                   P_Usuario       In Number,
+                                   P_Maquina       In Varchar2,
+                                   P_UndeLabora    Number,
+                                   P_CodigoCargo   Number,
+                                   SRV_Message     Out Varchar2,
+                                   P_Resultado     Out Number) Is
+  
+  Begin
+    Begin
+      Update CTR_ROLES_USER_ADMIN_IRIS S
+         Set s.vigente          = P_Vigente,
+             s.justificacion = Case
+                                 When P_Vigente = 1 THEN
+                                  P_Justificacion
+                                 Else
+                                  justificacion
+                               End,
+             s.motivo_elimina = Case
+                                  When P_Vigente = 0 THEN
+                                   P_Justificacion
+                                  Else
+                                   motivo_elimina
+                                End,
+             s.usuario_modifica = P_Usuario,
+             s.fecha_modifica   = Sysdate,
+             s.maquina_modifica = P_Maquina
+       Where s.id_roluser_admin = P_IdUserRole;
+      If Sql%Rowcount > 0 Then
+        P_Resultado := P_IdUserRole;
+        SRV_Message := 'El rol se actualizó exitosamente';
+      Else
+        Begin
+          Insert Into CTR_ROLES_USER_ADMIN_IRIS
+            (id_roluser_admin,
+             id_rol,
+             id_usuario,
+             justificacion,
+             fecha_fin,
+             usuario_creacion,
+             fecha_creacion,
+             vigente,
+             maquina_creacion,
+             UNDE_LABORA,
+             CODIGO_CARGO)
+          Values
+            (P_IdUserRole,
+             P_IdRol,
+             P_IdUsuario,
+             P_Justificacion,
+             P_FechaFin,
+             P_Usuario,
+             Sysdate,
+             1,
+             P_Maquina,
+             P_UndeLabora,
+             P_CodigoCargo);
+          Commit Work;
+          P_Resultado := P_IdUserRole;
+          SRV_Message := 'El rol se creó exitosamente';
+        Exception
+          When Others Then
+            P_Resultado := 0;
+            SRV_Message := 'Error durante la insercion del registro, reportado por la BD [' ||
+                           TO_CHAR(Sqlcode) || '] ' || Sqlerrm;
+            Goto ExitPaquete;
+        End;
+      End If;
+      Commit Work;
+    Exception
+      When NO_DATA_FOUND Then
+        Begin
+          Insert Into CTR_ROLES_USER_ADMIN_IRIS
+            (id_roluser_admin,
+             id_rol,
+             id_usuario,
+             justificacion,
+             fecha_fin,
+             usuario_creacion,
+             fecha_creacion,
+             vigente,
+             maquina_creacion,
+             UNDE_LABORA,
+             CODIGO_CARGO)
+          Values
+            (P_IdUserRole,
+             P_IdRol,
+             P_IdUsuario,
+             P_Justificacion,
+             P_FechaFin,
+             P_Usuario,
+             Sysdate,
+             1,
+             P_Maquina,
+             P_UndeLabora,
+             P_CodigoCargo);
+          Commit Work;
+          P_Resultado := P_IdUserRole;
+          SRV_Message := 'El rol se creó exitosamente';
+        Exception
+          When Others Then
+            P_Resultado := 0;
+            SRV_Message := 'Error durante la insercion del registro, reportado por la BD [' ||
+                           TO_CHAR(Sqlcode) || '] ' || Sqlerrm;
+            Goto ExitPaquete;
+        End;
+      When Others Then
+        P_Resultado := 0;
+        SRV_Message := 'Error durante la actualización del registro, reportado por la BD [' ||
+                       TO_CHAR(Sqlcode) || '] ' || Sqlerrm;
+        Goto ExitPaquete;
+    End;
+    -- End Code -------------------------
+    <<ExitPaquete>>
+    If P_Resultado > 0 Then
+      Commit Work;
+    Else
+      Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PKS_ADMINISTRACION_IRIS.P_InsUdpRolesAuditoria',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => 0,
+                                               P_Usuario       => P_Usuario);
+      Rollback;
+    End If;
+  End P_InsUdpRolesUserAudit;
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ --Eliminar roles Usuarios
+  Procedure P_DelRoles(P_IdUserRol     In Number,
+                       P_Justificacion In Varchar2,
+                       P_Usuario       In Number,
+                       P_Maquina       In Varchar2,
+                       SRV_Message     Out Varchar2,
+                       P_Resultado     Out Number) Is
+  Begin
+    P_Resultado := 0;
+    Begin
+      Delete ctr_roles_user_IRIS ru Where ru.id_user_rol = P_IdUserRol;
+      If (Sql%Rowcount > 0) Then
+        P_InsUdpRolesUserAudit(P_IdUserRol,
+                               0,
+                               0,
+                               P_Justificacion,
+                               0,
+                               Sysdate,
+                               P_Usuario,
+                               P_Maquina,
+                               0,
+                               0,
+                               SRV_Message,
+                               P_Resultado);
+        P_Resultado := 1;
+        SRV_Message := 'Registro eliminado exitosamente';
+      Else
+        P_Resultado := 0;
+        SRV_Message := 'No es posible eliminar, revise';
+      End If;
+      Commit Work;
+    Exception
+      When Others Then
+        P_Resultado := 0;
+        SRV_Message := 'Ha ocurrido un error! ' || TO_CHAR(Sqlcode) || '] ' ||
+                       Sqlerrm;
+        Goto ExitPaquete;
+    End;
+    -------Finalizar Procedimiento--------------------------------------------------------------------------------------------------------------
+    <<ExitPaquete>>
+    If P_Resultado > 0 Then
+      Commit;
+    Else
+      Rollback;
+      Pks_Administracion_iris.P_InsErrorsystem(P_Procedimiento => 'PKS_ADMINISTRACION_IRIS.P_DelRoles',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => 0,
+                                               P_Usuario       => P_Usuario);
+    End If;
+  End P_DelRoles;
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--Evento para Deshabilitar Roles por reglas
+  Procedure DeshabilitaUsuarios Is
+  Begin
+    DeshabilitaUsuariosCargo;
+    DeshabilitaUsuariosUnidad;
+    DeshabilitaUsuariosFecha;
+    Null;
+  End DeshabilitaUsuarios;
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+  Procedure DeshabilitaUsuariosCargo Is
+  Begin
+    For I In (Select rua.id_roluser_admin,
+                     rua.fecha_fin,
+                     rua.fecha_creacion,
+                     em.estado_empleado,
+                     rua.codigo_cargo,
+                     em.codigo_cargo as codigoCargo
+                From CTR_ROLES_USER_ADMIN_IRIS rua,
+                     ctr_usuarios_iris         us,
+                     ctr_roles_user_IRIS       ru,
+                     VM_REHU_PERSONAL      em
+               Where us.id_usuario = rua.id_usuario
+                 And em.identificacion = us.identificacion
+                 And ru.id_user_rol = rua.id_roluser_admin
+                 And rua.codigo_cargo <> em.codigo_cargo
+                 And rua.vigente = 1) Loop
+      Begin
+        Update CTR_ROLES_USER_ADMIN_iris ruad
+           Set ruad.vigente          = 0,
+               RUAD.MOTIVO_ELIMINA   = 'Rol deshabilitado por Cambio de cargo',
+               ruad.USUARIO_MODIFICA = 0,
+               RUAD.FECHA_MODIFICA   = Sysdate,
+               RUAD.MAQUINA_MODIFICA = 'SERVER'
+         Where RUAD.ID_ROLUSER_ADMIN = i.id_roluser_admin;
+        Commit Work;
+      Exception
+        When Others Then
+          Rollback;
+          Null;
+      End;
+      Begin
+        Delete CTR_ROLES_USER_iris ru
+         Where ru.id_user_rol = i.id_roluser_admin;
+        Commit Work;
+      End;
+    End Loop;
+    DeshabilitaUsuariosUnidad;
+  End DeshabilitaUsuariosCargo;
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--Deshabilitados por Unidad
+  Procedure DeshabilitaUsuariosUnidad Is
+  Begin
+    For I In (Select rua.id_roluser_admin,
+                     rua.fecha_fin,
+                     rua.fecha_creacion,
+                     em.estado_empleado,
+                     rua.codigo_cargo,
+                     em.codigo_cargo as codigoCargo
+                From CTR_ROLES_USER_ADMIN_iris rua,
+                     ctr_usuarios_iris         us,
+                     ctr_roles_user_iris       ru,
+                     VM_REHU_PERSONAL      em
+               Where us.id_usuario = rua.id_usuario
+                 And em.identificacion = us.identificacion
+                 And ru.id_user_rol = rua.id_roluser_admin
+                 And rua.unde_labora <> em.unde_consecutivo_laborando
+                 And rua.vigente = 1) Loop
+      Begin
+        Update CTR_ROLES_USER_ADMIN_iris ruad
+           Set ruad.vigente          = 0,
+               RUAD.MOTIVO_ELIMINA   = 'Rol deshabilitado por Cambio de Unidad',
+               ruad.USUARIO_MODIFICA = 0,
+               RUAD.FECHA_MODIFICA   = Sysdate,
+               RUAD.MAQUINA_MODIFICA = 'SERVER'
+         Where RUAD.ID_ROLUSER_ADMIN = i.id_roluser_admin;
+        Commit Work;
+      Exception
+        When Others Then
+          Rollback;
+          Null;
+      End;
+      Begin
+        Delete CTR_ROLES_USER_iris ru
+         Where ru.id_user_rol = i.id_roluser_admin;
+        Commit Work;
+      End;
+    End Loop;
+  End DeshabilitaUsuariosUnidad;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ --Deshabilitar rol por fecha caducidad
+  Procedure DeshabilitaUsuariosFecha Is
+  Begin
+    For I In (Select rua.id_roluser_admin,
+                     rua.fecha_fin,
+                     rua.fecha_creacion,
+                     em.estado_empleado
+                From CTR_ROLES_USER_ADMIN_iris rua,
+                     ctr_usuarios_iris         us,
+                     ctr_roles_user_iris       ru,
+                     VM_REHU_PERSONAL      em
+               Where us.id_usuario = rua.id_usuario
+                 And em.identificacion = us.identificacion
+                 And ru.id_user_rol = rua.id_roluser_admin
+                 And rua.vigente = 1
+                 And rua.fecha_fin <= Sysdate) Loop
+      Begin
+        Update CTR_ROLES_USER_ADMIN_iris ruad
+           Set ruad.vigente          = 0,
+               RUAD.MOTIVO_ELIMINA   = 'Rol deshabilitado por fecha',
+               ruad.USUARIO_MODIFICA = 0,
+               RUAD.FECHA_MODIFICA   = Sysdate,
+               RUAD.MAQUINA_MODIFICA = 'SERVER'
+         Where RUAD.ID_ROLUSER_ADMIN = i.id_roluser_admin;
+        Commit Work;
+      Exception
+        When Others Then
+          Rollback;
+          Null;
+      End;
+      Begin
+        Delete CTR_ROLES_USER_iris ru
+         Where ru.id_user_rol = i.id_roluser_admin;
+        Commit Work;
+      End;
+    End Loop;
+  End DeshabilitaUsuariosFecha;
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ Procedure P_BUSCAR_FUNCIONARIO (
+    p_cadena       IN VARCHAR2,
+    p_resultado    OUT SYS_REFCURSOR
+) AS
+    v_sigla     VARCHAR2(50);
+    v_grado     VARCHAR2(50);
+    v_nombre    VARCHAR2(200);
+BEGIN
+    /*
+      Se asume que la cadena viene en formato:
+      SIGLA GRADO NOMBRE/APELLIDO
+      Ejemplo: 'POLFA IT SANCHEZ'
+    */
+
+    -- Extraer los tokens separados por espacio
+    v_sigla := UPPER(REGEXP_SUBSTR(p_cadena, '[^ ]+', 1, 1));
+    v_grado := UPPER(REGEXP_SUBSTR(p_cadena, '[^ ]+', 1, 2));
+    v_nombre := UPPER(REGEXP_SUBSTR(p_cadena, '[^ ]+', 1, 3));
+
+    OPEN p_resultado FOR
+        SELECT 
+            IDENTIFICACION,
+            (SIGLA || ' ' || GRAD_ALFABETICO || ' ' || NOMBRES || ' ' || APELLIDOS) AS FUNCIONARIO
+        FROM VM_REHU_PERSONAL
+        WHERE 
+            (UPPER(SIGLA) LIKE '%' || v_sigla || '%' OR v_sigla IS NULL)
+            AND (UPPER(GRAD_ALFABETICO) LIKE '%' || v_grado || '%' OR v_grado IS NULL)
+            AND (
+                  UPPER(NOMBRES) LIKE '%' || v_nombre || '%' 
+               OR UPPER(APELLIDOS) LIKE '%' || v_nombre || '%'
+               OR v_nombre IS NULL
+            )
+        ORDER BY APELLIDOS, NOMBRES;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Error en P_BUSCAR_FUNCIONARIO: ' || SQLERRM);
+END P_BUSCAR_FUNCIONARIO;
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+end PKS_ADMINISTRACION_IRIS;

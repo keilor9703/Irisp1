@@ -1,4 +1,4 @@
-﻿using Comun.Areas.Clientes;
+﻿//using Comun.Areas.Clientes;
 using Comun.Areas.Irisp1;
 using Dapper;
 using Microsoft.AspNetCore.Authorization;

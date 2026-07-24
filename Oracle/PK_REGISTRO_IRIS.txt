@@ -1,0 +1,1711 @@
+create or replace package body PK_REGISTRO_IRIS is
+
+  --*************************************************************************************************************************************************************************************************************************************
+FUNCTION F_GetCuadrantes (
+  P_Dependencia  IN VARCHAR2,
+  P_Dependencia2 IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+  V_COUNT  NUMBER;
+BEGIN
+  SELECT COUNT(*)
+    INTO V_COUNT
+    FROM VM_CUADRANTES
+   WHERE ESTACION = P_Dependencia;
+
+  IF V_COUNT > 0 THEN
+    OPEN V_CURSOR FOR
+        FROM VM_CUADRANTES c
+      SELECT c.CUADRANTE_ID AS CODIGOC,
+             c.CODIGO_CUADRANTE AS DESCRIPCION
+       WHERE c.ESTACION = P_Dependencia;
+  ELSE
+    OPEN V_CURSOR FOR
+      SELECT c.CUADRANTE_ID AS CODIGOC,
+             c.CODIGO_CUADRANTE AS DESCRIPCION
+        FROM VM_CUADRANTES c
+       WHERE c.ESTACION = P_Dependencia2;
+  END IF;
+
+  RETURN V_CURSOR;
+END F_GetCuadrantes;
+
+
+  --*************************************************************************************************************************************************************************************************************************************
+  -- Función para obtener el siguiente número de secuencia para registros en iris p1
+  FUNCTION f_consultar_seq_Iris RETURN NUMBER IS
+    f_resultado NUMBER(20) DEFAULT 0;
+  BEGIN
+    SELECT USR_DISEC.IRISP_CRIMINALIDAD_SEQ.NEXTVAL
+      INTO f_resultado
+      FROM dual;
+  
+    RETURN f_resultado;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- En caso de error, retornar 0 o manejar según la lógica de negocio
+      RETURN 0;
+  END f_consultar_seq_Iris;
+  --*************************************************************************************************************************************************************************************************************************************
+  -- Función para obtener el siguiente número de secuencia para regisro de integrantes
+  FUNCTION f_consultar_seq_integrante RETURN NUMBER IS
+    f_resultado NUMBER(20) DEFAULT 0;
+  BEGIN
+    SELECT USR_DISEC.IRISP_INTEGRANTE_SEQ.NEXTVAL
+      INTO f_resultado
+      FROM dual;
+  
+    RETURN f_resultado;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- En caso de error, retornar 0 o manejar según la lógica de negocio
+      RETURN 0;
+  END f_consultar_seq_integrante;
+
+  --*************************************************************************************************************************************************************************************************************************************
+  -- PROCEDIMIENTO ALMACENADO PARA INSERTAR EN IRISP_INTEGRANTES (nombre sugerido)
+  PROCEDURE P_InsIntegrantes( --P_INTEGRANTE_ID           IN VARCHAR2,
+                             P_CRIMINALIDAD_ID IN VARCHAR2,
+                             P_ALIAS           IN VARCHAR2,
+                             P_NOMBRE          IN VARCHAR2,
+                             P_APELLIDO        IN VARCHAR2,
+                             P_CEDULA          IN NUMBER,
+                             P_ID_TIPO_INFO    IN NUMBER,
+                             -- P_VIGENTE                 IN NUMBER,
+                             P_IDENTIFICACION_CREACION IN NUMBER,
+                             P_MAQUINA_CREACION        IN VARCHAR2,
+                             -- P_FECHA_MODIFICA          IN DATE,
+                             -- P_IDENTIFICACION_MODIFICA IN NUMBER,
+                             --P_MAQUINA_MODIFICA        IN VARCHAR2,
+                             P_TIPO_DOCUMENTO IN NUMBER,
+                             P_CELULAR        IN NUMBER,
+                             P_DIRECCION      IN VARCHAR2,
+                             -- P_ID_INTEGRANTE           IN NUMBER,
+                             --  P_ID_CRIMINALIDAD         IN NUMBER,
+                             P_RESULTADO OUT NUMBER,
+                             SRV_Message OUT VARCHAR2) IS
+    V_EXISTE       NUMBER;
+    V_IntegranteId varchar2(100);
+  BEGIN
+  
+    V_IntegranteId := F_Generar_UUID;
+  
+    -- Validar si ya existe un registro con esa cédula
+    SELECT COUNT(*)
+      INTO V_EXISTE
+      FROM IRISP_INTEGRANTE
+     WHERE CEDULA = P_CEDULA;
+  
+    IF V_EXISTE > 0 THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Ya existe un integrante con la misma cédula';
+      RETURN;
+    END IF;
+  
+    -- Insertar nuevo registro si no hay duplicado
+    INSERT INTO IRISP_INTEGRANTE
+      (INTEGRANTE_ID,
+       CRIMINALIDAD_ID,
+       ALIAS,
+       NOMBRE,
+       APELLIDO,
+       CEDULA,
+       ID_TIPO_INFO,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION,
+       --FECHA_MODIFICA,
+       --IDENTIFICACION_MODIFICA,
+       -- MAQUINA_MODIFICA,
+       TIPO_DOCUMENTO,
+       CELULAR,
+       DIRECCION,
+       ID_INTEGRANTE,
+       ID_CRIMINALIDAD)
+    VALUES
+      (V_IntegranteId,
+       P_CRIMINALIDAD_ID,
+       P_ALIAS,
+       P_NOMBRE,
+       P_APELLIDO,
+       P_CEDULA,
+       P_ID_TIPO_INFO,
+       1,
+       SYSDATE,
+       P_IDENTIFICACION_CREACION,
+       P_MAQUINA_CREACION,
+       --P_FECHA_MODIFICA,
+       --P_IDENTIFICACION_MODIFICA,
+       --P_MAQUINA_MODIFICA,
+       P_TIPO_DOCUMENTO,
+       P_CELULAR,
+       P_DIRECCION,
+       IRISP_INTEGRANTE_SEQ.NEXTVAL,
+       IRISP_CRIMINALIDAD_SEQ.NEXTVAL);
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Integrante insertado correctamente';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error: ' || SQLERRM;
+    
+      ROLLBACK;
+    
+      Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'Pks_Administracion_IRIS.P_InsIntegrantes',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => P_IDENTIFICACION_CREACION,
+                                               P_Usuario       => P_IDENTIFICACION_CREACION);
+    
+  END P_InsIntegrantes;
+
+  --*************************************************************************************************************************************************************************************************************************************
+  -- PROCEDIMIENTO ALMACENADO PARA INSERTAR EN IRISP_INTEGRANTES (nombre sugerido)
+  PROCEDURE P_InsIntegrantesPreliminar( --P_INTEGRANTE_ID           IN VARCHAR2,
+                                       P_CRIMINALIDAD_ID IN VARCHAR2,
+                                       P_ALIAS           IN VARCHAR2,
+                                       P_NOMBRE          IN VARCHAR2,
+                                       P_APELLIDO        IN VARCHAR2,
+                                       P_CEDULA          IN NUMBER,
+                                       P_ID_TIPO_INFO    IN NUMBER,
+                                       -- P_VIGENTE                 IN NUMBER,
+                                       P_IDENTIFICACION_CREACION IN NUMBER,
+                                       P_MAQUINA_CREACION        IN VARCHAR2,
+                                       -- P_FECHA_MODIFICA          IN DATE,
+                                       -- P_IDENTIFICACION_MODIFICA IN NUMBER,
+                                       --P_MAQUINA_MODIFICA        IN VARCHAR2,
+                                       P_TIPO_DOCUMENTO IN NUMBER,
+                                       P_CELULAR        IN NUMBER,
+                                       P_DIRECCION      IN VARCHAR2,
+                                       -- P_ID_INTEGRANTE           IN NUMBER,
+                                       --  P_ID_CRIMINALIDAD         IN NUMBER,
+                                       P_RESULTADO OUT NUMBER,
+                                       SRV_Message OUT VARCHAR2) IS
+    V_EXISTE       NUMBER;
+    V_IntegranteId varchar2(100);
+  BEGIN
+  
+    V_IntegranteId := F_Generar_UUID;
+  
+    if P_CEDULA <> 0 then
+      -- Validar si ya existe un registro con esa cédula
+      SELECT COUNT(*)
+        INTO V_EXISTE
+        FROM IRISP_INTEGRANTE
+       WHERE CEDULA = P_CEDULA
+         and CRIMINALIDAD_ID = P_CRIMINALIDAD_ID;
+    
+      if V_EXISTE = 0 then
+        SELECT COUNT(*)
+          INTO V_EXISTE
+          FROM IRISP_INTEGRANTE_PRELIMINAR
+         WHERE CEDULA = P_CEDULA
+           and CRIMINALIDAD_ID = P_CRIMINALIDAD_ID;
+      end if;
+    
+      IF V_EXISTE > 0 THEN
+        P_RESULTADO := 0;
+        SRV_Message := 'Ya existe un integrante con la misma cédula';
+        RETURN;
+      END IF;
+    
+    END IF;
+  
+    -- Insertar nuevo registro si no hay duplicado
+    INSERT INTO IRISP_INTEGRANTE_PRELIMINAR
+      (INTEGRANTE_ID,
+       CRIMINALIDAD_ID,
+       ALIAS,
+       NOMBRE,
+       APELLIDO,
+       CEDULA,
+       ID_TIPO_INFO,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION,
+       --FECHA_MODIFICA,
+       --IDENTIFICACION_MODIFICA,
+       -- MAQUINA_MODIFICA,
+       TIPO_DOCUMENTO,
+       CELULAR,
+       DIRECCION,
+       ID_INTEGRANTE,
+       ID_CRIMINALIDAD)
+    VALUES
+      (V_IntegranteId,
+       P_CRIMINALIDAD_ID,
+       P_ALIAS,
+       P_NOMBRE,
+       P_APELLIDO,
+       P_CEDULA,
+       P_ID_TIPO_INFO,
+       1,
+       SYSDATE,
+       P_IDENTIFICACION_CREACION,
+       P_MAQUINA_CREACION,
+       --P_FECHA_MODIFICA,
+       --P_IDENTIFICACION_MODIFICA,
+       --P_MAQUINA_MODIFICA,
+       P_TIPO_DOCUMENTO,
+       P_CELULAR,
+       P_DIRECCION,
+       IRISP_INTEGRANTE_SEQ.NEXTVAL,
+       IRISP_CRIMINALIDAD_SEQ.NEXTVAL);
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Integrante insertado correctamente';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error: ' || SQLERRM;
+    
+      ROLLBACK;
+    
+      Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'Pks_Administracion_IRIS.P_InsIntegrantesPreliminar',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => P_IDENTIFICACION_CREACION,
+                                               P_Usuario       => P_IDENTIFICACION_CREACION);
+  END P_InsIntegrantesPreliminar;
+
+  --************************************************************************************************************************************************************************************************************************************
+
+  -- PROCEDIMIENTO ALMACENADO PARA INSERTAR EN IRISP_UBICACION Y RELACIONAR EN IRISP_CRIMINALIDAD_UBICACION
+  PROCEDURE P_InsUbicacion(P_LATITUD      IN VARCHAR2,
+                           P_LONGITUD     IN VARCHAR2,
+                           P_MUNICIPIO    IN VARCHAR2,
+                           P_BARRIO       IN VARCHAR2,
+                           P_CUADRANTE    IN VARCHAR2,
+                           P_RADIO_ACCION IN VARCHAR2,
+                           
+                           P_IDENTIFICACION_CREACION IN NUMBER,
+                           P_MAQUINA_CREACION        IN VARCHAR2,
+                           
+                           P_DIRECCION               IN NVARCHAR2,
+                           P_CODIGO_DANE             IN NUMBER,
+                           P_CODIGO_ESTACION         IN NUMBER,
+                           P_CODIGO_SIEDCO_CUADRANTE IN NUMBER,
+                           P_ID_CRIMINALIDAD         IN NUMBER,
+                           P_CRIMINALIDAD_ID         IN VARCHAR2,
+                           P_RESULTADO               OUT NUMBER,
+                           SRV_Message               OUT VARCHAR2) IS
+  
+    V_UbicacionId VARCHAR2(100);
+    V_IdUbicacion number;
+  BEGIN
+    V_UbicacionId := F_Generar_UUID;
+  
+    -- Insertar nuevo registro en IRISP_UBICACION
+    INSERT INTO IRISP_UBICACION
+      (UBICACION_ID,
+       LATITUD,
+       LONGITUD,
+       MUNICIPIO,
+       BARRIO,
+       CUADRANTE,
+       RADIO_ACCION,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION,
+       DIRECCION,
+       CUADRANTE_RURAL,
+       CODIGO_DANE,
+       CODIGO_ESTACION,
+       CODIGO_SIEDCO_CUADRANTE,
+       ID_CRIMINALIDAD,
+       CRIMINALIDAD_ID)
+    VALUES
+      (V_UbicacionId,
+       P_LATITUD,
+       P_LONGITUD,
+       P_MUNICIPIO,
+       P_BARRIO,
+       P_CUADRANTE,
+       P_RADIO_ACCION,
+       1,
+       SYSDATE,
+       P_IDENTIFICACION_CREACION,
+       P_MAQUINA_CREACION,
+       P_DIRECCION,
+       P_CUADRANTE,
+       P_CODIGO_DANE,
+       P_CODIGO_ESTACION,
+       P_CODIGO_SIEDCO_CUADRANTE,
+       P_ID_CRIMINALIDAD,
+       P_CRIMINALIDAD_ID);
+  
+    select ub.id_ubicacion
+      into V_IdUbicacion
+      from IRISP_UBICACION ub
+     where ub.ubicacion_id = V_UbicacionId;
+  
+    -- Insertar relación en IRISP_CRIMINALIDAD_UBICACION
+    INSERT INTO IRISP_CRIMINALIDAD_UBICACION
+      (CRIMINALIDAD_ID,
+       UBICACION_ID,
+       ID_TIPO_INFO,
+       VIGENTE,
+       ID_CRIMINALIDAD,
+       ID_UBICACION)
+    VALUES
+      (P_CRIMINALIDAD_ID, -- relación con la criminalidad
+       V_UbicacionId, -- relación con la ubicación recién creada
+       30, -- ID_TIPO_INFO fijo según tu tabla
+       1, -- vigente
+       P_ID_CRIMINALIDAD, -- id_criminalidad numérico
+       V_IdUbicacion);
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Ubicación insertada y relacionada correctamente';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error: ' || SQLERRM;
+    
+      ROLLBACK;
+    
+      Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'Pks_Administracion_IRIS.P_InsUbicacion',
+                                               P_Descripcion   => SRV_Message,
+                                               P_IdDocumento   => P_IDENTIFICACION_CREACION,
+                                               P_Usuario       => P_MAQUINA_CREACION);
+  END P_InsUbicacion;
+
+  --************************************************************************************************************************************************************************************************************************************
+ FUNCTION F_GetIntegrantes(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    SELECT INTEGRANTE_ID,
+           CRIMINALIDAD_ID,
+           ALIAS,
+           NOMBRE,
+           APELLIDO,
+           CEDULA,
+           ID_TIPO_INFO,
+           VIGENTE,
+           FECHA_CREACION,
+           IDENTIFICACION_CREACION,
+           MAQUINA_CREACION,
+           FECHA_MODIFICA,
+           IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA,
+           TIPO_DOCUMENTO,
+           CELULAR,
+           DIRECCION,
+           ROWID
+      FROM IRISP_INTEGRANTE t
+     WHERE t.CRIMINALIDAD_ID = P_Criminalidad_Id
+       AND t.VIGENTE = 1;
+
+  RETURN V_CURSOR;
+END F_GetIntegrantes;
+
+
+  --************************************************************************************************************************************************************************************************************************************
+ FUNCTION F_GetIntegrantesPreliminar(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    SELECT INTEGRANTE_ID,
+           CRIMINALIDAD_ID,
+           ALIAS,
+           NOMBRE,
+           APELLIDO,
+           CEDULA,
+           ID_TIPO_INFO,
+           VIGENTE,
+           FECHA_CREACION,
+           IDENTIFICACION_CREACION,
+           MAQUINA_CREACION,
+           FECHA_MODIFICA,
+           IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA,
+           TIPO_DOCUMENTO,
+           CELULAR,
+           DIRECCION,
+           ROWID
+      FROM IRISP_INTEGRANTE_PRELIMINAR t
+     WHERE t.CRIMINALIDAD_ID = P_Criminalidad_Id
+       AND t.VIGENTE = 1;
+
+  RETURN V_CURSOR;
+END F_GetIntegrantesPreliminar;
+
+
+  --*************************************************************************************************************************************************************************************************************************************
+FUNCTION F_GetDelitosIris(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    SELECT DELITO_ID        AS DelitoId,
+           CRIMINALIDAD_ID  AS CriminalidadId,
+           ID_DELITO        AS IdDelito,
+           D.DESCRIPCION    AS DelitoDesc,
+           ID_TIPO          AS IdTipo,
+           TI.DESCRIPCION   AS DescTipo,
+           ID_TIPO_INFO     AS IdTipoInfo,
+           INFO.DESCRIPCION AS DescTipoInfo,
+           IDE_DELITO       AS DelitoConsecutivo,
+           ID_CRIMINALIDAD  AS IdCriminalidad
+      FROM IRISP_DELITO t
+      LEFT JOIN IRISP_CTRL_DOMINIO d
+        ON t.ID_DELITO = d.DOMINIO_ID
+      LEFT JOIN IRISP_CTRL_DOMINIO ti
+        ON t.ID_TIPO = ti.DOMINIO_ID
+      LEFT JOIN IRISP_CTRL_DOMINIO info
+        ON t.ID_TIPO_INFO = info.DOMINIO_ID
+     WHERE t.CRIMINALIDAD_ID = P_Criminalidad_Id
+       AND t.VIGENTE = 1;
+
+  RETURN V_CURSOR;
+END F_GetDelitosIris;
+
+
+  --*************************************************************************************************************************************************************************************************************************************
+ FUNCTION F_GetUbicacionIris(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    SELECT t.UBICACION_ID            AS UbicacionId,
+           t.LATITUD                 AS Latitud,
+           t.LONGITUD                AS Longitud,
+           t.MUNICIPIO               AS MunicipioUbica,
+           t.BARRIO                  AS Barrio,
+           t.CUADRANTE               AS CuadranteUbica,
+           t.RADIO_ACCION            AS RadioAccion,
+           t.VIGENTE                 AS Vigente,
+           t.FECHA_CREACION          AS FechaCreacion,
+           t.IDENTIFICACION_CREACION AS IdentificacionCreacion,
+           t.MAQUINA_CREACION        AS MaquinaCreacion,
+           t.DIRECCION               AS Direccion,
+           t.CODIGO_DANE             AS CodigoDane,
+           t.CODIGO_ESTACION         AS CodigoEstacion,
+           t.CODIGO_SIEDCO_CUADRANTE AS CodigoSiedcoCuadrante,
+           doc.CRIMINALIDAD_ID       AS CriminalidadId
+      FROM IRISP_CRIMINALIDAD_UBICACION doc
+      JOIN IRISP_UBICACION t
+        ON t.UBICACION_ID = doc.UBICACION_ID
+     WHERE doc.CRIMINALIDAD_ID = P_Criminalidad_Id
+       AND t.VIGENTE = 1;
+
+  RETURN V_CURSOR;
+END F_GetUbicacionIris;
+
+
+  --*************************************************************************************************************************************************************************************************************************************
+FUNCTION F_GetInfoAdicional(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    SELECT t.INFORMACION_ID   AS InfoId,
+           t.CRIMINALIDAD_ID  AS CriminalidadId,
+           t.DESCRIPCION,
+           t.ID_TIPO_INFO     AS IdTipoInfo,
+           d.DESCRIPCION      AS DescTipoInfo
+      FROM IRISP_INFORMACION t
+      LEFT JOIN IRISP_CTRL_DOMINIO d
+        ON t.ID_TIPO_INFO = d.DOMINIO_ID
+     WHERE t.CRIMINALIDAD_ID = P_Criminalidad_Id
+       AND t.VIGENTE = 1;
+
+  RETURN V_CURSOR;
+END F_GetInfoAdicional;
+
+  --*************************************************************************************************************************************************************************************************************************************
+FUNCTION F_GetDocIris(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    WITH doc_ids AS (
+      SELECT dc.documento_id
+        FROM IRISP_CRIMINALIDAD_DOCUMENTO dc
+       WHERE dc.criminalidad_id = P_Criminalidad_Id
+
+      UNION
+
+      SELECT td.documento_id
+        FROM IRISP_RESPON_VALIDACION rv
+        JOIN IRISP_TAREA t
+          ON t.respon_validacion_id = rv.respon_validacion_id
+        JOIN IRISP_TAREA_DOCUMENTO td
+          ON td.tarea_id = t.tarea_id
+       WHERE rv.criminalidad_id = P_Criminalidad_Id
+    )
+    SELECT d.documento_id   AS DocumentoId,
+           d.nombre         AS Nombre,
+           d.url            AS Ruta,
+           d.fecha_creacion AS FechaCreacion
+      FROM IRISP_DOCUMENTO d
+      JOIN doc_ids x
+        ON x.documento_id = d.documento_id
+     WHERE d.vigente = 1
+     ORDER BY d.fecha_creacion DESC;
+
+  RETURN V_CURSOR;
+END F_GetDocIris;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+PROCEDURE P_DelCriminalidadFoto(
+    P_ID_FOTO          IN VARCHAR2,
+    P_USUARIO_MODIFICA IN NUMBER,
+    P_MAQUINA_MODIFICA IN NVARCHAR2,
+    P_RESULTADO        OUT NUMBER,
+    SRV_Message        OUT VARCHAR2
+) IS
+BEGIN
+  UPDATE IRISP_CRIMINALIDAD_FOTOS
+     SET VIGENTE = 0,
+         USUARIO_MODIFICA = P_USUARIO_MODIFICA,
+         FECHA_MODIFICA = SYSDATE,
+         MAQUINA_MODIFICA = P_MAQUINA_MODIFICA
+   WHERE ID_IRISP_CRIMINALIDAD_FOTOS = P_ID_FOTO
+     AND VIGENTE = 1;
+
+  IF SQL%ROWCOUNT > 0 THEN
+    P_RESULTADO := 1;
+    SRV_Message := 'Foto eliminada correctamente.';
+  ELSE
+    P_RESULTADO := 0;
+    SRV_Message := 'No se encontró la foto o ya estaba eliminada.';
+  END IF;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    P_RESULTADO := 0;
+    SRV_Message := 'Error al eliminar: ' || SQLERRM;
+END P_DelCriminalidadFoto;
+
+
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  -- PROCEDIMIENTO ALMACENADO PARA INSERTAR EN IRISP_CRIMINALIDAD_FOTOS
+  PROCEDURE P_InsCriminalidadFotos(
+                                   
+                                   P_ID_CRIMINALIDAD  IN VARCHAR2,
+                                   P_SERVIDOR         IN NVARCHAR2,
+                                   P_TIPO_DOC         IN NVARCHAR2,
+                                   P_NAME_FILE        IN NVARCHAR2,
+                                   P_RUTA             IN NVARCHAR2,
+                                   P_USUARIO_CREACION IN NUMBER,
+                                   P_FECHA_CREACION   IN DATE,
+                                   P_MAQUINA_CREACION IN NVARCHAR2,
+                                   P_VIGENTE          IN NUMBER,
+                                   
+                                   P_ID_CRIMINALIDA IN NUMBER,
+                                   P_RESULTADO      OUT NUMBER,
+                                   SRV_Message      OUT VARCHAR2) IS
+    V_ID_CRIMINALIDAD_FOTOS       NUMBER;
+    V_ID_IRISP_CRIMINALIDAD_FOTOS NVARCHAR2(100);
+  BEGIN
+    -- Obtener siguiente valor de la secuencia
+    SELECT USR_DISEC.IRISP_CRIMINALIDAD_FOTOS_SEQ.NEXTVAL
+      INTO V_ID_CRIMINALIDAD_FOTOS
+      FROM dual;
+  
+    -- Encriptar usando formato GUID
+    V_ID_IRISP_CRIMINALIDAD_FOTOS := F_Generar_UUID;
+  
+    -- Insertar el registro
+    INSERT INTO IRISP_CRIMINALIDAD_FOTOS
+      (ID_IRISP_CRIMINALIDAD_FOTOS,
+       ID_CRIMINALIDAD,
+       SERVIDOR,
+       TIPO_DOC,
+       NAME_FILE,
+       RUTA,
+       USUARIO_CREACION,
+       FECHA_CREACION,
+       MAQUINA_CREACION,
+       VIGENTE,
+       
+       ID_CRIMINALIDAD_FOTOS,
+       ID_CRIMINALIDA)
+    VALUES
+      (V_ID_IRISP_CRIMINALIDAD_FOTOS,
+       P_ID_CRIMINALIDAD,
+       P_SERVIDOR,
+       P_TIPO_DOC,
+       P_NAME_FILE,
+       P_RUTA,
+       P_USUARIO_CREACION,
+       NVL(P_FECHA_CREACION, SYSDATE),
+       P_MAQUINA_CREACION,
+       NVL(P_VIGENTE, 1),
+       
+       V_ID_CRIMINALIDAD_FOTOS,
+       P_ID_CRIMINALIDA);
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Registro insertado correctamente en IRISP_CRIMINALIDAD_FOTOS';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al insertar: ' || SQLERRM;
+    
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_InsCriminalidadFotos',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_USUARIO_CREACION,
+                                                 P_Usuario       => P_USUARIO_CREACION);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_InsCriminalidadFotos;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+FUNCTION F_GetCriminalidadFotos(
+  P_Criminalidad_Id IN VARCHAR2
+) RETURN SYS_REFCURSOR IS
+  V_CURSOR SYS_REFCURSOR;
+BEGIN
+  OPEN V_CURSOR FOR
+    SELECT ID_IRISP_CRIMINALIDAD_FOTOS AS IdFoto,
+           NAME_FILE                   AS NombreArchivo,
+           RUTA                        AS Ruta,
+           TIPO_DOC                    AS Tipo,
+           FECHA_CREACION              AS FechaCreacion
+      FROM IRISP_CRIMINALIDAD_FOTOS
+     WHERE ID_CRIMINALIDAD = P_Criminalidad_Id
+       AND VIGENTE = 1
+     ORDER BY FECHA_CREACION DESC;
+
+  RETURN V_CURSOR;
+END F_GetCriminalidadFotos;
+
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  FUNCTION F_Generar_UUID RETURN NVARCHAR2 IS
+    v_raw  RAW(16);
+    v_uuid NVARCHAR2(36);
+  BEGIN
+    v_raw := SYS_GUID();
+  
+    v_uuid := REGEXP_REPLACE(LOWER(RAWTOHEX(v_raw)),
+                             '(.{8})(.{4})(.{4})(.{4})(.{12})',
+                             '\1-\2-\3-\4-\5');
+  
+    RETURN v_uuid;
+  END F_Generar_UUID;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_InsCriminalidad(P_CRIMINALIDAD_ID           IN VARCHAR2,
+                              P_ID_UNIDAD                 IN NUMBER,
+                              P_ID_ZONA                   IN NUMBER,
+                              P_IDENTIFICACION_INFORMA    IN NUMBER,
+                              P_CELULAR                   IN VARCHAR2,
+                              P_ID_TIPO_SERVICIO          IN NUMBER,
+                              P_ID_CUADRANTE              IN NUMBER,
+                              P_ID_CLASE                  IN NUMBER,
+                              P_NOMBRE_CLASE              IN VARCHAR2,
+                              P_CANTIDAD_INTEGRANTE       IN NUMBER,
+                              P_CARACTERISTICAS_GENERALES IN NVARCHAR2,
+                              P_VIGENTE                   IN NUMBER,
+                              P_IDENTIFICACION_CREA       IN NUMBER,
+                              P_MAQUINA_CREACION          IN VARCHAR2,
+                              P_SIGLA_UNIDAD              IN VARCHAR2,
+                              P_ID_ESTADO                 IN NUMBER,
+                              P_ID_FUENTE                 IN NUMBER,
+                              
+                              P_ENTORNO_AFECTADO         IN NUMBER,
+                              P_ID_TIEMPO_DELITO         IN NUMBER,
+                              P_CLASIFICACION            IN NUMBER,
+                              P_MODALIDAD_EXPENDIO       IN NUMBER,
+                              P_ORIGEN                   IN NVARCHAR2,
+                              P_NOMBRE_ENTORNO_AFECTADO  IN NVARCHAR2,
+                              P_ESPECIALIDAD_APORTA_INFO IN NUMBER,
+                              P_ID_CRIMINALIDAD          IN NUMBER,
+                              P_ID_DELITO_PRIN           IN NUMBER,
+                              P_ID_DELITO_SECUNDARIO     IN NVARCHAR2,
+                              P_ID_TINFO                 IN NUMBER,
+                              
+                              P_LONGITUD  IN VARCHAR2,
+                              P_LATITUD   IN VARCHAR2,
+                              P_MUNICIPIO IN VARCHAR2,
+                              P_BARRIO    IN VARCHAR2,
+                              P_CUADRANTE IN VARCHAR2,
+                              P_RADACCION IN NUMBER,
+                              P_DIRECCION IN VARCHAR2,
+                              
+                              P_COD_DANE      IN NUMBER,
+                              P_COD_ESTACION  IN NUMBER,
+                              P_COD_SIEDO_CTE IN NUMBER,
+                              
+                              P_RESULTADO OUT NUMBER,
+                              SRV_Message OUT VARCHAR2) IS
+    V_ConsecutivoMaximo  NUMBER;
+    v_NewConsecutivo     NUMBER;
+    v_codigo             VARCHAR2(100);
+    v_anio               NUMBER;
+    v_delito_pos         NUMBER := 1;
+    v_delito             NUMBER;
+    v_Consecutivo_delito number;
+    v_delito_id          NVARCHAR2(100);
+    V_idUbicacion        number;
+    v_ubicacionId        NVARCHAR2(100);
+    V_ResponsableId      NVARCHAR2(100);
+    V_IdResponsable      number;
+  
+  BEGIN
+    -- Asignar año actual
+    v_anio := EXTRACT(YEAR FROM SYSDATE);
+  
+    -- Obtener consecutivo
+    SELECT NVL(MAX(CONSECUTIVO_CODIGO), 1)
+      INTO V_ConsecutivoMaximo
+      FROM IRISP_CRIMINALIDAD t
+     WHERE t.sigla_unidad = P_SIGLA_UNIDAD;
+  
+    v_NewConsecutivo := V_ConsecutivoMaximo + 1;
+  
+    -- Generar código
+    v_codigo := P_SIGLA_UNIDAD || '-' || v_anio || '-' || v_NewConsecutivo;
+  
+    -- Insertar registro en tabla principal
+    INSERT INTO IRISP_CRIMINALIDAD
+      (CRIMINALIDAD_ID,
+       ID_UNIDAD,
+       ID_ZONA,
+       IDENTIFICACION_INFORMA,
+       CELULAR,
+       ID_TIPO_SERVICIO,
+       ID_CUADRANTE,
+       ID_CLASE,
+       NOMBRE_CLASE,
+       CANTIDAD_INTEGRANTE,
+       CARACTERISTICAS_GENERALES,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREA,
+       MAQUINA_CREACION,
+       CODIGO,
+       CONSECUTIVO_CODIGO,
+       SIGLA_UNIDAD,
+       ID_ESTADO,
+       ID_FUENTE,
+       -- DESCRIPCION_TRAMITE,
+       ENTORNO_AFECTADO,
+       ID_TIEMPO_DELITO,
+       CLASIFICACION,
+       MODALIDAD_EXPENDIO,
+       ORIGEN,
+       NOMBRE_ENTORNO_AFECTADO,
+       ESPECIALIDAD_APORTA_INFO,
+       ID_CRIMINALIDAD)
+    VALUES
+      (P_CRIMINALIDAD_ID,
+       P_ID_UNIDAD,
+       P_ID_ZONA,
+       P_IDENTIFICACION_INFORMA,
+       P_CELULAR,
+       P_ID_TIPO_SERVICIO,
+       P_ID_CUADRANTE,
+       P_ID_CLASE,
+       P_NOMBRE_CLASE,
+       P_CANTIDAD_INTEGRANTE,
+       P_CARACTERISTICAS_GENERALES,
+       NVL(P_VIGENTE, 1),
+       SYSDATE,
+       P_IDENTIFICACION_CREA,
+       P_MAQUINA_CREACION,
+       v_codigo,
+       v_NewConsecutivo,
+       P_SIGLA_UNIDAD,
+       P_ID_ESTADO,
+       P_ID_FUENTE,
+       -- P_DESCRIPCION_TRAMITE,
+       P_ENTORNO_AFECTADO,
+       P_ID_TIEMPO_DELITO,
+       P_CLASIFICACION,
+       P_MODALIDAD_EXPENDIO,
+       P_ORIGEN,
+       P_NOMBRE_ENTORNO_AFECTADO,
+       P_ESPECIALIDAD_APORTA_INFO,
+       P_ID_CRIMINALIDAD);
+  
+    -- Insertar registros en tabla de responsables (quien informa)
+  
+    V_ResponsableId := F_Generar_UUID;
+    V_IdResponsable := IRISP_RESPONSABLE_SEQ.NEXTVAL;
+  
+    insert into irisp_responsable
+      (responsable_id,
+       criminalidad_id,
+       cedula,
+       vigente,
+       fecha_creacion,
+       identificacion_creacion,
+       maquina_creacion,
+       id_tipo_info,
+       id_irisp_responsable,
+       id_criminalidad)
+    values
+      (V_ResponsableId,
+       P_CRIMINALIDAD_ID,
+       P_IDENTIFICACION_INFORMA,
+       1,
+       SYSDATE,
+       P_IDENTIFICACION_CREA,
+       P_MAQUINA_CREACION,
+       30,
+       V_IdResponsable,
+       P_ID_CRIMINALIDAD);
+  
+    -- Insertar registros en tabla delitos
+  
+    -- Insertar delito principal solo si viene valor
+    IF P_ID_DELITO_PRIN IS NOT NULL THEN
+      v_delito_id := F_Generar_UUID;
+    
+      SELECT USR_DISEC.IRISP_DELITO_SEQ.NEXTVAL
+        INTO v_Consecutivo_delito
+        FROM dual;
+    
+      INSERT INTO irisp_delito
+        (delito_id,
+         criminalidad_id,
+         id_delito,
+         id_tipo,
+         id_tipo_info,
+         vigente,
+         fecha_creacion,
+         identificacion_creacion,
+         maquina_creacion,
+         ide_delito,
+         id_criminalidad)
+      VALUES
+        (v_delito_id,
+         P_CRIMINALIDAD_ID,
+         P_ID_DELITO_PRIN,
+         33,
+         P_ID_TINFO,
+         1,
+         SYSDATE,
+         P_IDENTIFICACION_CREA,
+         P_MAQUINA_CREACION,
+         v_Consecutivo_delito,
+         P_ID_CRIMINALIDAD);
+    END IF;
+  
+    -- Insertar delitos secundarios solo si hay valores
+    -- Dentro del bloque delitos secundarios
+    IF P_ID_DELITO_SECUNDARIO IS NOT NULL THEN
+      v_delito_pos := 1;
+    
+      LOOP
+        v_delito := TRIM(REGEXP_SUBSTR(P_ID_DELITO_SECUNDARIO,
+                                       '[^,]+',
+                                       1,
+                                       v_delito_pos));
+        EXIT WHEN v_delito IS NULL;
+      
+        v_delito_id := F_Generar_UUID;
+      
+        DBMS_OUTPUT.PUT_LINE('Insertando delito secundario: ' || v_delito ||
+                             ' con UUID: ' || v_delito_id);
+      
+        SELECT USR_DISEC.IRISP_DELITO_SEQ.NEXTVAL
+          INTO v_Consecutivo_delito
+          FROM dual;
+      
+        INSERT INTO IRISP_DELITO
+          (DELITO_ID,
+           CRIMINALIDAD_ID,
+           ID_DELITO,
+           ID_TIPO,
+           ID_TIPO_INFO,
+           VIGENTE,
+           FECHA_CREACION,
+           IDENTIFICACION_CREACION,
+           MAQUINA_CREACION,
+           IDE_DELITO,
+           ID_CRIMINALIDAD)
+        VALUES
+          (v_delito_id,
+           P_CRIMINALIDAD_ID,
+           v_delito,
+           34,
+           P_ID_TINFO,
+           1,
+           SYSDATE,
+           P_IDENTIFICACION_CREA,
+           P_MAQUINA_CREACION,
+           v_Consecutivo_delito,
+           P_ID_CRIMINALIDAD);
+      
+        v_delito_pos := v_delito_pos + 1;
+      END LOOP;
+    END IF;
+  
+    v_ubicacionId := F_Generar_UUID;
+  
+    SELECT USR_DISEC.Irisp_Ubicacion_Seq.NEXTVAL
+      INTO V_idUbicacion
+      FROM dual;
+  
+    -- Insertar en la tabla ubicación
+    INSERT INTO IRISP_UBICACION
+      (UBICACION_ID,
+       LATITUD,
+       LONGITUD,
+       MUNICIPIO,
+       BARRIO,
+       CUADRANTE,
+       RADIO_ACCION,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION,
+       DIRECCION,
+       CUADRANTE_RURAL,
+       CODIGO_DANE,
+       CODIGO_ESTACION,
+       CODIGO_SIEDCO_CUADRANTE,
+       ID_CRIMINALIDAD,
+       ID_UBICACION,
+       CRIMINALIDAD_ID)
+    values
+      (v_ubicacionId,
+       P_LATITUD,
+       P_LONGITUD,
+       P_MUNICIPIO,
+       P_BARRIO,
+       P_CUADRANTE,
+       P_RADACCION,
+       P_VIGENTE,
+       SYSDATE,
+       P_IDENTIFICACION_CREA,
+       P_MAQUINA_CREACION,
+       
+       P_DIRECCION,
+       P_CUADRANTE,
+       P_COD_DANE,
+       P_COD_ESTACION,
+       P_COD_SIEDO_CTE,
+       P_ID_CRIMINALIDAD,
+       V_idUbicacion,
+       P_CRIMINALIDAD_ID);
+  
+    insert into irisp_criminalidad_ubicacion
+      (criminalidad_id,
+       ubicacion_id,
+       id_tipo_info,
+       vigente,
+       id_irisp_criminalidad_ubicacion,
+       id_criminalidad,
+       id_ubicacion)
+    values
+      (P_CRIMINALIDAD_ID,
+       v_ubicacionId,
+       P_ID_TINFO,
+       1,
+       V_idUbicacion,
+       P_ID_CRIMINALIDAD,
+       V_idUbicacion);
+  
+    --------------------------------------------------------------------
+    -- 2. INSERTAR NUEVOS REGISTROS DESDE IRISP_INTEGRANTE_PRELIMINAR
+    --------------------------------------------------------------------
+    INSERT INTO IRISP_INTEGRANTE
+      (INTEGRANTE_ID,
+       CRIMINALIDAD_ID,
+       ALIAS,
+       NOMBRE,
+       APELLIDO,
+       CEDULA,
+       ID_TIPO_INFO,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION,
+       FECHA_MODIFICA,
+       IDENTIFICACION_MODIFICA,
+       MAQUINA_MODIFICA,
+       TIPO_DOCUMENTO,
+       CELULAR,
+       DIRECCION,
+       ID_INTEGRANTE,
+       ID_CRIMINALIDAD)
+      SELECT INTEGRANTE_ID,
+             CRIMINALIDAD_ID,
+             ALIAS,
+             NOMBRE,
+             APELLIDO,
+             CEDULA,
+             ID_TIPO_INFO,
+             VIGENTE,
+             FECHA_CREACION,
+             IDENTIFICACION_CREACION,
+             MAQUINA_CREACION,
+             FECHA_MODIFICA,
+             IDENTIFICACION_MODIFICA,
+             MAQUINA_MODIFICA,
+             TIPO_DOCUMENTO,
+             CELULAR,
+             DIRECCION,
+             ID_INTEGRANTE,
+             ID_CRIMINALIDAD
+        FROM IRISP_INTEGRANTE_PRELIMINAR
+       WHERE CRIMINALIDAD_ID = P_CRIMINALIDAD_ID;
+  
+    --------------------------------------------------------------------
+    -- 3. ELIMINAR LOS REGISTROS YA PROCESADOS EN LA PRELIMINAR
+    --------------------------------------------------------------------
+    DELETE FROM IRISP_INTEGRANTE_PRELIMINAR FF
+     WHERE FF.CRIMINALIDAD_ID = P_CRIMINALIDAD_ID;
+  
+    --------------------------------------------------------------------
+    -- FINALIZAR TRANSACCIÓN
+    --------------------------------------------------------------------
+    COMMIT;
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Registro insertado correctamente';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al insertar: ' || SQLERRM;
+    
+      -- Registrar el error
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_InsCriminalidad',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_CREA,
+                                                 P_Usuario       => P_IDENTIFICACION_CREA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_InsCriminalidad;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_InsDelito(P_CRIMINALIDAD_ID      IN VARCHAR2,
+                        P_ID_CRIMINALIDAD      IN NUMBER,
+                        P_ID_DELITO_PRIN       IN NUMBER,
+                        P_ID_DELITO_SECUNDARIO IN NVARCHAR2,
+                        
+                        P_IDENTIFICACION_CREA IN NUMBER,
+                        P_MAQUINA_CREACION    IN VARCHAR2,
+                        P_RESULTADO           OUT NUMBER,
+                        SRV_Message           OUT VARCHAR2) IS
+    v_delito_pos         NUMBER := 1;
+    v_delito             NUMBER;
+    v_Consecutivo_delito NUMBER;
+    v_delito_id          NVARCHAR2(100);
+  BEGIN
+    -- Insertar delito principal
+    IF P_ID_DELITO_PRIN IS NOT NULL THEN
+      v_delito_id := F_Generar_UUID;
+    
+      SELECT USR_DISEC.IRISP_DELITO_SEQ.NEXTVAL
+        INTO v_Consecutivo_delito
+        FROM dual;
+    
+      INSERT INTO IRISP_DELITO
+        (DELITO_ID,
+         CRIMINALIDAD_ID,
+         ID_DELITO,
+         ID_TIPO,
+         ID_TIPO_INFO,
+         VIGENTE,
+         FECHA_CREACION,
+         IDENTIFICACION_CREACION,
+         MAQUINA_CREACION,
+         IDE_DELITO,
+         ID_CRIMINALIDAD)
+      VALUES
+        (v_delito_id,
+         P_CRIMINALIDAD_ID,
+         P_ID_DELITO_PRIN,
+         33, -- Delito principal
+         30,
+         1,
+         SYSDATE,
+         P_IDENTIFICACION_CREA,
+         P_MAQUINA_CREACION,
+         v_Consecutivo_delito,
+         P_ID_CRIMINALIDAD);
+    END IF;
+  
+    -- Insertar delitos secundarios
+    IF P_ID_DELITO_SECUNDARIO IS NOT NULL THEN
+      v_delito_pos := 1;
+      LOOP
+        v_delito := TRIM(REGEXP_SUBSTR(P_ID_DELITO_SECUNDARIO,
+                                       '[^,]+',
+                                       1,
+                                       v_delito_pos));
+        EXIT WHEN v_delito IS NULL;
+      
+        v_delito_id := F_Generar_UUID;
+      
+        SELECT USR_DISEC.IRISP_DELITO_SEQ.NEXTVAL
+          INTO v_Consecutivo_delito
+          FROM dual;
+      
+        INSERT INTO IRISP_DELITO
+          (DELITO_ID,
+           CRIMINALIDAD_ID,
+           ID_DELITO,
+           ID_TIPO,
+           ID_TIPO_INFO,
+           VIGENTE,
+           FECHA_CREACION,
+           IDENTIFICACION_CREACION,
+           MAQUINA_CREACION,
+           IDE_DELITO,
+           ID_CRIMINALIDAD)
+        VALUES
+          (v_delito_id,
+           P_CRIMINALIDAD_ID,
+           v_delito,
+           34, -- Delito secundario
+           30,
+           1,
+           SYSDATE,
+           P_IDENTIFICACION_CREA,
+           P_MAQUINA_CREACION,
+           v_Consecutivo_delito,
+           P_ID_CRIMINALIDAD);
+      
+        v_delito_pos := v_delito_pos + 1;
+      END LOOP;
+    END IF;
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Delito(s) insertado(s) correctamente';
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al insertar delito(s): ' || SQLERRM;
+      -- Registrar el error si existe procedimiento de logging
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'P_InsDelito',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_CREA,
+                                                 P_Usuario       => P_IDENTIFICACION_CREA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_InsDelito;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  -- PROCEDIMIENTO ALMACENADO PARA INSERTAR EN IRISP_INFORMACION
+  PROCEDURE P_InsInfoAdicionalIris(P_CRIMINALIDAD_ID IN VARCHAR2,
+                                   P_DESCRIPCION     IN NVARCHAR2,
+                                   
+                                   P_IDENTIFICACION_CREACION IN NUMBER,
+                                   P_MAQUINA_CREACION        IN VARCHAR2,
+                                   
+                                   P_RESULTADO OUT NUMBER,
+                                   SRV_Message OUT VARCHAR2) IS
+  
+    V_INFORMACION_ID NVARCHAR2(100);
+  BEGIN
+  
+    -- Generar UUID
+    V_INFORMACION_ID := F_Generar_UUID;
+  
+    -- Insertar el registro
+    INSERT INTO IRISP_INFORMACION
+      (INFORMACION_ID,
+       CRIMINALIDAD_ID,
+       DESCRIPCION,
+       ID_TIPO_INFO,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION)
+    VALUES
+      (V_INFORMACION_ID,
+       P_CRIMINALIDAD_ID,
+       P_DESCRIPCION,
+       30,
+       1,
+       SYSDATE,
+       P_IDENTIFICACION_CREACION,
+       P_MAQUINA_CREACION);
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Registro insertado correctamente en IRISP_INFORMACION';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al insertar en IRISP_INFORMACION: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_InsInformacion',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_CREACION,
+                                                 P_Usuario       => P_IDENTIFICACION_CREACION);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_InsInfoAdicionalIris;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_InsCriminalidadDocumentos(P_CRIMINALIDAD_ID IN VARCHAR2,
+                                        P_NOMBRE          IN NVARCHAR2,
+                                        P_URL             IN NVARCHAR2,
+                                        
+                                        P_IDENTIFICACION_CREACION IN NUMBER,
+                                        P_MAQUINA_CREACION        IN NVARCHAR2,
+                                        
+                                        P_RESULTADO OUT NUMBER,
+                                        SRV_Message OUT VARCHAR2) IS
+    V_DOCUMENTO_ID VARCHAR2(40);
+  BEGIN
+    -- Generar UUID
+    V_DOCUMENTO_ID := F_Generar_UUID;
+  
+    -- Insertar registro
+    INSERT INTO IRISP_DOCUMENTO
+      (DOCUMENTO_ID,
+       NOMBRE,
+       URL,
+       VIGENTE,
+       FECHA_CREACION,
+       IDENTIFICACION_CREACION,
+       MAQUINA_CREACION
+       
+       )
+    VALUES
+      (V_DOCUMENTO_ID,
+       P_NOMBRE,
+       P_URL,
+       1,
+       SYSDATE,
+       P_IDENTIFICACION_CREACION,
+       P_MAQUINA_CREACION
+       
+       );
+       
+       
+       
+       
+       insert into irisp_criminalidad_documento
+      (criminalidad_id, documento_id, id_tipo_info, vigente)
+    values
+      (P_CRIMINALIDAD_ID, V_DOCUMENTO_ID, 30, 1);
+  
+    P_RESULTADO := 1;
+    SRV_Message := 'Documento insertado correctamente en IRISP_DOCUMENTO';
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al insertar documento: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_InsCriminalidadDocumentos',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_CREACION,
+                                                 P_Usuario       => P_IDENTIFICACION_CREACION);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_InsCriminalidadDocumentos;
+
+  --*************************************************************************************************************************************************************************************************************************************
+  PROCEDURE P_UpdCriminalidad(P_CRIMINALIDAD_ID           IN VARCHAR2,
+                              P_ID_CLASE                  IN NUMBER,
+                              P_NOMBRE_CLASE              IN NVARCHAR2,
+                              P_CANTIDAD_INTEGRANTE       IN NUMBER,
+                              P_CARACTERISTICAS_GENERALES IN NVARCHAR2,
+                              P_IDENTIFICACION_MODIFICA   IN NUMBER,
+                              P_MAQUINA_MODIFICA          IN NVARCHAR2,
+                              P_ID_FUENTE                 IN NUMBER,
+                              P_RESULTADO                 OUT NUMBER,
+                              SRV_Message                 OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_CRIMINALIDAD
+       SET ID_CLASE                  = P_ID_CLASE,
+           NOMBRE_CLASE              = P_NOMBRE_CLASE,
+           CANTIDAD_INTEGRANTE       = P_CANTIDAD_INTEGRANTE,
+           CARACTERISTICAS_GENERALES = P_CARACTERISTICAS_GENERALES,
+           FECHA_MODIFICA            = SYSDATE,
+           IDENTIFICACION_MODIFICA   = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA          = P_MAQUINA_MODIFICA,
+           ID_FUENTE                 = P_ID_FUENTE
+     WHERE TRIM(CRIMINALIDAD_ID) = TRIM(P_CRIMINALIDAD_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro actualizado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al actualizar CRIMINALIDAD: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_UpdCriminalidad',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_UpdCriminalidad;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_UpdEstadoCriminalidad(P_CRIMINALIDAD_ID         IN VARCHAR2,
+                                    P_ID_ESTADO               IN NUMBER,
+                                    P_IDENTIFICACION_MODIFICA IN NUMBER,
+                                    P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                                    
+                                    P_RESULTADO OUT NUMBER,
+                                    SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_CRIMINALIDAD
+       SET ID_ESTADO               = P_ID_ESTADO,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(CRIMINALIDAD_ID) = TRIM(P_CRIMINALIDAD_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro actualizado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al actualizar CRIMINALIDAD: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_UpdEstadoCriminalidad',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_UpdEstadoCriminalidad;
+
+  --*************************************************************************************************************************************************************************************************************************************
+  PROCEDURE P_UpdExistenciaCriminalidad(P_CRIMINALIDAD_ID         IN VARCHAR2,
+                                        P_ID_ESTADO_EXISTENCIA    IN NUMBER,
+                                        P_IDENTIFICACION_MODIFICA IN NUMBER,
+                                        P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                                        
+                                        P_RESULTADO OUT NUMBER,
+                                        SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_CRIMINALIDAD
+       SET ID_ESTADO_EXISTENCIA    = P_ID_ESTADO_EXISTENCIA,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(CRIMINALIDAD_ID) = TRIM(P_CRIMINALIDAD_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro actualizado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al actualizar CRIMINALIDAD: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_UpdExistenciaCriminalidad',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_UpdExistenciaCriminalidad;
+  --*************************************************************************************************************************************************************************************************************************************
+  PROCEDURE P_DellIris(P_CRIMINALIDAD_ID IN VARCHAR2,
+                       
+                       P_IDENTIFICACION_MODIFICA IN NUMBER,
+                       P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                       
+                       P_RESULTADO OUT NUMBER,
+                       SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_CRIMINALIDAD
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(CRIMINALIDAD_ID) = TRIM(P_CRIMINALIDAD_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro Eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar el registro: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_DellIris',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DellIris;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_DelIntegranteIris(P_INTEGRANTE_ID IN VARCHAR2,
+                                
+                                P_IDENTIFICACION_MODIFICA IN NUMBER,
+                                P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                                
+                                P_RESULTADO OUT NUMBER,
+                                SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_INTEGRANTE
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(INTEGRANTE_ID) = TRIM(P_INTEGRANTE_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro Eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar el registro: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_DelIntegranteIris',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DelIntegranteIris;
+
+  --*************************************************************************************************************************************************************************************************************************************
+
+  PROCEDURE P_DelDelitosIris(P_DELITO_ID IN VARCHAR2,
+                             
+                             P_IDENTIFICACION_MODIFICA IN NUMBER,
+                             P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                             
+                             P_RESULTADO OUT NUMBER,
+                             SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_DELITO
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(DELITO_ID) = TRIM(P_DELITO_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro Eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar el registro: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_DelDelitosIris',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DelDelitosIris;
+
+  --************************************************************************************************************************************************************************************************************************************* 
+
+  PROCEDURE P_DelDelInfoAdicionalIris(P_INFO_ID IN VARCHAR2,
+                                      
+                                      P_IDENTIFICACION_MODIFICA IN NUMBER,
+                                      P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                                      
+                                      P_RESULTADO OUT NUMBER,
+                                      SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_INFORMACION
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(INFORMACION_ID) = TRIM(P_INFO_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro Eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar el registro: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_DelDelInfoAdicionalIris',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DelDelInfoAdicionalIris;
+
+  --*************************************************************************************************************************************************************************************************************************************   
+
+  PROCEDURE P_DelUbicacionIris(P_UBICACION_ID IN VARCHAR2,
+                               
+                               P_IDENTIFICACION_MODIFICA IN NUMBER,
+                               P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                               
+                               P_RESULTADO OUT NUMBER,
+                               SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_UBICACION
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(UBICACION_ID) = TRIM(P_UBICACION_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro Eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar el registro: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_DelUbicacionIris',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DelUbicacionIris;
+
+  --*************************************************************************************************************************************************************************************************************************************   
+
+  PROCEDURE P_DelDocumentoIris(P_DOCUMENTO_ID IN VARCHAR2,
+                               
+                               P_IDENTIFICACION_MODIFICA IN NUMBER,
+                               P_MAQUINA_MODIFICA        IN NVARCHAR2,
+                               
+                               P_RESULTADO OUT NUMBER,
+                               SRV_Message OUT VARCHAR2) IS
+  BEGIN
+    UPDATE IRISP_DOCUMENTO
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_IDENTIFICACION_MODIFICA,
+           MAQUINA_MODIFICA        = P_MAQUINA_MODIFICA
+    
+     WHERE TRIM(DOCUMENTO_ID) = TRIM(P_DOCUMENTO_ID);
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      P_RESULTADO := 1;
+      SRV_Message := 'Registro Eliminado correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar el registro: ' || SQLERRM;
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(P_Procedimiento => 'PK_REGISTRO_IRIS.P_DelDocumentoIris',
+                                                 P_Descripcion   => SRV_Message,
+                                                 P_IdDocumento   => P_IDENTIFICACION_MODIFICA,
+                                                 P_Usuario       => P_IDENTIFICACION_MODIFICA);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END P_DelDocumentoIris;
+
+end PK_REGISTRO_IRIS;
