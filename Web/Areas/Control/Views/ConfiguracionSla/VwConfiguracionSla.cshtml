@@ -1,0 +1,76 @@
+@{
+    ViewData["Title"] = "Configuración de SLA";
+}
+
+@section scripts {
+    <script>
+        var UrlGetSlaConfig = "@Url.Action("F_GetSlaConfig", "ConfiguracionSla", new { Area = "Control" })";
+        var UrlInsUpdSlaConfig = "@Url.Action("P_InsUpdSlaConfig", "ConfiguracionSla", new { Area = "Control" })";
+        var UrlDelSlaConfig = "@Url.Action("P_DelSlaConfig", "ConfiguracionSla", new { Area = "Control" })";
+    </script>
+    <script src="~/Areas/Control/ConfiguracionSla.js"></script>
+}
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio </span></a></li>
+            <li class="active">Control de Gestión / Configuración de SLA por tipo de tarea</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fas fa-stopwatch"></i> Configuración de SLA</h4>
+        <div class="card-actions ms-auto">
+            <button type="button" id="btnNuevaSla" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nueva configuración</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="dt-container" style="width:100%;">
+            <table id="tbSlaConfig" class="table table-bordered table-striped" width="100%"></table>
+        </div>
+    </div>
+</div>
+
+@* Modal alta/edición *@
+<div class="modal fade" id="ModalSla" tabindex="-1" aria-labelledby="ModalSlaLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h5 class="modal-title" id="ModalSlaLabel">Configuración de SLA</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="SlaConfigId" />
+
+                <div class="form-group has-float-label mb-3">
+                    @Html.DropDownList("ddlTipoTarea", null, String.Format("Seleccione"),
+                             htmlAttributes: new { id = "ddlTipoTarea", @class = "form-control select2", style = "width: 100%;" })
+                    <label>Tipo de tarea</label>
+                </div>
+
+                <div class="form-group has-float-label mb-3">
+                    <input type="number" min="1" id="txtTiempoAlertaHoras" class="form-control" autocomplete="off" />
+                    <label>Tiempo de alerta (horas) — "en riesgo" a partir de aquí</label>
+                </div>
+
+                <div class="form-group has-float-label mb-3">
+                    <input type="number" min="1" id="txtTiempoMaximoHoras" class="form-control" autocomplete="off" />
+                    <label>Tiempo máximo (horas) — "vencido" a partir de aquí</label>
+                </div>
+
+                <div class="form-group has-float-label mb-3">
+                    <textarea id="txtJustificacionSla" class="form-control" autocomplete="off"></textarea>
+                    <label>Justificación</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btnGuardarSla" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>

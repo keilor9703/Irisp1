@@ -8,12 +8,14 @@ using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.Repositories;
 using Microsoft.Extensions.Options;
 using Negocio.Gestion.Admin;
+using Negocio.Gestion.Control;
 using Negocio.Gestion.Expendios;
 using Negocio.Gestion.General;
 using Negocio.Gestion.Integrantes;
 using Negocio.Gestion.Irisp1;
 using Negocio.Gestion.Reportes;
 using Negocio.Interfaz.Admin;
+using Negocio.Interfaz.Control;
 using Negocio.Interfaz.Expendios;
 using Negocio.Interfaz.General;
 using Negocio.Interfaz.Integrantes;
@@ -117,6 +119,7 @@ builder.Services.AddScoped<IDbRegistroInteg, DbRegistroInteg>();
 builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
 builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
 builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
+builder.Services.AddScoped<IDbControlGestion, DbControlGestion>();
 builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
 
 // ✅ INYECCIÓN DE LA LIBRERÍA MFA (Ella misma inyectará sus URLs)

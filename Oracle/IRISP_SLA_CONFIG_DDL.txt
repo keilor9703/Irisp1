@@ -1,0 +1,27 @@
+-- ============================================================================
+-- Tabla de configuración de SLA por tipo de tarea (IRIS-P1 - Módulo Control de Gestión)
+--
+-- Un registro VIGENTE=1 por ID_LISTA_TAREAS (dominio IRISP_CTRL_DOMINIO, PADRE_ID=51).
+-- Sigue el mismo patrón de columnas de auditoría que IRISP_RESPON_VALIDACION/IRISP_TAREA.
+-- ============================================================================
+
+CREATE TABLE IRISP_SLA_CONFIG (
+  SLA_CONFIG_ID           VARCHAR2(40)  NOT NULL,
+  ID_LISTA_TAREAS         NUMBER        NOT NULL,   -- FK conceptual a IRISP_CTRL_DOMINIO (PADRE_ID=51)
+  TIEMPO_ALERTA_HORAS     NUMBER        NOT NULL,   -- umbral "En riesgo"
+  TIEMPO_MAXIMO_HORAS     NUMBER        NOT NULL,   -- umbral "Vencido"
+  VIGENTE                 NUMBER(1)     DEFAULT 1 NOT NULL,
+  JUSTIFICACION           VARCHAR2(2000),
+  FECHA_CREACION          DATE          DEFAULT SYSDATE,
+  IDENTIFICACION_CREACION NUMBER,
+  MAQUINA_CREACION        VARCHAR2(200),
+  FECHA_MODIFICA          DATE,
+  IDENTIFICACION_MODIFICA NUMBER,
+  MAQUINA_MODIFICA        VARCHAR2(200),
+  CONSTRAINT PK_IRISP_SLA_CONFIG PRIMARY KEY (SLA_CONFIG_ID),
+  CONSTRAINT CK_IRISP_SLA_CONFIG_TIEMPOS CHECK (TIEMPO_ALERTA_HORAS < TIEMPO_MAXIMO_HORAS)
+);
+
+-- Índice de apoyo para la búsqueda "¿ya existe config vigente para este tipo de tarea?"
+-- que hace P_InsUpdSlaConfig antes de decidir INSERT vs UPDATE.
+CREATE INDEX IX_IRISP_SLA_CONFIG_TAREA ON IRISP_SLA_CONFIG (ID_LISTA_TAREAS, VIGENTE);

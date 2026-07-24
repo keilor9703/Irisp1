@@ -1,0 +1,36 @@
+-- ============================================================================
+-- Alta de las entradas de menú para el nuevo módulo "Control de Gestión".
+--
+-- NO SE PUDO EJECUTAR NI VERIFICAR: no tengo visibilidad de los datos reales
+-- de CTR_MENU_IRIS/CTR_MENU_ROLES_IRIS (solo se infirió su estructura desde
+-- PKS_ADMINISTRACION_IRIS.F_GetMenu). Ajusta ID_MENU/IDPADRE/POSICION a los
+-- valores reales de tu entorno antes de ejecutar — esto es una plantilla.
+--
+-- F_GetMenu arma el árbol de menú del usuario con CONNECT BY sobre
+-- CTR_MENU_ROLES_IRIS ⋈ CTR_ROLES_USER_IRIS, así que basta con:
+--   1) crear el/los ítems de menú en CTR_MENU_IRIS (vigente=1)
+--   2) asociarlos a los roles que deban verlo en CTR_MENU_ROLES_IRIS
+--      (super usuario ya ve todo el árbol vigente automáticamente).
+-- ============================================================================
+
+-- 1) Ítem padre "Control de Gestión" (ajusta IDPADRE si debe colgar de un menú existente)
+INSERT INTO CTR_MENU_IRIS (ID_MENU, IDPADRE, POSICION, CONTROLADOR, VISTA, AREA, VIGENTE)
+VALUES ((SELECT NVL(MAX(ID_MENU),0)+1 FROM CTR_MENU_IRIS), NULL, 90, NULL, NULL, NULL, 1);
+-- Anota aquí el ID_MENU generado (o usa una secuencia si CTR_MENU_IRIS tiene una) para los INSERT siguientes.
+
+-- 2) Ítem hijo "Tablero" -> /Control/ControlGestion/Tablero
+INSERT INTO CTR_MENU_IRIS (ID_MENU, IDPADRE, POSICION, CONTROLADOR, VISTA, AREA, VIGENTE)
+VALUES ((SELECT NVL(MAX(ID_MENU),0)+1 FROM CTR_MENU_IRIS), :ID_MENU_PADRE, 1, 'ControlGestion', 'Tablero', 'Control', 1);
+
+-- 3) Ítem hijo "Configuración de SLA" -> /Control/ConfiguracionSla/VwConfiguracionSla
+INSERT INTO CTR_MENU_IRIS (ID_MENU, IDPADRE, POSICION, CONTROLADOR, VISTA, AREA, VIGENTE)
+VALUES ((SELECT NVL(MAX(ID_MENU),0)+1 FROM CTR_MENU_IRIS), :ID_MENU_PADRE, 2, 'ConfiguracionSla', 'VwConfiguracionSla', 'Control', 1);
+
+-- 4) Asociar los 3 ítems anteriores a los roles que deben verlos.
+--    Tablero: roles 1,2,8 (mismos del [Authorize] de ControlGestionController)
+--    Configuración de SLA: roles 1,2 (mismos del [Authorize] de ConfiguracionSlaController)
+-- INSERT INTO CTR_MENU_ROLES_IRIS (ID_MENU, ID_ROL) VALUES (:ID_MENU_PADRE, 1);
+-- INSERT INTO CTR_MENU_ROLES_IRIS (ID_MENU, ID_ROL) VALUES (:ID_MENU_PADRE, 2);
+-- ... repetir para cada ítem y cada rol correspondiente (8 solo para "Tablero").
+
+COMMIT;

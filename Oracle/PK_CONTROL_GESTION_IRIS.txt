@@ -1,0 +1,367 @@
+-- ============================================================================
+-- PK_CONTROL_GESTION_IRIS
+--
+-- Módulo de Control de Gestión (tiempos/SLA) de IRIS-P1.
+-- Paquete NUEVO: requiere ejecutar primero Oracle/IRISP_SLA_CONFIG_DDL.txt.
+--
+-- Convenciones seguidas (iguales al resto del sistema, ver PK_VERIFICACION_IRIS,
+-- PK_SEGUIMIENTO_IRIS, PK_INTEGRANTES_IRIS):
+--   - P_RESULTADO OUT NUMBER + SRV_Message OUT VARCHAR2 para operaciones de escritura.
+--   - Borrado lógico (VIGENTE=0), nunca DELETE físico.
+--   - Errores registrados vía Pks_Administracion_IRIS.P_InsErrorsystem.
+--   - Filtro de roles idéntico al de PK_VERIFICACION_IRIS.F_GetInfoGrillas
+--     (roles 1,2 ven todo; rol 8 ve solo lo de su unidad responsable), para no
+--     sumar un modelo de visibilidad más a los ya existentes.
+-- ============================================================================
+
+CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
+
+  -- Catálogo de SLA configurados (uno vigente por tipo de tarea, dominio PADRE_ID=51)
+  FUNCTION F_GetSlaConfig RETURN SYS_REFCURSOR;
+
+  -- Upsert por ID_LISTA_TAREAS: si ya existe un SLA vigente para ese tipo de tarea, lo actualiza;
+  -- si no, lo crea. Valida que P_TiempoAlertaHoras < P_TiempoMaximoHoras.
+  PROCEDURE P_InsUpdSlaConfig(
+    P_IdListaTareas      IN NUMBER,
+    P_TiempoAlertaHoras  IN NUMBER,
+    P_TiempoMaximoHoras  IN NUMBER,
+    P_Justificacion      IN VARCHAR2,
+    P_Usuario            IN NUMBER,
+    P_Maquina            IN VARCHAR2,
+    P_RESULTADO          OUT NUMBER,
+    SRV_Message          OUT VARCHAR2
+  );
+
+  -- Borrado lógico de una configuración de SLA
+  PROCEDURE P_DelSlaConfig(
+    P_SlaConfigId  IN VARCHAR2,
+    P_Usuario      IN NUMBER,
+    P_Maquina      IN VARCHAR2,
+    P_RESULTADO    OUT NUMBER,
+    SRV_Message    OUT VARCHAR2
+  );
+
+  -- Grilla principal del tablero: una fila por tarea vigente del año, con las horas
+  -- transcurridas y el estado de SLA ya calculados.
+  FUNCTION F_GetTareasControlGestion(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR;
+
+END PK_CONTROL_GESTION_IRIS;
+/
+
+
+CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
+
+  --------------------------------------------------------------------------
+  FUNCTION F_Generar_UUID RETURN NVARCHAR2 IS
+    v_raw  RAW(16);
+    v_uuid NVARCHAR2(36);
+  BEGIN
+    v_raw := SYS_GUID();
+    v_uuid := REGEXP_REPLACE(LOWER(RAWTOHEX(v_raw)),
+                             '(.{8})(.{4})(.{4})(.{4})(.{12})',
+                             '\1-\2-\3-\4-\5');
+    RETURN v_uuid;
+  END F_Generar_UUID;
+
+  --------------------------------------------------------------------------
+  FUNCTION F_GetSlaConfig RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      SELECT
+        s.SLA_CONFIG_ID       AS SlaConfigId,
+        s.ID_LISTA_TAREAS     AS IdListaTareas,
+        d.DESCRIPCION         AS DescTipoTarea,
+        s.TIEMPO_ALERTA_HORAS AS TiempoAlertaHoras,
+        s.TIEMPO_MAXIMO_HORAS AS TiempoMaximoHoras,
+        s.VIGENTE             AS Vigente,
+        s.JUSTIFICACION       AS Justificacion,
+        s.FECHA_CREACION      AS FechaCreacion,
+        s.FECHA_MODIFICA      AS FechaModifica
+      FROM IRISP_SLA_CONFIG s
+      LEFT JOIN IRISP_CTRL_DOMINIO d
+        ON d.DOMINIO_ID = s.ID_LISTA_TAREAS
+       AND d.PADRE_ID = 51
+       AND d.VIGENTE = 1
+      WHERE s.VIGENTE = 1
+      ORDER BY d.DESCRIPCION;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetSlaConfig',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR
+        SELECT NULL AS SlaConfigId, NULL AS IdListaTareas, NULL AS DescTipoTarea,
+               NULL AS TiempoAlertaHoras, NULL AS TiempoMaximoHoras, NULL AS Vigente,
+               NULL AS Justificacion, NULL AS FechaCreacion, NULL AS FechaModifica
+          FROM dual WHERE 1 = 0;
+
+      RETURN l_rc;
+  END F_GetSlaConfig;
+
+  --------------------------------------------------------------------------
+  PROCEDURE P_InsUpdSlaConfig(
+    P_IdListaTareas      IN NUMBER,
+    P_TiempoAlertaHoras  IN NUMBER,
+    P_TiempoMaximoHoras  IN NUMBER,
+    P_Justificacion      IN VARCHAR2,
+    P_Usuario            IN NUMBER,
+    P_Maquina            IN VARCHAR2,
+    P_RESULTADO          OUT NUMBER,
+    SRV_Message          OUT VARCHAR2
+  ) IS
+    v_count         NUMBER;
+    v_sla_config_id VARCHAR2(40);
+  BEGIN
+    IF P_IdListaTareas IS NULL THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Debe seleccionar el tipo de tarea';
+      RETURN;
+    END IF;
+
+    IF P_TiempoAlertaHoras IS NULL OR P_TiempoMaximoHoras IS NULL THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Debe registrar el tiempo de alerta y el tiempo máximo';
+      RETURN;
+    END IF;
+
+    IF P_TiempoAlertaHoras >= P_TiempoMaximoHoras THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'El tiempo de alerta debe ser menor al tiempo máximo';
+      RETURN;
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+      FROM IRISP_SLA_CONFIG
+     WHERE ID_LISTA_TAREAS = P_IdListaTareas
+       AND VIGENTE = 1;
+
+    IF v_count > 0 THEN
+      UPDATE IRISP_SLA_CONFIG
+         SET TIEMPO_ALERTA_HORAS     = P_TiempoAlertaHoras,
+             TIEMPO_MAXIMO_HORAS     = P_TiempoMaximoHoras,
+             JUSTIFICACION           = P_Justificacion,
+             FECHA_MODIFICA          = SYSDATE,
+             IDENTIFICACION_MODIFICA = P_Usuario,
+             MAQUINA_MODIFICA        = P_Maquina
+       WHERE ID_LISTA_TAREAS = P_IdListaTareas
+         AND VIGENTE = 1;
+
+      SRV_Message := 'Configuración de SLA actualizada correctamente';
+    ELSE
+      v_sla_config_id := F_Generar_UUID;
+
+      INSERT INTO IRISP_SLA_CONFIG (
+        SLA_CONFIG_ID, ID_LISTA_TAREAS, TIEMPO_ALERTA_HORAS, TIEMPO_MAXIMO_HORAS,
+        VIGENTE, JUSTIFICACION, FECHA_CREACION, IDENTIFICACION_CREACION, MAQUINA_CREACION
+      ) VALUES (
+        v_sla_config_id, P_IdListaTareas, P_TiempoAlertaHoras, P_TiempoMaximoHoras,
+        1, P_Justificacion, SYSDATE, P_Usuario, P_Maquina
+      );
+
+      SRV_Message := 'Configuración de SLA registrada correctamente';
+    END IF;
+
+    COMMIT;
+    P_RESULTADO := 1;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al guardar la configuración de SLA: ' || SQLERRM;
+
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(
+          P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.P_InsUpdSlaConfig',
+          P_Descripcion   => SRV_Message,
+          P_IdDocumento   => P_Usuario,
+          P_Usuario       => P_Usuario
+        );
+      EXCEPTION
+        WHEN OTHERS THEN NULL;
+      END;
+  END P_InsUpdSlaConfig;
+
+  --------------------------------------------------------------------------
+  PROCEDURE P_DelSlaConfig(
+    P_SlaConfigId  IN VARCHAR2,
+    P_Usuario      IN NUMBER,
+    P_Maquina      IN VARCHAR2,
+    P_RESULTADO    OUT NUMBER,
+    SRV_Message    OUT VARCHAR2
+  ) IS
+  BEGIN
+    UPDATE IRISP_SLA_CONFIG
+       SET VIGENTE                 = 0,
+           FECHA_MODIFICA          = SYSDATE,
+           IDENTIFICACION_MODIFICA = P_Usuario,
+           MAQUINA_MODIFICA        = P_Maquina
+     WHERE TRIM(SLA_CONFIG_ID) = TRIM(P_SlaConfigId)
+       AND VIGENTE = 1;
+
+    IF SQL%ROWCOUNT > 0 THEN
+      COMMIT;
+      P_RESULTADO := 1;
+      SRV_Message := 'Configuración de SLA eliminada correctamente';
+    ELSE
+      P_RESULTADO := 0;
+      SRV_Message := 'No se encontró el registro especificado';
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      P_RESULTADO := 0;
+      SRV_Message := 'Error al eliminar la configuración de SLA: ' || SQLERRM;
+
+      BEGIN
+        Pks_Administracion_IRIS.P_InsErrorsystem(
+          P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.P_DelSlaConfig',
+          P_Descripcion   => SRV_Message,
+          P_IdDocumento   => P_Usuario,
+          P_Usuario       => P_Usuario
+        );
+      EXCEPTION
+        WHEN OTHERS THEN NULL;
+      END;
+  END P_DelSlaConfig;
+
+  --------------------------------------------------------------------------
+  FUNCTION F_GetTareasControlGestion(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR IS
+
+    l_rc        SYS_REFCURSOR;
+    V_NuevaUnde NUMBER := P_CodigoUnidad;
+    V_Count     NUMBER := 0;
+    V_TempUnde  NUMBER;
+
+  BEGIN
+    ------------------------------------------------------------------
+    -- Escalar hasta 3 niveles de unidad si la unidad del usuario no tiene
+    -- responsabilidades propias este año (mismo patrón que
+    -- PK_VERIFICACION_IRIS.F_GetInfoGrillas / PK_CONSULTA_IRISP.F_GetInfoGrillas).
+    ------------------------------------------------------------------
+    FOR i IN 1..3 LOOP
+      SELECT COUNT(*) INTO V_Count
+        FROM IRISP_RESPON_VALIDACION c
+        JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
+       WHERE c.vigente = 1
+         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
+
+      EXIT WHEN V_Count > 0;
+
+      BEGIN
+        V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
+        IF V_TempUnde IS NOT NULL THEN
+          V_NuevaUnde := V_TempUnde;
+        ELSE
+          EXIT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN EXIT;
+      END;
+    END LOOP;
+
+    OPEN l_rc FOR
+      WITH
+      ROLES_LIST AS (
+        SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+          FROM dual
+        CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      )
+      SELECT
+        c.CRIMINALIDAD_ID         AS CriminalidadId,
+        c.CODIGO                  AS Codigo,
+        r.RESPON_VALIDACION_ID    AS IdResponsable,
+        u.DESCRIPCION_DEPENDENCIA AS Unidad,
+        t.TAREA_ID                AS TareaId,
+        t.ID_LISTA_TAREAS         AS IdListaTareas,
+        lt.DESCRIPCION            AS DescListaTarea,
+        t.ID_ESTADO_TAREA         AS IdEstadoTarea,
+        et.DESCRIPCION            AS DescEstadoTarea,
+        t.FECHA_CREACION          AS FechaCreacion,
+        t.FECHA_MODIFICA          AS FechaModifica,
+        ROUND((NVL(t.FECHA_MODIFICA, SYSDATE) - t.FECHA_CREACION) * 24, 1) AS HorasTranscurridas,
+        s.TIEMPO_ALERTA_HORAS     AS TiempoAlertaHoras,
+        s.TIEMPO_MAXIMO_HORAS     AS TiempoMaximoHoras,
+        CASE
+          WHEN s.SLA_CONFIG_ID IS NULL THEN 'SIN SLA DEFINIDO'
+          WHEN (NVL(t.FECHA_MODIFICA, SYSDATE) - t.FECHA_CREACION) * 24 >= s.TIEMPO_MAXIMO_HORAS THEN 'VENCIDO'
+          WHEN (NVL(t.FECHA_MODIFICA, SYSDATE) - t.FECHA_CREACION) * 24 >= s.TIEMPO_ALERTA_HORAS THEN 'EN RIESGO'
+          ELSE 'A TIEMPO'
+        END AS EstadoSla
+
+      FROM IRISP_TAREA t
+      JOIN IRISP_RESPON_VALIDACION r
+        ON t.RESPON_VALIDACION_ID = r.RESPON_VALIDACION_ID
+       AND r.VIGENTE = 1
+      JOIN IRISP_CRIMINALIDAD c
+        ON r.CRIMINALIDAD_ID = c.CRIMINALIDAD_ID
+       AND c.VIGENTE = 1
+      LEFT JOIN VM_UNIDADES u
+        ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+      LEFT JOIN IRISP_CTRL_DOMINIO lt
+        ON t.ID_LISTA_TAREAS = lt.DOMINIO_ID AND lt.PADRE_ID = 51 AND lt.VIGENTE = 1
+      LEFT JOIN IRISP_CTRL_DOMINIO et
+        ON t.ID_ESTADO_TAREA = et.DOMINIO_ID AND et.PADRE_ID = 58 AND et.VIGENTE = 1
+      LEFT JOIN IRISP_SLA_CONFIG s
+        ON s.ID_LISTA_TAREAS = t.ID_LISTA_TAREAS AND s.VIGENTE = 1
+
+      WHERE t.VIGENTE = 1
+        AND EXTRACT(YEAR FROM t.FECHA_CREACION) = P_Anio
+
+        ------------------------------------------------------------
+        -- FILTRO DE ROLES: idéntico al de PK_VERIFICACION_IRIS.F_GetInfoGrillas
+        ------------------------------------------------------------
+        AND (
+                 EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
+
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
+                   AND r.ID_UNIDAD_RESPON = V_NuevaUnde
+                 )
+            )
+
+      ORDER BY t.FECHA_CREACION DESC;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetTareasControlGestion',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR
+        SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS IdResponsable, NULL AS Unidad,
+               NULL AS TareaId, NULL AS IdListaTareas, NULL AS DescListaTarea,
+               NULL AS IdEstadoTarea, NULL AS DescEstadoTarea, NULL AS FechaCreacion,
+               NULL AS FechaModifica, NULL AS HorasTranscurridas, NULL AS TiempoAlertaHoras,
+               NULL AS TiempoMaximoHoras, NULL AS EstadoSla
+          FROM dual WHERE 1 = 0;
+
+      RETURN l_rc;
+  END F_GetTareasControlGestion;
+
+END PK_CONTROL_GESTION_IRIS;
+/

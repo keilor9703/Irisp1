@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "Control de Gestión";
+}
+
+@section scripts {
+    <script src="~/TemplateMonster_bt5/assets/libs/chart.js/dist/Chart.min.js"></script>
+    <script>
+        var UrlGetTareasControlGestion = "@Url.Action("F_GetTareasControlGestion", "ControlGestion", new { Area = "Control" })";
+    </script>
+    <script src="~/Areas/Control/ControlGestion.js"></script>
+}
+
+<section class="content-header"></section>
+<div class="page-titles">
+    <div class="breadcrumb-line">
+        <ul class="breadcrumb">
+            <li><a id="no-link" href="@Url.Action("Index", "Home", new { Area = "" })"><i class="fa fa-home"></i> <span> Inicio </span></a></li>
+            <li class="active">Control de Gestión / Tablero de tiempos y SLA @(!string.IsNullOrWhiteSpace(ViewBag.Unidad as string) ? " - " + ViewBag.Unidad : "")</li>
+        </ul>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="form-group has-float-label">
+            @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
+                     htmlAttributes: new { id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
+            <label>Año</label>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-2">
+        <div class="card border-secondary text-center">
+            <div class="card-body">
+                <h6>Total tareas</h6>
+                <h3 id="kpiTotal">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-success text-center">
+            <div class="card-body">
+                <h6>A tiempo</h6>
+                <h3 id="kpiATiempo">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-warning text-center">
+            <div class="card-body">
+                <h6>En riesgo</h6>
+                <h3 id="kpiEnRiesgo">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-danger text-center">
+            <div class="card-body">
+                <h6>Vencidas</h6>
+                <h3 id="kpiVencido">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-secondary text-center">
+            <div class="card-body">
+                <h6>Sin SLA definido</h6>
+                <h3 id="kpiSinSla">0</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title">Promedio de horas por unidad</h4></div>
+            <div class="card-body">
+                <canvas id="graficoPromedioUnidad" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex align-items-center">
+        <h4 class="card-title text-white"><i class="fas fa-clipboard-list"></i> Tareas y estado de SLA</h4>
+    </div>
+    <div class="card-body">
+        <div class="dt-container" style="width:100%;">
+            <table id="tbTareasControlGestion" class="table table-bordered table-striped" width="100%"></table>
+        </div>
+    </div>
+</div>
