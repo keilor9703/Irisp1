@@ -41,8 +41,9 @@ namespace Web.Areas.Integrantes.Controllers
         public async Task<ActionResult> RegistrarInteg()
         {
             var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Integrantes/Registrar", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
-            ViewBag.ddlTipoReincidencia = new SelectList((await _iDbDominios.F_GetDominiosIris(110)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlTipoReincidencia2 = new SelectList((await _iDbDominios.F_GetDominiosIris(110)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            var ddlTipoReincidencia = (await _iDbDominios.F_GetDominiosIris(110)).Data?.OrderBy(x => x.Descripcion).ToList();
+            ViewBag.ddlTipoReincidencia = new SelectList(ddlTipoReincidencia, "IdDominio", "Descripcion");
+            ViewBag.ddlTipoReincidencia2 = new SelectList(ddlTipoReincidencia, "IdDominio", "Descripcion");
 
 
             return View();

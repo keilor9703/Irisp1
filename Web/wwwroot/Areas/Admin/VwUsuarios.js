@@ -74,7 +74,11 @@ $("#txtFuncionario").autocomplete({
                 }));
             },
             error: function (respuesta) {
-                alert("Error");
+                Swal.fire({
+                    type: 'error',
+                    title: 'Señor(a) Funcionario(a:)',
+                    text: 'No es posible consultar el funcionario, revise!!'
+                });
             }
         });
     },
@@ -106,6 +110,13 @@ function GetGrillaUsuarios() {
             else {
                 $("#pn_GrillaUsuarios").addClass('hidden');
             }
+        },
+        error: function () {
+            Swal.fire({
+                type: 'error',
+                title: 'Señor(a) Funcionario(a:)',
+                text: 'No es posible cargar la lista de usuarios, revise!!'
+            });
         },
         language: glOpcionesIdioma,
         responsive: true,

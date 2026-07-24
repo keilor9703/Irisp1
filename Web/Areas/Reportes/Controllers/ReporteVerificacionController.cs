@@ -2,6 +2,7 @@
 using Comun.Areas.Reportes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Negocio.Gestion.Reportes;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.General;
@@ -21,21 +22,29 @@ namespace Web.Areas.Reportes.Controllers
 
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IConfiguration _configuration;
-    
+
         private readonly IDbReporteVerificacion _IDbReporteVerificacion;
+        private readonly IDbReportesGeneral _iDbReportesGeneral;
 
 
-        public ReporteVerificacionController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion, IDbReporteVerificacion dbReporteVerificacion)
+        public ReporteVerificacionController(IConfiguration iConfiguration, IDbAdministracion iDbAdministracion,
+            IDbReporteVerificacion dbReporteVerificacion, IDbReportesGeneral iDbReportesGeneral)
         {
             _iDbAdministracion = iDbAdministracion;
             _configuration = iConfiguration;
             _IDbReporteVerificacion = dbReporteVerificacion;
+            _iDbReportesGeneral = iDbReportesGeneral;
 
 
         }
 
-        public IActionResult ReporteVerificacion()
+        public async Task<IActionResult> ReporteVerificacion()
         {
+            var ddlAnioIris = (await _iDbReportesGeneral.F_GetAniosIrisP1()).Data?.ToList() ?? new List<DtoAnioR>();
+            var anioActual = ddlAnioIris.Any() ? ddlAnioIris.Max(x => x.AnoIrisp1) : (int?)null;
+
+            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+
             return View();
         }
 
@@ -45,9 +54,9 @@ namespace Web.Areas.Reportes.Controllers
         private long CodigoUnidad() => Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
         [HttpGet]
-        public async Task<IActionResult> F_GetReporteVerificacion()
+        public async Task<IActionResult> F_GetReporteVerificacion(int? V_Anio)
         {
-            var res = await _IDbReporteVerificacion.F_GetReporteVerificacion(RolesUsuario(), CodigoUnidad());
+            var res = await _IDbReporteVerificacion.F_GetReporteVerificacion(V_Anio, RolesUsuario(), CodigoUnidad());
 
             if (res.IdRespuesta > 0)
                 return Json(new { success = true, data = res.Data });
@@ -58,7 +67,7 @@ namespace Web.Areas.Reportes.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> ExportarExcelReporteVerificacion(string filtro)
+        public async Task<IActionResult> ExportarExcelReporteVerificacion(int? V_Anio, string filtro)
         {
             // Auditoría
             await _iDbAdministracion.P_InsAuditoria(
@@ -69,7 +78,7 @@ namespace Web.Areas.Reportes.Controllers
                 HttpContext.Session.GetString("IpMaquina")
             );
 
-            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion(RolesUsuario(), CodigoUnidad());
+            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion(V_Anio, RolesUsuario(), CodigoUnidad());
 
             if (resultado.IdRespuesta == 0)
                 return StatusCode(500, new { success = false, message = resultado.Mensaje });
@@ -164,7 +173,7 @@ namespace Web.Areas.Reportes.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> ExportarPdfReporteVerificacion(string filtro)
+        public async Task<IActionResult> ExportarPdfReporteVerificacion(int? V_Anio, string filtro)
         {
             await _iDbAdministracion.P_InsAuditoria(
                 Convert.ToInt64(User.FindFirstValue("Identificacion")),
@@ -174,7 +183,7 @@ namespace Web.Areas.Reportes.Controllers
                 HttpContext.Session.GetString("IpMaquina")
             );
 
-            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion(RolesUsuario(), CodigoUnidad());
+            var resultado = await _IDbReporteVerificacion.F_GetReporteVerificacion(V_Anio, RolesUsuario(), CodigoUnidad());
 
             if (resultado.IdRespuesta == 0)
                 return StatusCode(500, new { success = false, message = resultado.Mensaje });

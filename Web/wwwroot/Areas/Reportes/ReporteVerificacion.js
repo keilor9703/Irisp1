@@ -1,5 +1,8 @@
 ﻿$(document).ready(function () {
 
+    $("#ddlAnioIris").on("change", function () {
+        F_GetReporteVerificacion();
+    });
 
     F_GetReporteVerificacion();
 
@@ -12,6 +15,7 @@ function F_GetReporteVerificacion() {
     $.ajax({
         type: 'GET',
         url: AppRoutes.ReportesGeneral.UrlGetReporteVerificacion,
+        data: { V_Anio: $("#ddlAnioIris").val() },
         dataType: 'json',
         success: function (response) {
             if (response && response.success === true) {
@@ -47,55 +51,22 @@ function renderReporteVerificacion(data) {
 
 
 
-// 🔧 Función utilitaria para inicializar o refrescar tablas
-function renderDataTable(selector, datosFiltrados, columnas) {
-    if ($.fn.dataTable.isDataTable(selector)) {
-        // actualizar data en vez de recrear
-        const table = $(selector).DataTable();
-        table.clear();
-        table.rows.add(datosFiltrados);
-        table.draw();
-        return;
-    }
-
-    $(selector).DataTable({
-        data: datosFiltrados,
-        language: glOpcionesIdioma,
-        scrollX: true,
-        // scrollY: 400,          // alto fijo para habilitar virtualización
-        scroller: true,        // solo renderiza las filas visibles
-        deferRender: true,     // retrasa render hasta que sean visibles
-        autoWidth: false,
-        responsive: false,
-
-        columnDefs: [
-            { targets: '_all', className: 'dt-head-center dt-body-center' },
-            { targets: 3, width: '1%', className: 'no-wrap' }
-        ],
-        columns: columnas,
-
-        lengthMenu: [
-            [10, 25, 50, 100],
-            ['10 registros', '25 registros', '50 registros', '100 registros']
-        ],
-        pageLength: 10,
-        ordering: true,
-        searching: true,
-        paging: true,
-        info: true
-    });
-}
+// renderDataTable ahora vive en /js/IniciarTabla.js (compartida por todas las grillas del sitio).
 
 $("#btnExcel").on("click", function () {
     let filtro = $(".dataTables_filter input").val() || "";
+    let anio = $("#ddlAnioIris").val() || "";
     window.location.href =
-        "Reportes/ReporteVerificacion/ExportarExcelReporteVerificacion?filtro=" + encodeURIComponent(filtro);
+        "Reportes/ReporteVerificacion/ExportarExcelReporteVerificacion?filtro=" + encodeURIComponent(filtro) +
+        "&V_Anio=" + encodeURIComponent(anio);
 });
 
 $("#btnPdf").on("click", function () {
     let filtro = $(".dataTables_filter input").val() || "";
+    let anio = $("#ddlAnioIris").val() || "";
     window.open(
-        "Reportes/ReporteVerificacion/ExportarPdfReporteVerificacion?filtro=" + encodeURIComponent(filtro),
+        "Reportes/ReporteVerificacion/ExportarPdfReporteVerificacion?filtro=" + encodeURIComponent(filtro) +
+        "&V_Anio=" + encodeURIComponent(anio),
         "_blank"
     );
 });

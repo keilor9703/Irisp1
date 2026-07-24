@@ -161,9 +161,12 @@ BEGIN
         LEFT JOIN RESP res ON res.criminalidad_id = c.CRIMINALIDAD_ID
        -- LEFT JOIN VM_UNIDADES f ON f.consecutivo = c.unidad
 
-        WHERE  
-            EXTRACT(YEAR FROM c.FECHA_CREACION_IRISP1) = NVL(P_Anio, EXTRACT(YEAR FROM SYSDATE))
-           
+        WHERE
+            -- Filtro por rango (sargable) en vez de EXTRACT(YEAR FROM ...) = ..., que obligaba
+            -- a recorrer toda la tabla ignorando cualquier índice sobre FECHA_CREACION_IRISP1.
+            c.FECHA_CREACION_IRISP1 >= TO_DATE(NVL(P_Anio, EXTRACT(YEAR FROM SYSDATE)) || '-01-01', 'YYYY-MM-DD')
+        AND c.FECHA_CREACION_IRISP1 <  TO_DATE((NVL(P_Anio, EXTRACT(YEAR FROM SYSDATE)) + 1) || '-01-01', 'YYYY-MM-DD')
+
 
             ------------------------------------------------------------
             -- ?? FILTRO DE ROLES 
@@ -191,6 +194,7 @@ END P_GetReporteGeneral;
 
 
 FUNCTION F_GetReporteVerificacion(
+    P_Anio          IN NUMBER,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   )
@@ -289,6 +293,13 @@ FUNCTION F_GetReporteVerificacion(
       LEFT JOIN RESPONSABLE resp ON c.criminalidad_id = resp.criminalidad_id
       
       WHERE c.vigente = 1
+
+        ------------------------------------------------------------
+        -- FILTRO DE AÑO (antes traía TODO el histórico sin límite): rango sargable,
+        -- igual convención que P_GetReporteGeneral en este mismo paquete.
+        ------------------------------------------------------------
+        AND c.FECHA_CREACION >= TO_DATE(NVL(P_Anio, EXTRACT(YEAR FROM SYSDATE)) || '-01-01', 'YYYY-MM-DD')
+        AND c.FECHA_CREACION <  TO_DATE((NVL(P_Anio, EXTRACT(YEAR FROM SYSDATE)) + 1) || '-01-01', 'YYYY-MM-DD')
 
         ------------------------------------------------------------
         -- FILTRO DE ROLES (igual que P_GetReporteGeneral en este mismo paquete)

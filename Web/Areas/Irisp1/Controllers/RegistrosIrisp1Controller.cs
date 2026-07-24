@@ -64,43 +64,57 @@ namespace Web.Areas.Irisp1.Controllers
 
         public async Task<ActionResult> RegistrosIrisp1()
         {
+            var auditoriaTask = _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo IrisP1/Registros", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+            var aniosTask = _iDbIrisp1.F_GetAniosIrisP1();
 
+            // Dominios únicos que necesita esta vista (varios combos "...Modal" reutilizan el mismo dominio
+            // que su combo hermano, así que se consultan una sola vez cada uno).
+            var claseTask = _IDbDominios.F_GetDominiosIris(12);
+            var modExpendioTask = _IDbDominios.F_GetDominiosIris(74);
+            var clasiNarcotraficoTask = _IDbDominios.F_GetDominiosIris(153);
+            var actividadTask = _IDbDominios.F_GetDominiosIris(127);
+            var fuenteTask = _IDbDominios.F_GetDominiosIris(16);
+            var entornoTask = _IDbDominios.F_GetDominiosIris(155);
+            var zonaTask = _IDbDominios.F_GetDominiosIris(6);
+            var delitoTask = _IDbDominios.F_GetDominiosIris(177);
+            var tipoServicioTask = _IDbDominios.F_GetDominiosIris(9);
+            var existenciaTask = _IDbDominios.F_GetDominiosIris(63);
+            var estadosTask = _IDbDominios.F_GetDominiosIris(1);
+            var especialidadTask = _IDbDominios.F_GetDominiosIris(160);
 
-            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo IrisP1/Registros", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+            await Task.WhenAll(auditoriaTask, aniosTask, claseTask, modExpendioTask, clasiNarcotraficoTask, actividadTask,
+                fuenteTask, entornoTask, zonaTask, delitoTask, tipoServicioTask, existenciaTask, estadosTask, especialidadTask);
 
-            var ddlAnioIris = (await _iDbIrisp1.F_GetAniosIrisP1()).Data.ToList();
-          
-
-            //  var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
-
-            //  Crea el SelectList con el año actual seleccionado por defecto
-            //ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+            var ddlAnioIris = (await aniosTask).Data.ToList();
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
 
-            ViewBag.ddlClase = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlModExpendio = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlClasiNarcotrafico = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlActividad = new SelectList((await _IDbDominios.F_GetDominiosIris(127)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlFuente = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlFuenteModal = new SelectList((await _IDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlEntono = new SelectList((await _IDbDominios.F_GetDominiosIris(155)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlZona = new SelectList((await _IDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoPrincipal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoPrincipalModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoSecundario = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitoSecundarioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlTipoServicio = new SelectList((await _IDbDominios.F_GetDominiosIris(9)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlExistenciaIrisP1 = new SelectList((await _IDbDominios.F_GetDominiosIris(63)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlEstadosIrisP1 = new SelectList((await _IDbDominios.F_GetDominiosIris(1)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlEspecialidad = new SelectList((await _IDbDominios.F_GetDominiosIris(160)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            var claseData = (await claseTask).Data?.OrderBy(x => x.Descripcion).ToList();
+            var modExpendioData = (await modExpendioTask).Data?.OrderBy(x => x.Descripcion).ToList();
+            var clasiNarcotraficoData = (await clasiNarcotraficoTask).Data?.OrderBy(x => x.Descripcion).ToList();
+            var fuenteData = (await fuenteTask).Data?.OrderBy(x => x.Descripcion).ToList();
+            var delitoData = (await delitoTask).Data?.OrderBy(x => x.Descripcion).ToList();
+
+            ViewBag.ddlClase = new SelectList(claseData, "IdDominio", "Descripcion");
+            ViewBag.ddlModExpendio = new SelectList(modExpendioData, "IdDominio", "Descripcion");
+            ViewBag.ddlClasiNarcotrafico = new SelectList(clasiNarcotraficoData, "IdDominio", "Descripcion");
+            ViewBag.ddlActividad = new SelectList((await actividadTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlFuente = new SelectList(fuenteData, "IdDominio", "Descripcion");
+            ViewBag.ddlFuenteModal = new SelectList(fuenteData, "IdDominio", "Descripcion");
+            ViewBag.ddlEntono = new SelectList((await entornoTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlZona = new SelectList((await zonaTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoPrincipal = new SelectList(delitoData, "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoPrincipalModal = new SelectList(delitoData, "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoSecundario = new SelectList(delitoData, "IdDominio", "Descripcion");
+            ViewBag.ddlDelitoSecundarioModal = new SelectList(delitoData, "IdDominio", "Descripcion");
+            ViewBag.ddlTipoServicio = new SelectList((await tipoServicioTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlExistenciaIrisP1 = new SelectList((await existenciaTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlEstadosIrisP1 = new SelectList((await estadosTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlEspecialidad = new SelectList((await especialidadTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlCuadrante = new SelectList(Enumerable.Empty<SelectListItem>());
 
-            ViewBag.ddlClaseModal = new SelectList((await _IDbDominios.F_GetDominiosIris(12)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-
-            ViewBag.ddlModExpendioModal = new SelectList((await _IDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-
-            ViewBag.ddlClasiNarcotraficoModal = new SelectList((await _IDbDominios.F_GetDominiosIris(153)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-
+            ViewBag.ddlClaseModal = new SelectList(claseData, "IdDominio", "Descripcion");
+            ViewBag.ddlModExpendioModal = new SelectList(modExpendioData, "IdDominio", "Descripcion");
+            ViewBag.ddlClasiNarcotraficoModal = new SelectList(clasiNarcotraficoData, "IdDominio", "Descripcion");
 
             return View();
         }

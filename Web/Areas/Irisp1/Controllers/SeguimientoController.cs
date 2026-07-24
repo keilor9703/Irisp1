@@ -57,8 +57,9 @@ namespace Web.Areas.Irisp1.Controllers
             //  Crea el SelectList con el año actual seleccionado por defecto
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
 
-            ViewBag.ddlTipoUnidad = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
-            ViewBag.ddlTipoUnidad2 = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
+            var ddlUnidades = (await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA).ToList();
+            ViewBag.ddlTipoUnidad = new SelectList(ddlUnidades, "SIGLA", "DESCRIPCION_DEPENDENCIA");
+            ViewBag.ddlTipoUnidad2 = new SelectList(ddlUnidades, "SIGLA", "DESCRIPCION_DEPENDENCIA");
             ViewBag.ddlTipoDependencia = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlTipoDependencia2 = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlTipoTarea = new SelectList((await _IDbDominios.F_GetDominiosIris(51)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");

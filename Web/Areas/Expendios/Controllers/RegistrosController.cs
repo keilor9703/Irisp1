@@ -47,10 +47,22 @@ namespace Web.Areas.Expendios.Controllers
 
         public async Task<ActionResult> Registros()
         {
+            var auditoriaTask = _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Expendios/Registros", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+            var unidadesTask = _iDbSeguimientoIris.F_GetUnidadesSeguimiento();
+            var aniosTask = _iDbRegistroExpendio.F_GetAniosIrisP1();
 
-            var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Expendios/Registros", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+            // Dominios únicos que necesita esta vista (177 se reutiliza en dos combos).
+            var delitoTask = _iDbDominios.F_GetDominiosIris(177);
+            var tipoResultadoTask = _iDbDominios.F_GetDominiosIris(76);
+            var zonaTask = _iDbDominios.F_GetDominiosIris(6);
+            var tipoEstadoTask = _iDbDominios.F_GetDominiosIris(92);
+            var expendioTask = _iDbDominios.F_GetDominiosIris(12);
+            var tipoExpendioTask = _iDbDominios.F_GetDominiosIris(74);
+            var fuenteTask = _iDbDominios.F_GetDominiosIris(16);
+            var categoriaTask = _iDbDominios.F_GetDominiosIris(96);
 
-            //ViewBag.ddlUnidadExpendio = new SelectList((await _iDbSeguimientoIris.F_GetUnidadesSeguimiento()).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA), "SIGLA", "DESCRIPCION_DEPENDENCIA");
+            await Task.WhenAll(auditoriaTask, unidadesTask, aniosTask, delitoTask, tipoResultadoTask, zonaTask,
+                tipoEstadoTask, expendioTask, tipoExpendioTask, fuenteTask, categoriaTask);
 
             // Obtener todos los roles del usuario desde los claims
             var rolesUsuario = User.Claims
@@ -61,47 +73,35 @@ namespace Web.Areas.Expendios.Controllers
             // Obtener la sigla física del usuario desde los claims
             var siglaFisicaUsuario = User.Claims.FirstOrDefault(c => c.Type == "Fisica")?.Value;
 
-            IEnumerable<DtoDominios> unidades;
+            var unidadesData = (await unidadesTask).Data;
 
             // 🔑 Si el usuario tiene el rol 8, aplica el filtro
-            if (rolesUsuario.Contains("8"))
-            {
-                unidades = (await _iDbSeguimientoIris.F_GetUnidadesSeguimiento())
-                                .Data?
-                                .Where(x => x.SIGLA == siglaFisicaUsuario)
-                                .OrderBy(x => x.DESCRIPCION_DEPENDENCIA);
-            }
-            else
-            {
-                // 🔑 Si no tiene el rol 8, carga todos los registros
-                unidades = (await _iDbSeguimientoIris.F_GetUnidadesSeguimiento())
-                                .Data?
-                                .OrderBy(x => x.DESCRIPCION_DEPENDENCIA);
-            }
+            IEnumerable<DtoDominios> unidades = rolesUsuario.Contains("8")
+                ? unidadesData?.Where(x => x.SIGLA == siglaFisicaUsuario).OrderBy(x => x.DESCRIPCION_DEPENDENCIA)
+                : unidadesData?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA);
 
             // Asignar al ViewBag
             ViewBag.ddlUnidadExpendio = new SelectList(unidades, "SIGLA", "DESCRIPCION_DEPENDENCIA");
 
-            var ddlAnioIris = (await _iDbRegistroExpendio.F_GetAniosIrisP1()).Data.ToList();
-           // var anioActual = ddlAnioIris.Max(x => x.AnoIrisp1);
-           // ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+            var ddlAnioIris = (await aniosTask).Data.ToList();
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
-            ViewBag.ddlDelitoModal = new SelectList((await _iDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlTipoResultado = new SelectList((await _iDbDominios.F_GetDominiosIris(76)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");           
-            ViewBag.ddlZonaExpendio = new SelectList((await _iDbDominios.F_GetDominiosIris(6)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");           
+
+            var delitoData = (await delitoTask).Data?.OrderBy(x => x.Descripcion).ToList();
+            ViewBag.ddlDelitoModal = new SelectList(delitoData, "IdDominio", "Descripcion");
+            ViewBag.ddlTipoResultado = new SelectList((await tipoResultadoTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlZonaExpendio = new SelectList((await zonaTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlSubTipoResultado = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlEstacionExpendio = new SelectList(Enumerable.Empty<SelectListItem>());
             ViewBag.ddlunidadInformaExpendio = new SelectList(Enumerable.Empty<SelectListItem>());
-            var ddlTipoEstado = (await _iDbDominios.F_GetDominiosIris(92)).Data?.Where(x => x.Descripcion == "Investigación" || x.Descripcion == "Descartado" || x.Descripcion == "Finalizado").OrderBy(x => x.Descripcion).ToList();
+            var ddlTipoEstado = (await tipoEstadoTask).Data?.Where(x => x.Descripcion == "Investigación" || x.Descripcion == "Descartado" || x.Descripcion == "Finalizado").OrderBy(x => x.Descripcion).ToList();
             ViewBag.ddlTipoEstado = new SelectList(ddlTipoEstado, "IdDominio", "Descripcion");
 
-            var ddlExpendio = (await _iDbDominios.F_GetDominiosIris(12)).Data?.Where(x => x.Descripcion == "Trafico De Estupefacientes").OrderBy(x => x.Descripcion).ToList();
+            var ddlExpendio = (await expendioTask).Data?.Where(x => x.Descripcion == "Trafico De Estupefacientes").OrderBy(x => x.Descripcion).ToList();
             ViewBag.ddlExpendio = new SelectList(ddlExpendio, "IdDominio", "Descripcion");
-            ViewBag.ddlTipoExpendio = new SelectList((await _iDbDominios.F_GetDominiosIris(74)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlFuente = new SelectList((await _iDbDominios.F_GetDominiosIris(16)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlCategoria = new SelectList((await _iDbDominios.F_GetDominiosIris(96)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-            ViewBag.ddlDelitosRelacionados = new SelectList((await _iDbDominios.F_GetDominiosIris(177)).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
-
+            ViewBag.ddlTipoExpendio = new SelectList((await tipoExpendioTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlFuente = new SelectList((await fuenteTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlCategoria = new SelectList((await categoriaTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
+            ViewBag.ddlDelitosRelacionados = new SelectList(delitoData, "IdDominio", "Descripcion");
 
             return View();
         }

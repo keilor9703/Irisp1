@@ -41,43 +41,7 @@ function F_GetInfoGrillas() {
 }
 
 // 🔧 Función utilitaria para inicializar o refrescar tablas
-function renderDataTable(selector, datosFiltrados, columnas) {
-    if ($.fn.dataTable.isDataTable(selector)) {
-        // actualizar data en vez de recrear
-        const table = $(selector).DataTable();
-        table.clear();
-        table.rows.add(datosFiltrados);
-        table.draw();
-        return;
-    }
-
-    $(selector).DataTable({
-        data: datosFiltrados,
-        language: glOpcionesIdioma,
-        scrollX: true,
-        // scrollY: 400,          // alto fijo para habilitar virtualización
-        scroller: true,        // solo renderiza las filas visibles
-        deferRender: true,     // retrasa render hasta que sean visibles
-        autoWidth: false,
-        responsive: false,
-
-        columnDefs: [
-            { targets: '_all', className: 'dt-head-center dt-body-center' },
-            { targets: 3, width: '1%', className: 'no-wrap' }
-        ],
-        columns: columnas,
-
-        lengthMenu: [
-            [10, 25, 50, 100],
-            ['10 registros', '25 registros', '50 registros', '100 registros']
-        ],
-        pageLength: 10,
-        ordering: true,
-        searching: true,
-        paging: true,
-        info: true
-    });
-}
+// renderDataTable ahora vive en /js/IniciarTabla.js (compartida por todas las grillas del sitio).
 
 
 function GetGrillaLista(Datos) {
@@ -141,79 +105,16 @@ function GetGrillaLista(Datos) {
 
 
 
+// Estados()/EstadosExistencia(): el mapeo de colores vive en /js/IniciarTabla.js (columnaEstadoGrilla),
+// compartido por todos los módulos que muestran estas dos columnas.
+// Nota: este endpoint devuelve los campos en snake_case ("estado_descripcion"), a diferencia de
+// Irisp1/Seguimiento/Verificación que usan PascalCase — se respeta tal cual viene del backend.
 function Estados() {
-    return {
-        title: "Estado",
-        data: "estado_descripcion",
-        name: "estado_descripcion",
-        autoWidth: true,
-        render: function (data, type, row) {
-            // Si el estado viene vacío o nulo
-            if (!data) {
-                return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
-            }
-
-            const estado = data.toLowerCase();
-            let color = '';
-
-            switch (estado) {
-                case 'sin asignar':
-                    color = '#c53a1d'; // rojo
-                    break;
-                case 'asignado':
-                    color = '#236305'; // azul
-                    break;
-                case 'avance verificación':
-                    color = '#799137'; // verde
-                    break;
-                case 'investigación':
-                    color = '#2127f5'; // amarillo
-                    break;
-                case 'avance investigación':
-                    color = '#40a8c7'; // naranja
-                    break;
-                case 'finalizado':
-                    color = '#032b57'; // verde
-                    break;
-                default:
-                    color = '#386ca0'; // gris oscuro
-            }
-
-            return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
-        }
-    };
+    return columnaEstadoGrilla("Estado", "estado_descripcion");
 }
 
 function EstadosExistencia() {
-    return {
-        title: "Estado Existencia",
-        data: "estado_existencia_descripcion",
-        name: "estado_existencia_descripcion",
-        autoWidth: true,
-        render: function (data, type, row) {
-            // Si el estado viene vacío o nulo
-            if (!data) {
-                return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
-            }
-
-            const estado = data.toLowerCase();
-            let color = '';
-
-            switch (estado) {
-                case 'no existe':
-                    color = '#c53a1d'; // rojo
-                    break;
-
-                case 'si existe':
-                    color = '#236305'; // verde
-                    break;
-                default:
-                    color = '#386ca0'; // gris oscuro
-            }
-
-            return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
-        }
-    };
+    return columnaEstadoGrilla("Estado Existencia", "estado_existencia_descripcion");
 }
 
 function columnaCaracteristicasGenerales() {

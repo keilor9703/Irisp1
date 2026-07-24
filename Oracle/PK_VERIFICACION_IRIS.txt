@@ -171,11 +171,22 @@ BEGIN
         LEFT JOIN IRISP_CTRL_DOMINIO j ON c.ID_CLASE = j.DOMINIO_ID AND j.PADRE_ID = 12
         LEFT JOIN VM_CUADRANTES cu ON c.ID_CUADRANTE = cu.cuadrante_id
         LEFT JOIN RESULTADOS rst ON c.CRIMINALIDAD_ID = rst.criminalidad_id
-        left join IRISP_RESPON_VALIDACION resp on c.criminalidad_id = resp.criminalidad_id and resp.vigente = 1
+        -- Deduplicado con ROW_NUMBER (mismo patrón que PK_CONSULTA_IRISP.F_GetInfoGrillas): sin esto,
+        -- un CRIMINALIDAD_ID con más de un IRISP_RESPON_VALIDACION vigente duplicaba la fila del caso.
+        LEFT JOIN (SELECT rv.*
+                     FROM (SELECT r.*,
+                                  ROW_NUMBER() OVER(PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
+                             FROM IRISP_RESPON_VALIDACION r
+                            WHERE r.vigente = 1) rv
+                    WHERE rv.rn = 1) resp
+          ON c.criminalidad_id = resp.criminalidad_id
 
         WHERE c.VIGENTE = 1
-          AND EXTRACT(YEAR FROM c.FECHA_CREACION) = P_Anio
-          
+          -- Filtro por rango (sargable, permite usar índice sobre FECHA_CREACION) en vez de
+          -- EXTRACT(YEAR FROM ...) = P_Anio, que obligaba a recorrer toda la tabla.
+          AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+          AND c.FECHA_CREACION <  TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+
        -- (1) SOLO REGISTROS CON RESPONSABLE (aplica SIEMPRE)
               AND EXISTS (
                      SELECT 1 

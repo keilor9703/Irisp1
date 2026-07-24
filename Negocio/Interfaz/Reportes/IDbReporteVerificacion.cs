@@ -10,6 +10,6 @@ namespace Negocio.Interfaz.Reportes
 {
     public interface IDbReporteVerificacion
     {
-        Task<DtoResultado<List<DtoReporteVerificacion>>> F_GetReporteVerificacion(string RolesUsuario, long CodigoUnidad);
+        Task<DtoResultado<List<DtoReporteVerificacion>>> F_GetReporteVerificacion(int? Anio, string RolesUsuario, long CodigoUnidad);
     }
 }

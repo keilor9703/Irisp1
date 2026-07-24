@@ -471,11 +471,11 @@ function GetGrillaExpendios(Datos) {
             { title: "CriminalidadDirecId", data: "CriminalidadDirecId", visible: false }
         ],
         lengthMenu: [
-            [15, 25, 50, -1],
-            ['15 registros', '25 registros', '50 registros', 'Todos']
+            [10, 25, 50, 100],
+            ['10 registros', '25 registros', '50 registros', '100 registros']
         ],
         ordering: true,
-        pageLength: 15,
+        pageLength: 10,
         bLengthChange: true,
         searching: true,
         paging: true,
@@ -548,42 +548,10 @@ function F_AbrirMdodalActualizar(CriminalidadId){
     $('#Modal_UpdEstadoExendio').modal("show");
 }
 
+// El mapeo de colores vive en /js/IniciarTabla.js (columnaEstadoGrilla), compartido con el resto
+// de módulos que muestran una columna de estado.
 function Estados() {
-    return {
-        title: "Estado",
-        data: "Estado",
-        name: "Estado",
-        autoWidth: true,
-        render: function (data, type, row) {
-            // Si el estado viene vacío o nulo
-            if (!data) {
-                return `<span style="background-color: #808080; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">Por establecer</span>`;
-            }
-
-            const estado = data.toLowerCase();
-            let color = '';
-
-            switch (estado) {
-                case 'descartado':
-                    color = '#c53a1d'; // rojo
-                    break;
-                case 'investigación':
-                    color = '#2127f5'; // azul
-                    break;
-                case 'finalizado':
-                    color = '#032b57'; // azul obscuro
-                    break;
-                case 'verificación':
-                    color = '#236305'; // verde
-                    break;
-              
-                default:
-                    color = '#386ca0'; // gris oscuro
-            }
-
-            return `<span style="background-color: ${color}; color: white; padding: 3px 8px; border-radius: 5px; display: inline-block; min-width: 120px;">${data}</span>`;
-        }
-    };
+    return columnaEstadoGrilla("Estado", "Estado");
 }
 
 function columnaCaracteristicasGenerales() {
