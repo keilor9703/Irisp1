@@ -642,6 +642,11 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       WITH
       -- Ver comentario de MAX_FECHAS_SIGLA en F_GetTareasControlGestion: VM_UNIDADES trae varias
       -- filas históricas por SIGLA_FISICA, hay que quedarse solo con la más reciente vigente.
+      --
+      -- IMPORTANTE: el catálogo de regiones/unidades sale directo de VM_UNIDADES (todas las
+      -- unidades reales), NO de IRISP_CRIMINALIDAD — antes se sacaba solo de los casos ya
+      -- registrados, y eso dejaba fuera del combo cualquier unidad de la región que aún no
+      -- tuviera un caso IRISP1 (ej. DECHO/MEBAR/MECAR de la región 8 quedaban ocultas).
       MAX_FECHAS_SIGLA AS (
         SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
           FROM VM_UNIDADES
@@ -649,14 +654,11 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
          GROUP BY SIGLA_FISICA
       )
       SELECT DISTINCT u.REGI_CODIGO AS RegionCodigo, u.DESC_REGIONAL AS RegionDescripcion
-        FROM IRISP_CRIMINALIDAD c
-        JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
-        JOIN VM_UNIDADES u
-          ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
-         AND u.VIGENTE = 'SI'
+        FROM VM_UNIDADES u
+        JOIN MAX_FECHAS_SIGLA mfs
+          ON u.SIGLA_FISICA = mfs.SIGLA_FISICA
          AND u.FECHA_ACTUALIZA = mfs.FECHA_MAX
-       WHERE c.VIGENTE = 1
-         AND c.SIGLA_UNIDAD IS NOT NULL
+       WHERE u.VIGENTE = 'SI'
          AND u.REGI_CODIGO IS NOT NULL
        ORDER BY u.REGI_CODIGO;
 
@@ -676,6 +678,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   END F_GetRegionesIrisp1;
 
   --------------------------------------------------------------------------
+  -- Catálogo completo de unidades (VM_UNIDADES), no solo las que ya tienen casos IRISP1
+  -- registrados — ver nota en F_GetRegionesIrisp1.
   FUNCTION F_GetSiglasUnidadIrisp1(P_RegionCodigo IN NUMBER DEFAULT NULL) RETURN SYS_REFCURSOR IS
     l_rc SYS_REFCURSOR;
   BEGIN
@@ -687,17 +691,14 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
          WHERE SIGLA_FISICA IS NOT NULL
          GROUP BY SIGLA_FISICA
       )
-      SELECT DISTINCT c.SIGLA_UNIDAD AS SiglaUnidad
-        FROM IRISP_CRIMINALIDAD c
-        LEFT JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
-        LEFT JOIN VM_UNIDADES u
-          ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
-         AND u.VIGENTE = 'SI'
+      SELECT DISTINCT u.SIGLA_FISICA AS SiglaUnidad
+        FROM VM_UNIDADES u
+        JOIN MAX_FECHAS_SIGLA mfs
+          ON u.SIGLA_FISICA = mfs.SIGLA_FISICA
          AND u.FECHA_ACTUALIZA = mfs.FECHA_MAX
-       WHERE c.VIGENTE = 1
-         AND c.SIGLA_UNIDAD IS NOT NULL
+       WHERE u.VIGENTE = 'SI'
          AND (P_RegionCodigo IS NULL OR u.REGI_CODIGO = P_RegionCodigo)
-       ORDER BY c.SIGLA_UNIDAD;
+       ORDER BY u.SIGLA_FISICA;
 
     RETURN l_rc;
 
