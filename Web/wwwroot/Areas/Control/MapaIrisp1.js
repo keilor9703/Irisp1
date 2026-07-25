@@ -119,7 +119,7 @@ function F_GetMapaIrisp1() {
     });
 }
 
-function mostrarAvisoSinDatos(mensajeError) {
+function mostrarAvisoSinDatos(mensajeError, fueraDeRango) {
     var $aviso = $("#mapaAvisoSinDatos");
 
     if (mensajeError) {
@@ -128,6 +128,12 @@ function mostrarAvisoSinDatos(mensajeError) {
     } else if (puntosCargados.length === 0) {
         $("#mapaAvisoSinDatosTexto").text("No se encontraron casos georreferenciados con los filtros seleccionados.");
         $aviso.removeClass("alert-warning").addClass("alert-info").show();
+    } else if (fueraDeRango > 0) {
+        $("#mapaAvisoSinDatosTexto").text(
+            fueraDeRango + " caso(s) no se muestran en el mapa por tener coordenadas fuera del territorio " +
+            "colombiano (posible error de digitación en latitud/longitud) — revise esos registros en el sistema."
+        );
+        $aviso.removeClass("alert-info").addClass("alert-warning").show();
     } else {
         $aviso.hide();
     }
@@ -145,19 +151,41 @@ function limpiarCapasMapa() {
     if (capaCalor) mapaLeaflet.removeLayer(capaCalor);
 }
 
+// Rango geográfico real del territorio colombiano (con margen, incluye San Andrés y Providencia
+// al occidente). El REGEXP de Oracle solo valida que latitud/longitud sean números — no que sean
+// una coordenada real del país — así que un dato mal digitado (ej. punto decimal corrido) puede
+// pasar como "válido" y caer en el Caribe/Centroamérica. Sin este filtro esos puntos arrastran el
+// fitBounds() del mapa a un zoom absurdamente alejado, y hacen parecer mal ubicados incluso los
+// puntos que sí están correctos (como el caso reportado de un punto de Barranquilla que se veía
+// "fuera del continente" porque el mapa estaba zoomeado para abarcar otros puntos con mala data).
+var LIMITES_COLOMBIA = { latMin: -5, latMax: 15, lngMin: -82, lngMax: -66 };
+var puntosFueraDeRango = 0;
+
 function renderizarCapaSegunModo() {
     if (!mapaLeaflet) return;
 
     limpiarCapasMapa();
+    puntosFueraDeRango = 0;
 
     var puntosValidos = puntosCargados
         .map(function (p) {
             var lat = parseFloat(p.Latitud);
             var lng = parseFloat(p.Longitud);
             if (isNaN(lat) || isNaN(lng)) return null;
+
+            if (lat < LIMITES_COLOMBIA.latMin || lat > LIMITES_COLOMBIA.latMax ||
+                lng < LIMITES_COLOMBIA.lngMin || lng > LIMITES_COLOMBIA.lngMax) {
+                puntosFueraDeRango++;
+                return null;
+            }
+
             return { lat: lat, lng: lng, data: p };
         })
         .filter(function (p) { return p !== null; });
+
+    if (puntosFueraDeRango > 0) {
+        mostrarAvisoSinDatos(null, puntosFueraDeRango);
+    }
 
     if (puntosValidos.length === 0) return;
 
