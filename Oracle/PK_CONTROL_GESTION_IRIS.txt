@@ -343,6 +343,20 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
           FROM dual
         CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      ),
+      -- VM_UNIDADES trae varias filas históricas por unidad (una por actualización) — sin
+      -- deduplicar, el JOIN multiplica cada fila de la consulta por esas filas repetidas
+      -- (mismo patrón MAX_FECHAS ya usado en PK_CONSULTA_IRISP/PK_REPORTES_IRIS para esta vista).
+      MAX_FECHAS_CONS AS (
+        SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         GROUP BY consecutivo
+      ),
+      MAX_FECHAS_SIGLA AS (
+        SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         WHERE SIGLA_FISICA IS NOT NULL
+         GROUP BY SIGLA_FISICA
       )
       SELECT
         c.CRIMINALIDAD_ID         AS CriminalidadId,
@@ -374,10 +388,16 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       JOIN IRISP_CRIMINALIDAD c
         ON r.CRIMINALIDAD_ID = c.CRIMINALIDAD_ID
        AND c.VIGENTE = 1
+      LEFT JOIN MAX_FECHAS_CONS mfc ON r.ID_UNIDAD_RESPON = mfc.consecutivo
       LEFT JOIN VM_UNIDADES u
         ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+       AND u.VIGENTE = 'SI'
+       AND u.FECHA_ACTUALIZA = mfc.FECHA_MAX
+      LEFT JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
       LEFT JOIN VM_UNIDADES ureg
         ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+       AND ureg.VIGENTE = 'SI'
+       AND ureg.FECHA_ACTUALIZA = mfs.FECHA_MAX
       LEFT JOIN IRISP_CTRL_DOMINIO lt
         ON t.ID_LISTA_TAREAS = lt.DOMINIO_ID AND lt.PADRE_ID = 51 AND lt.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO et
@@ -523,6 +543,19 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
             JOIN IRISP_TAREA it ON it.respon_validacion_id = r.respon_validacion_id
            WHERE it.id_lista_tareas = 71 AND it.fecha_modifica IS NOT NULL AND r.vigente = 1 AND it.vigente = 1
         ) WHERE rn = 1
+      ),
+      -- VM_UNIDADES trae varias filas históricas por unidad; sin deduplicar el JOIN multiplica
+      -- filas (mismo patrón MAX_FECHAS de PK_CONSULTA_IRISP/PK_REPORTES_IRIS para esta vista).
+      MAX_FECHAS_CONS AS (
+        SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         GROUP BY consecutivo
+      ),
+      MAX_FECHAS_SIGLA AS (
+        SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         WHERE SIGLA_FISICA IS NOT NULL
+         GROUP BY SIGLA_FISICA
       )
       SELECT
         c.CRIMINALIDAD_ID         AS CriminalidadId,
@@ -548,8 +581,16 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       FROM IRISP_CRIMINALIDAD c
       LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
-      LEFT JOIN VM_UNIDADES u ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
-      LEFT JOIN VM_UNIDADES ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+      LEFT JOIN MAX_FECHAS_CONS mfc ON r.ID_UNIDAD_RESPON = mfc.consecutivo
+      LEFT JOIN VM_UNIDADES u
+        ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+       AND u.VIGENTE = 'SI'
+       AND u.FECHA_ACTUALIZA = mfc.FECHA_MAX
+      LEFT JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
+      LEFT JOIN VM_UNIDADES ureg
+        ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+       AND ureg.VIGENTE = 'SI'
+       AND ureg.FECHA_ACTUALIZA = mfs.FECHA_MAX
       LEFT JOIN VERIF_INI vi ON vi.criminalidad_id = c.CRIMINALIDAD_ID
       LEFT JOIN VERIF_FIN vf ON vf.criminalidad_id = c.CRIMINALIDAD_ID
       LEFT JOIN INVES_INI ii ON ii.criminalidad_id = c.CRIMINALIDAD_ID
@@ -598,9 +639,22 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     l_rc SYS_REFCURSOR;
   BEGIN
     OPEN l_rc FOR
+      WITH
+      -- Ver comentario de MAX_FECHAS_SIGLA en F_GetTareasControlGestion: VM_UNIDADES trae varias
+      -- filas históricas por SIGLA_FISICA, hay que quedarse solo con la más reciente vigente.
+      MAX_FECHAS_SIGLA AS (
+        SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         WHERE SIGLA_FISICA IS NOT NULL
+         GROUP BY SIGLA_FISICA
+      )
       SELECT DISTINCT u.REGI_CODIGO AS RegionCodigo, u.DESC_REGIONAL AS RegionDescripcion
         FROM IRISP_CRIMINALIDAD c
-        JOIN VM_UNIDADES u ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
+        JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
+        JOIN VM_UNIDADES u
+          ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
+         AND u.VIGENTE = 'SI'
+         AND u.FECHA_ACTUALIZA = mfs.FECHA_MAX
        WHERE c.VIGENTE = 1
          AND c.SIGLA_UNIDAD IS NOT NULL
          AND u.REGI_CODIGO IS NOT NULL
@@ -626,9 +680,20 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     l_rc SYS_REFCURSOR;
   BEGIN
     OPEN l_rc FOR
+      WITH
+      MAX_FECHAS_SIGLA AS (
+        SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         WHERE SIGLA_FISICA IS NOT NULL
+         GROUP BY SIGLA_FISICA
+      )
       SELECT DISTINCT c.SIGLA_UNIDAD AS SiglaUnidad
         FROM IRISP_CRIMINALIDAD c
-        LEFT JOIN VM_UNIDADES u ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
+        LEFT JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
+        LEFT JOIN VM_UNIDADES u
+          ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
+         AND u.VIGENTE = 'SI'
+         AND u.FECHA_ACTUALIZA = mfs.FECHA_MAX
        WHERE c.VIGENTE = 1
          AND c.SIGLA_UNIDAD IS NOT NULL
          AND (P_RegionCodigo IS NULL OR u.REGI_CODIGO = P_RegionCodigo)
@@ -703,6 +768,19 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
              WHERE r.vigente = 1
           ) rv
          WHERE rv.rn = 1
+      ),
+      -- VM_UNIDADES trae varias filas históricas por unidad; sin deduplicar el JOIN multiplica
+      -- filas (mismo patrón MAX_FECHAS de PK_CONSULTA_IRISP/PK_REPORTES_IRIS para esta vista).
+      MAX_FECHAS_CONS AS (
+        SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         GROUP BY consecutivo
+      ),
+      MAX_FECHAS_SIGLA AS (
+        SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         WHERE SIGLA_FISICA IS NOT NULL
+         GROUP BY SIGLA_FISICA
       )
       SELECT
         c.CRIMINALIDAD_ID         AS CriminalidadId,
@@ -717,8 +795,16 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       FROM IRISP_CRIMINALIDAD c
       LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
-      LEFT JOIN VM_UNIDADES u ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
-      LEFT JOIN VM_UNIDADES ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+      LEFT JOIN MAX_FECHAS_CONS mfc ON r.ID_UNIDAD_RESPON = mfc.consecutivo
+      LEFT JOIN VM_UNIDADES u
+        ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+       AND u.VIGENTE = 'SI'
+       AND u.FECHA_ACTUALIZA = mfc.FECHA_MAX
+      LEFT JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
+      LEFT JOIN VM_UNIDADES ureg
+        ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+       AND ureg.VIGENTE = 'SI'
+       AND ureg.FECHA_ACTUALIZA = mfs.FECHA_MAX
       LEFT JOIN IRISP_CTRL_DOMINIO de ON de.DOMINIO_ID = c.ID_ESTADO AND de.PADRE_ID = 1 AND de.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
 
@@ -785,6 +871,14 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
           FROM dual
         CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      ),
+      -- VM_UNIDADES trae varias filas históricas por unidad; sin deduplicar el JOIN multiplica
+      -- filas (mismo patrón MAX_FECHAS de PK_CONSULTA_IRISP/PK_REPORTES_IRIS para esta vista).
+      MAX_FECHAS_SIGLA AS (
+        SELECT SIGLA_FISICA, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
+          FROM VM_UNIDADES
+         WHERE SIGLA_FISICA IS NOT NULL
+         GROUP BY SIGLA_FISICA
       )
       SELECT
         c.CRIMINALIDAD_ID       AS CriminalidadId,
@@ -799,7 +893,11 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.latitud                AS Latitud,
         c.longitud               AS Longitud
       FROM VM_GENERAL_IRISP c
-      LEFT JOIN VM_UNIDADES ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+      LEFT JOIN MAX_FECHAS_SIGLA mfs ON c.SIGLA_UNIDAD = mfs.SIGLA_FISICA
+      LEFT JOIN VM_UNIDADES ureg
+        ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+       AND ureg.VIGENTE = 'SI'
+       AND ureg.FECHA_ACTUALIZA = mfs.FECHA_MAX
       WHERE REGEXP_LIKE(c.latitud, '^[0-9\.\-]+$')
         AND REGEXP_LIKE(c.longitud, '^[0-9\.\-]+$')
         AND c.FECHA_CREACION_IRISP1 >= P_FechaInicio
