@@ -25,6 +25,18 @@ $(document).ready(function () {
         CargarTablero();
     });
 
+    // Exporta el informe del tablero (con los filtros vigentes) a PDF con marca de agua
+    // del usuario institucional; el PDF se genera en el servidor y se abre en otra pestaña.
+    $("#btnExportarPdfTablero").on("click", function () {
+        var filtros = obtenerFiltrosTablero();
+        var params = Object.keys(filtros)
+            .filter(function (k) { return filtros[k]; })
+            .map(function (k) { return k + "=" + encodeURIComponent(filtros[k]); })
+            .join("&");
+
+        window.open(UrlExportarPdfTablero + (params ? "?" + params : ""), "_blank");
+    });
+
     CargarTablero();
     InicializarDrillDown();
 });

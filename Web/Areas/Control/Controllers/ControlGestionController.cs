@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Control;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using System.Security.Claims;
 
 namespace Web.Areas.Control.Controllers
@@ -304,6 +306,281 @@ namespace Web.Areas.Control.Controllers
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoMapaIrisp1>() });
 
             return Json(new { success = true, data = resultado.Data, fechaInicio, fechaFin });
+        }
+
+        #endregion
+
+        #region Exportar PDF
+
+        [HttpGet]
+        public async Task<IActionResult> ExportarPdfTablero(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
+        {
+            await _iDbAdministracion.P_InsAuditoria(
+                Convert.ToInt64(User.FindFirstValue("Identificacion")), "Exportar Reporte",
+                "PDF Tablero Control de Gestión IRIS-P1",
+                Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
+
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            var rolesUsuario = string.Join(",",
+                User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
+
+            var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
+
+            var tareaTask = _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var casosTask = _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultadosTask = _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            await Task.WhenAll(tareaTask, casosTask, resultadosTask);
+
+            var tareas = tareaTask.Result.IdRespuesta > 0 ? tareaTask.Result.Data : new List<DtoTareaControlGestion>();
+            var casos = casosTask.Result.IdRespuesta > 0 ? casosTask.Result.Data : new List<DtoCasoControlGestion>();
+            var resultados = resultadosTask.Result.IdRespuesta > 0 ? resultadosTask.Result.Data : new List<DtoResultadoCasoIrisp1>();
+
+            string? regionTexto = null;
+            if (V_RegionCodigo.HasValue)
+            {
+                var regiones = await _iDbControlGestion.F_GetRegionesIrisp1();
+                regionTexto = regiones.Data.FirstOrDefault(r => r.RegionCodigo == V_RegionCodigo)?.RegionDescripcion
+                    ?? $"Región {V_RegionCodigo}";
+            }
+
+            // La marca de agua exige el usuario institucional del usuario logueado; "Usuario" y
+            // ClaimTypes.Name se llenan con el mismo valor en CuentaController.BuildClaims.
+            var usuarioInstitucional = User.FindFirstValue("Usuario") ?? User.FindFirstValue(ClaimTypes.Name) ?? "IRIS-P1";
+
+            var pdfBytes = GeneratePdfTablero(usuarioInstitucional, fechaInicio, fechaFin, regionTexto, V_SiglaUnidad,
+                tareas, casos, resultados);
+
+            return File(pdfBytes, "application/pdf", $"Tablero_Control_Gestion_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+        }
+
+        private static string FormatearDuracionPdf(decimal? horas)
+        {
+            if (!horas.HasValue) return "-";
+            var h = horas.Value;
+            if (h < 24) return $"{Math.Round(h, 1)} h";
+            var dias = (int)(h / 24);
+            var resto = Math.Round(h - dias * 24, 1);
+            return $"{dias} d {resto} h";
+        }
+
+        private static byte[] GeneratePdfTablero(string usuarioInstitucional, DateTime fechaInicio, DateTime fechaFin,
+            string? regionTexto, string? siglaUnidad,
+            List<DtoTareaControlGestion> tareas, List<DtoCasoControlGestion> casos, List<DtoResultadoCasoIrisp1> resultados)
+        {
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+            // --- Agregados (mismas reglas que ArmarKpis / ArmarKpisCasos / ArmarKpisResultados) ---
+            var porEstadoSla = tareas
+                .GroupBy(t => string.IsNullOrWhiteSpace(t.EstadoSla) ? "SIN SLA DEFINIDO" : t.EstadoSla!)
+                .Select(g => new { Estado = g.Key, Cantidad = g.Count() })
+                .OrderByDescending(g => g.Cantidad)
+                .ToList();
+
+            var casosConTotal = casos.Where(c => c.HorasTotalCaso.HasValue).ToList();
+            var casosVerif = casos.Where(c => c.HorasVerificacion.HasValue).ToList();
+            var casosInves = casos.Where(c => c.HorasInvestigacion.HasValue).ToList();
+
+            var totalResultados = resultados.Count;
+            var finalizados = resultados.Count(EsCasoFinalizado);
+            var existe = resultados.Count(EsCasoConExistencia);
+            var noExiste = resultados.Count(EsCasoSinExistencia);
+            var sinDeterminar = totalResultados - existe - noExiste;
+            var abiertos = totalResultados - finalizados;
+            var inconclusos = resultados.Count(c => EsCasoFinalizado(c) && !EsCasoConExistencia(c) && !EsCasoSinExistencia(c));
+
+            var rankingUnidades = resultados
+                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadSigla) ? c.UnidadSigla! : (c.Unidad ?? "Sin unidad"))
+                .Select(g =>
+                {
+                    var totalUnidad = g.Count();
+                    var existeUnidad = g.Count(EsCasoConExistencia);
+                    return new
+                    {
+                        Unidad = g.Key,
+                        Total = totalUnidad,
+                        Finalizados = g.Count(EsCasoFinalizado),
+                        ExisteConfirmado = existeUnidad,
+                        Abiertos = totalUnidad - g.Count(EsCasoFinalizado),
+                        EfectividadPct = totalUnidad > 0 ? Math.Round((decimal)existeUnidad * 100 / totalUnidad, 1) : 0m
+                    };
+                })
+                .OrderByDescending(u => u.EfectividadPct)
+                .ThenByDescending(u => u.Total)
+                .ToList();
+
+            var promedioPorUnidad = tareas
+                .Where(t => t.HorasTranscurridas.HasValue)
+                .GroupBy(t => !string.IsNullOrWhiteSpace(t.UnidadSigla) ? t.UnidadSigla! : (t.Unidad ?? "Sin unidad"))
+                .Select(g => new { Unidad = g.Key, PromedioHoras = Math.Round(g.Average(x => x.HorasTranscurridas!.Value), 1) })
+                .OrderByDescending(g => g.PromedioHoras)
+                .ToList();
+
+            var porEstadoGeneral = resultados
+                .GroupBy(c => string.IsNullOrWhiteSpace(c.DescEstado) ? "Sin estado" : c.DescEstado!)
+                .Select(g => new { Estado = g.Key, Cantidad = g.Count() })
+                .OrderByDescending(g => g.Cantidad)
+                .ToList();
+
+            // --- Marca de agua: usuario institucional en diagonal en cada página ---
+            var marcaAgua = usuarioInstitucional.Trim().ToUpperInvariant();
+            // El tamaño se ajusta al largo del texto para que la diagonal no desborde la página A4.
+            var fontMarca = Math.Clamp(600f / Math.Max(marcaAgua.Length, 1), 20f, 48f);
+            var anchoEstimadoMarca = marcaAgua.Length * fontMarca * 0.6f;
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(24);
+                    page.DefaultTextStyle(x => x.FontSize(9));
+
+                    page.Background()
+                        .AlignCenter().AlignMiddle()
+                        .Rotate(-35)
+                        .TranslateX(-anchoEstimadoMarca / 2)
+                        .TranslateY(-fontMarca / 2)
+                        .Text(marcaAgua).FontSize(fontMarca).Bold().FontColor("#E2E2E2");
+
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Text("POLICÍA NACIONAL DE COLOMBIA - IRIS-P1").Bold().FontSize(14);
+                        col.Item().Text("Informe Tablero de Control de Gestión").FontSize(12);
+                        col.Item().Text($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}");
+                        col.Item().Text($"Periodo del reporte: {fechaInicio:dd/MM/yyyy} — {fechaFin:dd/MM/yyyy}");
+
+                        var filtros = new List<string>();
+                        if (!string.IsNullOrWhiteSpace(regionTexto)) filtros.Add($"Región: {regionTexto}");
+                        if (!string.IsNullOrWhiteSpace(siglaUnidad)) filtros.Add($"Unidad: {siglaUnidad.Trim().ToUpperInvariant()}");
+                        col.Item().Text(filtros.Count > 0 ? string.Join(" | ", filtros) : "Filtros: todas las regiones y unidades");
+
+                        col.Item().PaddingTop(4).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
+                    });
+
+                    page.Content().PaddingVertical(8).Column(col =>
+                    {
+                        col.Spacing(12);
+
+                        void Titulo(string texto) => col.Item().Text(texto).Bold().FontSize(11).FontColor(Colors.Blue.Darken2);
+
+                        void TablaIndicadores(List<(string Indicador, string Valor)> filas)
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(4);
+                                    columns.RelativeColumn(2);
+                                });
+                                table.Header(header =>
+                                {
+                                    header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Indicador").Bold();
+                                    header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Valor").Bold();
+                                });
+                                foreach (var (indicador, valor) in filas)
+                                {
+                                    table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(indicador);
+                                    table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(valor);
+                                }
+                            });
+                        }
+
+                        // 1. Cumplimiento de SLA por tarea
+                        Titulo("1. Cumplimiento de SLA por tarea");
+                        var filasSla = new List<(string, string)> { ("Total de tareas", tareas.Count.ToString()) };
+                        filasSla.AddRange(porEstadoSla.Select(e => ($"Tareas {e.Estado}", e.Cantidad.ToString())));
+                        TablaIndicadores(filasSla);
+
+                        // 2. Tiempo de gestión por caso
+                        Titulo("2. Tiempo de gestión por caso IRISP1");
+                        TablaIndicadores(new List<(string, string)>
+                        {
+                            ("Casos en el periodo", casos.Count.ToString()),
+                            ("Casos finalizados (con tiempo total)", casosConTotal.Count.ToString()),
+                            ("Tiempo promedio total por caso", casosConTotal.Count > 0 ? FormatearDuracionPdf(Math.Round(casosConTotal.Average(c => c.HorasTotalCaso!.Value), 1)) : "-"),
+                            ("Casos con etapa de verificación", casosVerif.Count.ToString()),
+                            ("Tiempo promedio etapa Verificación", casosVerif.Count > 0 ? FormatearDuracionPdf(Math.Round(casosVerif.Average(c => c.HorasVerificacion!.Value), 1)) : "-"),
+                            ("Casos con etapa de investigación", casosInves.Count.ToString()),
+                            ("Tiempo promedio etapa Investigación", casosInves.Count > 0 ? FormatearDuracionPdf(Math.Round(casosInves.Average(c => c.HorasInvestigacion!.Value), 1)) : "-")
+                        });
+
+                        // 3. Resultados y efectividad
+                        Titulo("3. Resultados y efectividad de las unidades");
+                        TablaIndicadores(new List<(string, string)>
+                        {
+                            ("Casos registrados", totalResultados.ToString()),
+                            ("Casos finalizados", finalizados.ToString()),
+                            ("Casos exitosos (existencia confirmada)", existe.ToString()),
+                            ("Casos descartados (no existe)", noExiste.ToString()),
+                            ("Casos sin determinar existencia", sinDeterminar.ToString()),
+                            ("Casos inconclusos (finalizados sin definición)", inconclusos.ToString()),
+                            ("Casos abiertos", abiertos.ToString())
+                        });
+
+                        // 4. Efectividad por unidad
+                        Titulo("4. Efectividad por unidad");
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(3);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Unidad").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Casos").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Finalizados").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Existe conf.").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Abiertos").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Efectividad").Bold();
+                            });
+                            foreach (var u in rankingUnidades)
+                            {
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Unidad);
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Total.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Finalizados.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.ExisteConfirmado.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Abiertos.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text($"{u.EfectividadPct} %");
+                            }
+                        });
+
+                        // 5. Promedio de tiempo por unidad
+                        Titulo("5. Promedio de tiempo de gestión de tareas por unidad");
+                        TablaIndicadores(promedioPorUnidad
+                            .Select(u => (u.Unidad, FormatearDuracionPdf(u.PromedioHoras)))
+                            .ToList());
+
+                        // 6. Casos por estado general
+                        Titulo("6. Casos por estado general");
+                        TablaIndicadores(porEstadoGeneral
+                            .Select(e => (e.Estado, e.Cantidad.ToString()))
+                            .ToList());
+                    });
+
+                    page.Footer().Column(f =>
+                    {
+                        f.Item().AlignCenter().Text(x =>
+                        {
+                            x.Span("Página ").FontSize(8);
+                            x.CurrentPageNumber().FontSize(8);
+                            x.Span(" de ").FontSize(8);
+                            x.TotalPages().FontSize(8);
+                        });
+                        f.Item().AlignCenter()
+                            .Text($"Documento generado por el usuario institucional: {usuarioInstitucional} — uso exclusivo institucional")
+                            .FontSize(7).FontColor(Colors.Grey.Darken1);
+                    });
+                });
+            });
+
+            return document.GeneratePdf();
         }
 
         #endregion

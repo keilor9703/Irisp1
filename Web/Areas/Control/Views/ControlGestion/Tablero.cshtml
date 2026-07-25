@@ -117,6 +117,7 @@
         var UrlGetKpisTiempoGestion = "@Url.Action("F_GetKpisTiempoGestion", "ControlGestion", new { Area = "Control" })";
         var UrlGetResultadosCasos = "@Url.Action("F_GetResultadosCasos", "ControlGestion", new { Area = "Control" })";
         var UrlGetSiglasUnidad = "@Url.Action("F_GetSiglasUnidad", "ControlGestion", new { Area = "Control" })";
+        var UrlExportarPdfTablero = "@Url.Action("ExportarPdfTablero", "ControlGestion", new { Area = "Control" })";
     </script>
     <script src="~/Areas/Control/ControlGestion.js"></script>
 }
@@ -164,6 +165,9 @@
         </button>
     </div>
     <div class="col-md-2 MargFloatBoos text-right">
+        <button type="button" id="btnExportarPdfTablero" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-danger" title="Exportar informe en PDF con marca de agua">
+            <i class="fas fa-file-pdf"></i> PDF
+        </button>
         <a href="@Url.Action("Mapa", "ControlGestion", new { Area = "Control" })" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar">
             <i class="fas fa-map-marked-alt"></i> Ver mapa
         </a>
