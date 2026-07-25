@@ -1,8 +1,20 @@
 $(document).ready(function () {
 
-    $('#ddlAnioIris').select2({ placeholder: "Seleccione", allowClear: true });
+    $(".Calendario").kendoDatePicker({
+        culture: "es-CO",
+        interval: 1
+    });
 
-    $("#ddlAnioIris").on("change", function () {
+    $("#ddlSiglaUnidad").select2({ placeholder: "Todas las unidades", allowClear: true, width: "100%" });
+
+    var hoy = new Date();
+    var haceUnAnio = new Date();
+    haceUnAnio.setFullYear(hoy.getFullYear() - 1);
+
+    $("#txtFechaInicioTablero").data("kendoDatePicker").value(haceUnAnio);
+    $("#txtFechaFinTablero").data("kendoDatePicker").value(hoy);
+
+    $("#btnAplicarFiltroTablero").on("click", function () {
         CargarTablero();
     });
 
@@ -18,21 +30,40 @@ function CargarTablero() {
     RenderRangoFechas();
 }
 
-// El tablero filtra siempre por año calendario completo (01/01 - 31/12), o hasta hoy si es el año
-// en curso — este es exactamente el rango que aplica el filtro P_Anio en Oracle, así que se calcula
-// aquí mismo en vez de pedirlo al backend.
+function obtenerFechaKendo(id) {
+    var picker = $(id).data("kendoDatePicker");
+    return picker ? picker.value() : null;
+}
+
+function formatearFechaIso(fecha) {
+    if (!fecha) return null;
+    var yyyy = fecha.getFullYear();
+    var mm = String(fecha.getMonth() + 1).padStart(2, "0");
+    var dd = String(fecha.getDate()).padStart(2, "0");
+    return yyyy + "-" + mm + "-" + dd;
+}
+
+function obtenerFiltrosTablero() {
+    return {
+        V_FechaInicio: formatearFechaIso(obtenerFechaKendo("#txtFechaInicioTablero")),
+        V_FechaFin: formatearFechaIso(obtenerFechaKendo("#txtFechaFinTablero")),
+        V_SiglaUnidad: $("#ddlSiglaUnidad").val() || ""
+    };
+}
+
 function RenderRangoFechas() {
-    var anio = parseInt($("#ddlAnioIris").val(), 10);
-    if (!anio) {
+    var inicio = obtenerFechaKendo("#txtFechaInicioTablero");
+    var fin = obtenerFechaKendo("#txtFechaFinTablero");
+    if (!inicio || !fin) {
         $("#rangoFechasTablero").text("");
         return;
     }
 
-    var hoy = new Date();
-    var inicio = new Date(anio, 0, 1);
-    var fin = (anio === hoy.getFullYear()) ? hoy : new Date(anio, 11, 31);
+    var texto = "Periodo del reporte: " + formatearFecha(inicio) + " — " + formatearFecha(fin);
+    var sigla = $("#ddlSiglaUnidad").val();
+    if (sigla) texto += " | Unidad: " + sigla;
 
-    $("#rangoFechasTablero").text("Periodo del reporte: " + formatearFecha(inicio) + " — " + formatearFecha(fin));
+    $("#rangoFechasTablero").text(texto);
 }
 
 function formatearFecha(fecha) {
@@ -58,13 +89,52 @@ function formatearDuracion(horas) {
     return dias + " d " + restoHoras.toFixed(1).replace(/\.0$/, "") + " h";
 }
 
-function F_GetTareasControlGestion() {
-    var anio = $("#ddlAnioIris").val();
+// Plugin genérico de Chart.js v2 (sin dependencias externas) que dibuja el valor de cada barra
+// justo encima (barras verticales) o al final (horizontalBar) de la misma, para no obligar al
+// usuario a pasar el mouse para saber cuánto vale cada barra.
+function crearPluginValoresBarra(formateador) {
+    return {
+        afterDatasetsDraw: function (chart) {
+            var ctx = chart.ctx;
+            var esHorizontal = chart.config.type === "horizontalBar";
 
+            ctx.save();
+            ctx.font = "bold 11px Arial";
+            ctx.fillStyle = "#333";
+
+            chart.data.datasets.forEach(function (dataset, i) {
+                var meta = chart.getDatasetMeta(i);
+                if (meta.hidden) return;
+
+                meta.data.forEach(function (bar, index) {
+                    var valor = dataset.data[index];
+                    if (valor === null || valor === undefined) return;
+
+                    var texto = formateador ? formateador(valor) : String(valor);
+                    var pos = bar.tooltipPosition();
+
+                    if (esHorizontal) {
+                        ctx.textAlign = "left";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(texto, pos.x + 6, pos.y);
+                    } else {
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "bottom";
+                        ctx.fillText(texto, pos.x, pos.y - 4);
+                    }
+                });
+            });
+
+            ctx.restore();
+        }
+    };
+}
+
+function F_GetTareasControlGestion() {
     $.ajax({
         type: "GET",
         url: UrlGetTareasControlGestion,
-        data: { V_Anio: anio },
+        data: obtenerFiltrosTablero(),
         dataType: "json",
         success: function (response) {
             if (response && response.success === true) {
@@ -83,12 +153,10 @@ function F_GetTareasControlGestion() {
 }
 
 function F_GetKpisTiempoGestion() {
-    var anio = $("#ddlAnioIris").val();
-
     $.ajax({
         type: "GET",
         url: UrlGetKpisTiempoGestion,
-        data: { V_Anio: anio },
+        data: obtenerFiltrosTablero(),
         dataType: "json",
         success: function (response) {
             renderKpisTiempoGestion(response && response.success === true ? response.kpis : null);
@@ -100,12 +168,10 @@ function F_GetKpisTiempoGestion() {
 }
 
 function F_GetResultadosCasos() {
-    var anio = $("#ddlAnioIris").val();
-
     $.ajax({
         type: "GET",
         url: UrlGetResultadosCasos,
-        data: { V_Anio: anio },
+        data: obtenerFiltrosTablero(),
         dataType: "json",
         success: function (response) {
             renderResultadosCasos(response && response.success === true ? response.kpis : null);
@@ -199,10 +265,13 @@ function renderGraficoPorUnidad(promedioPorUnidad) {
 
     var etiquetas = datos.map(function (u) { return u.unidad; });
     var valores = datos.map(function (u) { return u.promedioHoras; });
+    // Un poco de aire arriba de la barra más alta para que la etiqueta de valor no se corte.
+    var maxSugerido = valores.length ? Math.max.apply(null, valores) * 1.15 : undefined;
 
     if (chartControlGestion) {
         chartControlGestion.data.labels = etiquetas;
         chartControlGestion.data.datasets[0].data = valores;
+        chartControlGestion.options.scales.yAxes[0].ticks.suggestedMax = maxSugerido;
         chartControlGestion.update();
         return;
     }
@@ -212,7 +281,7 @@ function renderGraficoPorUnidad(promedioPorUnidad) {
         data: {
             labels: etiquetas,
             datasets: [{
-                label: "Promedio de horas",
+                label: "Promedio de tiempo",
                 data: valores,
                 backgroundColor: "#0d6efd"
             }]
@@ -221,21 +290,33 @@ function renderGraficoPorUnidad(promedioPorUnidad) {
             responsive: true,
             maintainAspectRatio: false,
             legend: { display: false },
+            tooltips: {
+                callbacks: {
+                    label: function (item) { return "Promedio: " + formatearDuracion(item.yLabel); }
+                }
+            },
             scales: {
                 yAxes: [{
-                    ticks: { beginAtZero: true },
-                    scaleLabel: { display: true, labelString: "Horas" }
+                    ticks: {
+                        beginAtZero: true,
+                        suggestedMax: maxSugerido,
+                        callback: function (value) { return formatearDuracion(value); }
+                    },
+                    scaleLabel: { display: true, labelString: "Tiempo promedio" }
                 }],
                 xAxes: [{
                     scaleLabel: { display: true, labelString: "Sigla de unidad" }
                 }]
             }
-        }
+        },
+        plugins: [crearPluginValoresBarra(formatearDuracion)]
     });
 }
 
 var chartResultadoExistencia = null;
 var chartPorEstadoCriminalidad = null;
+var chartTopMasCasos = null;
+var chartTopMenosCasos = null;
 
 function renderResultadosCasos(kpis) {
     if (!kpis) {
@@ -243,6 +324,7 @@ function renderResultadosCasos(kpis) {
         renderGraficoResultadoExistencia([]);
         renderGraficoPorEstado([]);
         renderTablaEfectividadUnidad([]);
+        renderGraficosTopCasosPorUnidad([]);
         return;
     }
 
@@ -255,6 +337,7 @@ function renderResultadosCasos(kpis) {
     renderGraficoResultadoExistencia(kpis.porExistencia || []);
     renderGraficoPorEstado(kpis.porEstado || []);
     renderTablaEfectividadUnidad(kpis.rankingUnidades || []);
+    renderGraficosTopCasosPorUnidad(kpis.rankingUnidades || []);
 }
 
 function renderGraficoResultadoExistencia(porExistencia) {
@@ -292,10 +375,12 @@ function renderGraficoPorEstado(porEstado) {
 
     var etiquetas = porEstado.map(function (e) { return e.estado; });
     var valores = porEstado.map(function (e) { return e.cantidad; });
+    var maxSugerido = valores.length ? Math.max.apply(null, valores) * 1.15 : undefined;
 
     if (chartPorEstadoCriminalidad) {
         chartPorEstadoCriminalidad.data.labels = etiquetas;
         chartPorEstadoCriminalidad.data.datasets[0].data = valores;
+        chartPorEstadoCriminalidad.options.scales.xAxes[0].ticks.suggestedMax = maxSugerido;
         chartPorEstadoCriminalidad.update();
         return;
     }
@@ -311,9 +396,10 @@ function renderGraficoPorEstado(porEstado) {
             maintainAspectRatio: false,
             legend: { display: false },
             scales: {
-                xAxes: [{ ticks: { beginAtZero: true } }]
+                xAxes: [{ ticks: { beginAtZero: true, suggestedMax: maxSugerido } }]
             }
-        }
+        },
+        plugins: [crearPluginValoresBarra(function (v) { return String(v); })]
     });
 }
 
@@ -340,5 +426,51 @@ function renderTablaEfectividadUnidad(ranking) {
     ], {
         columnDefs: [{ targets: '_all', className: 'dt-head-center dt-body-center' }],
         preserveDraw: true
+    });
+}
+
+// Ambos gráficos se arman a partir del mismo "rankingUnidades" que ya trajo F_GetResultadosCasos
+// (kpis.rankingUnidades[].total = cantidad de casos de esa unidad en el periodo filtrado) — no hace
+// falta una consulta nueva a Oracle.
+function renderGraficosTopCasosPorUnidad(rankingUnidades) {
+    var ordenDesc = (rankingUnidades || []).slice().sort(function (a, b) { return b.total - a.total; });
+    var top10Mas = ordenDesc.slice(0, 10);
+    var top10Menos = ordenDesc.slice(-10).reverse();
+
+    chartTopMasCasos = renderBarraTopUnidad("graficoTopMasCasos", chartTopMasCasos, top10Mas, "#28a745");
+    chartTopMenosCasos = renderBarraTopUnidad("graficoTopMenosCasos", chartTopMenosCasos, top10Menos, "#dc3545");
+}
+
+function renderBarraTopUnidad(canvasId, chartExistente, datos, color) {
+    var ctx = document.getElementById(canvasId);
+    if (!ctx) return chartExistente;
+
+    var etiquetas = datos.map(function (u) { return u.unidad; });
+    var valores = datos.map(function (u) { return u.total; });
+    var maxSugerido = valores.length ? Math.max.apply(null, valores) * 1.2 : undefined;
+
+    if (chartExistente) {
+        chartExistente.data.labels = etiquetas;
+        chartExistente.data.datasets[0].data = valores;
+        chartExistente.options.scales.xAxes[0].ticks.suggestedMax = maxSugerido;
+        chartExistente.update();
+        return chartExistente;
+    }
+
+    return new Chart(ctx, {
+        type: "horizontalBar",
+        data: {
+            labels: etiquetas,
+            datasets: [{ label: "Casos registrados", data: valores, backgroundColor: color }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: { display: false },
+            scales: {
+                xAxes: [{ ticks: { beginAtZero: true, suggestedMax: maxSugerido, precision: 0 } }]
+            }
+        },
+        plugins: [crearPluginValoresBarra(function (v) { return String(v); })]
     });
 }

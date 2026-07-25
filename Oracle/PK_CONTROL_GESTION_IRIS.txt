@@ -41,21 +41,26 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
     SRV_Message    OUT VARCHAR2
   );
 
-  -- Grilla principal del tablero: una fila por tarea vigente del año, con las horas
-  -- transcurridas y el estado de SLA ya calculados.
+  -- Grilla principal del tablero: una fila por tarea vigente en el rango de fechas, con las
+  -- horas transcurridas y el estado de SLA ya calculados. Filtrable también por unidad
+  -- (SIGLA_UNIDAD), igual que el mapa de puntos, para evaluar una unidad en un periodo concreto.
   FUNCTION F_GetTareasControlGestion(
-    P_Anio          IN NUMBER,
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR;
 
-  -- KPIs de tiempo de gestión a NIVEL DE CASO (no de tarea): una fila por IRISP1 del año, con
-  -- el tiempo total de creación a finalización y el tiempo por etapa (Verificación/Investigación).
-  -- Calculado de forma set-based (ROW_NUMBER analítico) en vez de invocar por fila las funciones
-  -- escalares F_Fecha_Verif_Existe/F_Fecha_Respuesta_Existe/F_Fecha_Asig_Inves/F_Fecha_Respuesta_Inves
-  -- (mismo patrón N+1 ya corregido en F_GetInfoGrillas).
+  -- KPIs de tiempo de gestión a NIVEL DE CASO (no de tarea): una fila por IRISP1 del rango de
+  -- fechas, con el tiempo total de creación a finalización y el tiempo por etapa
+  -- (Verificación/Investigación). Calculado de forma set-based (ROW_NUMBER analítico) en vez de
+  -- invocar por fila las funciones escalares F_Fecha_Verif_Existe/F_Fecha_Respuesta_Existe/
+  -- F_Fecha_Asig_Inves/F_Fecha_Respuesta_Inves (mismo patrón N+1 ya corregido en F_GetInfoGrillas).
   FUNCTION F_GetCasosControlGestion(
-    P_Anio          IN NUMBER,
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR;
@@ -63,12 +68,14 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
   -- Catálogo de siglas de unidad (IRISP_CRIMINALIDAD.SIGLA_UNIDAD) para el filtro del mapa de puntos.
   FUNCTION F_GetSiglasUnidadIrisp1 RETURN SYS_REFCURSOR;
 
-  -- Resultado de cada caso IRISP1 del año: estado general (ID_ESTADO, dominio PADRE_ID=1) y
-  -- resultado de existencia (ID_ESTADO_EXISTENCIA, dominio PADRE_ID=63), con la unidad responsable.
-  -- Alimenta las métricas de efectividad/uso del sistema por unidad (casos finalizados, con
-  -- existencia confirmada/descartada, abiertos e inconclusos).
+  -- Resultado de cada caso IRISP1 del rango de fechas: estado general (ID_ESTADO, dominio
+  -- PADRE_ID=1) y resultado de existencia (ID_ESTADO_EXISTENCIA, dominio PADRE_ID=63), con la
+  -- unidad responsable. Alimenta las métricas de efectividad/uso del sistema por unidad (casos
+  -- finalizados, con existencia confirmada/descartada, abiertos e inconclusos).
   FUNCTION F_GetResultadosCasosIrisp1(
-    P_Anio          IN NUMBER,
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR;
@@ -274,7 +281,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
   --------------------------------------------------------------------------
   FUNCTION F_GetTareasControlGestion(
-    P_Anio          IN NUMBER,
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR IS
@@ -287,7 +296,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   BEGIN
     ------------------------------------------------------------------
     -- Escalar hasta 3 niveles de unidad si la unidad del usuario no tiene
-    -- responsabilidades propias este año (mismo patrón que
+    -- responsabilidades propias en el rango de fechas (mismo patrón que
     -- PK_VERIFICACION_IRIS.F_GetInfoGrillas / PK_CONSULTA_IRISP.F_GetInfoGrillas).
     ------------------------------------------------------------------
     FOR i IN 1..3 LOOP
@@ -295,8 +304,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         FROM IRISP_RESPON_VALIDACION c
         JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
        WHERE c.vigente = 1
-         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-         AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION >= P_FechaInicio
+         AND c.FECHA_CREACION < (P_FechaFin + 1)
          AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
 
       EXIT WHEN V_Count > 0;
@@ -360,7 +369,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         ON s.ID_LISTA_TAREAS = t.ID_LISTA_TAREAS AND s.VIGENTE = 1
 
       WHERE t.VIGENTE = 1
-        AND EXTRACT(YEAR FROM t.FECHA_CREACION) = P_Anio
+        AND t.FECHA_CREACION >= P_FechaInicio
+        AND t.FECHA_CREACION <  (P_FechaFin + 1)
+        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         ------------------------------------------------------------
         -- FILTRO DE ROLES: idéntico al de PK_VERIFICACION_IRIS.F_GetInfoGrillas
@@ -406,7 +417,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   -- inicio de etapa, y la respuesta (fecha_modifica) más reciente como fin de etapa.
   --------------------------------------------------------------------------
   FUNCTION F_GetCasosControlGestion(
-    P_Anio          IN NUMBER,
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR IS
@@ -422,8 +435,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         FROM IRISP_RESPON_VALIDACION c
         JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
        WHERE c.vigente = 1
-         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-         AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION >= P_FechaInicio
+         AND c.FECHA_CREACION < (P_FechaFin + 1)
          AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
 
       EXIT WHEN V_Count > 0;
@@ -523,8 +536,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       LEFT JOIN INVES_FIN invf ON invf.criminalidad_id = c.CRIMINALIDAD_ID
 
       WHERE c.VIGENTE = 1
-        AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-        AND c.FECHA_CREACION <  TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+        AND c.FECHA_CREACION >= P_FechaInicio
+        AND c.FECHA_CREACION <  (P_FechaFin + 1)
+        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         AND (
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
@@ -586,7 +600,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
   --------------------------------------------------------------------------
   FUNCTION F_GetResultadosCasosIrisp1(
-    P_Anio          IN NUMBER,
+    P_FechaInicio   IN DATE,
+    P_FechaFin      IN DATE,
+    P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR IS
@@ -602,8 +618,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         FROM IRISP_RESPON_VALIDACION c
         JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
        WHERE c.vigente = 1
-         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-         AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION >= P_FechaInicio
+         AND c.FECHA_CREACION < (P_FechaFin + 1)
          AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
 
       EXIT WHEN V_Count > 0;
@@ -654,8 +670,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
 
       WHERE c.VIGENTE = 1
-        AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-        AND c.FECHA_CREACION <  TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+        AND c.FECHA_CREACION >= P_FechaInicio
+        AND c.FECHA_CREACION <  (P_FechaFin + 1)
+        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         AND (
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))

@@ -60,6 +60,35 @@
             color: #002a66;
             font-weight: bold;
         }
+
+        /* Mismo ajuste que en Mapa.cshtml: el widget Kendo por defecto (píldora verdosa) no
+           combina con el resto de campos .form-control del sistema. */
+        .k-datepicker.k-widget { width: 100% !important; }
+        .k-datepicker .k-picker-wrap {
+            border: 1px solid #ccc !important;
+            border-left: 5px solid #08a6cb !important;
+            border-radius: 4px !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            height: 34px !important;
+        }
+        .k-datepicker .k-picker-wrap.k-state-focused {
+            border-color: #cacd3a !important;
+            border-left: 5px solid #f18f08 !important;
+        }
+        .k-datepicker .k-picker-wrap .k-input {
+            height: 32px !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding-top: 6px !important;
+            font-size: 14px !important;
+        }
+        .k-datepicker .k-picker-wrap .k-select {
+            background: transparent !important;
+            border: none !important;
+            border-left: 1px solid #eee !important;
+        }
     </style>
 }
 
@@ -84,20 +113,39 @@
 </div>
 
 <div class="row align-items-end">
-    <div class="col-md-3 MargFloatBoos">
+    <div class="col-md-2 MargFloatBoos">
         <div class="form-group has-float-label">
-            @Html.DropDownList("ddlAnioIris", null, String.Format("Seleccione"),
-                     htmlAttributes: new { id = "ddlAnioIris", @class = "form-control select2", style = "width: 100%;" })
-            <label class="Labels">Año</label>
+            <input type="text" id="txtFechaInicioTablero" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
+            <label class="Labels">Fecha inicio</label>
         </div>
     </div>
-    <div class="col-md-6 MargFloatBoos">
-        <span id="rangoFechasTablero"></span>
+    <div class="col-md-2 MargFloatBoos">
+        <div class="form-group has-float-label">
+            <input type="text" id="txtFechaFinTablero" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
+            <label class="Labels">Fecha fin</label>
+        </div>
+    </div>
+    <div class="col-md-3 MargFloatBoos">
+        <div class="form-group has-float-label">
+            @Html.DropDownList("ddlSiglaUnidad", null, String.Format("Todas las unidades"),
+                     htmlAttributes: new { id = "ddlSiglaUnidad", @class = "form-control select2", style = "width: 100%;" })
+            <label class="Labels">Sigla de unidad</label>
+        </div>
+    </div>
+    <div class="col-md-2 MargFloatBoos">
+        <button type="button" id="btnAplicarFiltroTablero" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
+            <i class="fas fa-filter"></i> Aplicar
+        </button>
     </div>
     <div class="col-md-3 MargFloatBoos text-right">
         <a href="@Url.Action("Mapa", "ControlGestion", new { Area = "Control" })" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar">
             <i class="fas fa-map-marked-alt"></i> Ver mapa de puntos
         </a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 MargFloatBoos">
+        <span id="rangoFechasTablero"></span>
     </div>
 </div>
 
@@ -188,7 +236,7 @@
     <div class="col-md-12">
         <div class="card border-info">
             <div class="card-header d-flex align-items-center">
-                <h4 class="card-title text-white"><i class="mr-2 fas fa-chart-bar text-white"></i> Promedio de horas por unidad</h4>
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-chart-bar text-white"></i> Promedio de tiempo por unidad</h4>
             </div>
             <div class="card-body">
                 <div style="position:relative; height:320px;">
@@ -274,6 +322,33 @@
                 </p>
                 <div class="table-responsive">
                     <table id="tbEfectividadUnidad" class="table table-bordered table-striped" width="100%"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-arrow-up text-white"></i> Top 10 unidades con más casos registrados</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:320px;">
+                    <canvas id="graficoTopMasCasos"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-arrow-down text-white"></i> Top 10 unidades con menos casos registrados</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:320px;">
+                    <canvas id="graficoTopMenosCasos"></canvas>
                 </div>
             </div>
         </div>

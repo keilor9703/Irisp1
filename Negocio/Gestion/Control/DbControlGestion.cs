@@ -73,7 +73,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoTareaControlGestion>>> F_GetTareasControlGestion(int anio, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoTareaControlGestion>>> F_GetTareasControlGestion(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoTareaControlGestion>>
             {
@@ -87,7 +87,9 @@ namespace Negocio.Gestion.Control
 
                 var p = new OracleDynamicParameters();
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
-                p.Add("P_Anio", anio, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
 
@@ -106,15 +108,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar el tablero de control de gestión.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar el tablero de control de gestión.";
             }
@@ -122,7 +124,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(int anio, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoCasoControlGestion>>
             {
@@ -136,7 +138,9 @@ namespace Negocio.Gestion.Control
 
                 var p = new OracleDynamicParameters();
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
-                p.Add("P_Anio", anio, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
 
@@ -155,15 +159,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los tiempos de gestión por caso.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los tiempos de gestión por caso.";
             }
@@ -266,7 +270,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(int anio, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoResultadoCasoIrisp1>>
             {
@@ -280,7 +284,9 @@ namespace Negocio.Gestion.Control
 
                 var p = new OracleDynamicParameters();
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
-                p.Add("P_Anio", anio, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
 
@@ -299,15 +305,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los resultados de los casos.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los resultados de los casos.";
             }

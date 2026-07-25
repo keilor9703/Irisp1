@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Negocio.Interfaz.Admin;
 using Negocio.Interfaz.Control;
-using Negocio.Interfaz.Irisp1;
 using System.Security.Claims;
 
 namespace Web.Areas.Control.Controllers
@@ -16,17 +15,15 @@ namespace Web.Areas.Control.Controllers
         #region Propiedades
         private readonly IDbAdministracion _iDbAdministracion;
         private readonly IDbControlGestion _iDbControlGestion;
-        private readonly IDbSeguimientoIris _iDbSeguimientoIris;
         private readonly ILogger<ControlGestionController> _logger;
         #endregion
 
         #region Constructor
         public ControlGestionController(IDbAdministracion iDbAdministracion, IDbControlGestion iDbControlGestion,
-            IDbSeguimientoIris iDbSeguimientoIris, ILogger<ControlGestionController> logger)
+            ILogger<ControlGestionController> logger)
         {
             _iDbAdministracion = iDbAdministracion;
             _iDbControlGestion = iDbControlGestion;
-            _iDbSeguimientoIris = iDbSeguimientoIris;
             _logger = logger;
         }
         #endregion
@@ -37,13 +34,35 @@ namespace Web.Areas.Control.Controllers
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Control/ControlGestion",
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
-            var ddlAnioIris = (await _iDbSeguimientoIris.F_GetAniosIrisP1()).Data.ToList();
-            var anioActual = ddlAnioIris.Any() ? ddlAnioIris.Max(x => x.AnoIrisp1) : (int?)null;
-
-            ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1", anioActual);
+            await PoblarDdlSiglaUnidad();
             ViewBag.Unidad = User.FindFirstValue("Dependencia");
 
             return View();
+        }
+
+        // Rango de fechas por defecto (último año hasta hoy) cuando el usuario no ha filtrado
+        // aún — mismo criterio que usa F_GetMapaIrisp1, para que el tablero y el mapa se
+        // comporten igual la primera vez que se abren.
+        private static (DateTime FechaInicio, DateTime FechaFin) ResolverRangoFechas(DateTime? fechaInicio, DateTime? fechaFin)
+        {
+            var fin = fechaFin ?? DateTime.Today;
+            var inicio = fechaInicio ?? fin.AddMonths(-12);
+            return (inicio, fin);
+        }
+
+        // Llena ViewBag.ddlSiglaUnidad (combo de filtro, igual en Tablero y Mapa) y
+        // ViewBag.SiglasCargadasError — IdRespuesta == 0 puede significar "no hay datos" o "el
+        // paquete Oracle PK_CONTROL_GESTION_IRIS aún no se recompiló con las funciones nuevas";
+        // se avisa en la vista para no confundir ambos casos.
+        private async Task PoblarDdlSiglaUnidad()
+        {
+            var resultadoSiglas = await _iDbControlGestion.F_GetSiglasUnidadIrisp1();
+            var siglas = resultadoSiglas.Data
+                .Where(s => !string.IsNullOrWhiteSpace(s.SiglaUnidad))
+                .ToList();
+
+            ViewBag.ddlSiglaUnidad = new SelectList(siglas, "SiglaUnidad", "SiglaUnidad");
+            ViewBag.SiglasCargadasError = resultadoSiglas.IdRespuesta <= 0;
         }
 
         public async Task<ActionResult> Mapa()
@@ -52,17 +71,8 @@ namespace Web.Areas.Control.Controllers
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Control/Mapa",
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
-            var resultadoSiglas = await _iDbControlGestion.F_GetSiglasUnidadIrisp1();
-            var siglas = resultadoSiglas.Data
-                .Where(s => !string.IsNullOrWhiteSpace(s.SiglaUnidad))
-                .ToList();
-
-            ViewBag.ddlSiglaUnidad = new SelectList(siglas, "SiglaUnidad", "SiglaUnidad");
+            await PoblarDdlSiglaUnidad();
             ViewBag.Unidad = User.FindFirstValue("Dependencia");
-            // resultadoSiglas.IdRespuesta == 0 puede significar "no hay datos" o "el paquete Oracle
-            // PK_CONTROL_GESTION_IRIS aún no se recompiló con las funciones nuevas" (F_GetSiglasUnidadIrisp1,
-            // F_GetCasosControlGestion, F_GetMapaIrisp1) — se avisa en la vista para no confundir ambos casos.
-            ViewBag.SiglasCargadasError = resultadoSiglas.IdRespuesta <= 0;
 
             return View();
         }
@@ -70,14 +80,16 @@ namespace Web.Areas.Control.Controllers
         #region Métodos de Consulta
 
         [HttpGet]
-        public async Task<IActionResult> F_GetTareasControlGestion(int V_Anio)
+        public async Task<IActionResult> F_GetTareasControlGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
             var rolesUsuario = string.Join(",",
                 User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
-            var resultado = await _iDbControlGestion.F_GetTareasControlGestion(V_Anio, rolesUsuario, codigoUnidad);
+            var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
+
+            var resultado = await _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoTareaControlGestion>(), kpis = ArmarKpis(new List<DtoTareaControlGestion>()) });
@@ -89,14 +101,16 @@ namespace Web.Areas.Control.Controllers
         // por etapa (Verificación/Investigación). Se consulta aparte de F_GetTareasControlGestion
         // porque es un dataset distinto (un caso IRISP1 puede tener varias tareas).
         [HttpGet]
-        public async Task<IActionResult> F_GetKpisTiempoGestion(int V_Anio)
+        public async Task<IActionResult> F_GetKpisTiempoGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
             var rolesUsuario = string.Join(",",
                 User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
-            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(V_Anio, rolesUsuario, codigoUnidad);
+            var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
+
+            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisCasos(new List<DtoCasoControlGestion>()) });
@@ -104,19 +118,21 @@ namespace Web.Areas.Control.Controllers
             return Json(new { success = true, kpis = ArmarKpisCasos(resultado.Data) });
         }
 
-        // Resultado/efectividad de cada caso IRISP1 del año: cuántos se finalizaron, cuántos
-        // resultaron con existencia confirmada/descartada, cuántos siguen abiertos, y el ranking
-        // de unidades por efectividad — responde a "qué unidades sí están tramitando lo que se
-        // les asigna" y no solo a los tiempos de SLA.
+        // Resultado/efectividad de cada caso IRISP1 del rango de fechas: cuántos se finalizaron,
+        // cuántos resultaron con existencia confirmada/descartada, cuántos siguen abiertos, y el
+        // ranking de unidades por efectividad — responde a "qué unidades sí están tramitando lo
+        // que se les asigna" y no solo a los tiempos de SLA.
         [HttpGet]
-        public async Task<IActionResult> F_GetResultadosCasos(int V_Anio)
+        public async Task<IActionResult> F_GetResultadosCasos(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
             var rolesUsuario = string.Join(",",
                 User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
-            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(V_Anio, rolesUsuario, codigoUnidad);
+            var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
+
+            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisResultados(new List<DtoResultadoCasoIrisp1>()) });
@@ -260,9 +276,7 @@ namespace Web.Areas.Control.Controllers
             var rolesUsuario = string.Join(",",
                 User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
-            // Por defecto, si el usuario no filtra por fecha: últimos 12 meses hasta hoy.
-            var fechaFin = V_FechaFin ?? DateTime.Today;
-            var fechaInicio = V_FechaInicio ?? fechaFin.AddMonths(-12);
+            var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
             var resultado = await _iDbControlGestion.F_GetMapaIrisp1(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
