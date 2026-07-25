@@ -108,18 +108,34 @@
             </div>
         }
         <div class="row align-items-end">
-            <div class="col-md-2 MargFloatBoos">
+           @* <div class="col-md-2 MargFloatBoos">
                 <div class="form-group has-float-label">
                     <input type="text" id="txtFechaInicioMapa" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
                     <label class="Labels">Fecha inicio</label>
                 </div>
-            </div>
+            </div> *@
+
+
             <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="12" type="text" id="txtFechaInicioMapa" style="width:100%" placeholder="Fecha" class="Calendario" " />
+                    <label class="Labels">Fecha inicio</label>
+                </div>
+            </div>
+
+             <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="12" type="text" id="txtFechaFinMapa" style="width:100%" placeholder="Fecha" class="Calendario" " />
+                    <label class="Labels">Fecha fin</label>
+                </div>
+            </div>
+
+            @* <div class="col-md-2 MargFloatBoos">
                 <div class="form-group has-float-label">
                     <input type="text" id="txtFechaFinMapa" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
                     <label class="Labels">Fecha fin</label>
                 </div>
-            </div>
+            </div> *@
             <div class="col-md-3 MargFloatBoos">
                 <div class="form-group has-float-label">
                     @Html.DropDownList("ddlSiglaUnidad", null, String.Format("Todas las unidades"),

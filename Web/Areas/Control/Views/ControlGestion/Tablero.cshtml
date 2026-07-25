@@ -112,7 +112,28 @@
     </div>
 </div>
 
+
 <div class="row align-items-end">
+
+
+    <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <input tabindex="12" type="text" id="txtFechaInicioTablero" style="width:100%" placeholder="Fecha" class="Calendario" " />
+                    <label class="Labels">Fecha inicio</label>
+                </div>
+   </div>
+
+    <div class="col-md-2 MargFloatBoos">
+        <div class="form-group has-float-label">
+            <input tabindex="12" type="text" id="txtFechaFinTablero" style="width:100%" placeholder="Fecha" class="Calendario" " />
+            <label class="Labels">Fecha fin</label>
+        </div>
+    </div>
+
+
+
+
+@* 
     <div class="col-md-2 MargFloatBoos">
         <div class="form-group has-float-label">
             <input type="text" id="txtFechaInicioTablero" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
@@ -124,7 +145,7 @@
             <input type="text" id="txtFechaFinTablero" style="width:100%" class="Calendario form-control InputPading" placeholder=" " />
             <label class="Labels">Fecha fin</label>
         </div>
-    </div>
+    </div> *@
     <div class="col-md-3 MargFloatBoos">
         <div class="form-group has-float-label">
             @Html.DropDownList("ddlSiglaUnidad", null, String.Format("Todas las unidades"),
@@ -317,8 +338,7 @@
             </div>
             <div class="card-body">
                 <p class="text-muted" style="font-size:.8rem;">
-                    % de casos asignados a la unidad que terminaron con existencia confirmada — permite ver
-                    qué unidades sí están tramitando lo que se les asigna.
+                    % de casos asignados a la unidad que terminaron con existencia confirmada 
                 </p>
                 <div class="table-responsive">
                     <table id="tbEfectividadUnidad" class="table table-bordered table-striped" width="100%"></table>
