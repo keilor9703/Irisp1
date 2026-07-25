@@ -266,6 +266,55 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
+        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(int anio, string rolesUsuario, long codigoUnidad)
+        {
+            var resp = new DtoResultado<List<DtoResultadoCasoIrisp1>>
+            {
+                Operacion = "F_GetResultadosCasosIrisp1",
+                Data = new List<DtoResultadoCasoIrisp1>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+                p.Add("P_Anio", anio, OracleMappingType.Int32, ParameterDirection.Input);
+                p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoResultadoCasoIrisp1>(
+                    "PK_CONTROL_GESTION_IRIS.F_GetResultadosCasosIrisp1",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoResultadoCasoIrisp1>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar los resultados de los casos.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Dapper en {Operacion} | Anio={Anio} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, anio, rolesUsuario, codigoUnidad);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar los resultados de los casos.";
+            }
+
+            return resp;
+        }
+
         #endregion
 
         #region Métodos de Inserción/Actualización/Eliminación

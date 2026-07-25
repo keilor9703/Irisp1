@@ -104,6 +104,106 @@ namespace Web.Areas.Control.Controllers
             return Json(new { success = true, kpis = ArmarKpisCasos(resultado.Data) });
         }
 
+        // Resultado/efectividad de cada caso IRISP1 del año: cuántos se finalizaron, cuántos
+        // resultaron con existencia confirmada/descartada, cuántos siguen abiertos, y el ranking
+        // de unidades por efectividad — responde a "qué unidades sí están tramitando lo que se
+        // les asigna" y no solo a los tiempos de SLA.
+        [HttpGet]
+        public async Task<IActionResult> F_GetResultadosCasos(int V_Anio)
+        {
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+
+            var rolesUsuario = string.Join(",",
+                User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
+
+            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(V_Anio, rolesUsuario, codigoUnidad);
+
+            if (resultado.IdRespuesta <= 0)
+                return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisResultados(new List<DtoResultadoCasoIrisp1>()) });
+
+            return Json(new { success = true, kpis = ArmarKpisResultados(resultado.Data) });
+        }
+
+        // ID_ESTADO = 5 ("Finalizado") está confirmado en PK_SEGUIMIENTO_IRIS.P_FinalizarIris.
+        // La clasificación de existencia se basa en el texto real del dominio (PADRE_ID=63), ya
+        // que es el mismo texto que usan las grillas existentes ("SI EXISTE"/"NO EXISTE").
+        private const int ID_ESTADO_FINALIZADO = 5;
+
+        private static bool EsCasoConExistencia(DtoResultadoCasoIrisp1 caso) =>
+            !string.IsNullOrWhiteSpace(caso.DescEstadoExistencia) &&
+            caso.DescEstadoExistencia!.Trim().ToUpperInvariant().Contains("SI EXISTE");
+
+        private static bool EsCasoSinExistencia(DtoResultadoCasoIrisp1 caso) =>
+            !string.IsNullOrWhiteSpace(caso.DescEstadoExistencia) &&
+            caso.DescEstadoExistencia!.Trim().ToUpperInvariant().Contains("NO EXISTE");
+
+        private static bool EsCasoFinalizado(DtoResultadoCasoIrisp1 caso) =>
+            caso.IdEstado == ID_ESTADO_FINALIZADO;
+
+        private static object ArmarKpisResultados(List<DtoResultadoCasoIrisp1> casos)
+        {
+            var total = casos.Count;
+            var finalizados = casos.Count(EsCasoFinalizado);
+            var existe = casos.Count(EsCasoConExistencia);
+            var noExiste = casos.Count(EsCasoSinExistencia);
+            var pendienteExistencia = total - existe - noExiste;
+            var abiertos = total - finalizados;
+
+            // Inconcluso: el caso se cerró (finalizado) sin que quedara registrada una
+            // definición de existencia — un resultado "a medias" distinto de un caso exitoso
+            // (existe confirmado) o descartado (no existe).
+            var inconclusos = casos.Count(c => EsCasoFinalizado(c) && !EsCasoConExistencia(c) && !EsCasoSinExistencia(c));
+
+            var porEstado = casos
+                .GroupBy(c => string.IsNullOrWhiteSpace(c.DescEstado) ? "Sin estado" : c.DescEstado!)
+                .Select(g => new { estado = g.Key, cantidad = g.Count() })
+                .OrderByDescending(g => g.cantidad)
+                .ToList();
+
+            var porExistencia = new[]
+            {
+                new { resultado = "Existe", cantidad = existe },
+                new { resultado = "No existe", cantidad = noExiste },
+                new { resultado = "Sin determinar", cantidad = pendienteExistencia }
+            };
+
+            var rankingUnidades = casos
+                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadSigla) ? c.UnidadSigla! : (c.Unidad ?? "Sin unidad"))
+                .Select(g =>
+                {
+                    var totalUnidad = g.Count();
+                    var finalizadosUnidad = g.Count(EsCasoFinalizado);
+                    var existeUnidad = g.Count(EsCasoConExistencia);
+
+                    return new
+                    {
+                        unidad = g.Key,
+                        total = totalUnidad,
+                        finalizados = finalizadosUnidad,
+                        existeConfirmado = existeUnidad,
+                        abiertos = totalUnidad - finalizadosUnidad,
+                        efectividadPct = totalUnidad > 0 ? Math.Round((decimal)existeUnidad * 100 / totalUnidad, 1) : 0m
+                    };
+                })
+                .OrderByDescending(u => u.efectividadPct)
+                .ThenByDescending(u => u.total)
+                .ToList();
+
+            return new
+            {
+                total,
+                finalizados,
+                existe,
+                noExiste,
+                pendienteExistencia,
+                abiertos,
+                inconclusos,
+                porEstado,
+                porExistencia,
+                rankingUnidades
+            };
+        }
+
         private static object ArmarKpisCasos(List<DtoCasoControlGestion> casos)
         {
             var finalizados = casos.Where(c => c.HorasTotalCaso.HasValue).ToList();

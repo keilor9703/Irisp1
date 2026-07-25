@@ -14,6 +14,7 @@ var chartControlGestion = null;
 function CargarTablero() {
     F_GetTareasControlGestion();
     F_GetKpisTiempoGestion();
+    F_GetResultadosCasos();
     RenderRangoFechas();
 }
 
@@ -94,6 +95,23 @@ function F_GetKpisTiempoGestion() {
         },
         error: function () {
             renderKpisTiempoGestion(null);
+        }
+    });
+}
+
+function F_GetResultadosCasos() {
+    var anio = $("#ddlAnioIris").val();
+
+    $.ajax({
+        type: "GET",
+        url: UrlGetResultadosCasos,
+        data: { V_Anio: anio },
+        dataType: "json",
+        success: function (response) {
+            renderResultadosCasos(response && response.success === true ? response.kpis : null);
+        },
+        error: function () {
+            renderResultadosCasos(null);
         }
     });
 }
@@ -213,5 +231,114 @@ function renderGraficoPorUnidad(promedioPorUnidad) {
                 }]
             }
         }
+    });
+}
+
+var chartResultadoExistencia = null;
+var chartPorEstadoCriminalidad = null;
+
+function renderResultadosCasos(kpis) {
+    if (!kpis) {
+        $("#kpiCasosFinalizados, #kpiCasosExiste, #kpiCasosNoExiste, #kpiCasosInconclusos, #kpiCasosAbiertos").text("0");
+        renderGraficoResultadoExistencia([]);
+        renderGraficoPorEstado([]);
+        renderTablaEfectividadUnidad([]);
+        return;
+    }
+
+    $("#kpiCasosFinalizados").text(kpis.finalizados);
+    $("#kpiCasosExiste").text(kpis.existe);
+    $("#kpiCasosNoExiste").text(kpis.noExiste);
+    $("#kpiCasosInconclusos").text(kpis.inconclusos);
+    $("#kpiCasosAbiertos").text(kpis.abiertos);
+
+    renderGraficoResultadoExistencia(kpis.porExistencia || []);
+    renderGraficoPorEstado(kpis.porEstado || []);
+    renderTablaEfectividadUnidad(kpis.rankingUnidades || []);
+}
+
+function renderGraficoResultadoExistencia(porExistencia) {
+    var ctx = document.getElementById("graficoResultadoExistencia");
+    if (!ctx) return;
+
+    var etiquetas = porExistencia.map(function (e) { return e.resultado; });
+    var valores = porExistencia.map(function (e) { return e.cantidad; });
+    var colores = ["#28a745", "#dc3545", "#6c757d"];
+
+    if (chartResultadoExistencia) {
+        chartResultadoExistencia.data.labels = etiquetas;
+        chartResultadoExistencia.data.datasets[0].data = valores;
+        chartResultadoExistencia.update();
+        return;
+    }
+
+    chartResultadoExistencia = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: etiquetas,
+            datasets: [{ data: valores, backgroundColor: colores }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: { position: "bottom" }
+        }
+    });
+}
+
+function renderGraficoPorEstado(porEstado) {
+    var ctx = document.getElementById("graficoPorEstado");
+    if (!ctx) return;
+
+    var etiquetas = porEstado.map(function (e) { return e.estado; });
+    var valores = porEstado.map(function (e) { return e.cantidad; });
+
+    if (chartPorEstadoCriminalidad) {
+        chartPorEstadoCriminalidad.data.labels = etiquetas;
+        chartPorEstadoCriminalidad.data.datasets[0].data = valores;
+        chartPorEstadoCriminalidad.update();
+        return;
+    }
+
+    chartPorEstadoCriminalidad = new Chart(ctx, {
+        type: "horizontalBar",
+        data: {
+            labels: etiquetas,
+            datasets: [{ label: "Casos", data: valores, backgroundColor: "#08a6cb" }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: { display: false },
+            scales: {
+                xAxes: [{ ticks: { beginAtZero: true } }]
+            }
+        }
+    });
+}
+
+function badgeEfectividad(pct) {
+    var clase = "bg-danger";
+    if (pct >= 70) clase = "bg-success";
+    else if (pct >= 40) clase = "bg-warning text-dark";
+
+    return '<span class="badge ' + clase + '">' + pct.toFixed(1) + '%</span>';
+}
+
+function renderTablaEfectividadUnidad(ranking) {
+    var filas = ranking.map(function (u) {
+        return [u.unidad || "", u.total, u.finalizados, u.existeConfirmado, u.abiertos, badgeEfectividad(u.efectividadPct)];
+    });
+
+    renderDataTable("#tbEfectividadUnidad", filas, [
+        { title: "Unidad" },
+        { title: "Total asignados" },
+        { title: "Finalizados" },
+        { title: "Existe confirmado" },
+        { title: "Abiertos" },
+        { title: "% Efectividad" }
+    ], {
+        columnDefs: [{ targets: '_all', className: 'dt-head-center dt-body-center' }],
+        preserveDraw: true
     });
 }

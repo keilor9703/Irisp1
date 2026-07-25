@@ -63,6 +63,16 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
   -- Catálogo de siglas de unidad (IRISP_CRIMINALIDAD.SIGLA_UNIDAD) para el filtro del mapa de puntos.
   FUNCTION F_GetSiglasUnidadIrisp1 RETURN SYS_REFCURSOR;
 
+  -- Resultado de cada caso IRISP1 del año: estado general (ID_ESTADO, dominio PADRE_ID=1) y
+  -- resultado de existencia (ID_ESTADO_EXISTENCIA, dominio PADRE_ID=63), con la unidad responsable.
+  -- Alimenta las métricas de efectividad/uso del sistema por unidad (casos finalizados, con
+  -- existencia confirmada/descartada, abiertos e inconclusos).
+  FUNCTION F_GetResultadosCasosIrisp1(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR;
+
   -- Puntos de georreferenciación de casos IRISP1 (mapa de calor/cluster/puntos), filtrables por
   -- unidad (SIGLA_UNIDAD), rango de fechas y rol.
   FUNCTION F_GetMapaIrisp1(
@@ -573,6 +583,110 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       OPEN l_rc FOR SELECT NULL AS SiglaUnidad FROM dual WHERE 1 = 0;
       RETURN l_rc;
   END F_GetSiglasUnidadIrisp1;
+
+  --------------------------------------------------------------------------
+  FUNCTION F_GetResultadosCasosIrisp1(
+    P_Anio          IN NUMBER,
+    P_Roles         IN VARCHAR2,
+    P_CodigoUnidad  IN NUMBER
+  ) RETURN SYS_REFCURSOR IS
+
+    l_rc        SYS_REFCURSOR;
+    V_NuevaUnde NUMBER := P_CodigoUnidad;
+    V_Count     NUMBER := 0;
+    V_TempUnde  NUMBER;
+
+  BEGIN
+    FOR i IN 1..3 LOOP
+      SELECT COUNT(*) INTO V_Count
+        FROM IRISP_RESPON_VALIDACION c
+        JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
+       WHERE c.vigente = 1
+         AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+         AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+         AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
+
+      EXIT WHEN V_Count > 0;
+
+      BEGIN
+        V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
+        IF V_TempUnde IS NOT NULL THEN
+          V_NuevaUnde := V_TempUnde;
+        ELSE
+          EXIT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN EXIT;
+      END;
+    END LOOP;
+
+    OPEN l_rc FOR
+      WITH
+      ROLES_LIST AS (
+        SELECT TO_NUMBER(TRIM(REGEXP_SUBSTR(P_Roles, '[^,]+', 1, LEVEL))) AS ID_ROL
+          FROM dual
+        CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
+      ),
+      RESP AS (
+        SELECT rv.*
+          FROM (
+            SELECT r.*, ROW_NUMBER() OVER (PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
+              FROM IRISP_RESPON_VALIDACION r
+             WHERE r.vigente = 1
+          ) rv
+         WHERE rv.rn = 1
+      )
+      SELECT
+        c.CRIMINALIDAD_ID         AS CriminalidadId,
+        c.CODIGO                  AS Codigo,
+        u.DESCRIPCION_DEPENDENCIA AS Unidad,
+        u.SIGLA_DEPENDE           AS UnidadSigla,
+        c.FECHA_CREACION          AS FechaCreacion,
+        c.ID_ESTADO               AS IdEstado,
+        de.DESCRIPCION            AS DescEstado,
+        c.ID_ESTADO_EXISTENCIA    AS IdEstadoExistencia,
+        dx.DESCRIPCION            AS DescEstadoExistencia
+
+      FROM IRISP_CRIMINALIDAD c
+      LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
+      LEFT JOIN VM_UNIDADES u ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+      LEFT JOIN IRISP_CTRL_DOMINIO de ON de.DOMINIO_ID = c.ID_ESTADO AND de.PADRE_ID = 1 AND de.VIGENTE = 1
+      LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
+
+      WHERE c.VIGENTE = 1
+        AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
+        AND c.FECHA_CREACION <  TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+
+        AND (
+                 EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
+
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
+                   AND r.ID_UNIDAD_RESPON = V_NuevaUnde
+                 )
+            )
+
+      ORDER BY c.FECHA_CREACION DESC;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetResultadosCasosIrisp1',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR
+        SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS Unidad, NULL AS UnidadSigla,
+               NULL AS FechaCreacion, NULL AS IdEstado, NULL AS DescEstado,
+               NULL AS IdEstadoExistencia, NULL AS DescEstadoExistencia
+          FROM dual WHERE 1 = 0;
+
+      RETURN l_rc;
+  END F_GetResultadosCasosIrisp1;
 
   --------------------------------------------------------------------------
   -- Mapa de puntos: reutiliza VM_GENERAL_IRISP (misma fuente que PK_REPORTES_IRIS.P_GetReporteGeneral),

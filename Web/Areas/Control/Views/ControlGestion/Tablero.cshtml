@@ -68,6 +68,7 @@
     <script>
         var UrlGetTareasControlGestion = "@Url.Action("F_GetTareasControlGestion", "ControlGestion", new { Area = "Control" })";
         var UrlGetKpisTiempoGestion = "@Url.Action("F_GetKpisTiempoGestion", "ControlGestion", new { Area = "Control" })";
+        var UrlGetResultadosCasos = "@Url.Action("F_GetResultadosCasos", "ControlGestion", new { Area = "Control" })";
     </script>
     <script src="~/Areas/Control/ControlGestion.js"></script>
 }
@@ -192,6 +193,102 @@
             <div class="card-body">
                 <div style="position:relative; height:320px;">
                     <canvas id="graficoPromedioUnidad"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h6 class="text-muted mb-2"><i class="fas fa-bullseye"></i> Resultados y efectividad de las unidades</h6>
+<div class="row mb-3">
+    <div class="col-md mb-3">
+        <div class="stat-card st-success">
+            <div class="stat-icon bg-success"><i class="fas fa-flag-checkered"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiCasosFinalizados">0</h3>
+                <p>Finalizados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md mb-3">
+        <div class="stat-card st-success">
+            <div class="stat-icon bg-success"><i class="fas fa-check-double"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiCasosExiste">0</h3>
+                <p>Existencia confirmada</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md mb-3">
+        <div class="stat-card st-danger">
+            <div class="stat-icon bg-danger"><i class="fas fa-ban"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiCasosNoExiste">0</h3>
+                <p>No existe</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md mb-3">
+        <div class="stat-card st-warning">
+            <div class="stat-icon bg-warning"><i class="fas fa-question-circle"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiCasosInconclusos">0</h3>
+                <p>Inconclusos</p>
+                <small>Finalizados sin existencia definida</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md mb-3">
+        <div class="stat-card st-secondary">
+            <div class="stat-icon bg-secondary"><i class="fas fa-folder-open"></i></div>
+            <div class="stat-body">
+                <h3 id="kpiCasosAbiertos">0</h3>
+                <p>Abiertos (en trámite)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-5 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-chart-pie text-white"></i> Resultado de existencia</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:260px;">
+                    <canvas id="graficoResultadoExistencia"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-medal text-white"></i> Efectividad por unidad</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted" style="font-size:.8rem;">
+                    % de casos asignados a la unidad que terminaron con existencia confirmada — permite ver
+                    qué unidades sí están tramitando lo que se les asigna.
+                </p>
+                <div class="table-responsive">
+                    <table id="tbEfectividadUnidad" class="table table-bordered table-striped" width="100%"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-3">
+        <div class="card border-info">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-stream text-white"></i> Casos por estado general</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:280px;">
+                    <canvas id="graficoPorEstado"></canvas>
                 </div>
             </div>
         </div>

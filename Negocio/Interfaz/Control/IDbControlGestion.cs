@@ -19,5 +19,7 @@ namespace Negocio.Interfaz.Control
         Task<DtoResultado<List<DtoSiglaUnidad>>> F_GetSiglasUnidadIrisp1();
 
         Task<DtoResultado<List<DtoMapaIrisp1>>> F_GetMapaIrisp1(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad);
+
+        Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(int anio, string rolesUsuario, long codigoUnidad);
     }
 }
