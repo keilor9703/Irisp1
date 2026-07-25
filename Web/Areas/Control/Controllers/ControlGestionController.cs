@@ -120,9 +120,9 @@ namespace Web.Areas.Control.Controllers
             var resultado = await _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
-                return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisCasos(new List<DtoCasoControlGestion>()) });
+                return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoCasoControlGestion>(), kpis = ArmarKpisCasos(new List<DtoCasoControlGestion>()) });
 
-            return Json(new { success = true, kpis = ArmarKpisCasos(resultado.Data) });
+            return Json(new { success = true, data = resultado.Data, kpis = ArmarKpisCasos(resultado.Data) });
         }
 
         // Resultado/efectividad de cada caso IRISP1 del rango de fechas: cuántos se finalizaron,
@@ -142,9 +142,9 @@ namespace Web.Areas.Control.Controllers
             var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
-                return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisResultados(new List<DtoResultadoCasoIrisp1>()) });
+                return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoResultadoCasoIrisp1>(), kpis = ArmarKpisResultados(new List<DtoResultadoCasoIrisp1>()) });
 
-            return Json(new { success = true, kpis = ArmarKpisResultados(resultado.Data) });
+            return Json(new { success = true, data = resultado.Data, kpis = ArmarKpisResultados(resultado.Data) });
         }
 
         // Cascada Región -> Sigla de unidad: cuando el usuario elige una región en el filtro, el

@@ -61,6 +61,24 @@
             font-weight: bold;
         }
 
+        /* KPI cards y elementos de gráficas son "drillables": doble click abre el detalle,
+           igual que en una tabla dinámica de Excel. */
+        .stat-card[data-kpi] {
+            cursor: pointer;
+            transition: box-shadow .15s ease, transform .15s ease;
+        }
+        .stat-card[data-kpi]:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,.12);
+            transform: translateY(-2px);
+        }
+        .drill-hint {
+            font-size: .65rem;
+            color: #adb5bd;
+            margin-top: 2px;
+        }
+        canvas.drillable { cursor: pointer; }
+        #tbEfectividadUnidad tbody tr { cursor: pointer; }
+
         /* Mismo ajuste que en Mapa.cshtml: el widget Kendo por defecto (píldora verdosa) no
            combina con el resto de campos .form-control del sistema. */
         .k-datepicker.k-widget { width: 100% !important; }
@@ -157,10 +175,12 @@
     </div>
 </div>
 
-<h6 class="text-muted mb-2"><i class="fas fa-tasks"></i> Cumplimiento de SLA por tarea</h6>
+<h6 class="text-muted mb-2"><i class="fas fa-tasks"></i> Cumplimiento de SLA por tarea
+    <span class="drill-hint"><i class="fas fa-mouse-pointer"></i> doble click en una tarjeta o gráfica para ver el detalle</span>
+</h6>
 <div class="row mb-3">
     <div class="col-md-2 mb-3">
-        <div class="stat-card st-secondary">
+        <div class="stat-card st-secondary" data-kpi="tareas-total">
             <div class="stat-icon bg-secondary"><i class="fas fa-list"></i></div>
             <div class="stat-body">
                 <h3 id="kpiTotal">0</h3>
@@ -169,7 +189,7 @@
         </div>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card st-success">
+        <div class="stat-card st-success" data-kpi="tareas-atiempo">
             <div class="stat-icon bg-success"><i class="fas fa-check"></i></div>
             <div class="stat-body">
                 <h3 id="kpiATiempo">0</h3>
@@ -178,7 +198,7 @@
         </div>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card st-warning">
+        <div class="stat-card st-warning" data-kpi="tareas-enriesgo">
             <div class="stat-icon bg-warning"><i class="fas fa-exclamation-triangle"></i></div>
             <div class="stat-body">
                 <h3 id="kpiEnRiesgo">0</h3>
@@ -187,7 +207,7 @@
         </div>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card st-danger">
+        <div class="stat-card st-danger" data-kpi="tareas-vencido">
             <div class="stat-icon bg-danger"><i class="fas fa-times"></i></div>
             <div class="stat-body">
                 <h3 id="kpiVencido">0</h3>
@@ -196,7 +216,7 @@
         </div>
     </div>
     <div class="col-md-2 mb-3">
-        <div class="stat-card st-secondary">
+        <div class="stat-card st-secondary" data-kpi="tareas-sinsla">
             <div class="stat-icon bg-secondary"><i class="fas fa-question"></i></div>
             <div class="stat-body">
                 <h3 id="kpiSinSla">0</h3>
@@ -209,7 +229,7 @@
 <h6 class="text-muted mb-2"><i class="fas fa-stopwatch"></i> Tiempo de gestión por caso IRISP1</h6>
 <div class="row mb-3">
     <div class="col-md-4 mb-3">
-        <div class="stat-card st-info">
+        <div class="stat-card st-info" data-kpi="casos-tiempototal">
             <div class="stat-icon bg-info"><i class="fas fa-flag-checkered"></i></div>
             <div class="stat-body">
                 <h3 id="kpiTiempoTotalCaso">-</h3>
@@ -219,7 +239,7 @@
         </div>
     </div>
     <div class="col-md-4 mb-3">
-        <div class="stat-card st-info">
+        <div class="stat-card st-info" data-kpi="casos-verificacion">
             <div class="stat-icon bg-info"><i class="fas fa-search"></i></div>
             <div class="stat-body">
                 <h3 id="kpiTiempoVerificacion">-</h3>
@@ -229,7 +249,7 @@
         </div>
     </div>
     <div class="col-md-4 mb-3">
-        <div class="stat-card st-info">
+        <div class="stat-card st-info" data-kpi="casos-investigacion">
             <div class="stat-icon bg-info"><i class="fas fa-user-secret"></i></div>
             <div class="stat-body">
                 <h3 id="kpiTiempoInvestigacion">-</h3>
@@ -248,7 +268,7 @@
             </div>
             <div class="card-body">
                 <div style="position:relative; height:320px;">
-                    <canvas id="graficoPromedioUnidad"></canvas>
+                    <canvas id="graficoPromedioUnidad" class="drillable"></canvas>
                 </div>
             </div>
         </div>
@@ -258,7 +278,7 @@
 <h6 class="text-muted mb-2"><i class="fas fa-bullseye"></i> Resultados y efectividad de las unidades</h6>
 <div class="row mb-3">
     <div class="col-md mb-3">
-        <div class="stat-card st-success">
+        <div class="stat-card st-success" data-kpi="resultados-finalizados">
             <div class="stat-icon bg-success"><i class="fas fa-flag-checkered"></i></div>
             <div class="stat-body">
                 <h3 id="kpiCasosFinalizados">0</h3>
@@ -267,7 +287,7 @@
         </div>
     </div>
     <div class="col-md mb-3">
-        <div class="stat-card st-success">
+        <div class="stat-card st-success" data-kpi="resultados-existe">
             <div class="stat-icon bg-success"><i class="fas fa-check-double"></i></div>
             <div class="stat-body">
                 <h3 id="kpiCasosExiste">0</h3>
@@ -276,7 +296,7 @@
         </div>
     </div>
     <div class="col-md mb-3">
-        <div class="stat-card st-danger">
+        <div class="stat-card st-danger" data-kpi="resultados-noexiste">
             <div class="stat-icon bg-danger"><i class="fas fa-ban"></i></div>
             <div class="stat-body">
                 <h3 id="kpiCasosNoExiste">0</h3>
@@ -285,7 +305,7 @@
         </div>
     </div>
     <div class="col-md mb-3">
-        <div class="stat-card st-warning">
+        <div class="stat-card st-warning" data-kpi="resultados-inconclusos">
             <div class="stat-icon bg-warning"><i class="fas fa-question-circle"></i></div>
             <div class="stat-body">
                 <h3 id="kpiCasosInconclusos">0</h3>
@@ -295,7 +315,7 @@
         </div>
     </div>
     <div class="col-md mb-3">
-        <div class="stat-card st-secondary">
+        <div class="stat-card st-secondary" data-kpi="resultados-abiertos">
             <div class="stat-icon bg-secondary"><i class="fas fa-folder-open"></i></div>
             <div class="stat-body">
                 <h3 id="kpiCasosAbiertos">0</h3>
@@ -311,10 +331,11 @@
             <div class="card-header d-flex align-items-center">
                 <h4 class="card-title text-white"><i class="mr-2 fas fa-chart-pie text-white"></i> Resultado de existencia</h4>
             </div>
-            <div class="card-body">
-                <div style="position:relative; height:260px;">
-                    <canvas id="graficoResultadoExistencia"></canvas>
+            <div class="card-body d-flex flex-column">
+                <div style="position:relative; height:280px;">
+                    <canvas id="graficoResultadoExistencia" class="drillable"></canvas>
                 </div>
+                <div id="leyendaResultadoExistencia" class="mt-2"></div>
             </div>
         </div>
     </div>
@@ -326,7 +347,7 @@
             <div class="card-body">
                 <p class="text-muted" style="font-size:.8rem;">
                     % de casos asignados a la unidad que terminaron con existencia confirmada — permite ver
-                    qué unidades sí están tramitando lo que se les asigna.
+                    qué unidades sí están tramitando lo que se les asigna. Doble click en una fila para ver el detalle.
                 </p>
                 <div class="table-responsive">
                     <table id="tbEfectividadUnidad" class="table table-bordered table-striped" width="100%"></table>
@@ -344,7 +365,7 @@
             </div>
             <div class="card-body">
                 <div style="position:relative; height:320px;">
-                    <canvas id="graficoTopMasCasos"></canvas>
+                    <canvas id="graficoTopMasCasos" class="drillable"></canvas>
                 </div>
             </div>
         </div>
@@ -356,7 +377,7 @@
             </div>
             <div class="card-body">
                 <div style="position:relative; height:320px;">
-                    <canvas id="graficoTopMenosCasos"></canvas>
+                    <canvas id="graficoTopMenosCasos" class="drillable"></canvas>
                 </div>
             </div>
         </div>
@@ -371,7 +392,7 @@
             </div>
             <div class="card-body">
                 <div style="position:relative; height:280px;">
-                    <canvas id="graficoPorEstado"></canvas>
+                    <canvas id="graficoPorEstado" class="drillable"></canvas>
                 </div>
             </div>
         </div>
@@ -385,6 +406,29 @@
     <div class="card-body">
         <div class="table-responsive m-t-40" style="margin-top: 0px !important;">
             <table id="tbTareasControlGestion" class="table table-bordered table-striped" width="100%" style="margin-top: -1px !important;"></table>
+        </div>
+    </div>
+</div>
+
+@* Modal de detalle (drill-down): se abre con doble click sobre cualquier tarjeta KPI, barra de
+   gráfica, porción de la torta o fila de la tabla de efectividad — igual que el detalle de una
+   tabla dinámica de Excel. *@
+<div class="modal fade" id="ModalDetalleRegistros" tabindex="-1" aria-labelledby="ModalDetalleRegistrosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex align-items-center">
+                <h5 class="modal-title" id="ModalDetalleRegistrosLabel"><i class="mr-2 fas fa-list-ul"></i> Detalle de registros</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" id="ModalDetalleRegistrosSubtitulo" style="font-size:.85rem;"></p>
+                <div class="table-responsive">
+                    <table id="tbDetalleRegistros" class="table table-bordered table-striped" width="100%"></table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>

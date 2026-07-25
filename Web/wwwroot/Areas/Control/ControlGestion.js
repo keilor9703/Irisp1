@@ -26,6 +26,7 @@ $(document).ready(function () {
     });
 
     CargarTablero();
+    InicializarDrillDown();
 });
 
 var chartControlGestion = null;
@@ -161,6 +162,13 @@ function crearPluginValoresBarra(formateador) {
     };
 }
 
+// Se conservan en memoria los mismos datasets crudos que ya trae cada respuesta, para poder
+// filtrarlos en el cliente cuando el usuario hace doble click sobre una tarjeta/gráfica/fila
+// (drill-down tipo tabla dinámica de Excel) sin tener que volver a consultar Oracle.
+var datosTareasActuales = [];
+var datosCasosActuales = [];
+var datosResultadosActuales = [];
+
 function F_GetTareasControlGestion() {
     $.ajax({
         type: "GET",
@@ -169,14 +177,17 @@ function F_GetTareasControlGestion() {
         dataType: "json",
         success: function (response) {
             if (response && response.success === true) {
-                renderTablaTareasControlGestion(response.data || []);
+                datosTareasActuales = response.data || [];
+                renderTablaTareasControlGestion(datosTareasActuales);
                 renderKpisControlGestion(response.kpis);
             } else {
+                datosTareasActuales = [];
                 renderTablaTareasControlGestion([]);
                 renderKpisControlGestion(null);
             }
         },
         error: function () {
+            datosTareasActuales = [];
             renderTablaTareasControlGestion([]);
             renderKpisControlGestion(null);
         }
@@ -190,9 +201,11 @@ function F_GetKpisTiempoGestion() {
         data: obtenerFiltrosTablero(),
         dataType: "json",
         success: function (response) {
+            datosCasosActuales = (response && response.success === true) ? (response.data || []) : [];
             renderKpisTiempoGestion(response && response.success === true ? response.kpis : null);
         },
         error: function () {
+            datosCasosActuales = [];
             renderKpisTiempoGestion(null);
         }
     });
@@ -205,9 +218,11 @@ function F_GetResultadosCasos() {
         data: obtenerFiltrosTablero(),
         dataType: "json",
         success: function (response) {
+            datosResultadosActuales = (response && response.success === true) ? (response.data || []) : [];
             renderResultadosCasos(response && response.success === true ? response.kpis : null);
         },
         error: function () {
+            datosResultadosActuales = [];
             renderResultadosCasos(null);
         }
     });
@@ -371,6 +386,31 @@ function renderResultadosCasos(kpis) {
     renderGraficosTopCasosPorUnidad(kpis.rankingUnidades || []);
 }
 
+// Plugin que dibuja el total en el centro de la dona — evita el hueco vacío en medio del
+// gráfico y da de entrada el dato más importante (cuántos casos hay en total).
+var pluginTotalCentroDona = {
+    afterDraw: function (chart) {
+        if (chart.config.type !== "doughnut") return;
+
+        var total = chart.data.datasets[0].data.reduce(function (a, b) { return a + (b || 0); }, 0);
+        var ctx = chart.ctx;
+        var area = chart.chartArea;
+        var cx = (area.left + area.right) / 2;
+        var cy = (area.top + area.bottom) / 2;
+
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 26px Arial";
+        ctx.fillStyle = "#002a66";
+        ctx.fillText(total, cx, cy - 10);
+        ctx.font = "11px Arial";
+        ctx.fillStyle = "#6c757d";
+        ctx.fillText("casos", cx, cy + 14);
+        ctx.restore();
+    }
+};
+
 function renderGraficoResultadoExistencia(porExistencia) {
     var ctx = document.getElementById("graficoResultadoExistencia");
     if (!ctx) return;
@@ -378,6 +418,8 @@ function renderGraficoResultadoExistencia(porExistencia) {
     var etiquetas = porExistencia.map(function (e) { return e.resultado; });
     var valores = porExistencia.map(function (e) { return e.cantidad; });
     var colores = ["#28a745", "#dc3545", "#6c757d"];
+
+    renderLeyendaResultadoExistencia(porExistencia, colores);
 
     if (chartResultadoExistencia) {
         chartResultadoExistencia.data.labels = etiquetas;
@@ -390,14 +432,46 @@ function renderGraficoResultadoExistencia(porExistencia) {
         type: "doughnut",
         data: {
             labels: etiquetas,
-            datasets: [{ data: valores, backgroundColor: colores }]
+            datasets: [{ data: valores, backgroundColor: colores, borderWidth: 2, borderColor: "#fff" }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            legend: { position: "bottom" }
-        }
+            cutoutPercentage: 62,
+            legend: { display: false },
+            tooltips: {
+                callbacks: {
+                    label: function (item, data) {
+                        var valor = data.datasets[0].data[item.index];
+                        var total = data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
+                        var pct = total > 0 ? Math.round(valor * 1000 / total) / 10 : 0;
+                        return data.labels[item.index] + ": " + valor + " (" + pct + "%)";
+                    }
+                }
+            }
+        },
+        plugins: [pluginTotalCentroDona]
     });
+}
+
+// Leyenda propia en HTML (en vez de la leyenda por defecto de Chart.js) para poder mostrar
+// cantidad y porcentaje de cada resultado, no solo el color — la leyenda original no dejaba
+// analizar nada, solo mostraba el nombre.
+function renderLeyendaResultadoExistencia(porExistencia, colores) {
+    var $leyenda = $("#leyendaResultadoExistencia");
+    if (!$leyenda.length) return;
+
+    var total = porExistencia.reduce(function (acc, e) { return acc + (e.cantidad || 0); }, 0);
+
+    var html = porExistencia.map(function (e, i) {
+        var pct = total > 0 ? Math.round(e.cantidad * 1000 / total) / 10 : 0;
+        return '<div class="d-flex justify-content-between align-items-center" style="font-size:.85rem; padding:4px 2px; cursor:pointer;" data-existencia="' + e.resultado + '">' +
+            '<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + colores[i] + ';margin-right:6px;"></span>' + e.resultado + '</span>' +
+            '<strong>' + e.cantidad + ' <span class="text-muted" style="font-weight:normal;">(' + pct + '%)</span></strong>' +
+            '</div>';
+    }).join("");
+
+    $leyenda.html(html);
 }
 
 function renderGraficoPorEstado(porEstado) {
@@ -504,4 +578,250 @@ function renderBarraTopUnidad(canvasId, chartExistente, datos, color) {
         },
         plugins: [crearPluginValoresBarra(function (v) { return String(v); })]
     });
+}
+
+// ============================================================================
+// Drill-down: doble click sobre una tarjeta KPI, una barra/porción de gráfica o una fila de
+// "Efectividad por unidad" abre un modal con el detalle de los registros que arman ese número
+// — igual que al hacer doble click sobre un valor de una tabla dinámica en Excel. Los datasets
+// crudos (datosTareasActuales/datosCasosActuales/datosResultadosActuales) ya están en memoria
+// porque cada respuesta de F_Get* los trae junto con los KPIs agregados, así que el filtrado es
+// 100% en el cliente, sin volver a consultar Oracle.
+// ============================================================================
+
+const ID_ESTADO_FINALIZADO = 5;
+
+function esCasoConExistencia(c) {
+    return !!(c.DescEstadoExistencia && c.DescEstadoExistencia.trim().toUpperCase().indexOf("SI EXISTE") !== -1);
+}
+
+function esCasoSinExistencia(c) {
+    return !!(c.DescEstadoExistencia && c.DescEstadoExistencia.trim().toUpperCase().indexOf("NO EXISTE") !== -1);
+}
+
+function esCasoFinalizado(c) {
+    return c.IdEstado === ID_ESTADO_FINALIZADO;
+}
+
+function formatearEstadoCaso(idEstado) {
+    return idEstado === ID_ESTADO_FINALIZADO ? "Finalizado" : "En trámite";
+}
+
+var columnasTareasDetalle = [
+    { title: "Código IRISP1" }, { title: "Unidad" }, { title: "Tarea" },
+    { title: "Estado tarea" }, { title: "Tiempo transcurrido" }, { title: "SLA" }
+];
+function filasTareasDetalle(lista) {
+    return lista.map(function (t) {
+        return [t.Codigo || "", t.UnidadSigla || t.Unidad || "", t.DescListaTarea || "",
+                t.DescEstadoTarea || "", formatearDuracion(t.HorasTranscurridas), badgeEstadoSla(t.EstadoSla)];
+    });
+}
+
+var columnasCasosDetalle = [
+    { title: "Código IRISP1" }, { title: "Unidad" }, { title: "Fecha creación" },
+    { title: "Tiempo total" }, { title: "Tiempo Verificación" }, { title: "Tiempo Investigación" }
+];
+function filasCasosDetalle(lista) {
+    return lista.map(function (c) {
+        return [c.Codigo || "", c.UnidadSigla || c.Unidad || "",
+                c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleDateString("es-CO") : "-",
+                formatearDuracion(c.HorasTotalCaso), formatearDuracion(c.HorasVerificacion), formatearDuracion(c.HorasInvestigacion)];
+    });
+}
+
+var columnasResultadosDetalle = [
+    { title: "Código IRISP1" }, { title: "Unidad" }, { title: "Fecha creación" },
+    { title: "Estado" }, { title: "Existencia" }
+];
+function filasResultadosDetalle(lista) {
+    return lista.map(function (c) {
+        return [c.Codigo || "", c.UnidadSigla || c.Unidad || "",
+                c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleDateString("es-CO") : "-",
+                c.DescEstado || formatearEstadoCaso(c.IdEstado), c.DescEstadoExistencia || "Sin determinar"];
+    });
+}
+
+function abrirDetalle(titulo, subtitulo, columnas, filas) {
+    $("#ModalDetalleRegistrosLabel").html('<i class="mr-2 fas fa-list-ul"></i> ' + titulo);
+    $("#ModalDetalleRegistrosSubtitulo").text(subtitulo || "");
+
+    if ($.fn.dataTable.isDataTable("#tbDetalleRegistros")) {
+        $("#tbDetalleRegistros").DataTable().destroy();
+        $("#tbDetalleRegistros").empty();
+    }
+
+    $("#tbDetalleRegistros").DataTable({
+        data: filas,
+        columns: columnas,
+        language: glOpcionesIdioma,
+        scrollX: true,
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        columnDefs: [{ targets: '_all', className: 'dt-head-center dt-body-center' }]
+    });
+
+    $("#ModalDetalleRegistros").modal("show");
+}
+
+function abrirDetalleVacio(titulo) {
+    abrirDetalle(titulo, "No hay registros que coincidan.", [{ title: "Sin datos" }], []);
+}
+
+// Despacha por el identificador data-kpi de cada tarjeta hacia el dataset y filtro correctos.
+function abrirDetalleKpi(kpi) {
+    switch (kpi) {
+        case "tareas-total":
+            abrirDetalle("Total tareas", datosTareasActuales.length + " tarea(s)", columnasTareasDetalle, filasTareasDetalle(datosTareasActuales));
+            break;
+        case "tareas-atiempo":
+            var atiempo = datosTareasActuales.filter(function (t) { return t.EstadoSla === "A TIEMPO"; });
+            abrirDetalle("Tareas a tiempo", atiempo.length + " tarea(s)", columnasTareasDetalle, filasTareasDetalle(atiempo));
+            break;
+        case "tareas-enriesgo":
+            var enriesgo = datosTareasActuales.filter(function (t) { return t.EstadoSla === "EN RIESGO"; });
+            abrirDetalle("Tareas en riesgo", enriesgo.length + " tarea(s)", columnasTareasDetalle, filasTareasDetalle(enriesgo));
+            break;
+        case "tareas-vencido":
+            var vencidas = datosTareasActuales.filter(function (t) { return t.EstadoSla === "VENCIDO"; });
+            abrirDetalle("Tareas vencidas", vencidas.length + " tarea(s)", columnasTareasDetalle, filasTareasDetalle(vencidas));
+            break;
+        case "tareas-sinsla":
+            var sinSla = datosTareasActuales.filter(function (t) { return !t.EstadoSla || t.EstadoSla === "SIN SLA DEFINIDO"; });
+            abrirDetalle("Tareas sin SLA definido", sinSla.length + " tarea(s)", columnasTareasDetalle, filasTareasDetalle(sinSla));
+            break;
+
+        case "casos-tiempototal":
+            var conTiempoTotal = datosCasosActuales.filter(function (c) { return c.HorasTotalCaso != null; });
+            abrirDetalle("Casos finalizados (tiempo total)", conTiempoTotal.length + " caso(s)", columnasCasosDetalle, filasCasosDetalle(conTiempoTotal));
+            break;
+        case "casos-verificacion":
+            var conVerif = datosCasosActuales.filter(function (c) { return c.HorasVerificacion != null; });
+            abrirDetalle("Casos con etapa de Verificación completada", conVerif.length + " caso(s)", columnasCasosDetalle, filasCasosDetalle(conVerif));
+            break;
+        case "casos-investigacion":
+            var conInves = datosCasosActuales.filter(function (c) { return c.HorasInvestigacion != null; });
+            abrirDetalle("Casos con etapa de Investigación completada", conInves.length + " caso(s)", columnasCasosDetalle, filasCasosDetalle(conInves));
+            break;
+
+        case "resultados-finalizados":
+            var finalizados = datosResultadosActuales.filter(esCasoFinalizado);
+            abrirDetalle("Casos finalizados", finalizados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(finalizados));
+            break;
+        case "resultados-existe":
+            var existe = datosResultadosActuales.filter(esCasoConExistencia);
+            abrirDetalle("Casos con existencia confirmada", existe.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(existe));
+            break;
+        case "resultados-noexiste":
+            var noExiste = datosResultadosActuales.filter(esCasoSinExistencia);
+            abrirDetalle("Casos sin existencia (descartados)", noExiste.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(noExiste));
+            break;
+        case "resultados-inconclusos":
+            var inconclusos = datosResultadosActuales.filter(function (c) {
+                return esCasoFinalizado(c) && !esCasoConExistencia(c) && !esCasoSinExistencia(c);
+            });
+            abrirDetalle("Casos inconclusos", inconclusos.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(inconclusos));
+            break;
+        case "resultados-abiertos":
+            var abiertos = datosResultadosActuales.filter(function (c) { return !esCasoFinalizado(c); });
+            abrirDetalle("Casos abiertos (en trámite)", abiertos.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(abiertos));
+            break;
+
+        default:
+            abrirDetalleVacio("Detalle");
+    }
+}
+
+// Índice del punto/barra sobre el que se hizo doble click en un canvas de Chart.js v2.
+function obtenerIndiceChart(chart, evt) {
+    var elementos = chart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, false);
+    return elementos.length ? elementos[0]._index : null;
+}
+
+function InicializarDrillDown() {
+    // DataTables calcula el ancho de columnas en el momento de inicializarse; si el modal todavía
+    // está oculto (display:none) esas columnas quedan en 0px. Se recalculan cuando el modal
+    // termina de mostrarse.
+    $("#ModalDetalleRegistros").on("shown.bs.modal", function () {
+        if ($.fn.dataTable.isDataTable("#tbDetalleRegistros")) {
+            $("#tbDetalleRegistros").DataTable().columns.adjust().draw(false);
+        }
+    });
+
+    // Tarjetas KPI
+    $(document).on("dblclick", ".stat-card[data-kpi]", function () {
+        abrirDetalleKpi($(this).data("kpi"));
+    });
+
+    // Doughnut "Resultado de existencia": también se puede hacer doble click sobre cada fila
+    // de la leyenda propia (no solo sobre la porción de la torta).
+    document.getElementById("graficoResultadoExistencia").addEventListener("dblclick", function (evt) {
+        if (!chartResultadoExistencia) return;
+        var idx = obtenerIndiceChart(chartResultadoExistencia, evt);
+        if (idx === null) return;
+        filtrarPorExistenciaYAbrir(chartResultadoExistencia.data.labels[idx]);
+    });
+    $(document).on("dblclick", "#leyendaResultadoExistencia [data-existencia]", function () {
+        filtrarPorExistenciaYAbrir($(this).data("existencia"));
+    });
+
+    // Barras "Promedio de tiempo por unidad" (dataset de tareas, filtra por unidad)
+    document.getElementById("graficoPromedioUnidad").addEventListener("dblclick", function (evt) {
+        if (!chartControlGestion) return;
+        var idx = obtenerIndiceChart(chartControlGestion, evt);
+        if (idx === null) return;
+        var unidad = chartControlGestion.data.labels[idx];
+        var filtradas = datosTareasActuales.filter(function (t) { return (t.UnidadSigla || t.Unidad) === unidad; });
+        abrirDetalle("Tareas de la unidad " + unidad, filtradas.length + " tarea(s)", columnasTareasDetalle, filasTareasDetalle(filtradas));
+    });
+
+    // Barras "Casos por estado general" (dataset de resultados, filtra por estado)
+    document.getElementById("graficoPorEstado").addEventListener("dblclick", function (evt) {
+        if (!chartPorEstadoCriminalidad) return;
+        var idx = obtenerIndiceChart(chartPorEstadoCriminalidad, evt);
+        if (idx === null) return;
+        var estado = chartPorEstadoCriminalidad.data.labels[idx];
+        var filtrados = datosResultadosActuales.filter(function (c) { return (c.DescEstado || "Sin estado") === estado; });
+        abrirDetalle("Casos en estado " + estado, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+    });
+
+    // Top 10 con más/menos casos (dataset de resultados, filtra por unidad)
+    ["graficoTopMasCasos", "graficoTopMenosCasos"].forEach(function (canvasId) {
+        document.getElementById(canvasId).addEventListener("dblclick", function (evt) {
+            var chart = canvasId === "graficoTopMasCasos" ? chartTopMasCasos : chartTopMenosCasos;
+            if (!chart) return;
+            var idx = obtenerIndiceChart(chart, evt);
+            if (idx === null) return;
+            var unidad = chart.data.labels[idx];
+            var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadSigla || c.Unidad) === unidad; });
+            abrirDetalle("Casos de la unidad " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+        });
+    });
+
+    // Filas de la tabla "Efectividad por unidad" (delegado: la tabla se reconstruye con cada filtro)
+    $(document).on("dblclick", "#tbEfectividadUnidad tbody tr", function () {
+        var fila = $("#tbEfectividadUnidad").DataTable().row(this).data();
+        if (!fila) return;
+        var unidad = $("<div>").html(fila[0]).text(); // primera columna = Unidad
+        var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadSigla || c.Unidad) === unidad; });
+        abrirDetalle("Casos de la unidad " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+    });
+}
+
+function filtrarPorExistenciaYAbrir(etiqueta) {
+    var filtrados;
+    var titulo;
+
+    if (etiqueta === "Existe") {
+        filtrados = datosResultadosActuales.filter(esCasoConExistencia);
+        titulo = "Casos con existencia confirmada";
+    } else if (etiqueta === "No existe") {
+        filtrados = datosResultadosActuales.filter(esCasoSinExistencia);
+        titulo = "Casos sin existencia (descartados)";
+    } else {
+        filtrados = datosResultadosActuales.filter(function (c) { return !esCasoConExistencia(c) && !esCasoSinExistencia(c); });
+        titulo = "Casos sin determinar";
+    }
+
+    abrirDetalle(titulo, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
 }
