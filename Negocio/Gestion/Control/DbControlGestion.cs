@@ -73,7 +73,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoTareaControlGestion>>> F_GetTareasControlGestion(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoTareaControlGestion>>> F_GetTareasControlGestion(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoTareaControlGestion>>
             {
@@ -89,6 +89,7 @@ namespace Negocio.Gestion.Control
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
                 p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
                 p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_RegionCodigo", regionCodigo.HasValue ? (object)regionCodigo.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
@@ -108,15 +109,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar el tablero de control de gestión.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar el tablero de control de gestión.";
             }
@@ -124,7 +125,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoCasoControlGestion>>
             {
@@ -140,6 +141,7 @@ namespace Negocio.Gestion.Control
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
                 p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
                 p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_RegionCodigo", regionCodigo.HasValue ? (object)regionCodigo.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
@@ -159,15 +161,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los tiempos de gestión por caso.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los tiempos de gestión por caso.";
             }
@@ -175,7 +177,51 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoSiglaUnidad>>> F_GetSiglasUnidadIrisp1()
+        public async Task<DtoResultado<List<DtoRegionIrisp1>>> F_GetRegionesIrisp1()
+        {
+            var resp = new DtoResultado<List<DtoRegionIrisp1>>
+            {
+                Operacion = "F_GetRegionesIrisp1",
+                Data = new List<DtoRegionIrisp1>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoRegionIrisp1>(
+                    "PK_CONTROL_GESTION_IRIS.F_GetRegionesIrisp1",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoRegionIrisp1>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar las regiones.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar las regiones.";
+            }
+
+            return resp;
+        }
+
+        public async Task<DtoResultado<List<DtoSiglaUnidad>>> F_GetSiglasUnidadIrisp1(int? regionCodigo)
         {
             var resp = new DtoResultado<List<DtoSiglaUnidad>>
             {
@@ -189,6 +235,7 @@ namespace Negocio.Gestion.Control
 
                 var p = new OracleDynamicParameters();
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+                p.Add("P_RegionCodigo", regionCodigo.HasValue ? (object)regionCodigo.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
 
                 await connection.OpenAsync();
 
@@ -205,13 +252,13 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                _logger.LogError(oex, "OracleException en {Operacion} | RegionCodigo={RegionCodigo}", resp.Operacion, regionCodigo);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar las siglas de unidad.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | RegionCodigo={RegionCodigo}", resp.Operacion, regionCodigo);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar las siglas de unidad.";
             }
@@ -219,7 +266,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoMapaIrisp1>>> F_GetMapaIrisp1(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoMapaIrisp1>>> F_GetMapaIrisp1(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoMapaIrisp1>>
             {
@@ -235,6 +282,7 @@ namespace Negocio.Gestion.Control
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
                 p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
                 p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_RegionCodigo", regionCodigo.HasValue ? (object)regionCodigo.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
@@ -254,15 +302,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los puntos del mapa.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los puntos del mapa.";
             }
@@ -270,7 +318,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(DateTime fechaInicio, DateTime fechaFin, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoResultadoCasoIrisp1>>
             {
@@ -286,6 +334,7 @@ namespace Negocio.Gestion.Control
                 p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
                 p.Add("P_FechaInicio", fechaInicio.Date, OracleMappingType.Date, ParameterDirection.Input);
                 p.Add("P_FechaFin", fechaFin.Date, OracleMappingType.Date, ParameterDirection.Input);
+                p.Add("P_RegionCodigo", regionCodigo.HasValue ? (object)regionCodigo.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
@@ -305,15 +354,15 @@ namespace Negocio.Gestion.Control
             }
             catch (OracleException oex)
             {
-                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
+                _logger.LogError(oex, "OracleException en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los resultados de los casos.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
-                    resp.Operacion, fechaInicio, fechaFin, siglaUnidad, rolesUsuario, codigoUnidad);
+                _logger.LogError(ex, "Error Dapper en {Operacion} | FechaInicio={FechaInicio} | FechaFin={FechaFin} | RegionCodigo={RegionCodigo} | SiglaUnidad={SiglaUnidad} | RolesUsuario={RolesUsuario} | CodigoUnidad={CodigoUnidad}",
+                    resp.Operacion, fechaInicio, fechaFin, regionCodigo, siglaUnidad, rolesUsuario, codigoUnidad);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar los resultados de los casos.";
             }

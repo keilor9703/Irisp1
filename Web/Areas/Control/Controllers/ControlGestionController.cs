@@ -34,7 +34,7 @@ namespace Web.Areas.Control.Controllers
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Control/ControlGestion",
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
-            await PoblarDdlSiglaUnidad();
+            await PoblarDdlRegionYSiglaUnidad();
             ViewBag.Unidad = User.FindFirstValue("Dependencia");
 
             return View();
@@ -50,13 +50,20 @@ namespace Web.Areas.Control.Controllers
             return (inicio, fin);
         }
 
-        // Llena ViewBag.ddlSiglaUnidad (combo de filtro, igual en Tablero y Mapa) y
-        // ViewBag.SiglasCargadasError — IdRespuesta == 0 puede significar "no hay datos" o "el
-        // paquete Oracle PK_CONTROL_GESTION_IRIS aún no se recompiló con las funciones nuevas";
-        // se avisa en la vista para no confundir ambos casos.
-        private async Task PoblarDdlSiglaUnidad()
+        // Llena ViewBag.ddlRegion y ViewBag.ddlSiglaUnidad (combos de filtro, iguales en Tablero
+        // y Mapa; la sigla arranca sin filtrar por región — el cascadeo real ocurre en el cliente
+        // vía F_GetSiglasUnidad) y ViewBag.SiglasCargadasError — IdRespuesta == 0 puede significar
+        // "no hay datos" o "el paquete Oracle PK_CONTROL_GESTION_IRIS aún no se recompiló con las
+        // funciones nuevas"; se avisa en la vista para no confundir ambos casos.
+        private async Task PoblarDdlRegionYSiglaUnidad()
         {
-            var resultadoSiglas = await _iDbControlGestion.F_GetSiglasUnidadIrisp1();
+            var resultadoRegiones = await _iDbControlGestion.F_GetRegionesIrisp1();
+            var regiones = resultadoRegiones.Data
+                .Where(r => r.RegionCodigo.HasValue)
+                .ToList();
+            ViewBag.ddlRegion = new SelectList(regiones, "RegionCodigo", "RegionDescripcion");
+
+            var resultadoSiglas = await _iDbControlGestion.F_GetSiglasUnidadIrisp1(null);
             var siglas = resultadoSiglas.Data
                 .Where(s => !string.IsNullOrWhiteSpace(s.SiglaUnidad))
                 .ToList();
@@ -71,7 +78,7 @@ namespace Web.Areas.Control.Controllers
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Control/Mapa",
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
 
-            await PoblarDdlSiglaUnidad();
+            await PoblarDdlRegionYSiglaUnidad();
             ViewBag.Unidad = User.FindFirstValue("Dependencia");
 
             return View();
@@ -80,7 +87,7 @@ namespace Web.Areas.Control.Controllers
         #region Métodos de Consulta
 
         [HttpGet]
-        public async Task<IActionResult> F_GetTareasControlGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetTareasControlGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -89,7 +96,7 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoTareaControlGestion>(), kpis = ArmarKpis(new List<DtoTareaControlGestion>()) });
@@ -101,7 +108,7 @@ namespace Web.Areas.Control.Controllers
         // por etapa (Verificación/Investigación). Se consulta aparte de F_GetTareasControlGestion
         // porque es un dataset distinto (un caso IRISP1 puede tener varias tareas).
         [HttpGet]
-        public async Task<IActionResult> F_GetKpisTiempoGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetKpisTiempoGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -110,7 +117,7 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisCasos(new List<DtoCasoControlGestion>()) });
@@ -123,7 +130,7 @@ namespace Web.Areas.Control.Controllers
         // ranking de unidades por efectividad — responde a "qué unidades sí están tramitando lo
         // que se les asigna" y no solo a los tiempos de SLA.
         [HttpGet]
-        public async Task<IActionResult> F_GetResultadosCasos(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetResultadosCasos(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -132,12 +139,25 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, kpis = ArmarKpisResultados(new List<DtoResultadoCasoIrisp1>()) });
 
             return Json(new { success = true, kpis = ArmarKpisResultados(resultado.Data) });
+        }
+
+        // Cascada Región -> Sigla de unidad: cuando el usuario elige una región en el filtro, el
+        // JS vuelve a pedir el catálogo de siglas ya acotado a esa región.
+        [HttpGet]
+        public async Task<IActionResult> F_GetSiglasUnidad(int? regionCodigo)
+        {
+            var resultado = await _iDbControlGestion.F_GetSiglasUnidadIrisp1(regionCodigo);
+
+            if (resultado.IdRespuesta <= 0)
+                return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoSiglaUnidad>() });
+
+            return Json(new { success = true, data = resultado.Data });
         }
 
         // ID_ESTADO = 5 ("Finalizado") está confirmado en PK_SEGUIMIENTO_IRIS.P_FinalizarIris.
@@ -269,7 +289,7 @@ namespace Web.Areas.Control.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> F_GetMapaIrisp1(DateTime? V_FechaInicio, DateTime? V_FechaFin, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetMapaIrisp1(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -278,7 +298,7 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetMapaIrisp1(fechaInicio, fechaFin, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetMapaIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoMapaIrisp1>() });

@@ -12,6 +12,7 @@ $(document).ready(function () {
         interval: 1
     });
 
+    $("#ddlRegion").select2({ placeholder: "Todas las regiones", allowClear: true, width: "100%" });
     $("#ddlSiglaUnidad").select2({ placeholder: "Todas las unidades", allowClear: true, width: "100%" });
 
     inicializarMapa();
@@ -22,6 +23,11 @@ $(document).ready(function () {
 
     $("#txtFechaInicioMapa").data("kendoDatePicker").value(haceUnAnio);
     $("#txtFechaFinMapa").data("kendoDatePicker").value(hoy);
+
+    // Cascada Región -> Sigla de unidad, igual que en el Tablero.
+    $("#ddlRegion").on("change", function () {
+        RecargarSiglasPorRegion();
+    });
 
     $(".btn-modo-mapa").on("click", function () {
         $(".btn-modo-mapa").removeClass("active");
@@ -63,9 +69,31 @@ function formatearFechaIso(fecha) {
     return yyyy + "-" + mm + "-" + dd;
 }
 
+function RecargarSiglasPorRegion() {
+    var regionCodigo = $("#ddlRegion").val();
+
+    $.ajax({
+        type: "GET",
+        url: UrlGetSiglasUnidad,
+        data: { regionCodigo: regionCodigo || "" },
+        dataType: "json",
+        success: function (response) {
+            var siglas = (response && response.success === true) ? (response.data || []) : [];
+            var $ddl = $("#ddlSiglaUnidad");
+
+            $ddl.empty();
+            siglas.forEach(function (s) {
+                $ddl.append($("<option>", { value: s.SiglaUnidad, text: s.SiglaUnidad }));
+            });
+            $ddl.val(null).trigger("change");
+        }
+    });
+}
+
 function F_GetMapaIrisp1() {
     var fechaInicio = parsearFechaKendo("#txtFechaInicioMapa");
     var fechaFin = parsearFechaKendo("#txtFechaFinMapa");
+    var regionCodigo = $("#ddlRegion").val();
     var siglaUnidad = $("#ddlSiglaUnidad").val();
 
     $.ajax({
@@ -74,6 +102,7 @@ function F_GetMapaIrisp1() {
         data: {
             V_FechaInicio: formatearFechaIso(fechaInicio),
             V_FechaFin: formatearFechaIso(fechaFin),
+            V_RegionCodigo: regionCodigo || "",
             V_SiglaUnidad: siglaUnidad || ""
         },
         dataType: "json",

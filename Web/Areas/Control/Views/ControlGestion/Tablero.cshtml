@@ -98,6 +98,7 @@
         var UrlGetTareasControlGestion = "@Url.Action("F_GetTareasControlGestion", "ControlGestion", new { Area = "Control" })";
         var UrlGetKpisTiempoGestion = "@Url.Action("F_GetKpisTiempoGestion", "ControlGestion", new { Area = "Control" })";
         var UrlGetResultadosCasos = "@Url.Action("F_GetResultadosCasos", "ControlGestion", new { Area = "Control" })";
+        var UrlGetSiglasUnidad = "@Url.Action("F_GetSiglasUnidad", "ControlGestion", new { Area = "Control" })";
     </script>
     <script src="~/Areas/Control/ControlGestion.js"></script>
 }
@@ -125,7 +126,14 @@
             <label class="Labels">Fecha fin</label>
         </div>
     </div>
-    <div class="col-md-3 MargFloatBoos">
+    <div class="col-md-2 MargFloatBoos">
+        <div class="form-group has-float-label">
+            @Html.DropDownList("ddlRegion", null, String.Format("Todas las regiones"),
+                     htmlAttributes: new { id = "ddlRegion", @class = "form-control select2", style = "width: 100%;" })
+            <label class="Labels">Región</label>
+        </div>
+    </div>
+    <div class="col-md-2 MargFloatBoos">
         <div class="form-group has-float-label">
             @Html.DropDownList("ddlSiglaUnidad", null, String.Format("Todas las unidades"),
                      htmlAttributes: new { id = "ddlSiglaUnidad", @class = "form-control select2", style = "width: 100%;" })
@@ -137,9 +145,9 @@
             <i class="fas fa-filter"></i> Aplicar
         </button>
     </div>
-    <div class="col-md-3 MargFloatBoos text-right">
+    <div class="col-md-2 MargFloatBoos text-right">
         <a href="@Url.Action("Mapa", "ControlGestion", new { Area = "Control" })" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar">
-            <i class="fas fa-map-marked-alt"></i> Ver mapa de puntos
+            <i class="fas fa-map-marked-alt"></i> Ver mapa
         </a>
     </div>
 </div>

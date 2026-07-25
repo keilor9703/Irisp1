@@ -5,6 +5,7 @@ $(document).ready(function () {
         interval: 1
     });
 
+    $("#ddlRegion").select2({ placeholder: "Todas las regiones", allowClear: true, width: "100%" });
     $("#ddlSiglaUnidad").select2({ placeholder: "Todas las unidades", allowClear: true, width: "100%" });
 
     var hoy = new Date();
@@ -13,6 +14,12 @@ $(document).ready(function () {
 
     $("#txtFechaInicioTablero").data("kendoDatePicker").value(haceUnAnio);
     $("#txtFechaFinTablero").data("kendoDatePicker").value(hoy);
+
+    // Cascada Región -> Sigla de unidad: al cambiar de región se vuelve a pedir el catálogo de
+    // siglas acotado a esa región (la sigla seleccionada previamente puede ya no pertenecer a ella).
+    $("#ddlRegion").on("change", function () {
+        RecargarSiglasPorRegion();
+    });
 
     $("#btnAplicarFiltroTablero").on("click", function () {
         CargarTablero();
@@ -28,6 +35,27 @@ function CargarTablero() {
     F_GetKpisTiempoGestion();
     F_GetResultadosCasos();
     RenderRangoFechas();
+}
+
+function RecargarSiglasPorRegion() {
+    var regionCodigo = $("#ddlRegion").val();
+
+    $.ajax({
+        type: "GET",
+        url: UrlGetSiglasUnidad,
+        data: { regionCodigo: regionCodigo || "" },
+        dataType: "json",
+        success: function (response) {
+            var siglas = (response && response.success === true) ? (response.data || []) : [];
+            var $ddl = $("#ddlSiglaUnidad");
+
+            $ddl.empty();
+            siglas.forEach(function (s) {
+                $ddl.append($("<option>", { value: s.SiglaUnidad, text: s.SiglaUnidad }));
+            });
+            $ddl.val(null).trigger("change");
+        }
+    });
 }
 
 function obtenerFechaKendo(id) {
@@ -47,6 +75,7 @@ function obtenerFiltrosTablero() {
     return {
         V_FechaInicio: formatearFechaIso(obtenerFechaKendo("#txtFechaInicioTablero")),
         V_FechaFin: formatearFechaIso(obtenerFechaKendo("#txtFechaFinTablero")),
+        V_RegionCodigo: $("#ddlRegion").val() || "",
         V_SiglaUnidad: $("#ddlSiglaUnidad").val() || ""
     };
 }
@@ -60,6 +89,8 @@ function RenderRangoFechas() {
     }
 
     var texto = "Periodo del reporte: " + formatearFecha(inicio) + " — " + formatearFecha(fin);
+    var region = $("#ddlRegion option:selected").text();
+    if ($("#ddlRegion").val()) texto += " | Región: " + region;
     var sigla = $("#ddlSiglaUnidad").val();
     if (sigla) texto += " | Unidad: " + sigla;
 

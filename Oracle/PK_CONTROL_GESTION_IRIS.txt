@@ -42,11 +42,15 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
   );
 
   -- Grilla principal del tablero: una fila por tarea vigente en el rango de fechas, con las
-  -- horas transcurridas y el estado de SLA ya calculados. Filtrable también por unidad
-  -- (SIGLA_UNIDAD), igual que el mapa de puntos, para evaluar una unidad en un periodo concreto.
+  -- horas transcurridas y el estado de SLA ya calculados. Filtrable también por región y por
+  -- unidad (SIGLA_UNIDAD), igual que el mapa de puntos, para evaluar una unidad/región en un
+  -- periodo concreto. P_RegionCodigo es informativo/redundante cuando P_SiglaUnidad ya viene
+  -- informado (la unidad ya determina la región), pero permite filtrar por toda una región sin
+  -- elegir una unidad puntual.
   FUNCTION F_GetTareasControlGestion(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
@@ -60,13 +64,21 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetCasosControlGestion(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR;
 
-  -- Catálogo de siglas de unidad (IRISP_CRIMINALIDAD.SIGLA_UNIDAD) para el filtro del mapa de puntos.
-  FUNCTION F_GetSiglasUnidadIrisp1 RETURN SYS_REFCURSOR;
+  -- Catálogo de las 8 regiones de Policía (VM_UNIDADES.REGI_CODIGO/DESC_REGIONAL) que tienen al
+  -- menos un caso IRISP1 registrado, para el filtro en cascada Región -> Sigla de unidad.
+  FUNCTION F_GetRegionesIrisp1 RETURN SYS_REFCURSOR;
+
+  -- Catálogo de siglas de unidad (IRISP_CRIMINALIDAD.SIGLA_UNIDAD) para el filtro del mapa de
+  -- puntos y del tablero. Si se informa P_RegionCodigo, solo devuelve las unidades de esa región
+  -- (join VM_UNIDADES.SIGLA_FISICA = IRISP_CRIMINALIDAD.SIGLA_UNIDAD) — alimenta el combo
+  -- dependiente "Sigla de unidad" cuando el usuario elige una región.
+  FUNCTION F_GetSiglasUnidadIrisp1(P_RegionCodigo IN NUMBER DEFAULT NULL) RETURN SYS_REFCURSOR;
 
   -- Resultado de cada caso IRISP1 del rango de fechas: estado general (ID_ESTADO, dominio
   -- PADRE_ID=1) y resultado de existencia (ID_ESTADO_EXISTENCIA, dominio PADRE_ID=63), con la
@@ -75,16 +87,18 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetResultadosCasosIrisp1(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR;
 
   -- Puntos de georreferenciación de casos IRISP1 (mapa de calor/cluster/puntos), filtrables por
-  -- unidad (SIGLA_UNIDAD), rango de fechas y rol.
+  -- región, unidad (SIGLA_UNIDAD), rango de fechas y rol.
   FUNCTION F_GetMapaIrisp1(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
@@ -283,6 +297,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetTareasControlGestion(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
@@ -361,6 +376,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
        AND c.VIGENTE = 1
       LEFT JOIN VM_UNIDADES u
         ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+      LEFT JOIN VM_UNIDADES ureg
+        ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       LEFT JOIN IRISP_CTRL_DOMINIO lt
         ON t.ID_LISTA_TAREAS = lt.DOMINIO_ID AND lt.PADRE_ID = 51 AND lt.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO et
@@ -371,6 +388,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       WHERE t.VIGENTE = 1
         AND t.FECHA_CREACION >= P_FechaInicio
         AND t.FECHA_CREACION <  (P_FechaFin + 1)
+        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         ------------------------------------------------------------
@@ -419,6 +437,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetCasosControlGestion(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
@@ -530,6 +549,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       FROM IRISP_CRIMINALIDAD c
       LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
       LEFT JOIN VM_UNIDADES u ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+      LEFT JOIN VM_UNIDADES ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       LEFT JOIN VERIF_INI vi ON vi.criminalidad_id = c.CRIMINALIDAD_ID
       LEFT JOIN VERIF_FIN vf ON vf.criminalidad_id = c.CRIMINALIDAD_ID
       LEFT JOIN INVES_INI ii ON ii.criminalidad_id = c.CRIMINALIDAD_ID
@@ -538,6 +558,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       WHERE c.VIGENTE = 1
         AND c.FECHA_CREACION >= P_FechaInicio
         AND c.FECHA_CREACION <  (P_FechaFin + 1)
+        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         AND (
@@ -573,14 +594,44 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   END F_GetCasosControlGestion;
 
   --------------------------------------------------------------------------
-  FUNCTION F_GetSiglasUnidadIrisp1 RETURN SYS_REFCURSOR IS
+  FUNCTION F_GetRegionesIrisp1 RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      SELECT DISTINCT u.REGI_CODIGO AS RegionCodigo, u.DESC_REGIONAL AS RegionDescripcion
+        FROM IRISP_CRIMINALIDAD c
+        JOIN VM_UNIDADES u ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
+       WHERE c.VIGENTE = 1
+         AND c.SIGLA_UNIDAD IS NOT NULL
+         AND u.REGI_CODIGO IS NOT NULL
+       ORDER BY u.REGI_CODIGO;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetRegionesIrisp1',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR SELECT NULL AS RegionCodigo, NULL AS RegionDescripcion FROM dual WHERE 1 = 0;
+      RETURN l_rc;
+  END F_GetRegionesIrisp1;
+
+  --------------------------------------------------------------------------
+  FUNCTION F_GetSiglasUnidadIrisp1(P_RegionCodigo IN NUMBER DEFAULT NULL) RETURN SYS_REFCURSOR IS
     l_rc SYS_REFCURSOR;
   BEGIN
     OPEN l_rc FOR
       SELECT DISTINCT c.SIGLA_UNIDAD AS SiglaUnidad
         FROM IRISP_CRIMINALIDAD c
+        LEFT JOIN VM_UNIDADES u ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
        WHERE c.VIGENTE = 1
          AND c.SIGLA_UNIDAD IS NOT NULL
+         AND (P_RegionCodigo IS NULL OR u.REGI_CODIGO = P_RegionCodigo)
        ORDER BY c.SIGLA_UNIDAD;
 
     RETURN l_rc;
@@ -602,6 +653,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetResultadosCasosIrisp1(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
@@ -666,12 +718,14 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       FROM IRISP_CRIMINALIDAD c
       LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
       LEFT JOIN VM_UNIDADES u ON r.ID_UNIDAD_RESPON = u.CONSECUTIVO
+      LEFT JOIN VM_UNIDADES ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       LEFT JOIN IRISP_CTRL_DOMINIO de ON de.DOMINIO_ID = c.ID_ESTADO AND de.PADRE_ID = 1 AND de.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
 
       WHERE c.VIGENTE = 1
         AND c.FECHA_CREACION >= P_FechaInicio
         AND c.FECHA_CREACION <  (P_FechaFin + 1)
+        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         AND (
@@ -712,6 +766,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetMapaIrisp1(
     P_FechaInicio   IN DATE,
     P_FechaFin      IN DATE,
+    P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
@@ -744,10 +799,12 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.latitud                AS Latitud,
         c.longitud               AS Longitud
       FROM VM_GENERAL_IRISP c
+      LEFT JOIN VM_UNIDADES ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       WHERE REGEXP_LIKE(c.latitud, '^[0-9\.\-]+$')
         AND REGEXP_LIKE(c.longitud, '^[0-9\.\-]+$')
         AND c.FECHA_CREACION_IRISP1 >= P_FechaInicio
         AND c.FECHA_CREACION_IRISP1 <  (P_FechaFin + 1)
+        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
         AND (
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
