@@ -484,6 +484,22 @@ namespace Web.Areas.Irisp1.Controllers
                     return resultado;
                 }
 
+                // 2️⃣.b Validar la firma real del archivo (magic bytes) contra la extensión
+                // declarada, para que un ejecutable no pueda subirse renombrado como .pdf/.docx.
+                byte[] encabezado = new byte[8];
+                await using (var lectura = documento.OpenReadStream())
+                {
+                    int leidos = await lectura.ReadAsync(encabezado, 0, encabezado.Length);
+                    if (leidos < encabezado.Length) Array.Resize(ref encabezado, leidos);
+                }
+
+                if (!FirmaArchivo.CoincideConExtension(encabezado, extension))
+                {
+                    resultado.Exito = false;
+                    resultado.Mensaje = "El contenido del documento no corresponde a su extensión.";
+                    return resultado;
+                }
+
                 // 3️⃣ Ruta base para documentos
                 var rutaBase = _configuration["RutasArchivosIris:RutaDocumentos"];
                 if (string.IsNullOrWhiteSpace(rutaBase))

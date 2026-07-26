@@ -61,17 +61,9 @@ QuestPDF.Settings.License = LicenseType.Community;
 // [AutoValidateAntiforgeryToken]; la librería MFA externa no se ve afectada.
 builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
 
-
-
-// ❌ AQUÍ BORRAMOS EL BLOQUE VIEJO DE ApiGatewayUrl QUE CAUSABA EL ERROR ❌
-
-
-
-
-// ... 
 builder.Services.AddHttpClient();
 
-// ✅ RESTAURAMOS EL MODELO ORIGINAL PARA EL PIP
+// Modelo de URLs del PIP (Comun.General.ApiGatewayUrl) usado por PipWebServices
 builder.Services.AddSingleton(sp =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
@@ -127,7 +119,7 @@ builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
 builder.Services.AddScoped<IDbControlGestion, DbControlGestion>();
 builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
 
-// ✅ INYECCIÓN DE LA LIBRERÍA MFA (Ella misma inyectará sus URLs)
+// Inyección de la librería MFA (registra sus propias URLs)
 builder.Services.AddMemoryCache();
 builder.Services.AddPonalMfa(builder.Configuration);
 
