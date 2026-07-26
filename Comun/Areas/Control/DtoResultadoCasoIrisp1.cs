@@ -46,6 +46,15 @@ namespace Comun.Areas.Control
         [JsonPropertyName("FuncionarioInforma")]
         public string? FuncionarioInforma { get; set; }
 
+        [JsonPropertyName("SiglaInforma")]
+        public string? SiglaInforma { get; set; }
+
+        [JsonPropertyName("DependenciaInforma")]
+        public string? DependenciaInforma { get; set; }
+
+        [JsonPropertyName("CargoInforma")]
+        public string? CargoInforma { get; set; }
+
         [JsonPropertyName("TieneResultados")]
         public int? TieneResultados { get; set; }
     }

@@ -827,12 +827,17 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.ID_ESTADO_EXISTENCIA    AS IdEstadoExistencia,
         dx.DESCRIPCION            AS DescEstadoExistencia,
         -- Funcionario que INFORMÓ el caso (IRISP_CRIMINALIDAD.IDENTIFICACION_INFORMA): es quien
-        -- está en la calle detectando el posible delito. Su nombre se resuelve de VM_REHU_PERSONAL
-        -- con subconsulta escalar (ROWNUM=1) para no multiplicar filas.
+        -- está en la calle detectando el posible delito. Nombre, sigla de su unidad (SIGLA_FISICA,
+        -- ej. MEBAR), dependencia y cargo se resuelven de VM_REHU_PERSONAL (identificacion es única
+        -- en esa vista, así que el LEFT JOIN no multiplica filas). Si la identificación no está en
+        -- la vista de personal (retirado/externo), estos campos quedan NULL.
         c.IDENTIFICACION_INFORMA  AS IdentificacionInforma,
-        (SELECT p.grad_alfabetico || ' ' || p.apellidos || ' ' || p.nombres
-           FROM VM_REHU_PERSONAL p
-          WHERE p.identificacion = c.IDENTIFICACION_INFORMA AND ROWNUM = 1) AS FuncionarioInforma,
+        CASE WHEN pinf.identificacion IS NOT NULL
+             THEN TRIM(pinf.grad_alfabetico || ' ' || pinf.apellidos || ' ' || pinf.nombres)
+             ELSE NULL END           AS FuncionarioInforma,
+        pinf.sigla_fisica            AS SiglaInforma,
+        pinf.descripcion_dependencia AS DependenciaInforma,
+        pinf.cargo_actual            AS CargoInforma,
         -- "Tiene resultados" = el caso llegó a SPOA/SIEDCO (IRISP_RESULTADO id_tipo 69/70), misma
         -- semántica que la grilla de Verificación.
         CASE WHEN EXISTS (SELECT 1 FROM IRISP_RESULTADO rr
@@ -850,6 +855,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       LEFT JOIN UND_POR_SIGLA ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       LEFT JOIN IRISP_CTRL_DOMINIO de ON de.DOMINIO_ID = c.ID_ESTADO AND de.PADRE_ID = 1 AND de.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
+      -- Datos del funcionario que informó (identificacion es única en VM_REHU_PERSONAL: sin fan-out)
+      LEFT JOIN VM_REHU_PERSONAL pinf ON pinf.identificacion = c.IDENTIFICACION_INFORMA
 
       WHERE c.VIGENTE = 1
         AND c.FECHA_CREACION >= P_FechaInicio
@@ -884,7 +891,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                NULL AS Dependencia, NULL AS UnidadVerificacion, NULL AS UnidadVerificacionSigla,
                NULL AS FechaCreacion, NULL AS IdEstado, NULL AS DescEstado,
                NULL AS IdEstadoExistencia, NULL AS DescEstadoExistencia,
-               NULL AS IdentificacionInforma, NULL AS FuncionarioInforma, NULL AS TieneResultados
+               NULL AS IdentificacionInforma, NULL AS FuncionarioInforma,
+               NULL AS SiglaInforma, NULL AS DependenciaInforma, NULL AS CargoInforma,
+               NULL AS TieneResultados
           FROM dual WHERE 1 = 0;
 
       RETURN l_rc;

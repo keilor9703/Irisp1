@@ -275,6 +275,7 @@ namespace Web.Areas.Control.Controllers
                     {
                         identificacion = g.Key,
                         funcionario = g.Select(x => x.FuncionarioInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key.ToString(),
+                        sigla = g.Select(x => x.SiglaInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "",
                         totalInformados,
                         exitosos,
                         conResultados,
@@ -546,9 +547,11 @@ namespace Web.Areas.Control.Controllers
                 {
                     var totalInf = g.Count();
                     var exitosos = g.Count(EsCasoConExistencia);
+                    var nombreInf = g.Select(x => x.FuncionarioInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key.ToString();
+                    var siglaInf = g.Select(x => x.SiglaInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
                     return new
                     {
-                        Funcionario = g.Select(x => x.FuncionarioInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key.ToString(),
+                        Funcionario = string.IsNullOrWhiteSpace(siglaInf) ? nombreInf : $"{siglaInf} - {nombreInf}",
                         Identificacion = g.Key,
                         Total = totalInf,
                         Exitosos = exitosos,

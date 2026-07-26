@@ -503,7 +503,11 @@ function renderGraficoTopInformantes(ranking) {
     var top10 = (ranking || []).slice()
         .sort(function (a, b) { return b.exitosos - a.exitosos; })
         .slice(0, 10)
-        .map(function (u) { return { unidad: u.funcionario || String(u.identificacion || ""), total: u.exitosos, identificacion: u.identificacion }; });
+        .map(function (u) {
+            var nombre = u.funcionario || String(u.identificacion || "");
+            var etiqueta = u.sigla ? (u.sigla + " - " + nombre) : nombre;
+            return { unidad: etiqueta, total: u.exitosos, identificacion: u.identificacion };
+        });
 
     chartTopInformantes = renderBarraTopUnidad("graficoTopInformantes", chartTopInformantes, top10, "#20c997");
     // Guarda la identificación por barra para el drill-down (el label es solo el nombre).
@@ -1001,9 +1005,19 @@ function abrirDetalleInformante(identificacion) {
     if (identificacion === null || identificacion === undefined || identificacion === "") return;
     var idNum = String(identificacion);
     var filtrados = datosResultadosActuales.filter(function (c) { return String(c.IdentificacionInforma) === idNum; });
-    var nombre = filtrados.length ? (filtrados[0].FuncionarioInforma || idNum) : idNum;
-    abrirDetalle("Registros informados por " + nombre,
-        filtrados.length + " registro(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+    var reg = filtrados.length ? filtrados[0] : null;
+    var nombre = reg ? (reg.FuncionarioInforma || idNum) : idNum;
+
+    // Subtítulo con la dependencia y el cargo del funcionario que informó (más el conteo).
+    var partes = [];
+    if (reg && reg.SiglaInforma) partes.push("Unidad: " + reg.SiglaInforma);
+    if (reg && reg.DependenciaInforma) partes.push("Dependencia: " + reg.DependenciaInforma);
+    if (reg && reg.CargoInforma) partes.push("Cargo: " + reg.CargoInforma);
+    partes.push("Identificación: " + idNum);
+    partes.push(filtrados.length + " registro(s)");
+
+    abrirDetalle("Registros informados por " + nombre, partes.join(" | "),
+        columnasResultadosDetalle, filasResultadosDetalle(filtrados));
 }
 
 function InicializarDrillDownInformantes() {
