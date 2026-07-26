@@ -26,20 +26,83 @@ $(document).ready(function () {
     });
 
     // Exporta el informe del tablero (con los filtros vigentes) a PDF con marca de agua
-    // del usuario institucional; el PDF se genera en el servidor y se abre en otra pestaña.
+    // del usuario institucional. Se hace por POST porque además de los filtros se envían las
+    // imágenes de las gráficas capturadas del canvas de Chart.js (no caben en la URL). El POST
+    // se envía a un iframe oculto para que el navegador descargue el PDF sin dejar pestañas.
     $("#btnExportarPdfTablero").on("click", function () {
-        var filtros = obtenerFiltrosTablero();
-        var params = Object.keys(filtros)
-            .filter(function (k) { return filtros[k]; })
-            .map(function (k) { return k + "=" + encodeURIComponent(filtros[k]); })
-            .join("&");
-
-        window.open(UrlExportarPdfTablero + (params ? "?" + params : ""), "_blank");
+        ExportarTableroPdf();
     });
 
     CargarTablero();
     InicializarDrillDown();
 });
+
+// Captura un canvas de Chart.js como PNG (data URL). Devuelve "" si el canvas no existe
+// o si la gráfica aún no se ha renderizado (no hay datos), para que el PDF la omita.
+function capturarGrafica(idCanvas) {
+    try {
+        var canvas = document.getElementById(idCanvas);
+        if (!canvas || !canvas.getContext || !canvas.width || !canvas.height) return "";
+
+        // El canvas de Chart.js es transparente; se compone sobre fondo blanco para que en
+        // el PDF la gráfica se vea limpia (sin que la marca de agua se trasluzca por debajo).
+        var temp = document.createElement("canvas");
+        temp.width = canvas.width;
+        temp.height = canvas.height;
+        var ctx = temp.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, temp.width, temp.height);
+        ctx.drawImage(canvas, 0, 0);
+        return temp.toDataURL("image/png");
+    } catch (e) {
+        return "";
+    }
+}
+
+function ExportarTableroPdf() {
+    var filtros = obtenerFiltrosTablero();
+
+    var iframe = document.createElement("iframe");
+    iframe.name = "pdfTableroFrame_" + Date.now();
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+
+    var form = document.createElement("form");
+    form.method = "POST";
+    form.action = UrlExportarPdfTablero;
+    form.target = iframe.name;
+
+    function agregarCampo(nombre, valor) {
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = nombre;
+        input.value = (valor === null || valor === undefined) ? "" : valor;
+        form.appendChild(input);
+    }
+
+    // Filtros vigentes
+    Object.keys(filtros).forEach(function (k) { agregarCampo(k, filtros[k]); });
+
+    // Token anti-CSRF (lo renderiza _Layout con @Html.AntiForgeryToken())
+    var token = $('input[name="__RequestVerificationToken"]').first().val();
+    agregarCampo("__RequestVerificationToken", token);
+
+    // Imágenes de las gráficas
+    agregarCampo("GraficoPorUnidad", capturarGrafica("graficoPromedioUnidad"));
+    agregarCampo("GraficoExistencia", capturarGrafica("graficoResultadoExistencia"));
+    agregarCampo("GraficoTopMas", capturarGrafica("graficoTopMasCasos"));
+    agregarCampo("GraficoTopMenos", capturarGrafica("graficoTopMenosCasos"));
+    agregarCampo("GraficoPorEstado", capturarGrafica("graficoPorEstado"));
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // Limpieza diferida (tras dar tiempo a que la descarga inicie)
+    setTimeout(function () {
+        if (form.parentNode) document.body.removeChild(form);
+        if (iframe.parentNode) document.body.removeChild(iframe);
+    }, 60000);
+}
 
 var chartControlGestion = null;
 

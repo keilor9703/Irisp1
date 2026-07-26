@@ -312,8 +312,13 @@ namespace Web.Areas.Control.Controllers
 
         #region Exportar PDF
 
-        [HttpGet]
-        public async Task<IActionResult> ExportarPdfTablero(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
+        // Se recibe por POST (no GET) porque las imágenes de las gráficas, capturadas del
+        // canvas de Chart.js en el cliente (toDataURL), no caben en la URL. El formulario que
+        // envía la vista incluye el token anti-CSRF, validado aquí.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestFormLimits(ValueLengthLimit = int.MaxValue, MultipartBodyLengthLimit = long.MaxValue)]
+        public async Task<IActionResult> ExportarPdfTablero(ExportarTableroPdfRequest req)
         {
             await _iDbAdministracion.P_InsAuditoria(
                 Convert.ToInt64(User.FindFirstValue("Identificacion")), "Exportar Reporte",
@@ -325,11 +330,11 @@ namespace Web.Areas.Control.Controllers
             var rolesUsuario = string.Join(",",
                 User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
-            var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
+            var (fechaInicio, fechaFin) = ResolverRangoFechas(req.V_FechaInicio, req.V_FechaFin);
 
-            var tareaTask = _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
-            var casosTask = _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
-            var resultadosTask = _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var tareaTask = _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var casosTask = _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultadosTask = _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, rolesUsuario, codigoUnidad);
             await Task.WhenAll(tareaTask, casosTask, resultadosTask);
 
             var tareas = tareaTask.Result.IdRespuesta > 0 ? tareaTask.Result.Data : new List<DtoTareaControlGestion>();
@@ -337,21 +342,41 @@ namespace Web.Areas.Control.Controllers
             var resultados = resultadosTask.Result.IdRespuesta > 0 ? resultadosTask.Result.Data : new List<DtoResultadoCasoIrisp1>();
 
             string? regionTexto = null;
-            if (V_RegionCodigo.HasValue)
+            if (req.V_RegionCodigo.HasValue)
             {
                 var regiones = await _iDbControlGestion.F_GetRegionesIrisp1();
-                regionTexto = regiones.Data.FirstOrDefault(r => r.RegionCodigo == V_RegionCodigo)?.RegionDescripcion
-                    ?? $"Región {V_RegionCodigo}";
+                regionTexto = regiones.Data.FirstOrDefault(r => r.RegionCodigo == req.V_RegionCodigo)?.RegionDescripcion
+                    ?? $"Región {req.V_RegionCodigo}";
             }
 
             // La marca de agua exige el usuario institucional del usuario logueado; "Usuario" y
             // ClaimTypes.Name se llenan con el mismo valor en CuentaController.BuildClaims.
             var usuarioInstitucional = User.FindFirstValue("Usuario") ?? User.FindFirstValue(ClaimTypes.Name) ?? "IRIS-P1";
 
-            var pdfBytes = GeneratePdfTablero(usuarioInstitucional, fechaInicio, fechaFin, regionTexto, V_SiglaUnidad,
-                tareas, casos, resultados);
+            var graficos = new GraficosTablero
+            {
+                PorUnidad = DataUrlABytes(req.GraficoPorUnidad),
+                Existencia = DataUrlABytes(req.GraficoExistencia),
+                TopMas = DataUrlABytes(req.GraficoTopMas),
+                TopMenos = DataUrlABytes(req.GraficoTopMenos),
+                PorEstado = DataUrlABytes(req.GraficoPorEstado)
+            };
+
+            var pdfBytes = GeneratePdfTablero(usuarioInstitucional, fechaInicio, fechaFin, regionTexto, req.V_SiglaUnidad,
+                tareas, casos, resultados, graficos);
 
             return File(pdfBytes, "application/pdf", $"Tablero_Control_Gestion_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+        }
+
+        // Convierte un data URL ("data:image/png;base64,....") en bytes. Devuelve null si viene
+        // vacío o mal formado, para que el PDF simplemente omita esa gráfica sin fallar.
+        private static byte[]? DataUrlABytes(string? dataUrl)
+        {
+            if (string.IsNullOrWhiteSpace(dataUrl)) return null;
+            var idx = dataUrl.IndexOf("base64,", StringComparison.OrdinalIgnoreCase);
+            var b64 = idx >= 0 ? dataUrl.Substring(idx + "base64,".Length) : dataUrl;
+            try { return Convert.FromBase64String(b64); }
+            catch { return null; }
         }
 
         private static string FormatearDuracionPdf(decimal? horas)
@@ -366,7 +391,8 @@ namespace Web.Areas.Control.Controllers
 
         private static byte[] GeneratePdfTablero(string usuarioInstitucional, DateTime fechaInicio, DateTime fechaFin,
             string? regionTexto, string? siglaUnidad,
-            List<DtoTareaControlGestion> tareas, List<DtoCasoControlGestion> casos, List<DtoResultadoCasoIrisp1> resultados)
+            List<DtoTareaControlGestion> tareas, List<DtoCasoControlGestion> casos, List<DtoResultadoCasoIrisp1> resultados,
+            GraficosTablero graficos)
         {
             QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
@@ -464,6 +490,14 @@ namespace Web.Areas.Control.Controllers
 
                         void Titulo(string texto) => col.Item().Text(texto).Bold().FontSize(11).FontColor(Colors.Blue.Darken2);
 
+                        // Embebe la imagen de una gráfica (capturada del canvas de Chart.js) si vino
+                        // en la petición; si no, la sección simplemente muestra solo la tabla.
+                        void GraficaImagen(byte[]? imagen)
+                        {
+                            if (imagen != null && imagen.Length > 0)
+                                col.Item().PaddingVertical(4).Height(220).AlignCenter().Image(imagen).FitArea();
+                        }
+
                         void TablaIndicadores(List<(string Indicador, string Valor)> filas)
                         {
                             col.Item().Table(table =>
@@ -518,6 +552,9 @@ namespace Web.Areas.Control.Controllers
                             ("Casos abiertos", abiertos.ToString())
                         });
 
+                        // Gráfica: resultado de existencia (dona)
+                        GraficaImagen(graficos.Existencia);
+
                         // 4. Efectividad por unidad
                         Titulo("4. Efectividad por unidad");
                         col.Item().Table(table =>
@@ -553,12 +590,25 @@ namespace Web.Areas.Control.Controllers
 
                         // 5. Promedio de tiempo por unidad
                         Titulo("5. Promedio de tiempo de gestión de tareas por unidad");
+                        // Gráfica: promedio de tiempo por unidad
+                        GraficaImagen(graficos.PorUnidad);
                         TablaIndicadores(promedioPorUnidad
                             .Select(u => (u.Unidad, FormatearDuracionPdf(u.PromedioHoras)))
                             .ToList());
 
-                        // 6. Casos por estado general
-                        Titulo("6. Casos por estado general");
+                        // 6. Casos registrados por unidad (Top 10)
+                        if ((graficos.TopMas != null && graficos.TopMas.Length > 0) ||
+                            (graficos.TopMenos != null && graficos.TopMenos.Length > 0))
+                        {
+                            Titulo("6. Casos registrados por unidad (Top 10)");
+                            GraficaImagen(graficos.TopMas);
+                            GraficaImagen(graficos.TopMenos);
+                        }
+
+                        // 7. Casos por estado general
+                        Titulo("7. Casos por estado general");
+                        // Gráfica: casos por estado general
+                        GraficaImagen(graficos.PorEstado);
                         TablaIndicadores(porEstadoGeneral
                             .Select(e => (e.Estado, e.Cantidad.ToString()))
                             .ToList());
@@ -584,5 +634,31 @@ namespace Web.Areas.Control.Controllers
         }
 
         #endregion
+    }
+
+    // Datos que envía la vista del Tablero al exportar el PDF: los filtros vigentes más las
+    // imágenes (data URL PNG) de cada gráfica capturadas del canvas de Chart.js en el cliente.
+    public class ExportarTableroPdfRequest
+    {
+        public DateTime? V_FechaInicio { get; set; }
+        public DateTime? V_FechaFin { get; set; }
+        public int? V_RegionCodigo { get; set; }
+        public string? V_SiglaUnidad { get; set; }
+
+        public string? GraficoPorUnidad { get; set; }
+        public string? GraficoExistencia { get; set; }
+        public string? GraficoTopMas { get; set; }
+        public string? GraficoTopMenos { get; set; }
+        public string? GraficoPorEstado { get; set; }
+    }
+
+    // Imágenes de las gráficas ya decodificadas a bytes, listas para embeberse en el PDF.
+    public class GraficosTablero
+    {
+        public byte[]? PorUnidad { get; set; }
+        public byte[]? Existencia { get; set; }
+        public byte[]? TopMas { get; set; }
+        public byte[]? TopMenos { get; set; }
+        public byte[]? PorEstado { get; set; }
     }
 }
