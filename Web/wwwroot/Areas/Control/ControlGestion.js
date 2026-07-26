@@ -748,7 +748,7 @@ function filasResultadosDetalle(lista) {
     return lista.map(function (c) {
         return [c.Codigo || "", c.UnidadSigla || c.Unidad || "",
                 c.Dependencia || "-",
-                c.UnidadVerificacionSigla || c.UnidadVerificacion || "-",
+                c.UnidadVerificacion || c.UnidadVerificacionSigla || "-",
                 c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleDateString("es-CO") : "-",
                 c.DescEstado || formatearEstadoCaso(c.IdEstado), c.DescEstadoExistencia || "Sin determinar"];
     });
@@ -924,7 +924,7 @@ function InicializarDrillDown() {
         var fila = $("#tbEfectividadVerificacion").DataTable().row(this).data();
         if (!fila) return;
         var unidad = $("<div>").html(fila[0]).text();
-        var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacionSigla || c.UnidadVerificacion) === unidad; });
+        var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacion || c.UnidadVerificacionSigla) === unidad; });
         abrirDetalle("Casos asignados a la unidad de verificación " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
     });
 
@@ -936,7 +936,7 @@ function InicializarDrillDown() {
             var idx = obtenerIndiceChart(chartVolumenVerificacion, evt);
             if (idx === null) return;
             var unidad = chartVolumenVerificacion.data.labels[idx];
-            var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacionSigla || c.UnidadVerificacion) === unidad; });
+            var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacion || c.UnidadVerificacionSigla) === unidad; });
             abrirDetalle("Casos asignados a la unidad de verificación " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
         });
     }

@@ -815,8 +815,11 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.SIGLA_UNIDAD               AS UnidadSigla,
         c.SIGLA_UNIDAD || ' - ' || NVL(fdep.DESCRIPCION_DEPENDENCIA, 'Sin dependencia') AS Dependencia,
         -- Unidad de VERIFICACIÓN (a la que se asigna la investigación) = IRISP_RESPON_VALIDACION.ID_UNIDAD_RESPON.
-        uver.SIGLA_FISICA            AS UnidadVerificacionSigla,
+        -- La identidad es su DESCRIPCION_DEPENDENCIA (ej. "SECCIONAL INVESTIGACION CRIMINAL MECAL"),
+        -- NO la SIGLA_FISICA (que puede ser la de la unidad padre, ej. "MECAL"). Igual que
+        -- F_Consultar_Unidad del módulo Seguimiento (descripcion_dependencia || ' - ' || sigla_depende).
         uver.DESCRIPCION_DEPENDENCIA AS UnidadVerificacion,
+        uver.SIGLA_DEPENDE           AS UnidadVerificacionSigla,
         c.FECHA_CREACION          AS FechaCreacion,
         c.ID_ESTADO               AS IdEstado,
         de.DESCRIPCION            AS DescEstado,
