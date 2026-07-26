@@ -16,6 +16,15 @@ namespace Comun.Areas.Control
         [JsonPropertyName("UnidadSigla")]
         public string? UnidadSigla { get; set; }
 
+        [JsonPropertyName("Dependencia")]
+        public string? Dependencia { get; set; }
+
+        [JsonPropertyName("UnidadVerificacionSigla")]
+        public string? UnidadVerificacionSigla { get; set; }
+
+        [JsonPropertyName("UnidadVerificacion")]
+        public string? UnidadVerificacion { get; set; }
+
         [JsonPropertyName("FechaCreacion")]
         public DateTime? FechaCreacion { get; set; }
 

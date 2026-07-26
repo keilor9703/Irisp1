@@ -408,6 +408,38 @@
     </div>
 </div>
 
+<h6 class="seccion-titulo mb-2"><i class="fas fa-user-shield"></i> Unidades de verificación (unidades a las que se asigna la investigación)</h6>
+<div class="row">
+    <div class="col-md-5 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-tasks text-white"></i> Volumen de investigaciones asignadas (Top 10)</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:340px;">
+                    <canvas id="graficoVolumenVerificacion" class="drillable"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-user-check text-white"></i> Efectividad por unidad de verificación</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted" style="font-size:.8rem;">
+                    Compara a las unidades investigativas: cuántos registros se les asignaron (volumen) y qué
+                    porcentaje terminó con existencia confirmada (efectividad). Doble click en una fila para ver el detalle.
+                </p>
+                <div class="table-responsive">
+                    <table id="tbEfectividadVerificacion" class="table table-bordered table-striped" width="100%"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card border-info">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="mr-2 fas fa-clipboard-list text-white"></i> Tareas y estado de SLA</h4>

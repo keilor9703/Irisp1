@@ -227,6 +227,37 @@ namespace Web.Areas.Control.Controllers
                 .ThenByDescending(u => u.total)
                 .ToList();
 
+            // Análisis por UNIDAD DE VERIFICACIÓN (la unidad a la que se asigna la investigación,
+            // IRISP_RESPON_VALIDACION.ID_UNIDAD_RESPON) — mide efectividad (registros exitosos) y
+            // volumen (registros asignados) de las unidades investigativas.
+            var rankingUnidadesVerificacion = casos
+                .Where(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) || !string.IsNullOrWhiteSpace(c.UnidadVerificacion))
+                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) ? c.UnidadVerificacionSigla! : c.UnidadVerificacion!)
+                .Select(g =>
+                {
+                    var totalUnidad = g.Count();
+                    var finalizadosUnidad = g.Count(EsCasoFinalizado);
+                    var existeUnidad = g.Count(EsCasoConExistencia);
+                    var noExisteUnidad = g.Count(EsCasoSinExistencia);
+
+                    return new
+                    {
+                        unidad = g.Key,
+                        descripcion = g.Select(x => x.UnidadVerificacion).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key,
+                        total = totalUnidad,
+                        finalizados = finalizadosUnidad,
+                        existeConfirmado = existeUnidad,
+                        noExiste = noExisteUnidad,
+                        abiertos = totalUnidad - finalizadosUnidad,
+                        efectividadPct = totalUnidad > 0 ? Math.Round((decimal)existeUnidad * 100 / totalUnidad, 1) : 0m
+                    };
+                })
+                .OrderByDescending(u => u.total)
+                .ThenByDescending(u => u.efectividadPct)
+                .ToList();
+
+            var casosSinAsignar = casos.Count(c => string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) && string.IsNullOrWhiteSpace(c.UnidadVerificacion));
+
             return new
             {
                 total,
@@ -238,7 +269,9 @@ namespace Web.Areas.Control.Controllers
                 inconclusos,
                 porEstado,
                 porExistencia,
-                rankingUnidades
+                rankingUnidades,
+                rankingUnidadesVerificacion,
+                casosSinAsignar
             };
         }
 
@@ -359,7 +392,8 @@ namespace Web.Areas.Control.Controllers
                 Existencia = DataUrlABytes(req.GraficoExistencia),
                 TopMas = DataUrlABytes(req.GraficoTopMas),
                 TopMenos = DataUrlABytes(req.GraficoTopMenos),
-                PorEstado = DataUrlABytes(req.GraficoPorEstado)
+                PorEstado = DataUrlABytes(req.GraficoPorEstado),
+                VolumenVerif = DataUrlABytes(req.GraficoVolumenVerif)
             };
 
             var pdfBytes = GeneratePdfTablero(usuarioInstitucional, fechaInicio, fechaFin, regionTexto, req.V_SiglaUnidad,
@@ -446,6 +480,30 @@ namespace Web.Areas.Control.Controllers
                 .GroupBy(c => string.IsNullOrWhiteSpace(c.DescEstado) ? "Sin estado" : c.DescEstado!)
                 .Select(g => new { Estado = g.Key, Cantidad = g.Count() })
                 .OrderByDescending(g => g.Cantidad)
+                .ToList();
+
+            // Ranking de unidades de verificación (misma lógica que ArmarKpisResultados)
+            var rankingVerificacion = resultados
+                .Where(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) || !string.IsNullOrWhiteSpace(c.UnidadVerificacion))
+                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) ? c.UnidadVerificacionSigla! : c.UnidadVerificacion!)
+                .Select(g =>
+                {
+                    var totalUnidad = g.Count();
+                    var finalizadosUnidad = g.Count(EsCasoFinalizado);
+                    var existeUnidad = g.Count(EsCasoConExistencia);
+                    return new
+                    {
+                        Unidad = g.Key,
+                        Total = totalUnidad,
+                        Finalizados = finalizadosUnidad,
+                        ExisteConfirmado = existeUnidad,
+                        NoExiste = g.Count(EsCasoSinExistencia),
+                        Abiertos = totalUnidad - finalizadosUnidad,
+                        EfectividadPct = totalUnidad > 0 ? Math.Round((decimal)existeUnidad * 100 / totalUnidad, 1) : 0m
+                    };
+                })
+                .OrderByDescending(u => u.Total)
+                .ThenByDescending(u => u.EfectividadPct)
                 .ToList();
 
             // --- Marca de agua: usuario institucional en diagonal en cada página ---
@@ -612,6 +670,43 @@ namespace Web.Areas.Control.Controllers
                         TablaIndicadores(porEstadoGeneral
                             .Select(e => (e.Estado, e.Cantidad.ToString()))
                             .ToList());
+
+                        // 8. Unidades de verificación (efectividad + volumen)
+                        Titulo("8. Unidades de verificación (efectividad y volumen)");
+                        GraficaImagen(graficos.VolumenVerif);
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(3);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Unidad de verificación").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Asignados").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Finalizados").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Existe conf.").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("No existe").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Abiertos").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Efectividad").Bold();
+                            });
+                            foreach (var u in rankingVerificacion)
+                            {
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Unidad);
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Total.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Finalizados.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.ExisteConfirmado.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.NoExiste.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Abiertos.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text($"{u.EfectividadPct} %");
+                            }
+                        });
                     });
 
                     page.Footer().Column(f =>
@@ -650,6 +745,7 @@ namespace Web.Areas.Control.Controllers
         public string? GraficoTopMas { get; set; }
         public string? GraficoTopMenos { get; set; }
         public string? GraficoPorEstado { get; set; }
+        public string? GraficoVolumenVerif { get; set; }
     }
 
     // Imágenes de las gráficas ya decodificadas a bytes, listas para embeberse en el PDF.
@@ -660,5 +756,6 @@ namespace Web.Areas.Control.Controllers
         public byte[]? TopMas { get; set; }
         public byte[]? TopMenos { get; set; }
         public byte[]? PorEstado { get; set; }
+        public byte[]? VolumenVerif { get; set; }
     }
 }

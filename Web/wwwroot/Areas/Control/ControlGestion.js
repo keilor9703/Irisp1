@@ -93,6 +93,7 @@ function ExportarTableroPdf() {
     agregarCampo("GraficoTopMas", capturarGrafica("graficoTopMasCasos"));
     agregarCampo("GraficoTopMenos", capturarGrafica("graficoTopMenosCasos"));
     agregarCampo("GraficoPorEstado", capturarGrafica("graficoPorEstado"));
+    agregarCampo("GraficoVolumenVerif", capturarGrafica("graficoVolumenVerificacion"));
 
     document.body.appendChild(form);
     form.submit();
@@ -438,6 +439,7 @@ var chartResultadoExistencia = null;
 var chartPorEstadoCriminalidad = null;
 var chartTopMasCasos = null;
 var chartTopMenosCasos = null;
+var chartVolumenVerificacion = null;
 
 function renderResultadosCasos(kpis) {
     if (!kpis) {
@@ -446,6 +448,8 @@ function renderResultadosCasos(kpis) {
         renderGraficoPorEstado([]);
         renderTablaEfectividadUnidad([]);
         renderGraficosTopCasosPorUnidad([]);
+        renderTablaEfectividadVerificacion([]);
+        renderGraficoVolumenVerificacion([]);
         return;
     }
 
@@ -459,6 +463,36 @@ function renderResultadosCasos(kpis) {
     renderGraficoPorEstado(kpis.porEstado || []);
     renderTablaEfectividadUnidad(kpis.rankingUnidades || []);
     renderGraficosTopCasosPorUnidad(kpis.rankingUnidades || []);
+    renderTablaEfectividadVerificacion(kpis.rankingUnidadesVerificacion || []);
+    renderGraficoVolumenVerificacion(kpis.rankingUnidadesVerificacion || []);
+}
+
+// --- Análisis de unidades de VERIFICACIÓN (unidades a las que se asigna la investigación) ---
+// Mide su efectividad (registros exitosos = existencia confirmada) y su volumen (registros
+// asignados). Ambos salen del mismo kpis.rankingUnidadesVerificacion; no hay consulta extra.
+function renderTablaEfectividadVerificacion(ranking) {
+    var filas = (ranking || []).map(function (u) {
+        return [u.unidad || "", u.total, u.finalizados, u.existeConfirmado, u.noExiste, u.abiertos, badgeEfectividad(u.efectividadPct)];
+    });
+
+    renderDataTable("#tbEfectividadVerificacion", filas, [
+        { title: "Unidad de verificación" },
+        { title: "Registros asignados" },
+        { title: "Finalizados" },
+        { title: "Existe confirmado" },
+        { title: "No existe" },
+        { title: "Abiertos" },
+        { title: "% Efectividad" }
+    ], {
+        columnDefs: [{ targets: '_all', className: 'dt-head-center dt-body-center' }],
+        order: [[1, 'desc']],
+        preserveDraw: true
+    });
+}
+
+function renderGraficoVolumenVerificacion(ranking) {
+    var top10 = (ranking || []).slice().sort(function (a, b) { return b.total - a.total; }).slice(0, 10);
+    chartVolumenVerificacion = renderBarraTopUnidad("graficoVolumenVerificacion", chartVolumenVerificacion, top10, "#6f42c1");
 }
 
 // Plugin que dibuja el total en el centro de la dona — evita el hueco vacío en medio del
@@ -706,12 +740,15 @@ function filasCasosDetalle(lista) {
 }
 
 var columnasResultadosDetalle = [
-    { title: "Código IRISP1" }, { title: "Unidad" }, { title: "Fecha creación" },
+    { title: "Código IRISP1" }, { title: "Unidad" }, { title: "Dependencia (estación)" },
+    { title: "Unidad de verificación" }, { title: "Fecha creación" },
     { title: "Estado" }, { title: "Existencia" }
 ];
 function filasResultadosDetalle(lista) {
     return lista.map(function (c) {
         return [c.Codigo || "", c.UnidadSigla || c.Unidad || "",
+                c.Dependencia || "-",
+                c.UnidadVerificacionSigla || c.UnidadVerificacion || "-",
                 c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleDateString("es-CO") : "-",
                 c.DescEstado || formatearEstadoCaso(c.IdEstado), c.DescEstadoExistencia || "Sin determinar"];
     });
@@ -881,6 +918,28 @@ function InicializarDrillDown() {
         var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadSigla || c.Unidad) === unidad; });
         abrirDetalle("Casos de la unidad " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
     });
+
+    // Filas de la tabla "Efectividad por unidad de verificación": filtra por unidad de verificación
+    $(document).on("dblclick", "#tbEfectividadVerificacion tbody tr", function () {
+        var fila = $("#tbEfectividadVerificacion").DataTable().row(this).data();
+        if (!fila) return;
+        var unidad = $("<div>").html(fila[0]).text();
+        var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacionSigla || c.UnidadVerificacion) === unidad; });
+        abrirDetalle("Casos asignados a la unidad de verificación " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+    });
+
+    // Gráfico de volumen por unidad de verificación
+    var canvasVol = document.getElementById("graficoVolumenVerificacion");
+    if (canvasVol) {
+        canvasVol.addEventListener("dblclick", function (evt) {
+            if (!chartVolumenVerificacion) return;
+            var idx = obtenerIndiceChart(chartVolumenVerificacion, evt);
+            if (idx === null) return;
+            var unidad = chartVolumenVerificacion.data.labels[idx];
+            var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacionSigla || c.UnidadVerificacion) === unidad; });
+            abrirDetalle("Casos asignados a la unidad de verificación " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+        });
+    }
 }
 
 function filtrarPorExistenciaYAbrir(etiqueta) {

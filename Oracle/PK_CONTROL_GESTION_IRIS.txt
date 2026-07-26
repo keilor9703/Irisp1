@@ -348,9 +348,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- clave con ROW_NUMBER (NO con MAX(FECHA_ACTUALIZA) + join por igualdad: si dos filas
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y duplicaba cada registro).
       UND_POR_CONS AS (
-        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE
+        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA
           FROM (
-            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE,
+            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA,
                    ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.VIGENTE = 'SI'
@@ -550,9 +550,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- clave con ROW_NUMBER (NO con MAX(FECHA_ACTUALIZA) + join por igualdad: si dos filas
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y duplicaba cada caso).
       UND_POR_CONS AS (
-        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE
+        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA
           FROM (
-            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE,
+            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA,
                    ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.VIGENTE = 'SI'
@@ -787,9 +787,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y DUPLICABA cada caso —causa
       -- del bug de registros ×2). ROW_NUMBER garantiza exactamente una fila por unidad.
       UND_POR_CONS AS (
-        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE
+        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA
           FROM (
-            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE,
+            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA,
                    ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.VIGENTE = 'SI'
@@ -810,8 +810,13 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       SELECT
         c.CRIMINALIDAD_ID         AS CriminalidadId,
         c.CODIGO                  AS Codigo,
-        u.DESCRIPCION_DEPENDENCIA AS Unidad,
-        u.SIGLA_DEPENDE           AS UnidadSigla,
+        -- Unidad que REGISTRA el caso (la sigla del filtro) y su dependencia/estación de policía.
+        fdep.DESCRIPCION_DEPENDENCIA AS Unidad,
+        c.SIGLA_UNIDAD               AS UnidadSigla,
+        c.SIGLA_UNIDAD || ' - ' || NVL(fdep.DESCRIPCION_DEPENDENCIA, 'Sin dependencia') AS Dependencia,
+        -- Unidad de VERIFICACIÓN (a la que se asigna la investigación) = IRISP_RESPON_VALIDACION.ID_UNIDAD_RESPON.
+        uver.SIGLA_FISICA            AS UnidadVerificacionSigla,
+        uver.DESCRIPCION_DEPENDENCIA AS UnidadVerificacion,
         c.FECHA_CREACION          AS FechaCreacion,
         c.ID_ESTADO               AS IdEstado,
         de.DESCRIPCION            AS DescEstado,
@@ -820,7 +825,10 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       FROM IRISP_CRIMINALIDAD c
       LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
-      LEFT JOIN UND_POR_CONS u ON r.ID_UNIDAD_RESPON = u.consecutivo
+      -- Estación/dependencia que registra el caso (c.ID_UNIDAD)
+      LEFT JOIN UND_POR_CONS fdep ON c.ID_UNIDAD = fdep.consecutivo
+      -- Unidad de verificación / investigación asignada (r.ID_UNIDAD_RESPON)
+      LEFT JOIN UND_POR_CONS uver ON r.ID_UNIDAD_RESPON = uver.consecutivo
       LEFT JOIN UND_POR_SIGLA ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       LEFT JOIN IRISP_CTRL_DOMINIO de ON de.DOMINIO_ID = c.ID_ESTADO AND de.PADRE_ID = 1 AND de.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
@@ -855,6 +863,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       OPEN l_rc FOR
         SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS Unidad, NULL AS UnidadSigla,
+               NULL AS Dependencia, NULL AS UnidadVerificacionSigla, NULL AS UnidadVerificacion,
                NULL AS FechaCreacion, NULL AS IdEstado, NULL AS DescEstado,
                NULL AS IdEstadoExistencia, NULL AS DescEstadoExistencia
           FROM dual WHERE 1 = 0;
