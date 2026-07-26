@@ -919,27 +919,34 @@ function InicializarDrillDown() {
         abrirDetalle("Casos de la unidad " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
     });
 
-    // Filas de la tabla "Efectividad por unidad de verificación": filtra por unidad de verificación
+    // Filas de la tabla "Efectividad por unidad de verificación": la primera columna es la SIGLA
+    // (DIJIN, DIPOL...); se filtra por esa sigla y la modal se titula con la descripción completa.
     $(document).on("dblclick", "#tbEfectividadVerificacion tbody tr", function () {
         var fila = $("#tbEfectividadVerificacion").DataTable().row(this).data();
         if (!fila) return;
-        var unidad = $("<div>").html(fila[0]).text();
-        var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacion || c.UnidadVerificacionSigla) === unidad; });
-        abrirDetalle("Casos asignados a la unidad de verificación " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+        var sigla = $("<div>").html(fila[0]).text();
+        abrirDetalleVerificacion(sigla);
     });
 
-    // Gráfico de volumen por unidad de verificación
+    // Gráfico de volumen por unidad de verificación (etiquetas = siglas)
     var canvasVol = document.getElementById("graficoVolumenVerificacion");
     if (canvasVol) {
         canvasVol.addEventListener("dblclick", function (evt) {
             if (!chartVolumenVerificacion) return;
             var idx = obtenerIndiceChart(chartVolumenVerificacion, evt);
             if (idx === null) return;
-            var unidad = chartVolumenVerificacion.data.labels[idx];
-            var filtrados = datosResultadosActuales.filter(function (c) { return (c.UnidadVerificacion || c.UnidadVerificacionSigla) === unidad; });
-            abrirDetalle("Casos asignados a la unidad de verificación " + unidad, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+            abrirDetalleVerificacion(chartVolumenVerificacion.data.labels[idx]);
         });
     }
+}
+
+// Abre el detalle de los casos asignados a una unidad de verificación identificada por su SIGLA.
+// El título de la modal usa la descripción completa (ej. "SECCIONAL INVESTIGACION CRIMINAL MECAL").
+function abrirDetalleVerificacion(sigla) {
+    var filtrados = datosResultadosActuales.filter(function (c) { return c.UnidadVerificacionSigla === sigla; });
+    var descripcion = filtrados.length ? (filtrados[0].UnidadVerificacion || sigla) : sigla;
+    abrirDetalle("Casos asignados a la unidad de verificación " + descripcion,
+        filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
 }
 
 function filtrarPorExistenciaYAbrir(etiqueta) {

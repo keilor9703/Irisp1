@@ -230,9 +230,11 @@ namespace Web.Areas.Control.Controllers
             // Análisis por UNIDAD DE VERIFICACIÓN (la unidad a la que se asigna la investigación,
             // IRISP_RESPON_VALIDACION.ID_UNIDAD_RESPON) — mide efectividad (registros exitosos) y
             // volumen (registros asignados) de las unidades investigativas.
+            // Se agrupa/etiqueta por la SIGLA de la unidad de verificación (SIGLA_PAPA: DIJIN, DIPOL...)
+            // para tablas y gráficos; la descripción completa se lleva aparte para el detalle (modal).
             var rankingUnidadesVerificacion = casos
-                .Where(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacion) || !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla))
-                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacion) ? c.UnidadVerificacion! : c.UnidadVerificacionSigla!)
+                .Where(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) || !string.IsNullOrWhiteSpace(c.UnidadVerificacion))
+                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) ? c.UnidadVerificacionSigla! : c.UnidadVerificacion!)
                 .Select(g =>
                 {
                     var totalUnidad = g.Count();
@@ -243,6 +245,7 @@ namespace Web.Areas.Control.Controllers
                     return new
                     {
                         unidad = g.Key,
+                        descripcion = g.Select(x => x.UnidadVerificacion).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key,
                         total = totalUnidad,
                         finalizados = finalizadosUnidad,
                         existeConfirmado = existeUnidad,
@@ -255,7 +258,7 @@ namespace Web.Areas.Control.Controllers
                 .ThenByDescending(u => u.efectividadPct)
                 .ToList();
 
-            var casosSinAsignar = casos.Count(c => string.IsNullOrWhiteSpace(c.UnidadVerificacion) && string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla));
+            var casosSinAsignar = casos.Count(c => string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) && string.IsNullOrWhiteSpace(c.UnidadVerificacion));
 
             return new
             {
@@ -483,16 +486,17 @@ namespace Web.Areas.Control.Controllers
 
             // Ranking de unidades de verificación (misma lógica que ArmarKpisResultados)
             var rankingVerificacion = resultados
-                .Where(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacion) || !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla))
-                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacion) ? c.UnidadVerificacion! : c.UnidadVerificacionSigla!)
+                .Where(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) || !string.IsNullOrWhiteSpace(c.UnidadVerificacion))
+                .GroupBy(c => !string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) ? c.UnidadVerificacionSigla! : c.UnidadVerificacion!)
                 .Select(g =>
                 {
                     var totalUnidad = g.Count();
                     var finalizadosUnidad = g.Count(EsCasoFinalizado);
                     var existeUnidad = g.Count(EsCasoConExistencia);
+                    var descrip = g.Select(x => x.UnidadVerificacion).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key;
                     return new
                     {
-                        Unidad = g.Key,
+                        Unidad = string.Equals(descrip, g.Key, StringComparison.Ordinal) ? g.Key : $"{g.Key} - {descrip}",
                         Total = totalUnidad,
                         Finalizados = finalizadosUnidad,
                         ExisteConfirmado = existeUnidad,

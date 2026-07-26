@@ -348,9 +348,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- clave con ROW_NUMBER (NO con MAX(FECHA_ACTUALIZA) + join por igualdad: si dos filas
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y duplicaba cada registro).
       UND_POR_CONS AS (
-        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA
+        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA, SIGLA_PAPA
           FROM (
-            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA,
+            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.VIGENTE = 'SI'
@@ -550,9 +550,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- clave con ROW_NUMBER (NO con MAX(FECHA_ACTUALIZA) + join por igualdad: si dos filas
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y duplicaba cada caso).
       UND_POR_CONS AS (
-        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA
+        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA, SIGLA_PAPA
           FROM (
-            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA,
+            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.VIGENTE = 'SI'
@@ -787,9 +787,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y DUPLICABA cada caso —causa
       -- del bug de registros ×2). ROW_NUMBER garantiza exactamente una fila por unidad.
       UND_POR_CONS AS (
-        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA
+        SELECT consecutivo, DESCRIPCION_DEPENDENCIA, SIGLA_DEPENDE, SIGLA_FISICA, SIGLA_PAPA
           FROM (
-            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA,
+            SELECT v.consecutivo, v.DESCRIPCION_DEPENDENCIA, v.SIGLA_DEPENDE, v.SIGLA_FISICA, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.VIGENTE = 'SI'
@@ -815,11 +815,12 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.SIGLA_UNIDAD               AS UnidadSigla,
         c.SIGLA_UNIDAD || ' - ' || NVL(fdep.DESCRIPCION_DEPENDENCIA, 'Sin dependencia') AS Dependencia,
         -- Unidad de VERIFICACIÓN (a la que se asigna la investigación) = IRISP_RESPON_VALIDACION.ID_UNIDAD_RESPON.
-        -- La identidad es su DESCRIPCION_DEPENDENCIA (ej. "SECCIONAL INVESTIGACION CRIMINAL MECAL"),
-        -- NO la SIGLA_FISICA (que puede ser la de la unidad padre, ej. "MECAL"). Igual que
-        -- F_Consultar_Unidad del módulo Seguimiento (descripcion_dependencia || ' - ' || sigla_depende).
+        -- Sigla = SIGLA_PAPA (la sigla funcional real de estas unidades investigativas, ej. DIJIN,
+        -- DIPOL — la misma que usa PK_SEGUIMIENTO_IRIS.F_GetUnidadesPorSigla), para etiquetar en
+        -- tablas/gráficos. La DESCRIPCION_DEPENDENCIA (ej. "SECCIONAL INVESTIGACION CRIMINAL MECAL")
+        -- es el nombre completo, para mostrar en el detalle.
         uver.DESCRIPCION_DEPENDENCIA AS UnidadVerificacion,
-        uver.SIGLA_DEPENDE           AS UnidadVerificacionSigla,
+        uver.SIGLA_PAPA              AS UnidadVerificacionSigla,
         c.FECHA_CREACION          AS FechaCreacion,
         c.ID_ESTADO               AS IdEstado,
         de.DESCRIPCION            AS DescEstado,
