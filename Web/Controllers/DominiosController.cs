@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Negocio.Interfaz.General;
 
 namespace Web.Controllers
 {
+    [Authorize]
     public class DominiosController : Controller
     {
         #region Propiedades

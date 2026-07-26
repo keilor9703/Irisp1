@@ -1,6 +1,7 @@
 ﻿//using Comun.Areas.AplicacionDTO;
 using Comun.Areas.Integrantes;
 using Comun.Areas.Irisp1;
+using Comun.General;
 using Dapper;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
@@ -374,13 +375,15 @@ namespace Web.Areas.Irisp1.Controllers
                string uncBase ;
 
 
-                if (tipoRuta == 1) 
-                { uncBase = _configuration["RutasArchivosIris:RutaDocumentos"]; } 
-                else 
+                if (tipoRuta == 1)
+                { uncBase = _configuration["RutasArchivosIris:RutaDocumentos"]; }
+                else
                 { uncBase = _configuration["RutasArchivosIris:RutaDocumentosAnterior"]; }
 
-                // Reconstruir la ruta física real
-                string rutaCompleta = Path.Combine(uncBase, ruta.Replace("/", "\\"));
+                // Confinar la ruta dentro de la base para evitar path traversal (..\..\)
+                string rutaCompleta = RutaArchivoSegura.Resolver(uncBase, ruta);
+                if (rutaCompleta == null)
+                    return BadRequest("Ruta inválida.");
 
                 if (!System.IO.File.Exists(rutaCompleta))
                     return NotFound("Archivo no encontrado.");
@@ -402,7 +405,8 @@ namespace Web.Areas.Irisp1.Controllers
             catch (Exception ex)
             {
                 // Opcional: loguear el error con más detalle
-                return StatusCode(500, $"Error al descargar el archivo: {ex.Message}");
+                _logger.LogError(ex, "Error al descargar el archivo");
+                return StatusCode(500, "Error al descargar el archivo.");
             }
         }
 
@@ -449,7 +453,6 @@ namespace Web.Areas.Irisp1.Controllers
         }
 
 
-        [AllowAnonymous]
         private async Task<DtoResultadoFoto> ProcesarYRegistrarDocumentoAsync(
                                             string criminalidadIdCadena,
                                             long criminalidadIdNumero,
@@ -666,7 +669,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error interpretando los datos del IRIS: " + ex.Message });
+                _logger.LogError(ex, "Error interpretando los datos del IRIS");
+                return Json(new { success = false, message = "Error interpretando los datos del IRIS." });
             }
 
             if (string.IsNullOrWhiteSpace(Obj_NuevoIrisP1.CriminalidadId))
@@ -881,22 +885,13 @@ namespace Web.Areas.Irisp1.Controllers
                 // Ruta base física
                 string rutaBase = _configuration["RutasArchivosIris:RutaFotos"];
 
-                // Arma la ruta FÍSICA completa
-                string rutaCompleta = Path.Combine(
-                    rutaBase,
-                    V_Ruta.TrimStart('/', '\\')
-                );
-
-                // Opción 1: usando Console.WriteLine
-               // Console.WriteLine($"RUTA: {rutaCompleta}");
-               
-
-
-                // Opción 2 (más recomendado): usando ILogger
-                //_logger.LogInformation("RUTA: {RutaCompleta}", rutaCompleta);
+                // Confinar la ruta dentro de la base para evitar path traversal (..\..\)
+                string rutaCompleta = RutaArchivoSegura.Resolver(rutaBase, V_Ruta);
+                if (rutaCompleta == null)
+                    return BadRequest();
 
                 if (!System.IO.File.Exists(rutaCompleta))
-                    return NotFound("Archivo no encontrado: " + rutaCompleta);
+                    return NotFound("Archivo no encontrado.");
 
                 string extension = Path.GetExtension(rutaCompleta).ToLower();
                 string contentType = extension switch
@@ -999,7 +994,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1022,7 +1018,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1046,7 +1043,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1075,7 +1073,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1110,7 +1109,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1131,7 +1131,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1152,7 +1153,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1173,7 +1175,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1194,7 +1197,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 
@@ -1214,7 +1218,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar registro IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 

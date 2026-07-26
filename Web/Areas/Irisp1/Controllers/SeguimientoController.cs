@@ -210,7 +210,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: no es posible actualizar. " + ex.Message });
+                _logger.LogError(ex, "Error al actualizar seguimiento IRIS");
+                return Json(new { success = false, message = "No es posible actualizar en este momento." });
             }
         }
 

@@ -52,8 +52,11 @@ namespace Web.Models
             }
             catch (Exception)
             {
-                TextoCifrado = "123";
-                return TextoCifrado;
+                // Falla cerrada: ante un texto cifrado inválido o manipulado NO se devuelve un id
+                // "por defecto" (antes devolvía "123", lo que hacía operar sobre el caso 123). Se
+                // devuelve "-1", que no corresponde a ningún registro real, para que la operación
+                // aguas abajo no encuentre datos en vez de actuar sobre un caso arbitrario.
+                return "-1";
             }
 
 

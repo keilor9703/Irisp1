@@ -1,5 +1,6 @@
 ﻿//using Comun.Areas.Clientes;
 using Comun.Areas.Irisp1;
+using Comun.General;
 using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -221,8 +222,10 @@ namespace Web.Areas.Irisp1.Controllers
                 // Base UNC desde configuración
                 string uncBase = _configuration["RutasArchivosIris:RutaDocumentos"];
 
-                // Reconstruir la ruta física real
-                string rutaCompleta = Path.Combine(uncBase, ruta.Replace("/", "\\"));
+                // Confinar la ruta dentro de la base para evitar path traversal (..\..\)
+                string rutaCompleta = RutaArchivoSegura.Resolver(uncBase, ruta);
+                if (rutaCompleta == null)
+                    return BadRequest("Ruta inválida.");
 
                 if (!System.IO.File.Exists(rutaCompleta))
                     return NotFound("Archivo no encontrado.");
@@ -243,8 +246,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                // Opcional: loguear el error con más detalle
-                return StatusCode(500, $"Error al descargar el archivo: {ex.Message}");
+                _logger.LogError(ex, "Error al descargar el archivo");
+                return StatusCode(500, "Error al descargar el archivo.");
             }
         }
 
@@ -261,8 +264,10 @@ namespace Web.Areas.Irisp1.Controllers
                 // Base UNC desde configuración
                 string uncBase = _configuration["RutasArchivosIris:RutaDocumentosTareas"];
 
-                // Reconstruir la ruta física real
-                string rutaCompleta = Path.Combine(uncBase, ruta.Replace("/", "\\"));
+                // Confinar la ruta dentro de la base para evitar path traversal (..\..\)
+                string rutaCompleta = RutaArchivoSegura.Resolver(uncBase, ruta);
+                if (rutaCompleta == null)
+                    return BadRequest("Ruta inválida.");
 
                 if (!System.IO.File.Exists(rutaCompleta))
                     return NotFound("Archivo no encontrado.");
@@ -283,8 +288,8 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                // Opcional: loguear el error con más detalle
-                return StatusCode(500, $"Error al descargar el archivo: {ex.Message}");
+                _logger.LogError(ex, "Error al descargar el archivo de tarea");
+                return StatusCode(500, "Error al descargar el archivo.");
             }
         }
 
