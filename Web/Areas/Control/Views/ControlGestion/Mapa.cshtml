@@ -9,10 +9,24 @@
     <style>
         #mapaIrisp1 {
             width: 100%;
-            height: 560px;
+            height: 720px;
             border-radius: 8px;
             border: 1px solid #ccc;
         }
+        /* Leyenda de colores de los puntos por resultado de existencia */
+        .leyenda-mapa {
+            background: rgba(255,255,255,.9);
+            padding: 8px 10px;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.3);
+            font-size: .75rem;
+            line-height: 1.5;
+        }
+        .leyenda-mapa .punto {
+            display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+            margin-right: 6px; vertical-align: middle;
+        }
+        .seccion-titulo-mapa { color: #000; font-weight: 600; }
         /* site.css fuerza ".btn { color: white !important; }" en todos los botones — en un
            btn-outline-secondary sin seleccionar eso deja texto blanco sobre fondo claro
            (invisible). Se fuerza el color de vuelta solo para estos botones de modo. */
@@ -136,13 +150,24 @@
                 </div>
             </div>
             <div class="col-md-2 MargFloatBoos">
+                <div class="form-group has-float-label">
+                    <select id="ddlExistencia" class="form-control select2" style="width:100%;">
+                        <option value="">Todos los resultados</option>
+                        <option value="existe">Existe confirmado</option>
+                        <option value="noexiste">No existe</option>
+                        <option value="sindeterminar">Sin determinar</option>
+                    </select>
+                    <label class="Labels">Resultado de existencia</label>
+                </div>
+            </div>
+            <div class="col-md-3 MargFloatBoos">
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-outline-secondary btn-modo-mapa active" data-modo="puntos"><i class="fas fa-map-pin"></i> Puntos</button>
                     <button type="button" class="btn btn-outline-secondary btn-modo-mapa" data-modo="cluster"><i class="fas fa-layer-group"></i> Cluster</button>
                     <button type="button" class="btn btn-outline-secondary btn-modo-mapa" data-modo="calor"><i class="fas fa-fire"></i> Calor</button>
                 </div>
             </div>
-            <div class="col-md-2 MargFloatBoos text-right">
+            <div class="col-md-3 MargFloatBoos text-right">
                 <button type="button" id="btnAplicarFiltroMapa" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-grad">
                     <i class="fas fa-filter"></i> Aplicar
                 </button>
@@ -150,10 +175,11 @@
         </div>
 
         <div class="row mb-3">
-            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiTotal">0</h3><p>Casos georreferenciados</p></div></div>
-            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiUnidades">0</h3><p>Unidades distintas</p></div></div>
-            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiMunicipios">0</h3><p>Municipios distintos</p></div></div>
-            <div class="col-md-3 mb-2"><div class="mapa-stat"><h3 id="mapaKpiDelito">-</h3><p>Delito más frecuente</p></div></div>
+            <div class="col-md-2 mb-2"><div class="mapa-stat"><h3 id="mapaKpiTotal">0</h3><p>Casos georreferenciados</p></div></div>
+            <div class="col-md-2 mb-2"><div class="mapa-stat"><h3 id="mapaKpiExiste" style="color:#28a745;">0</h3><p>Existencia confirmada</p></div></div>
+            <div class="col-md-2 mb-2"><div class="mapa-stat"><h3 id="mapaKpiUnidades">0</h3><p>Unidades distintas</p></div></div>
+            <div class="col-md-2 mb-2"><div class="mapa-stat"><h3 id="mapaKpiMunicipios">0</h3><p>Municipios distintos</p></div></div>
+            <div class="col-md-4 mb-2"><div class="mapa-stat"><h3 id="mapaKpiDelito" style="font-size:1rem;">-</h3><p>Delito más frecuente</p></div></div>
         </div>
 
         <div id="mapaAvisoSinDatos" class="alert alert-info" style="display:none;">
@@ -164,26 +190,51 @@
     </div>
 </div>
 
+<h6 class="seccion-titulo-mapa mb-2 mt-2"><i class="fas fa-chart-bar"></i> Análisis del conjunto de casos mostrado en el mapa</h6>
 <div class="row">
-    <div class="col-md-6">
-        <div class="card border-info">
-            <div class="card-header d-flex align-items-center">
-                <h4 class="card-title text-white"><i class="mr-2 fas fa-calendar-week text-white"></i> Casos por día de la semana</h4>
+    <div class="col-md-6 col-xl-3 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center py-2">
+                <h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-chart-pie text-white"></i> Resultado de existencia</h6>
             </div>
-            <div class="card-body">
-                <div style="position:relative; height:260px;">
+            <div class="card-body p-2">
+                <div style="position:relative; height:230px;">
+                    <canvas id="graficoMapaExistencia"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center py-2">
+                <h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-city text-white"></i> Top 10 municipios</h6>
+            </div>
+            <div class="card-body p-2">
+                <div style="position:relative; height:230px;">
+                    <canvas id="graficoMapaMunicipios"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center py-2">
+                <h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-calendar-week text-white"></i> Casos por día de la semana</h6>
+            </div>
+            <div class="card-body p-2">
+                <div style="position:relative; height:230px;">
                     <canvas id="graficoPorDiaSemana"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card border-info">
-            <div class="card-header d-flex align-items-center">
-                <h4 class="card-title text-white"><i class="mr-2 fas fa-clock text-white"></i> Casos por hora del día</h4>
+    <div class="col-md-6 col-xl-3 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center py-2">
+                <h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-clock text-white"></i> Casos por hora del día</h6>
             </div>
-            <div class="card-body">
-                <div style="position:relative; height:260px;">
+            <div class="card-body p-2">
+                <div style="position:relative; height:230px;">
                     <canvas id="graficoPorHora"></canvas>
                 </div>
             </div>

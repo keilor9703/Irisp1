@@ -2,8 +2,61 @@ var mapaLeaflet = null;
 var capaPuntos = null;
 var capaCluster = null;
 var capaCalor = null;
+var leyendaMapa = null;
 var modoMapaActual = "puntos";
-var puntosCargados = [];
+var puntosCargados = [];   // todo lo que trajo Oracle (según filtros servidor)
+var puntosMostrados = [];  // subconjunto tras aplicar el filtro de existencia (cliente)
+
+// Clasificación de existencia (mismo criterio que el Tablero): el texto EstadoExistencia de
+// VM_GENERAL_IRISP puede venir como "SI EXISTE"/"NO EXISTE" o nulo.
+function clasificarExistencia(texto) {
+    var t = (texto || "").toString().toUpperCase();
+    if (t.indexOf("NO EXISTE") >= 0) return "noexiste";
+    if (t.indexOf("SI EXISTE") >= 0 || t === "EXISTE") return "existe";
+    return "sindeterminar";
+}
+
+var COLORES_EXISTENCIA = {
+    existe: "#28a745",        // verde  = caso exitoso (existencia confirmada)
+    noexiste: "#dc3545",      // rojo   = descartado (no existe)
+    sindeterminar: "#6c757d"  // gris   = aún sin determinar
+};
+var ETIQUETA_EXISTENCIA = { existe: "Existe confirmado", noexiste: "No existe", sindeterminar: "Sin determinar" };
+
+// Aplica el filtro de existencia (cliente) al conjunto que trajo el servidor.
+function puntosVisibles() {
+    var filtro = $("#ddlExistencia").val();
+    if (!filtro) return puntosCargados;
+    return puntosCargados.filter(function (p) { return clasificarExistencia(p.EstadoExistencia) === filtro; });
+}
+
+// Plugin Chart.js v2 que dibuja el valor sobre cada barra (misma mejora que en el Tablero).
+var pluginValoresBarraMapa = {
+    afterDatasetsDraw: function (chart) {
+        if (chart.config.type !== "bar" && chart.config.type !== "horizontalBar") return;
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillStyle = "#333";
+        (chart.data.datasets || []).forEach(function (dataset, di) {
+            var meta = chart.getDatasetMeta(di);
+            if (meta.hidden) return;
+            meta.data.forEach(function (barra, i) {
+                var valor = dataset.data[i];
+                if (!valor) return;
+                var pos = barra.tooltipPosition();
+                if (chart.config.type === "horizontalBar") {
+                    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+                    ctx.fillText(valor, pos.x + 4, pos.y);
+                } else {
+                    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+                    ctx.fillText(valor, pos.x, pos.y - 2);
+                }
+            });
+        });
+        ctx.restore();
+    }
+};
 
 $(document).ready(function () {
 
@@ -14,6 +67,13 @@ $(document).ready(function () {
 
     $("#ddlRegion").select2({ placeholder: "Todas las regiones", allowClear: true, width: "100%" });
     $("#ddlSiglaUnidad").select2({ placeholder: "Todas las unidades", allowClear: true, width: "100%" });
+    $("#ddlExistencia").select2({ minimumResultsForSearch: Infinity, width: "100%" });
+
+    // El filtro de existencia es de vista (cliente): re-renderiza mapa, KPIs y gráficas sin ir a
+    // Oracle, porque los datos ya traen el EstadoExistencia de cada caso.
+    $("#ddlExistencia").on("change", function () {
+        renderizarPuntos();
+    });
 
     inicializarMapa();
 
@@ -54,6 +114,19 @@ function inicializarMapa() {
 
     capaPuntos = L.layerGroup();
     capaCluster = L.markerClusterGroup();
+
+    // Leyenda de colores (resultado de existencia) fija en la esquina inferior derecha.
+    leyendaMapa = L.control({ position: "bottomright" });
+    leyendaMapa.onAdd = function () {
+        var div = L.DomUtil.create("div", "leyenda-mapa");
+        div.innerHTML =
+            '<b>Resultado de existencia</b><br/>' +
+            '<span class="punto" style="background:' + COLORES_EXISTENCIA.existe + '"></span> Existe confirmado<br/>' +
+            '<span class="punto" style="background:' + COLORES_EXISTENCIA.noexiste + '"></span> No existe<br/>' +
+            '<span class="punto" style="background:' + COLORES_EXISTENCIA.sindeterminar + '"></span> Sin determinar';
+        return div;
+    };
+    leyendaMapa.addTo(mapaLeaflet);
 }
 
 function parsearFechaKendo(id) {
@@ -140,8 +213,11 @@ function mostrarAvisoSinDatos(mensajeError, fueraDeRango) {
 }
 
 function renderizarPuntos() {
-    renderKpisMapa(puntosCargados);
-    renderGraficosComportamiento(puntosCargados);
+    puntosMostrados = puntosVisibles();
+    renderKpisMapa(puntosMostrados);
+    renderGraficosComportamiento(puntosMostrados);
+    renderGraficoExistencia(puntosMostrados);
+    renderGraficoMunicipios(puntosMostrados);
     renderizarCapaSegunModo();
 }
 
@@ -167,7 +243,7 @@ function renderizarCapaSegunModo() {
     limpiarCapasMapa();
     puntosFueraDeRango = 0;
 
-    var puntosValidos = puntosCargados
+    var puntosValidos = puntosMostrados
         .map(function (p) {
             var lat = parseFloat(p.Latitud);
             var lng = parseFloat(p.Longitud);
@@ -196,17 +272,23 @@ function renderizarCapaSegunModo() {
     } else if (modoMapaActual === "cluster") {
         capaCluster = L.markerClusterGroup();
         puntosValidos.forEach(function (p) {
-            capaCluster.addLayer(L.marker([p.lat, p.lng]).bindPopup(popupPunto(p.data)));
+            var color = COLORES_EXISTENCIA[clasificarExistencia(p.data.EstadoExistencia)];
+            capaCluster.addLayer(L.circleMarker([p.lat, p.lng], {
+                radius: 7, color: "#fff", fillColor: color, fillOpacity: 0.9, weight: 1.5
+            }).bindPopup(popupPunto(p.data)));
         });
         capaCluster.addTo(mapaLeaflet);
     } else {
+        // Puntos coloreados por resultado de existencia: permite ver geográficamente DÓNDE están
+        // los casos exitosos (verde), los descartados (rojo) y los pendientes (gris).
         capaPuntos = L.layerGroup();
         puntosValidos.forEach(function (p) {
+            var color = COLORES_EXISTENCIA[clasificarExistencia(p.data.EstadoExistencia)];
             capaPuntos.addLayer(L.circleMarker([p.lat, p.lng], {
                 radius: 6,
-                color: "#08a6cb",
-                fillColor: "#0d6efd",
-                fillOpacity: 0.7,
+                color: "#fff",
+                fillColor: color,
+                fillOpacity: 0.85,
                 weight: 1
             }).bindPopup(popupPunto(p.data)));
         });
@@ -219,11 +301,15 @@ function renderizarCapaSegunModo() {
 
 function popupPunto(p) {
     var fecha = p.FechaCreacion ? new Date(p.FechaCreacion).toLocaleDateString("es-CO") : "-";
+    var clase = clasificarExistencia(p.EstadoExistencia);
+    var badge = '<span style="display:inline-block;padding:1px 6px;border-radius:4px;color:#fff;font-size:.75rem;background:' +
+        COLORES_EXISTENCIA[clase] + '">' + ETIQUETA_EXISTENCIA[clase] + '</span>';
     return "<b>" + (p.Codigo || "Sin código") + "</b><br/>" +
         "Unidad: " + (p.SiglaUnidad || "-") + "<br/>" +
         "Municipio: " + (p.Municipio || "-") + (p.Barrio ? (" - " + p.Barrio) : "") + "<br/>" +
         "Delito: " + (p.DelitoPrincipal || "-") + "<br/>" +
         "Estado: " + (p.Estado || "-") + "<br/>" +
+        "Resultado: " + badge + "<br/>" +
         "Fecha: " + fecha;
 }
 
@@ -231,11 +317,13 @@ function renderKpisMapa(puntos) {
     var unidades = {};
     var municipios = {};
     var delitos = {};
+    var existe = 0;
 
     puntos.forEach(function (p) {
         if (p.SiglaUnidad) unidades[p.SiglaUnidad] = true;
         if (p.Municipio) municipios[p.Municipio] = true;
         if (p.DelitoPrincipal) delitos[p.DelitoPrincipal] = (delitos[p.DelitoPrincipal] || 0) + 1;
+        if (clasificarExistencia(p.EstadoExistencia) === "existe") existe++;
     });
 
     var delitoTop = "-";
@@ -245,9 +333,72 @@ function renderKpisMapa(puntos) {
     });
 
     $("#mapaKpiTotal").text(puntos.length);
+    $("#mapaKpiExiste").text(existe);
     $("#mapaKpiUnidades").text(Object.keys(unidades).length);
     $("#mapaKpiMunicipios").text(Object.keys(municipios).length);
     $("#mapaKpiDelito").text(delitoTop);
+}
+
+var chartMapaExistencia = null;
+var chartMapaMunicipios = null;
+
+function renderGraficoExistencia(puntos) {
+    var conteo = { existe: 0, noexiste: 0, sindeterminar: 0 };
+    puntos.forEach(function (p) { conteo[clasificarExistencia(p.EstadoExistencia)]++; });
+
+    var claves = ["existe", "noexiste", "sindeterminar"];
+    var datos = claves.map(function (k) { return conteo[k]; });
+    var colores = claves.map(function (k) { return COLORES_EXISTENCIA[k]; });
+    var etiquetas = claves.map(function (k) { return ETIQUETA_EXISTENCIA[k]; });
+
+    var ctx = document.getElementById("graficoMapaExistencia");
+    if (!ctx) return;
+    if (chartMapaExistencia) {
+        chartMapaExistencia.data.datasets[0].data = datos;
+        chartMapaExistencia.update();
+    } else {
+        chartMapaExistencia = new Chart(ctx, {
+            type: "doughnut",
+            data: { labels: etiquetas, datasets: [{ data: datos, backgroundColor: colores }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutoutPercentage: 60,
+                legend: { position: "bottom", labels: { boxWidth: 12, fontSize: 10 } }
+            }
+        });
+    }
+}
+
+function renderGraficoMunicipios(puntos) {
+    var conteo = {};
+    puntos.forEach(function (p) {
+        var m = p.Municipio || "Sin municipio";
+        conteo[m] = (conteo[m] || 0) + 1;
+    });
+    var top = Object.keys(conteo)
+        .map(function (m) { return { municipio: m, total: conteo[m] }; })
+        .sort(function (a, b) { return b.total - a.total; })
+        .slice(0, 10);
+
+    var etiquetas = top.map(function (x) { return x.municipio; });
+    var datos = top.map(function (x) { return x.total; });
+
+    var ctx = document.getElementById("graficoMapaMunicipios");
+    if (!ctx) return;
+    if (chartMapaMunicipios) {
+        chartMapaMunicipios.data.labels = etiquetas;
+        chartMapaMunicipios.data.datasets[0].data = datos;
+        chartMapaMunicipios.update();
+    } else {
+        chartMapaMunicipios = new Chart(ctx, {
+            type: "horizontalBar",
+            data: { labels: etiquetas, datasets: [{ label: "Casos", data: datos, backgroundColor: "#08a6cb" }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, legend: { display: false },
+                scales: { xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }] }
+            },
+            plugins: [pluginValoresBarraMapa]
+        });
+    }
 }
 
 var chartPorDiaSemana = null;
@@ -282,8 +433,9 @@ function renderGraficosComportamiento(puntos) {
                     responsive: true,
                     maintainAspectRatio: false,
                     legend: { display: false },
-                    scales: { yAxes: [{ ticks: { beginAtZero: true } }] }
-                }
+                    scales: { yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }] }
+                },
+                plugins: [pluginValoresBarraMapa]
             });
         }
     }
