@@ -825,7 +825,21 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.ID_ESTADO               AS IdEstado,
         de.DESCRIPCION            AS DescEstado,
         c.ID_ESTADO_EXISTENCIA    AS IdEstadoExistencia,
-        dx.DESCRIPCION            AS DescEstadoExistencia
+        dx.DESCRIPCION            AS DescEstadoExistencia,
+        -- Funcionario que INFORMÓ el caso (IRISP_CRIMINALIDAD.IDENTIFICACION_INFORMA): es quien
+        -- está en la calle detectando el posible delito. Su nombre se resuelve de VM_REHU_PERSONAL
+        -- con subconsulta escalar (ROWNUM=1) para no multiplicar filas.
+        c.IDENTIFICACION_INFORMA  AS IdentificacionInforma,
+        (SELECT p.grad_alfabetico || ' ' || p.apellidos || ' ' || p.nombres
+           FROM VM_REHU_PERSONAL p
+          WHERE p.identificacion = c.IDENTIFICACION_INFORMA AND ROWNUM = 1) AS FuncionarioInforma,
+        -- "Tiene resultados" = el caso llegó a SPOA/SIEDCO (IRISP_RESULTADO id_tipo 69/70), misma
+        -- semántica que la grilla de Verificación.
+        CASE WHEN EXISTS (SELECT 1 FROM IRISP_RESULTADO rr
+                           WHERE rr.criminalidad_id = c.CRIMINALIDAD_ID
+                             AND rr.vigente = 1
+                             AND rr.id_tipo IN (69, 70)
+                             AND rr.nro_spoa_siedco IS NOT NULL) THEN 1 ELSE 0 END AS TieneResultados
 
       FROM IRISP_CRIMINALIDAD c
       LEFT JOIN RESP r ON r.criminalidad_id = c.CRIMINALIDAD_ID
@@ -867,9 +881,10 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
 
       OPEN l_rc FOR
         SELECT NULL AS CriminalidadId, NULL AS Codigo, NULL AS Unidad, NULL AS UnidadSigla,
-               NULL AS Dependencia, NULL AS UnidadVerificacionSigla, NULL AS UnidadVerificacion,
+               NULL AS Dependencia, NULL AS UnidadVerificacion, NULL AS UnidadVerificacionSigla,
                NULL AS FechaCreacion, NULL AS IdEstado, NULL AS DescEstado,
-               NULL AS IdEstadoExistencia, NULL AS DescEstadoExistencia
+               NULL AS IdEstadoExistencia, NULL AS DescEstadoExistencia,
+               NULL AS IdentificacionInforma, NULL AS FuncionarioInforma, NULL AS TieneResultados
           FROM dual WHERE 1 = 0;
 
       RETURN l_rc;

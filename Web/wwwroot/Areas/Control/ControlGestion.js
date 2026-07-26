@@ -94,6 +94,7 @@ function ExportarTableroPdf() {
     agregarCampo("GraficoTopMenos", capturarGrafica("graficoTopMenosCasos"));
     agregarCampo("GraficoPorEstado", capturarGrafica("graficoPorEstado"));
     agregarCampo("GraficoVolumenVerif", capturarGrafica("graficoVolumenVerificacion"));
+    agregarCampo("GraficoTopInformantes", capturarGrafica("graficoTopInformantes"));
 
     document.body.appendChild(form);
     form.submit();
@@ -440,6 +441,7 @@ var chartPorEstadoCriminalidad = null;
 var chartTopMasCasos = null;
 var chartTopMenosCasos = null;
 var chartVolumenVerificacion = null;
+var chartTopInformantes = null;
 
 function renderResultadosCasos(kpis) {
     if (!kpis) {
@@ -450,6 +452,8 @@ function renderResultadosCasos(kpis) {
         renderGraficosTopCasosPorUnidad([]);
         renderTablaEfectividadVerificacion([]);
         renderGraficoVolumenVerificacion([]);
+        renderTablaFuncionariosInforma([]);
+        renderGraficoTopInformantes([]);
         return;
     }
 
@@ -465,6 +469,45 @@ function renderResultadosCasos(kpis) {
     renderGraficosTopCasosPorUnidad(kpis.rankingUnidades || []);
     renderTablaEfectividadVerificacion(kpis.rankingUnidadesVerificacion || []);
     renderGraficoVolumenVerificacion(kpis.rankingUnidadesVerificacion || []);
+    renderTablaFuncionariosInforma(kpis.rankingFuncionariosInforma || []);
+    renderGraficoTopInformantes(kpis.rankingFuncionariosInforma || []);
+}
+
+// --- Funcionarios que INFORMARON (IDENTIFICACION_INFORMA) ---
+// Reconoce a los funcionarios cuya información se convirtió en casos exitosos. La tabla ordena por
+// casos exitosos; el gráfico muestra el Top 10 de informantes con más casos exitosos.
+function renderTablaFuncionariosInforma(ranking) {
+    var filas = (ranking || []).map(function (u) {
+        return [u.funcionario || String(u.identificacion || ""), u.identificacion || "",
+                u.totalInformados, u.exitosos, u.conResultados, u.noExiste, badgeEfectividad(u.efectividadPct)];
+    });
+
+    renderDataTable("#tbFuncionariosInforma", filas, [
+        { title: "Funcionario que informó" },
+        { title: "Identificación" },
+        { title: "Registros informados" },
+        { title: "Existe confirmado" },
+        { title: "Con resultados (SPOA/SIEDCO)" },
+        { title: "No existe" },
+        { title: "% Efectividad" }
+    ], {
+        columnDefs: [{ targets: '_all', className: 'dt-head-center dt-body-center' }],
+        order: [[3, 'desc']],
+        preserveDraw: true
+    });
+}
+
+function renderGraficoTopInformantes(ranking) {
+    // Top 10 informantes por casos EXITOSOS (el objetivo del reporte es reconocer a los que más
+    // aportan resultados). renderBarraTopUnidad espera { unidad, total }.
+    var top10 = (ranking || []).slice()
+        .sort(function (a, b) { return b.exitosos - a.exitosos; })
+        .slice(0, 10)
+        .map(function (u) { return { unidad: u.funcionario || String(u.identificacion || ""), total: u.exitosos, identificacion: u.identificacion }; });
+
+    chartTopInformantes = renderBarraTopUnidad("graficoTopInformantes", chartTopInformantes, top10, "#20c997");
+    // Guarda la identificación por barra para el drill-down (el label es solo el nombre).
+    if (chartTopInformantes) chartTopInformantes.datosOriginales = top10;
 }
 
 // --- Análisis de unidades de VERIFICACIÓN (unidades a las que se asigna la investigación) ---
@@ -741,16 +784,19 @@ function filasCasosDetalle(lista) {
 
 var columnasResultadosDetalle = [
     { title: "Código IRISP1" }, { title: "Unidad" }, { title: "Dependencia (estación)" },
-    { title: "Unidad de verificación" }, { title: "Fecha creación" },
-    { title: "Estado" }, { title: "Existencia" }
+    { title: "Unidad de verificación" }, { title: "Funcionario que informó" }, { title: "Fecha creación" },
+    { title: "Estado" }, { title: "Existencia" }, { title: "Con resultados" }
 ];
 function filasResultadosDetalle(lista) {
     return lista.map(function (c) {
+        var funcionario = c.FuncionarioInforma || (c.IdentificacionInforma ? String(c.IdentificacionInforma) : "-");
         return [c.Codigo || "", c.UnidadSigla || c.Unidad || "",
                 c.Dependencia || "-",
                 c.UnidadVerificacion || c.UnidadVerificacionSigla || "-",
+                funcionario,
                 c.FechaCreacion ? new Date(c.FechaCreacion).toLocaleDateString("es-CO") : "-",
-                c.DescEstado || formatearEstadoCaso(c.IdEstado), c.DescEstadoExistencia || "Sin determinar"];
+                c.DescEstado || formatearEstadoCaso(c.IdEstado), c.DescEstadoExistencia || "Sin determinar",
+                c.TieneResultados === 1 ? "Sí" : "No"];
     });
 }
 
@@ -851,6 +897,7 @@ function obtenerIndiceChart(chart, evt) {
 }
 
 function InicializarDrillDown() {
+    InicializarDrillDownInformantes();
     // DataTables calcula el ancho de columnas en el momento de inicializarse; si el modal todavía
     // está oculto (display:none) esas columnas quedan en 0px. Se recalculan cuando el modal
     // termina de mostrarse.
@@ -947,6 +994,38 @@ function abrirDetalleVerificacion(sigla) {
     var descripcion = filtrados.length ? (filtrados[0].UnidadVerificacion || sigla) : sigla;
     abrirDetalle("Casos asignados a la unidad de verificación " + descripcion,
         filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+}
+
+// Abre el detalle de los registros informados por un funcionario (por su identificación).
+function abrirDetalleInformante(identificacion) {
+    if (identificacion === null || identificacion === undefined || identificacion === "") return;
+    var idNum = String(identificacion);
+    var filtrados = datosResultadosActuales.filter(function (c) { return String(c.IdentificacionInforma) === idNum; });
+    var nombre = filtrados.length ? (filtrados[0].FuncionarioInforma || idNum) : idNum;
+    abrirDetalle("Registros informados por " + nombre,
+        filtrados.length + " registro(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+}
+
+function InicializarDrillDownInformantes() {
+    // Fila de la tabla de funcionarios: la 2a columna (índice 1) es la identificación
+    $(document).on("dblclick", "#tbFuncionariosInforma tbody tr", function () {
+        var fila = $("#tbFuncionariosInforma").DataTable().row(this).data();
+        if (!fila) return;
+        abrirDetalleInformante($("<div>").html(fila[1]).text());
+    });
+
+    // Gráfico Top informantes: cada barra guarda la identificación en el punto ordenado
+    var canvasInf = document.getElementById("graficoTopInformantes");
+    if (canvasInf) {
+        canvasInf.addEventListener("dblclick", function (evt) {
+            if (!chartTopInformantes) return;
+            var idx = obtenerIndiceChart(chartTopInformantes, evt);
+            if (idx === null) return;
+            var ident = (chartTopInformantes.datosOriginales && chartTopInformantes.datosOriginales[idx])
+                ? chartTopInformantes.datosOriginales[idx].identificacion : null;
+            abrirDetalleInformante(ident);
+        });
+    }
 }
 
 function filtrarPorExistenciaYAbrir(etiqueta) {

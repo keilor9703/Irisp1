@@ -440,6 +440,39 @@
     </div>
 </div>
 
+<h6 class="seccion-titulo mb-2"><i class="fas fa-medal"></i> Funcionarios informantes (reconocimiento a quienes aportan casos exitosos)</h6>
+<div class="row">
+    <div class="col-md-5 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-award text-white"></i> Top 10 informantes con más casos exitosos</h4>
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:340px;">
+                    <canvas id="graficoTopInformantes" class="drillable"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title text-white"><i class="mr-2 fas fa-user-tie text-white"></i> Funcionarios que informaron</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted" style="font-size:.8rem;">
+                    El funcionario que informa (IDENTIFICACION_INFORMA) es quien detecta el posible delito en la calle.
+                    Aquí se ve cuántos registros informó cada uno y cuántos se volvieron exitosos (existencia confirmada)
+                    o con resultados (SPOA/SIEDCO), para brindar estímulos. Doble click en una fila para ver sus registros.
+                </p>
+                <div class="table-responsive">
+                    <table id="tbFuncionariosInforma" class="table table-bordered table-striped" width="100%"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card border-info">
     <div class="card-header d-flex align-items-center">
         <h4 class="card-title text-white"><i class="mr-2 fas fa-clipboard-list text-white"></i> Tareas y estado de SLA</h4>

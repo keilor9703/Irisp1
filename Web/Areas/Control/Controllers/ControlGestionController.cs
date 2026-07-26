@@ -260,6 +260,33 @@ namespace Web.Areas.Control.Controllers
 
             var casosSinAsignar = casos.Count(c => string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) && string.IsNullOrWhiteSpace(c.UnidadVerificacion));
 
+            // Funcionarios que INFORMARON (IDENTIFICACION_INFORMA). Son quienes están en la calle
+            // detectando delitos; interesa reconocer a los que informaron casos que resultaron
+            // exitosos (existencia confirmada) o con resultados (SPOA/SIEDCO).
+            var rankingFuncionariosInforma = casos
+                .Where(c => c.IdentificacionInforma.HasValue && c.IdentificacionInforma.Value > 0)
+                .GroupBy(c => c.IdentificacionInforma!.Value)
+                .Select(g =>
+                {
+                    var totalInformados = g.Count();
+                    var exitosos = g.Count(EsCasoConExistencia);
+                    var conResultados = g.Count(c => c.TieneResultados == 1);
+                    return new
+                    {
+                        identificacion = g.Key,
+                        funcionario = g.Select(x => x.FuncionarioInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key.ToString(),
+                        totalInformados,
+                        exitosos,
+                        conResultados,
+                        noExiste = g.Count(EsCasoSinExistencia),
+                        efectividadPct = totalInformados > 0 ? Math.Round((decimal)exitosos * 100 / totalInformados, 1) : 0m
+                    };
+                })
+                .OrderByDescending(u => u.exitosos)
+                .ThenByDescending(u => u.conResultados)
+                .ThenByDescending(u => u.totalInformados)
+                .ToList();
+
             return new
             {
                 total,
@@ -273,7 +300,8 @@ namespace Web.Areas.Control.Controllers
                 porExistencia,
                 rankingUnidades,
                 rankingUnidadesVerificacion,
-                casosSinAsignar
+                casosSinAsignar,
+                rankingFuncionariosInforma
             };
         }
 
@@ -395,7 +423,8 @@ namespace Web.Areas.Control.Controllers
                 TopMas = DataUrlABytes(req.GraficoTopMas),
                 TopMenos = DataUrlABytes(req.GraficoTopMenos),
                 PorEstado = DataUrlABytes(req.GraficoPorEstado),
-                VolumenVerif = DataUrlABytes(req.GraficoVolumenVerif)
+                VolumenVerif = DataUrlABytes(req.GraficoVolumenVerif),
+                TopInformantes = DataUrlABytes(req.GraficoTopInformantes)
             };
 
             var pdfBytes = GeneratePdfTablero(usuarioInstitucional, fechaInicio, fechaFin, regionTexto, req.V_SiglaUnidad,
@@ -507,6 +536,29 @@ namespace Web.Areas.Control.Controllers
                 })
                 .OrderByDescending(u => u.Total)
                 .ThenByDescending(u => u.EfectividadPct)
+                .ToList();
+
+            // Ranking de funcionarios informantes (reconocimiento)
+            var rankingInformantes = resultados
+                .Where(c => c.IdentificacionInforma.HasValue && c.IdentificacionInforma.Value > 0)
+                .GroupBy(c => c.IdentificacionInforma!.Value)
+                .Select(g =>
+                {
+                    var totalInf = g.Count();
+                    var exitosos = g.Count(EsCasoConExistencia);
+                    return new
+                    {
+                        Funcionario = g.Select(x => x.FuncionarioInforma).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? g.Key.ToString(),
+                        Identificacion = g.Key,
+                        Total = totalInf,
+                        Exitosos = exitosos,
+                        ConResultados = g.Count(c => c.TieneResultados == 1),
+                        EfectividadPct = totalInf > 0 ? Math.Round((decimal)exitosos * 100 / totalInf, 1) : 0m
+                    };
+                })
+                .OrderByDescending(u => u.Exitosos)
+                .ThenByDescending(u => u.ConResultados)
+                .ThenByDescending(u => u.Total)
                 .ToList();
 
             // --- Marca de agua: usuario institucional en diagonal en cada página ---
@@ -710,6 +762,40 @@ namespace Web.Areas.Control.Controllers
                                 table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text($"{u.EfectividadPct} %");
                             }
                         });
+
+                        // 9. Funcionarios informantes (reconocimiento)
+                        Titulo("9. Funcionarios informantes (reconocimiento a quienes aportan casos exitosos)");
+                        GraficaImagen(graficos.TopInformantes);
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(4);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(2);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Funcionario que informó").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Identificación").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Informados").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Existe conf.").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Con resultados").Bold();
+                                header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text("Efectividad").Bold();
+                            });
+                            foreach (var u in rankingInformantes)
+                            {
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Funcionario);
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Identificacion.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Total.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.Exitosos.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(u.ConResultados.ToString());
+                                table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text($"{u.EfectividadPct} %");
+                            }
+                        });
                     });
 
                     page.Footer().Column(f =>
@@ -749,6 +835,7 @@ namespace Web.Areas.Control.Controllers
         public string? GraficoTopMenos { get; set; }
         public string? GraficoPorEstado { get; set; }
         public string? GraficoVolumenVerif { get; set; }
+        public string? GraficoTopInformantes { get; set; }
     }
 
     // Imágenes de las gráficas ya decodificadas a bytes, listas para embeberse en el PDF.
@@ -760,5 +847,6 @@ namespace Web.Areas.Control.Controllers
         public byte[]? TopMenos { get; set; }
         public byte[]? PorEstado { get; set; }
         public byte[]? VolumenVerif { get; set; }
+        public byte[]? TopInformantes { get; set; }
     }
 }

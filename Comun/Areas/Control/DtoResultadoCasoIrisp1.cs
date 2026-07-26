@@ -39,5 +39,14 @@ namespace Comun.Areas.Control
 
         [JsonPropertyName("DescEstadoExistencia")]
         public string? DescEstadoExistencia { get; set; }
+
+        [JsonPropertyName("IdentificacionInforma")]
+        public long? IdentificacionInforma { get; set; }
+
+        [JsonPropertyName("FuncionarioInforma")]
+        public string? FuncionarioInforma { get; set; }
+
+        [JsonPropertyName("TieneResultados")]
+        public int? TieneResultados { get; set; }
     }
 }
