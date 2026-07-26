@@ -460,7 +460,7 @@ BEGIN
                            
                             '<br>' ||
                            
-                           NVL('<b>Observación:</b> ' || t2.observacion || '<br>', '') || NVL('<b>Justificación:</b> ' || t2.justificacion || '<br>', '') ||
+                           NVL('<b>Observación:</b> ' || REPLACE(REPLACE(REPLACE(REPLACE(t2.observacion, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;') || '<br>', '') || NVL('<b>Justificación:</b> ' || REPLACE(REPLACE(REPLACE(REPLACE(t2.justificacion, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;') || '<br>', '') ||
                            
                             '<b>Evidencia:</b> ' ||CASE
                              WHEN doc2.url IS NOT NULL THEN
@@ -643,8 +643,8 @@ BEGIN
 
                                    '<br>' ||
 
-                                   NVL('<b>Observación:</b> ' || t2.observacion || '<br>', '') ||
-                                   NVL('<b>Justificación:</b> ' || t2.justificacion || '<br>', '') ||
+                                   NVL('<b>Observación:</b> ' || REPLACE(REPLACE(REPLACE(REPLACE(t2.observacion, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;') || '<br>', '') ||
+                                   NVL('<b>Justificación:</b> ' || REPLACE(REPLACE(REPLACE(REPLACE(t2.justificacion, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;') || '<br>', '') ||
 
                                    '<b>Evidencia:</b> ' ||
                                    CASE WHEN doc2.url IS NOT NULL THEN
