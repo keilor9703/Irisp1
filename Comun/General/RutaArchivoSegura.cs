@@ -18,10 +18,15 @@ namespace Comun.General
             if (string.IsNullOrWhiteSpace(rutaBase) || string.IsNullOrWhiteSpace(rutaRelativa))
                 return null;
 
+            // Normalizar ambos separadores ('/' y '\') al de la plataforma actual, para que el
+            // confinamiento funcione igual en Windows (producción, rutas UNC) y en Linux (CI).
+            var relativaNormalizada = rutaRelativa
+                .Replace('/', Path.DirectorySeparatorChar)
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .TrimStart(Path.DirectorySeparatorChar);
+
             // Rechazar rutas absolutas o con raíz de unidad/UNC en la entrada del cliente:
             // solo se admiten segmentos relativos que cuelguen de la base.
-            var relativaNormalizada = rutaRelativa.Replace('/', '\\').TrimStart('\\');
-
             if (Path.IsPathRooted(relativaNormalizada) || relativaNormalizada.Contains(':'))
                 return null;
 

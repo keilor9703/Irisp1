@@ -1,0 +1,33 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Compila toda la solución para detectar errores de compilación en cada push.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore IRIS-P1.sln
+      - name: Build
+        run: dotnet build IRIS-P1.sln --configuration Release --no-restore
+
+  # Pruebas unitarias de la lógica pura (helpers de seguridad). Sólo dependen de
+  # Comun, así que dan señal rápida y fiable aunque el build de la app tarde.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test
+        run: dotnet test Tests/Tests.csproj --configuration Release
