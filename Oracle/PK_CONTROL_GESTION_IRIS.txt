@@ -835,7 +835,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         CASE WHEN pinf.identificacion IS NOT NULL
              THEN TRIM(pinf.grad_alfabetico || ' ' || pinf.apellidos || ' ' || pinf.nombres)
              ELSE NULL END           AS FuncionarioInforma,
-        pinf.sigla_fisica            AS SiglaInforma,
+        uinf.SIGLA_FISICA            AS SiglaInforma,
         pinf.descripcion_dependencia AS DependenciaInforma,
         pinf.cargo_actual            AS CargoInforma,
         -- "Tiene resultados" = el caso llegó a SPOA/SIEDCO (IRISP_RESULTADO id_tipo 69/70), misma
@@ -857,6 +857,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
       -- Datos del funcionario que informó (identificacion es única en VM_REHU_PERSONAL: sin fan-out)
       LEFT JOIN VM_REHU_PERSONAL pinf ON pinf.identificacion = c.IDENTIFICACION_INFORMA
+      -- Sigla física de la unidad donde labora el informante (ej. MEBAR), vía su unidad de trabajo
+      LEFT JOIN UND_POR_CONS uinf ON pinf.unde_consecutivo_laborando = uinf.consecutivo
 
       WHERE c.VIGENTE = 1
         AND c.FECHA_CREACION >= P_FechaInicio
