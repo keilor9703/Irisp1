@@ -11,6 +11,7 @@ namespace Web.Areas.Control.Controllers
 {
     [Area("Control")]
     [Authorize(Roles = "1,2")]
+    [AutoValidateAntiforgeryToken]
     public class ConfiguracionSlaController : Controller
     {
         #region Propiedades

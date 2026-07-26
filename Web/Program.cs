@@ -56,6 +56,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 DefaultTypeMap.MatchNamesWithUnderscores = true;
 QuestPDF.Settings.License = LicenseType.Community;
 
+// Anti-CSRF: el token puede llegar por header (lo adjunta el _Layout vía ajaxSend)
+// además del campo de formulario. Los controladores propios lo exigen con
+// [AutoValidateAntiforgeryToken]; la librería MFA externa no se ve afectada.
+builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
+
 
 
 // ❌ AQUÍ BORRAMOS EL BLOQUE VIEJO DE ApiGatewayUrl QUE CAUSABA EL ERROR ❌

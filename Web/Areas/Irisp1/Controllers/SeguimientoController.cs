@@ -20,6 +20,7 @@ namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
     [Authorize(Roles = "1,2,7")]
+    [AutoValidateAntiforgeryToken]
     public class SeguimientoController : Controller
     {
         #region Propiedades

@@ -21,6 +21,7 @@ namespace Web.Areas.Expendios.Controllers
 
     [Area("Expendios")]
     [Authorize(Roles = "1,2,3,4,8,11")]
+    [AutoValidateAntiforgeryToken]
     public class RegistrosController : Controller
     {
 

@@ -18,6 +18,7 @@ namespace Web.Areas.Integrantes.Controllers
 {
     [Area("Integrantes")]
     [Authorize(Roles = "1,2,3,4,5,6,7,8,11")]
+    [AutoValidateAntiforgeryToken]
     public class RegistrarIntegController : Controller
 
     {

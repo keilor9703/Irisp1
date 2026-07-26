@@ -29,6 +29,7 @@ namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
     [Authorize(Roles = "1,2,3,7")]
+    [AutoValidateAntiforgeryToken]
     public class RegistrosIrisp1Controller : Controller
     {
         #region Propiedades

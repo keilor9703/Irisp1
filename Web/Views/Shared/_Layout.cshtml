@@ -460,6 +460,22 @@
     <!--Script Originales -->
     <script src="~/lib/jquery/dist/jQuery2024.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @* Token anti-CSRF: se adjunta automáticamente en el header de toda petición AJAX
+       que modifique estado (POST/PUT/DELETE), para que los controladores con
+       [AutoValidateAntiforgeryToken] la acepten. Las peticiones GET no lo requieren. *@
+    @Html.AntiForgeryToken()
+    <script>
+        (function () {
+            var token = $('input[name="__RequestVerificationToken"]').first().val();
+            if (!token) return;
+            $(document).ajaxSend(function (event, jqxhr, settings) {
+                var metodo = (settings.type || 'GET').toUpperCase();
+                if (metodo === 'GET' || metodo === 'HEAD' || metodo === 'OPTIONS' || metodo === 'TRACE') return;
+                jqxhr.setRequestHeader('RequestVerificationToken', token);
+            });
+        })();
+    </script>
     <!-- ---------------------------------------------------->
     <!------------------Plantilla Moster -------------------->
     <!-- ---------------------------------------------------->
