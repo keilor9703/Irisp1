@@ -73,8 +73,13 @@
         }
         .drill-hint {
             font-size: .65rem;
-            color: #adb5bd;
+            color: #000;
             margin-top: 2px;
+        }
+        /* Títulos de sección: negro para máxima legibilidad (antes gris text-muted). */
+        .seccion-titulo {
+            color: #000 !important;
+            font-weight: 600;
         }
         canvas.drillable { cursor: pointer; }
         #tbEfectividadUnidad tbody tr { cursor: pointer; }
@@ -179,7 +184,7 @@
     </div>
 </div>
 
-<h6 class="text-muted mb-2"><i class="fas fa-tasks"></i> Cumplimiento de SLA por tarea
+<h6 class="seccion-titulo mb-2"><i class="fas fa-tasks"></i> Cumplimiento de SLA por tarea
     <span class="drill-hint"><i class="fas fa-mouse-pointer"></i> doble click en una tarjeta o gráfica para ver el detalle</span>
 </h6>
 <div class="row mb-3">
@@ -230,7 +235,7 @@
     </div>
 </div>
 
-<h6 class="text-muted mb-2"><i class="fas fa-stopwatch"></i> Tiempo de gestión por caso IRISP1</h6>
+<h6 class="seccion-titulo mb-2"><i class="fas fa-stopwatch"></i> Tiempo de gestión por caso IRISP1</h6>
 <div class="row mb-3">
     <div class="col-md-4 mb-3">
         <div class="stat-card st-info" data-kpi="casos-tiempototal">
@@ -279,7 +284,7 @@
     </div>
 </div>
 
-<h6 class="text-muted mb-2"><i class="fas fa-bullseye"></i> Resultados y efectividad de las unidades</h6>
+<h6 class="seccion-titulo mb-2"><i class="fas fa-bullseye"></i> Resultados y efectividad de las unidades</h6>
 <div class="row mb-3">
     <div class="col-md mb-3">
         <div class="stat-card st-success" data-kpi="resultados-finalizados">
