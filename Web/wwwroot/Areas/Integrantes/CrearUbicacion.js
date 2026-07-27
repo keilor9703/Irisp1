@@ -170,8 +170,12 @@ function inicializarMapa(idMapa) {
             return t;
         }
 
+        // Clusters del recorrido actual (para desplegar/replegar por proximidad al clic del mapa).
+        var _clusters = [];
+
         // Dibuja un nodo (círculo + número). Inicio verde y fin rojo, ambos más grandes.
-        function dibujarNodo(mapPoint, orden, total) {
+        // Si se pasa "col", los gráficos creados se agregan a ese arreglo (para poder quitarlos).
+        function dibujarNodo(mapPoint, orden, total, col) {
             var color, tam;
             if (orden === 1) { color = new Color(C_INICIO); tam = 34; }
             else if (orden === total) { color = new Color(C_FIN); tam = 34; }
@@ -179,27 +183,30 @@ function inicializarMapa(idMapa) {
 
             var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, tam,
                 new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 2), color);
-            map.graphics.add(new Graphic(mapPoint, marker));
-            map.graphics.add(new Graphic(mapPoint, etiquetaNumero(orden.toString())));
+            var gMarker = new Graphic(mapPoint, marker);
+            var gLabel = new Graphic(mapPoint, etiquetaNumero(orden.toString()));
+            map.graphics.add(gMarker);
+            map.graphics.add(gLabel);
+            if (col) { col.push(gMarker, gLabel); }
         }
 
-        // Dibuja un marcador de agrupación (varias consultas en el mismo sitio) con contador ×N.
-        // Guarda sus miembros en attributes para poder desplegarlo al hacer clic.
+        // Dibuja un marcador de agrupación (×N) y registra el cluster para el toggle por proximidad.
         function dibujarCluster(centerMapPoint, miembros) {
             var n = miembros.length;
             var tam = Math.min(48, 28 + n * 2);
             var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, tam,
                 new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 2), new Color(C_CLUSTER));
-            map.graphics.add(new Graphic(centerMapPoint, marker, { cluster: true, miembros: miembros }));
-            map.graphics.add(new Graphic(centerMapPoint, etiquetaNumero(n.toString()), { cluster: true, miembros: miembros }));
+            map.graphics.add(new Graphic(centerMapPoint, marker));
+            map.graphics.add(new Graphic(centerMapPoint, etiquetaNumero(n.toString())));
+            _clusters.push({ cx: centerMapPoint.x, cy: centerMapPoint.y, miembros: miembros, expandido: false, graficos: [] });
         }
 
         // Despliega en abanico los nodos de un cluster alrededor de su ubicación real, con una
         // línea punteada del centro a cada nodo. El radio es proporcional al zoom actual.
-        function expandirCluster(miembros) {
+        function expandirCluster(cl) {
             var R;
             try { R = map.extent.getWidth() * 0.02; } catch (e) { R = 60; }
-            var ordenados = miembros.slice().sort(function (a, b) { return a.orden - b.orden; });
+            var ordenados = cl.miembros.slice().sort(function (a, b) { return a.orden - b.orden; });
             ordenados.forEach(function (m, j) {
                 var base = aPuntoMapa(m.lng, m.lat);
                 var ang = (2 * Math.PI * j) / ordenados.length - Math.PI / 2;
@@ -207,11 +214,25 @@ function inicializarMapa(idMapa) {
                 try {
                     var linea = new Polyline(map.spatialReference);
                     linea.addPath([base, off]);
-                    map.graphics.add(new Graphic(linea,
-                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_DOT, new Color([111, 66, 193, 0.9]), 1)));
+                    var gLinea = new Graphic(linea,
+                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_DOT, new Color([111, 66, 193, 0.9]), 1));
+                    map.graphics.add(gLinea);
+                    cl.graficos.push(gLinea);
                 } catch (e) { /* conector opcional */ }
-                dibujarNodo(off, m.orden, m.total);
+                dibujarNodo(off, m.orden, m.total, cl.graficos);
             });
+            cl.expandido = true;
+        }
+
+        // Repliega un cluster: quita del mapa los gráficos agregados al desplegarlo.
+        function colapsarCluster(cl) {
+            cl.graficos.forEach(function (g) { try { map.graphics.remove(g); } catch (e) { } });
+            cl.graficos = [];
+            cl.expandido = false;
+        }
+
+        function toggleCluster(cl) {
+            if (cl.expandido) { colapsarCluster(cl); } else { expandirCluster(cl); }
         }
 
         // ===========================================================
@@ -225,6 +246,7 @@ function inicializarMapa(idMapa) {
             if (!lista || lista.length === 0) { console.warn("Sin recorrido para pintar"); return; }
 
             map.graphics.clear();
+            _clusters = [];
 
             var puntosValidos = [];
             lista.forEach(function (c) {
@@ -329,17 +351,24 @@ function inicializarMapa(idMapa) {
         map.addLayer(capaBarrios);
         map.addLayer(capaRurales);
 
-        // Clic sobre un marcador de agrupación (×N) -> despliega sus consultas en abanico.
+        // Clic en el mapa: si cae sobre un marcador de agrupación (×N), lo despliega o repliega.
+        // Se usa prueba de proximidad contra el centro del cluster (independiente del enrutamiento
+        // de clics sobre gráficos, que las capas de features suelen interceptar).
         try {
-            map.graphics.on("click", function (evt) {
+            map.on("click", function (evt) {
                 try {
-                    var a = evt && evt.graphic && evt.graphic.attributes;
-                    if (a && a.cluster && a.miembros) {
-                        expandirCluster(a.miembros);
-                    }
-                } catch (e) { console.warn("No se pudo desplegar el grupo:", e); }
+                    if (!_clusters.length || !evt || !evt.mapPoint) return;
+                    var upp = (map.extent.getWidth() / map.width) || 1; // unidades de mapa por pixel
+                    var umbral = 26 * upp;                               // ~26 px de tolerancia
+                    var mejor = null, mejorD = Infinity;
+                    _clusters.forEach(function (c) {
+                        var d = Math.sqrt(Math.pow(evt.mapPoint.x - c.cx, 2) + Math.pow(evt.mapPoint.y - c.cy, 2));
+                        if (d <= umbral && d < mejorD) { mejorD = d; mejor = c; }
+                    });
+                    if (mejor) { toggleCluster(mejor); }
+                } catch (e) { console.warn("No se pudo procesar el clic del recorrido:", e); }
             });
-        } catch (e) { console.warn("No se pudo enlazar el clic de agrupación:", e); }
+        } catch (e) { console.warn("No se pudo enlazar el clic del mapa:", e); }
 
 
 
