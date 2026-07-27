@@ -6,9 +6,8 @@
 
 @section scripts {
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    @* Nota: jsPDF/jspdf-autotable/xlsx se retiraron: las exportaciones a PDF/Excel se generan
+       100% en el servidor (QuestPDF/ClosedXML), esas librerías CDN no se usaban en el cliente. *@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
     <!-- Carga la API de ArcGIS -->
@@ -48,6 +47,9 @@
         <div class="card border-success">
             <div class="card-header d-flex align-items-center">
                 <h4 class="card-title text-white"><i class="fa fa-search"></i> Consultar</h4>
+                <span id="badgeReincidente" class="badge bg-danger ms-3 d-none" style="font-size:.8rem;">
+                    <i class="fa fa-triangle-exclamation"></i> REINCIDENTE
+                </span>
                 <div class="card-actions ms-auto d-flex button-group">
                     <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>
           

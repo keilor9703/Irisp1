@@ -26,13 +26,39 @@ create or replace package body PK_INTEGRANTES_IRIS is
              t.identificacion,
              t.vigente,
              t.observacion,
-             d.descripcion AS tipoid
+             d.descripcion AS tipoid,
+             -- Correlación con las apariciones REALES del sujeto como integrante de casos IRISP1.
+             -- Antes IRISP_REINCIDENTE e IRISP_INTEGRANTE compartían la cédula pero NUNCA se cruzaban,
+             -- por lo que la lista de vigilancia no aportaba nada analítico. Estos dos conteos
+             -- (total de casos y de esos cuántos llegaron a resultado SPOA/SIEDCO) la convierten en
+             -- un indicador operativo real.
+             NVL(cc.total_casos, 0)          AS TotalCasos,
+             NVL(cc.casos_con_resultados, 0) AS CasosConResultados
         FROM irisp_reincidente t
         LEFT JOIN irisp_ctrl_dominio d
           ON t.id_tipo = d.dominio_id
+        LEFT JOIN (
+              SELECT ig.cedula,
+                     COUNT(DISTINCT c.criminalidad_id) AS total_casos,
+                     COUNT(DISTINCT CASE
+                             WHEN EXISTS (SELECT 1 FROM IRISP_RESULTADO rr
+                                           WHERE rr.criminalidad_id = c.criminalidad_id
+                                             AND rr.vigente = 1
+                                             AND rr.id_tipo IN (69, 70)
+                                             AND rr.nro_spoa_siedco IS NOT NULL)
+                             THEN c.criminalidad_id
+                           END) AS casos_con_resultados
+                FROM IRISP_INTEGRANTE ig
+                JOIN IRISP_CRIMINALIDAD c
+                  ON c.criminalidad_id = ig.criminalidad_id
+                 AND c.vigente = 1
+               WHERE ig.vigente = 1
+               GROUP BY ig.cedula
+             ) cc
+          ON cc.cedula = t.identificacion
        WHERE t.vigente = 1
        order by t.fecha_creacion desc;
-  
+
     RETURN V_CONSULTA;
   
   EXCEPTION
@@ -106,13 +132,27 @@ create or replace package body PK_INTEGRANTES_IRIS is
     V_REINCIDENTE_ID VARCHAR2(40);
     V_EXISTE         NUMBER;
   BEGIN
+    -- Validaciones de integridad de datos (antes el sistema escribía sin validar nada):
+    -- la identificación es obligatoria y positiva, y debe venir al menos Nombre o Alias.
+    IF P_IDENTIFICACION IS NULL OR P_IDENTIFICACION <= 0 THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'La identificación es obligatoria y debe ser un número válido.';
+      RETURN;
+    END IF;
+
+    IF TRIM(P_ALIAS) IS NULL AND TRIM(P_NOMBRE) IS NULL THEN
+      P_RESULTADO := 0;
+      SRV_Message := 'Debe indicar al menos Nombre o Alias.';
+      RETURN;
+    END IF;
+
     -- Verificar si existe reincidente con IDENTIFICACION y VIGENTE = 0
     SELECT COUNT(*)
       INTO V_EXISTE
       FROM IRISP_REINCIDENTE
      WHERE IDENTIFICACION = P_IDENTIFICACION;
     --AND VIGENTE = 0;
-  
+
     IF V_EXISTE = 0 THEN
       -- No existe inactivo, insertar nuevo
       V_REINCIDENTE_ID := F_Generar_UUID;
@@ -131,9 +171,9 @@ create or replace package body PK_INTEGRANTES_IRIS is
          ID_TIPO)
       VALUES
         (V_REINCIDENTE_ID,
-         UPPER(P_ALIAS),
-         UPPER(P_NOMBRE),
-         UPPER(P_APELLIDO),
+         UPPER(TRIM(P_ALIAS)),
+         UPPER(TRIM(P_NOMBRE)),
+         UPPER(TRIM(P_APELLIDO)),
          P_IDENTIFICACION,
          1, -- Vigente por defecto
          SYSDATE, -- Fecha de creación
@@ -148,7 +188,7 @@ create or replace package body PK_INTEGRANTES_IRIS is
       -- Existe inactivo, actualizarlo
       UPDATE IRISP_REINCIDENTE
          SET ID_TIPO                 = P_ID_TIPO,
-             ALIAS                   = UPPER(P_ALIAS),
+             ALIAS                   = UPPER(TRIM(P_ALIAS)),
              OBSERVACION             = P_OBSERVACION,
              VIGENTE                 = 1,
              IDENTIFICACION_MODIFICA = P_USUARIO,
@@ -274,13 +314,37 @@ create or replace package body PK_INTEGRANTES_IRIS is
     RETURN SYS_REFCURSOR IS
     V_CONSULTA SYS_REFCURSOR;
   BEGIN
+    -- Una persona puede figurar como integrante en varios IRISP1, por lo que la vista devuelve
+    -- varias filas para la misma cédula. Se consolida a UNA sola fila (ROW_NUMBER) para dar
+    -- datos estables de la persona; esto además evita en la fuente el falso "no encontrado" que
+    -- ocurría cuando el cliente esperaba exactamente una fila. Se añade el cruce con la lista de
+    -- vigilancia (IRISP_REINCIDENTE), correlación que antes no existía. Se usan subconsultas
+    -- escalares para el reincidente para no multiplicar filas.
     OPEN V_CONSULTA FOR
-      SELECT t.alias, t.nombre, t.apellido, t.observacion
-        FROM V_IRISP1_INTEGRANTE t
-      
-       WHERE t.vigente = 1
-         and t.cedula = P_IDENTIFICACION;
-  
+      SELECT x.alias,
+             x.nombre,
+             x.apellido,
+             x.observacion,
+             CASE WHEN (SELECT COUNT(*)
+                          FROM IRISP_REINCIDENTE r
+                         WHERE r.identificacion = P_IDENTIFICACION
+                           AND r.vigente = 1) > 0
+                  THEN 1 ELSE 0 END AS EsReincidente,
+             (SELECT MAX(dr.descripcion)
+                FROM IRISP_REINCIDENTE r
+                JOIN IRISP_CTRL_DOMINIO dr
+                  ON dr.dominio_id = r.id_tipo
+               WHERE r.identificacion = P_IDENTIFICACION
+                 AND r.vigente = 1) AS TipoReincidencia
+        FROM (
+          SELECT t.alias, t.nombre, t.apellido, t.observacion,
+                 ROW_NUMBER() OVER (ORDER BY t.nombre, t.apellido) rn
+            FROM V_IRISP1_INTEGRANTE t
+           WHERE t.vigente = 1
+             AND t.cedula = P_IDENTIFICACION
+        ) x
+       WHERE x.rn = 1;
+
     RETURN V_CONSULTA;
   
   EXCEPTION
@@ -311,11 +375,20 @@ RETURN SYS_REFCURSOR IS
   
     OPEN V_CONSULTA FOR
       WITH
-    
-      MAX_FECHAS AS
-       (SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
-          FROM VM_UNIDADES
-         GROUP BY consecutivo),
+      -- VM_UNIDADES trae varias filas históricas por unidad. Se deduplica con ROW_NUMBER a UNA
+      -- fila por consecutivo (la más reciente vigente). Antes se usaba MAX(FECHA_ACTUALIZA) + join
+      -- por igualdad de fecha: si dos filas vigentes empataban en esa fecha, el join devolvía 2
+      -- filas y DUPLICABA cada caso (mismo bug ×2 ya corregido en el resto del sistema).
+      UND_POR_CONS AS (
+        SELECT consecutivo, descripcion_dependencia, municipio
+          FROM (
+            SELECT v.consecutivo, v.descripcion_dependencia, v.municipio,
+                   ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.FECHA_ACTUALIZA DESC) rn
+              FROM VM_UNIDADES v
+             WHERE v.vigente = 'SI'
+          )
+         WHERE rn = 1
+      ),
       RESULTADOS AS
        (SELECT r.criminalidad_id,
                MAX(CASE
@@ -371,10 +444,15 @@ RETURN SYS_REFCURSOR IS
              END AS Resultados
       
         FROM IRISP_CRIMINALIDAD c
-      
-        join IRISP_INTEGRANTE integ
+
+        -- Una persona puede estar dos veces como integrante del MISMO caso; se deduplica a un solo
+        -- criminalidad_id por persona (DISTINCT) y se respeta ig.vigente para no traer bajas.
+        join (SELECT DISTINCT ig.criminalidad_id
+                FROM IRISP_INTEGRANTE ig
+               WHERE ig.cedula = P_Identificacion
+                 AND ig.vigente = 1) integ
           on c.criminalidad_id = integ.criminalidad_id
-      
+
         LEFT JOIN IRISP_CTRL_DOMINIO d
           ON c.ID_ESTADO = d.DOMINIO_ID
          AND d.PADRE_ID = 1
@@ -385,14 +463,9 @@ RETURN SYS_REFCURSOR IS
          AND e.PADRE_ID = 63
          AND e.vigente = 1
       
-        LEFT JOIN MAX_FECHAS mf
-          ON c.id_unidad = mf.consecutivo
-      
-        LEFT JOIN VM_UNIDADES f
+        LEFT JOIN UND_POR_CONS f
           ON c.id_unidad = f.consecutivo
-         AND f.vigente = 'SI'
-         AND f.FECHA_ACTUALIZA = mf.FECHA_MAX
-      
+
         LEFT JOIN IRISP_CTRL_DOMINIO g
           ON c.ID_ZONA = g.DOMINIO_ID
          AND g.PADRE_ID = 6
@@ -413,9 +486,6 @@ RETURN SYS_REFCURSOR IS
          AND j.PADRE_ID = 12
          AND j.vigente = 1
       
-        LEFT JOIN VM_CUADRANTES cu
-          ON c.id_cuadrante = cu.cuadrante_id
-      
         LEFT JOIN (SELECT rv.*
                      FROM (SELECT r.*,
                                   ROW_NUMBER() OVER(PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
@@ -429,8 +499,7 @@ RETURN SYS_REFCURSOR IS
       
        WHERE c.FECHA_CREACION IS NOT NULL
          AND c.vigente = 1
-         and integ.cedula = P_Identificacion
-      
+
        ORDER BY c.FECHA_CREACION DESC, c.codigo DESC;
   
     DBMS_OUTPUT.PUT_LINE('Cursor abierto correctamente.');

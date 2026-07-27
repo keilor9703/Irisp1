@@ -36,7 +36,12 @@ namespace Comun.Areas.Integrantes
         [JsonPropertyName("tipoId")]
         public string TipoId { get; set; }
 
+        // Correlación con las apariciones reales del sujeto como integrante de casos IRISP1.
+        [JsonPropertyName("totalCasos")]
+        public int TotalCasos { get; set; }
 
+        [JsonPropertyName("casosConResultados")]
+        public int CasosConResultados { get; set; }
 
     }
 }

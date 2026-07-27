@@ -142,10 +142,30 @@ function GetGrillaReincidentes(Datos) {
         { title: "Alias", data: "alias", class: " celda10" },
         { title: "Observación", data: "observacion" },
 
+        // Correlación con los casos reales donde aparece el sujeto (antes la watchlist no cruzaba
+        // con IRISP_INTEGRANTE). Total de casos y de esos cuántos llegaron a resultado SPOA/SIEDCO.
+        ColumnaConteo("Casos IRISP1", "totalCasos", "#0d6efd"),
+        ColumnaConteo("Casos con resultado", "casosConResultados", "#236305"),
+
         { title: "ReincidenteId", data: "reincidenteId", visible: false }
     ]);
 }
 
+
+
+// Renderiza un conteo como distintivo. Si es 0 se muestra en gris tenue para no distraer.
+function ColumnaConteo(titulo, campo, color) {
+    return {
+        title: titulo,
+        data: campo,
+        className: "celdaCenter",
+        render: function (data) {
+            var n = Number(data) || 0;
+            var bg = n > 0 ? color : "#adb5bd";
+            return `<span style="background-color:${bg}; color:white; padding:2px 9px; border-radius:10px; font-weight:600; display:inline-block; min-width:34px;">${n}</span>`;
+        }
+    };
+}
 
 
 $("#btnExcel").on("click", function () {

@@ -55,6 +55,20 @@ $(document).ready(function () {
 
 // renderDataTable ahora vive en /js/IniciarTabla.js (compartida por todas las grillas del sitio).
 
+// Muestra/oculta el distintivo de "reincidente" (watchlist) junto al buscador. Correlaciona
+// IRISP_REINCIDENTE con la persona consultada, cruce que antes no existía en el sistema.
+function MostrarBadgeReincidente(esReincidente, tipoReincidencia) {
+    var $badge = $("#badgeReincidente");
+    if ($badge.length === 0) return;
+
+    if (Number(esReincidente) === 1) {
+        var txt = "REINCIDENTE" + (tipoReincidencia ? " · " + tipoReincidencia : "");
+        $badge.text(txt).removeClass("d-none");
+    } else {
+        $badge.addClass("d-none").text("");
+    }
+}
+
 function F_GetIntegrantesPorId(V_Identificacion) {
 
     $.ajax({
@@ -65,7 +79,11 @@ function F_GetIntegrantesPorId(V_Identificacion) {
         cache: false,
         success: function (resp) {
 
-            if (resp.success && Array.isArray(resp.data) && resp.data.length === 1) {
+            // Una persona puede ser integrante de VARIOS IRISP1, por lo que la consulta puede
+            // devolver más de una fila. Antes se exigía "length === 1" y cualquier cédula con 2+
+            // apariciones caía al else mostrando el falso "No se encontró información". Se usa
+            // "length > 0" y se toma la primera fila como datos consolidados de la persona.
+            if (resp.success && Array.isArray(resp.data) && resp.data.length > 0) {
 
                 let item = resp.data[0];
                 $("#txtAlias").val(item.alias);
@@ -73,6 +91,9 @@ function F_GetIntegrantesPorId(V_Identificacion) {
                 $("#txtApellidos").val(item.apellido);
                 $("#txtObservacion").val(item.observacion);
 
+                // Correlación con la lista de vigilancia (watchlist): resalta si el sujeto
+                // consultado está registrado como reincidente.
+                MostrarBadgeReincidente(item.esreincidente, item.tiporeincidencia);
 
                 F_GetListaIris(V_Identificacion);
                 F_GetLogPorIdentificacion(V_Identificacion);
@@ -89,6 +110,7 @@ function F_GetIntegrantesPorId(V_Identificacion) {
                 $("#txtNombres").val("");
                 $("#txtApellidos").val("");
                 $("#txtObservacion").val("");
+                MostrarBadgeReincidente(0, null);
             }
 
         },
@@ -313,9 +335,7 @@ function Limpiar() {
     $("#txtNombres").val("");
     $("#txtApellidos").val("");
     $("#txtObservacion").val("");
-   
-
-    
+    MostrarBadgeReincidente(0, null);
 }
 
 

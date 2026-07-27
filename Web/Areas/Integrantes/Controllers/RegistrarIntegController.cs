@@ -207,23 +207,23 @@ namespace Web.Areas.Integrantes.Controllers
 
             // Fila 1: Título general
             worksheet.Cell("A1").Value = "POLICÍA NACIONAL DE COLOMBIA";
-            worksheet.Range("A1:F1").Merge().Style
+            worksheet.Range("A1:H1").Merge().Style
                 .Font.SetBold()
                 .Font.SetFontSize(16)
                 .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
 
-            
+
 
             // Fila 3: Sistema
             worksheet.Cell("A2").Value = "Sistema de Información IRIS-P1 – Reporte de Personas Reincidentes";
-            worksheet.Range("A2:F2").Merge().Style
+            worksheet.Range("A2:H2").Merge().Style
                 .Font.SetBold()
                 .Font.SetFontSize(11)
                 .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
 
             // Fila 4: Fecha
             worksheet.Cell("A3").Value = "Fecha de generación: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm");
-            worksheet.Range("A3:F3").Merge().Style
+            worksheet.Range("A3:H3").Merge().Style
                 .Font.SetFontSize(10)
                 .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
 
@@ -240,9 +240,11 @@ namespace Web.Areas.Integrantes.Controllers
             worksheet.Cell(5, 4).Value = "Identificación";
             worksheet.Cell(5, 5).Value = "Alias";
             worksheet.Cell(5, 6).Value = "Observación";
+            worksheet.Cell(5, 7).Value = "Casos IRISP1";
+            worksheet.Cell(5, 8).Value = "Casos con resultado";
 
             // Estilo encabezados
-            worksheet.Range("A5:F5").Style
+            worksheet.Range("A5:H5").Style
                 .Font.SetBold()
                 .Fill.SetBackgroundColor(XLColor.FromHtml("#D9E1F2"))
                 .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
@@ -259,6 +261,8 @@ namespace Web.Areas.Integrantes.Controllers
                 worksheet.Cell(fila, 4).Value = item.Identificacion;
                 worksheet.Cell(fila, 5).Value = item.Alias;
                 worksheet.Cell(fila, 6).Value = item.Observacion;
+                worksheet.Cell(fila, 7).Value = item.TotalCasos;
+                worksheet.Cell(fila, 8).Value = item.CasosConResultados;
                 fila++;
             }
 
@@ -372,6 +376,8 @@ namespace Web.Areas.Integrantes.Controllers
                             columns.RelativeColumn(2); // Identificación
                             columns.RelativeColumn(2); // Alias
                             columns.RelativeColumn(3); // Observación
+                            columns.RelativeColumn(1); // Casos IRISP1
+                            columns.RelativeColumn(1); // Casos con resultado
                         });
 
                         // ENCABEZADOS
@@ -383,6 +389,8 @@ namespace Web.Areas.Integrantes.Controllers
                             header.Cell().Text("Identificación").Bold();
                             header.Cell().Text("Alias").Bold();
                             header.Cell().Text("Observación").Bold();
+                            header.Cell().Text("Casos IRISP1").Bold();
+                            header.Cell().Text("Casos c/resultado").Bold();
                         });
 
                         // FILAS
@@ -394,6 +402,8 @@ namespace Web.Areas.Integrantes.Controllers
                             table.Cell().Text(item.Identificacion.ToString());
                             table.Cell().Text(item.Alias);
                             table.Cell().Text(item.Observacion ?? "");
+                            table.Cell().Text(item.TotalCasos.ToString());
+                            table.Cell().Text(item.CasosConResultados.ToString());
                         }
                     });
 
