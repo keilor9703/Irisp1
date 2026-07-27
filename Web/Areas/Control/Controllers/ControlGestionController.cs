@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace Web.Areas.Control.Controllers
 {
     [Area("Control")]
-    [Authorize(Roles = "1,2,8")]
+    [Authorize(Roles = "1,2,5,6,7,8,10")]
     public class ControlGestionController : Controller
     {
         #region Propiedades

@@ -307,8 +307,25 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     V_NuevaUnde NUMBER := P_CodigoUnidad;
     V_Count     NUMBER := 0;
     V_TempUnde  NUMBER;
+    V_Sigla     VARCHAR2(20);
+    V_Region    NUMBER;
 
   BEGIN
+    -- Ámbito del usuario para el filtro por roles: SIGLA_PAPA (unidad) y REGI_CODIGO (región)
+    -- de su propia unidad (P_CodigoUnidad). Mismo criterio de escalado que PK_CONSULTA_IRISP.
+    -- El subquery + ROWNUM=1 evita TOO_MANY_ROWS cuando VM_UNIDADES tiene varias filas por
+    -- consecutivo (deja la más reciente por FECHA_ACTUALIZA).
+    BEGIN
+      SELECT sigla_papa, regi_codigo INTO V_Sigla, V_Region
+        FROM (
+          SELECT v.sigla_papa, v.regi_codigo
+            FROM VM_UNIDADES v
+           WHERE v.consecutivo = P_CodigoUnidad
+           ORDER BY v.FECHA_ACTUALIZA DESC
+        )
+       WHERE ROWNUM = 1;
+    EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
+    END;
     ------------------------------------------------------------------
     -- Escalar hasta 3 niveles de unidad si la unidad del usuario no tiene
     -- responsabilidades propias en el rango de fechas (mismo patrón que
@@ -358,9 +375,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
          WHERE rn = 1
       ),
       UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO
+        SELECT SIGLA_FISICA, REGI_CODIGO, SIGLA_PAPA
           FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO,
+            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.SIGLA_FISICA IS NOT NULL
@@ -417,8 +434,28 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         -- FILTRO DE ROLES: idéntico al de PK_VERIFICACION_IRIS.F_GetInfoGrillas
         ------------------------------------------------------------
         AND (
+                 -- Roles país (super admin / admin): ven todo.
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
 
+                 -- Rol región: casos cuya unidad de registro pertenece a su región.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
+                   AND ureg.REGI_CODIGO = V_Region
+                 )
+
+                 -- Roles unidad: casos de su misma unidad (SIGLA_PAPA).
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 7))
+                   AND ureg.SIGLA_PAPA = V_Sigla
+                 )
+
+                 -- Rol dependencia: casos registrados por su misma dependencia/estación.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 6)
+                   AND c.ID_UNIDAD = P_CodigoUnidad
+                 )
+
+                 -- Rol investigativo: casos asignados a su unidad responsable (con escalado).
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
                    AND r.ID_UNIDAD_RESPON = V_NuevaUnde
@@ -469,8 +506,25 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     V_NuevaUnde NUMBER := P_CodigoUnidad;
     V_Count     NUMBER := 0;
     V_TempUnde  NUMBER;
+    V_Sigla     VARCHAR2(20);
+    V_Region    NUMBER;
 
   BEGIN
+    -- Ámbito del usuario para el filtro por roles: SIGLA_PAPA (unidad) y REGI_CODIGO (región)
+    -- de su propia unidad (P_CodigoUnidad). Mismo criterio de escalado que PK_CONSULTA_IRISP.
+    -- El subquery + ROWNUM=1 evita TOO_MANY_ROWS cuando VM_UNIDADES tiene varias filas por
+    -- consecutivo (deja la más reciente por FECHA_ACTUALIZA).
+    BEGIN
+      SELECT sigla_papa, regi_codigo INTO V_Sigla, V_Region
+        FROM (
+          SELECT v.sigla_papa, v.regi_codigo
+            FROM VM_UNIDADES v
+           WHERE v.consecutivo = P_CodigoUnidad
+           ORDER BY v.FECHA_ACTUALIZA DESC
+        )
+       WHERE ROWNUM = 1;
+    EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
+    END;
     FOR i IN 1..3 LOOP
       SELECT COUNT(*) INTO V_Count
         FROM IRISP_RESPON_VALIDACION c
@@ -560,9 +614,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
          WHERE rn = 1
       ),
       UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO
+        SELECT SIGLA_FISICA, REGI_CODIGO, SIGLA_PAPA
           FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO,
+            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.SIGLA_FISICA IS NOT NULL
@@ -608,8 +662,28 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         AND (
+                 -- Roles país (super admin / admin): ven todo.
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
 
+                 -- Rol región: casos cuya unidad de registro pertenece a su región.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
+                   AND ureg.REGI_CODIGO = V_Region
+                 )
+
+                 -- Roles unidad: casos de su misma unidad (SIGLA_PAPA).
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 7))
+                   AND ureg.SIGLA_PAPA = V_Sigla
+                 )
+
+                 -- Rol dependencia: casos registrados por su misma dependencia/estación.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 6)
+                   AND c.ID_UNIDAD = P_CodigoUnidad
+                 )
+
+                 -- Rol investigativo: casos asignados a su unidad responsable (con escalado).
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
                    AND r.ID_UNIDAD_RESPON = V_NuevaUnde
@@ -694,9 +768,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     OPEN l_rc FOR
       WITH
       UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO
+        SELECT SIGLA_FISICA, REGI_CODIGO, SIGLA_PAPA
           FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO,
+            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.SIGLA_FISICA IS NOT NULL
@@ -741,8 +815,25 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     V_NuevaUnde NUMBER := P_CodigoUnidad;
     V_Count     NUMBER := 0;
     V_TempUnde  NUMBER;
+    V_Sigla     VARCHAR2(20);
+    V_Region    NUMBER;
 
   BEGIN
+    -- Ámbito del usuario para el filtro por roles: SIGLA_PAPA (unidad) y REGI_CODIGO (región)
+    -- de su propia unidad (P_CodigoUnidad). Mismo criterio de escalado que PK_CONSULTA_IRISP.
+    -- El subquery + ROWNUM=1 evita TOO_MANY_ROWS cuando VM_UNIDADES tiene varias filas por
+    -- consecutivo (deja la más reciente por FECHA_ACTUALIZA).
+    BEGIN
+      SELECT sigla_papa, regi_codigo INTO V_Sigla, V_Region
+        FROM (
+          SELECT v.sigla_papa, v.regi_codigo
+            FROM VM_UNIDADES v
+           WHERE v.consecutivo = P_CodigoUnidad
+           ORDER BY v.FECHA_ACTUALIZA DESC
+        )
+       WHERE ROWNUM = 1;
+    EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
+    END;
     FOR i IN 1..3 LOOP
       SELECT COUNT(*) INTO V_Count
         FROM IRISP_RESPON_VALIDACION c
@@ -797,9 +888,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
          WHERE rn = 1
       ),
       UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO
+        SELECT SIGLA_FISICA, REGI_CODIGO, SIGLA_PAPA
           FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO,
+            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.SIGLA_FISICA IS NOT NULL
@@ -867,8 +958,28 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
 
         AND (
+                 -- Roles país (super admin / admin): ven todo.
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
 
+                 -- Rol región: casos cuya unidad de registro pertenece a su región.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
+                   AND ureg.REGI_CODIGO = V_Region
+                 )
+
+                 -- Roles unidad: casos de su misma unidad (SIGLA_PAPA).
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 7))
+                   AND ureg.SIGLA_PAPA = V_Sigla
+                 )
+
+                 -- Rol dependencia: casos registrados por su misma dependencia/estación.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 6)
+                   AND c.ID_UNIDAD = P_CodigoUnidad
+                 )
+
+                 -- Rol investigativo: casos asignados a su unidad responsable (con escalado).
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
                    AND r.ID_UNIDAD_RESPON = V_NuevaUnde
@@ -913,12 +1024,22 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     P_Roles         IN VARCHAR2,
     P_CodigoUnidad  IN NUMBER
   ) RETURN SYS_REFCURSOR IS
-    l_rc    SYS_REFCURSOR;
-    V_Sigla VARCHAR2(20);
+    l_rc     SYS_REFCURSOR;
+    V_Sigla  VARCHAR2(20);
+    V_Region NUMBER;
   BEGIN
+    -- Ámbito del usuario para el filtro por roles: SIGLA_PAPA (unidad) y REGI_CODIGO (región)
+    -- de su propia unidad (P_CodigoUnidad). El subquery + ROWNUM=1 evita TOO_MANY_ROWS.
     BEGIN
-      SELECT sig.sigla_papa INTO V_Sigla FROM VM_UNIDADES sig WHERE sig.consecutivo = P_CodigoUnidad;
-    EXCEPTION WHEN NO_DATA_FOUND THEN V_Sigla := NULL;
+      SELECT sigla_papa, regi_codigo INTO V_Sigla, V_Region
+        FROM (
+          SELECT v.sigla_papa, v.regi_codigo
+            FROM VM_UNIDADES v
+           WHERE v.consecutivo = P_CodigoUnidad
+           ORDER BY v.FECHA_ACTUALIZA DESC
+        )
+       WHERE ROWNUM = 1;
+    EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
     END;
 
     OPEN l_rc FOR
@@ -932,9 +1053,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       -- sigla con ROW_NUMBER (NO con MAX(FECHA_ACTUALIZA) + join por igualdad: si dos filas
       -- vigentes empataban en esa fecha, el join devolvía 2 filas y duplicaba cada punto).
       UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO
+        SELECT SIGLA_FISICA, REGI_CODIGO, SIGLA_PAPA
           FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO,
+            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.SIGLA_PAPA,
                    ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
               FROM VM_UNIDADES v
              WHERE v.SIGLA_FISICA IS NOT NULL
@@ -963,11 +1084,21 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
         AND (
+                 -- Roles país (super admin / admin): ven todo.
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
 
+                 -- Rol región: puntos cuya unidad pertenece a su región.
               OR (
-                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 8)
-                   AND c.SIGLA_UNIDAD = V_Sigla
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
+                   AND ureg.REGI_CODIGO = V_Region
+                 )
+
+                 -- Roles unidad/dependencia/investigativo: puntos de su misma unidad (SIGLA_PAPA).
+                 -- El mapa (VM_GENERAL_IRISP) no expone ID_UNIDAD ni la unidad responsable, así que
+                 -- la granularidad disponible es la de unidad; se compara SIGLA_PAPA con SIGLA_PAPA.
+              OR (
+                   EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 6, 7, 8))
+                   AND ureg.SIGLA_PAPA = V_Sigla
                  )
             )
       ORDER BY c.FECHA_CREACION_IRISP1 DESC;
