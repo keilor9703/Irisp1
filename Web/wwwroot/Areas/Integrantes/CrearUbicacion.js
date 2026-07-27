@@ -11,14 +11,16 @@ function inicializarMapa(idMapa) {
         "esri/symbols/SimpleLineSymbol",
         "esri/tasks/query",
         "esri/symbols/SimpleFillSymbol",
+        "esri/geometry/Polyline",
+        "esri/symbols/TextSymbol",
+        "esri/symbols/Font",
         "dojo/domReady!",
         "esri/renderers/SimpleRenderer",
-        "esri/layers/LabelClass",
-        "esri/symbols/TextSymbol",
-        "esri/symbols/Font"
+        "esri/layers/LabelClass"
 
     ], function (
-        Map, Point, SimpleMarkerSymbol, Graphic, Color, Extent, FeatureLayer, SimpleLineSymbol, Query, SimpleFillSymbol
+        Map, Point, SimpleMarkerSymbol, Graphic, Color, Extent, FeatureLayer, SimpleLineSymbol, Query, SimpleFillSymbol,
+        Polyline, TextSymbol, Font
     ) {
 
 
@@ -142,6 +144,76 @@ function inicializarMapa(idMapa) {
         };
 
 
+
+
+        // ===========================================================
+        // 🚶 RECORRIDO CRONOLÓGICO: dibuja la línea de desplazamiento del sujeto
+        // conectando las consultas de antecedentes en orden temporal, con marca de
+        // inicio (verde) y fin (rojo). Permite ver por dónde se ha movido y anticipar
+        // su siguiente ubicación probable.
+        // ===========================================================
+        window.pintarRecorrido = function (lista) {
+            if (!lista || lista.length === 0) { console.warn("Sin recorrido para pintar"); return; }
+
+            map.graphics.clear();
+
+            var puntosValidos = [];
+            lista.forEach(function (c) {
+                var lat = parseFloat(c.latitud), lng = parseFloat(c.longitud);
+                if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+                puntosValidos.push({ lat: lat, lng: lng, fechaStr: c.fechaStr, tipo: c.tipo });
+            });
+            if (puntosValidos.length === 0) { console.warn("Recorrido sin coordenadas válidas"); return; }
+
+            // 1) Línea del recorrido (si hay 2+ puntos)
+            if (puntosValidos.length > 1) {
+                try {
+                    var polyline = new Polyline(map.spatialReference);
+                    polyline.addPath(puntosValidos.map(function (p) { return new Point(p.lng, p.lat); }));
+                    var lineSymbol = new SimpleLineSymbol(
+                        SimpleLineSymbol.STYLE_DASH, new Color([8, 102, 203, 0.9]), 3);
+                    map.graphics.add(new Graphic(polyline, lineSymbol));
+                } catch (err) { console.warn("No se pudo trazar la línea de recorrido:", err); }
+            }
+
+            // 2) Marcadores por punto + número de orden
+            var xmin = 999, ymin = 999, xmax = -999, ymax = -999;
+            puntosValidos.forEach(function (p, idx) {
+                try {
+                    var punto = new Point(p.lng, p.lat);
+                    var color;
+                    if (idx === 0) color = new Color("#0a9242");                    // inicio
+                    else if (idx === puntosValidos.length - 1) color = new Color("#c53a1d"); // fin
+                    else color = new Color("#08a6cb");                              // intermedios
+
+                    var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 14,
+                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 1), color);
+                    map.graphics.add(new Graphic(punto, marker));
+
+                    // Número de orden encima del punto
+                    try {
+                        var etiqueta = new TextSymbol((idx + 1).toString());
+                        etiqueta.setColor(new Color("#ffffff"));
+                        etiqueta.setFont(new Font("9pt").setWeight(Font.WEIGHT_BOLD));
+                        map.graphics.add(new Graphic(punto, etiqueta));
+                    } catch (e) { /* etiqueta opcional */ }
+
+                    if (p.lng < xmin) xmin = p.lng; if (p.lng > xmax) xmax = p.lng;
+                    if (p.lat < ymin) ymin = p.lat; if (p.lat > ymax) ymax = p.lat;
+                } catch (err) { console.warn("Punto de recorrido inválido:", p); }
+            });
+
+            // 3) Ajustar el zoom para incluir todo el recorrido
+            try {
+                if (xmax > xmin && ymax > ymin) {
+                    map.setExtent(new Extent(xmin, ymin, xmax, ymax, map.spatialReference).expand(1.4));
+                } else {
+                    map.centerAndZoom(new Point(puntosValidos[0].lng, puntosValidos[0].lat), 13);
+                }
+            } catch (err) { console.warn("No se pudo ajustar el extent:", err); }
+
+            console.log("🚶 Recorrido pintado con", puntosValidos.length, "puntos");
+        };
 
 
         window.ubicarLlamadaEnMapa = function (latitud, longitud) {

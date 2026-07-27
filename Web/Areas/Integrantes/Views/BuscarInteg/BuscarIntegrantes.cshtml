@@ -3,6 +3,17 @@
 
 }
 
+@section styles {
+    <style>
+        .anlt-kpi {
+            background: #fff; border-radius: 10px; padding: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08); text-align: center; height: 100%;
+        }
+        .anlt-kpi h3 { margin: 0; font-weight: 700; color: #002a66; }
+        .anlt-kpi p { margin: 0; font-size: .68rem; text-transform: uppercase; color: #6c757d; font-weight: 600; }
+    </style>
+}
+
 
 @section scripts {
 
@@ -10,6 +21,7 @@
        100% en el servidor (QuestPDF/ClosedXML), esas librerías CDN no se usaban en el cliente. *@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/templatemonster_bt5/assets/libs/daterangepicker/moment.min.js"></script>
+    <script src="~/TemplateMonster_bt5/assets/libs/chart.js/dist/Chart.min.js"></script>
     <!-- Carga la API de ArcGIS -->
     <link rel="stylesheet" href="https://js.arcgis.com/3.23/dijit/themes/claro/claro.css">
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
@@ -109,6 +121,70 @@
 </div>
 
 
+@* ===================== PANEL DE ANÁLISIS COMPORTAMENTAL Y CRIMINAL ===================== *@
+<div id="pn_Analitica" class="d-none">
+
+    <h6 class="mb-2 mt-1" style="color:#000; font-weight:600;">
+        <i class="fas fa-brain"></i> Perfil comportamental y criminal del sujeto
+    </h6>
+
+    <div class="row">
+        <div class="col-6 col-md-2 mb-2"><div class="anlt-kpi"><h3 id="kpiConsultas">0</h3><p>Consultas de antecedentes</p></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="anlt-kpi"><h3 id="kpiLugares" style="color:#08a6cb;">0</h3><p>Lugares distintos</p></div></div>
+        <div class="col-6 col-md-3 mb-2"><div class="anlt-kpi"><h3 id="kpiRango" style="font-size:.9rem;">-</h3><p>Periodo de actividad</p></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="anlt-kpi"><h3 id="kpiCasos" style="color:#c53a1d;">0</h3><p>Casos IRISP1</p></div></div>
+        <div class="col-6 col-md-3 mb-2"><div class="anlt-kpi"><h3 id="kpiConResultado" style="color:#236305;">0</h3><p>Casos con resultado (SPOA/SIEDCO)</p></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-calendar-alt text-white"></i> Actividad por mes</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:220px;"><canvas id="graficoActividadMes"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-clock text-white"></i> Consultas por hora del día</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:220px;"><canvas id="graficoHoraConsulta"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-calendar-week text-white"></i> Consultas por día de la semana</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:220px;"><canvas id="graficoDiaSemana"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-fingerprint text-white"></i> Tipo de consulta</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:220px;"><canvas id="graficoClaseConsulta"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-xl-4 mb-3">
+            <div class="card border-danger h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-city text-white"></i> Casos por municipio</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:230px;"><canvas id="graficoCasosMunicipio"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-4 mb-3">
+            <div class="card border-danger h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-sitemap text-white"></i> Casos por clase</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:230px;"><canvas id="graficoCasosClase"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-12 col-xl-4 mb-3">
+            <div class="card border-danger h-100">
+                <div class="card-header py-2"><h6 class="card-title text-white mb-0"><i class="mr-2 fas fa-shield-halved text-white"></i> Resultado de existencia</h6></div>
+                <div class="card-body p-2"><div style="position:relative;height:230px;"><canvas id="graficoExistenciaCasos"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
 
     <div class="col-md-12">
@@ -161,7 +237,7 @@
                             class="btn btn-green btn-sm py-0 px-2 align-self-center"
                             id="btnAbrirMapaUbicaciones"
                             style="line-height:1.2; font-size: 0.8rem;">
-                        <i class="fas fa-plus"></i> Ver todas las ubicaciones
+                        <i class="fas fa-route"></i> Ver recorrido en el mapa
                     </button>
 
                     <a class="link text-white d-flex align-items-center" data-action="collapse"><i class="ti-minus"></i></a>

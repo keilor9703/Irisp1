@@ -38,20 +38,23 @@ create or replace package body PK_INTEGRANTES_IRIS is
         LEFT JOIN irisp_ctrl_dominio d
           ON t.id_tipo = d.dominio_id
         LEFT JOIN (
+              -- Se pre-calcula UNA vez el conjunto de casos que tienen resultado SPOA/SIEDCO y se
+              -- hace hash-join, en lugar de un EXISTS correlacionado por cada fila de integrante
+              -- (que hacía la carga del módulo muy lenta sobre tablas grandes).
               SELECT ig.cedula,
-                     COUNT(DISTINCT c.criminalidad_id) AS total_casos,
-                     COUNT(DISTINCT CASE
-                             WHEN EXISTS (SELECT 1 FROM IRISP_RESULTADO rr
-                                           WHERE rr.criminalidad_id = c.criminalidad_id
-                                             AND rr.vigente = 1
-                                             AND rr.id_tipo IN (69, 70)
-                                             AND rr.nro_spoa_siedco IS NOT NULL)
-                             THEN c.criminalidad_id
-                           END) AS casos_con_resultados
+                     COUNT(DISTINCT ig.criminalidad_id) AS total_casos,
+                     COUNT(DISTINCT CASE WHEN rr.criminalidad_id IS NOT NULL
+                                         THEN ig.criminalidad_id END) AS casos_con_resultados
                 FROM IRISP_INTEGRANTE ig
                 JOIN IRISP_CRIMINALIDAD c
                   ON c.criminalidad_id = ig.criminalidad_id
                  AND c.vigente = 1
+                LEFT JOIN (SELECT DISTINCT criminalidad_id
+                             FROM IRISP_RESULTADO
+                            WHERE vigente = 1
+                              AND id_tipo IN (69, 70)
+                              AND nro_spoa_siedco IS NOT NULL) rr
+                  ON rr.criminalidad_id = ig.criminalidad_id
                WHERE ig.vigente = 1
                GROUP BY ig.cedula
              ) cc

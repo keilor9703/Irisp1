@@ -149,7 +149,10 @@ function F_GetListaIris(V_Indentificacion) {
 }
 
 function GetGrillaListaIris(Datos) {
-  
+
+    _casosData = Datos || [];
+    TryRenderAnalitica();
+
     $("#pn_GrillaListaIris").removeClass('hidden');
 
     renderDataTable("#tbGrillaListaIris", Datos, [
@@ -328,6 +331,206 @@ function Resultados() {
     };
 }
 
+// ============================================================================================
+//  PANEL DE ANÁLISIS COMPORTAMENTAL Y CRIMINAL
+//  Se calcula 100% en el cliente a partir de los dos datasets que ya trae la pantalla:
+//    - _logData   : consultas de antecedentes por PDA (fecha, hora, lat/long, tipo) -> comportamiento
+//    - _casosData : casos IRISP1 donde el sujeto es integrante (municipio, clase, existencia) -> criminal
+//  El objetivo es pasar de "información plana" a inteligencia: por dónde se desplaza, cuándo opera,
+//  patrones horarios/semanales y perfil delictivo — insumo para anticipar movimientos e intervención.
+// ============================================================================================
+var _casosData = null;
+var _logData = null;
+var _analytCharts = {};
+
+var DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+var MESES_CORTO = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+var PALETA = ["#08a6cb", "#0d6efd", "#236305", "#c53a1d", "#f18f08", "#6f42c1", "#20c997", "#e83e8c", "#795548", "#607d8b"];
+
+function crearGrafico(idCanvas, config) {
+    var el = document.getElementById(idCanvas);
+    if (!el) return;
+    if (_analytCharts[idCanvas]) { _analytCharts[idCanvas].destroy(); }
+    _analytCharts[idCanvas] = new Chart(el.getContext("2d"), config);
+}
+
+// Cuenta ocurrencias de una clave y devuelve {labels, valores} ordenado desc, top N opcional.
+function contarPor(lista, fnClave, topN) {
+    var mapa = {};
+    (lista || []).forEach(function (x) {
+        var k = fnClave(x);
+        if (k === null || k === undefined || k === "") k = "Sin dato";
+        mapa[k] = (mapa[k] || 0) + 1;
+    });
+    var arr = Object.keys(mapa).map(function (k) { return { k: k, v: mapa[k] }; });
+    arr.sort(function (a, b) { return b.v - a.v; });
+    if (topN) arr = arr.slice(0, topN);
+    return { labels: arr.map(function (o) { return o.k; }), valores: arr.map(function (o) { return o.v; }) };
+}
+
+function parseFechaLog(item) {
+    // El log expone fecha_creacion (ISO) y fecha_creacion_str (dd/MM/yyyy HH:mm)
+    var f = item.fecha_creacion ? new Date(item.fecha_creacion) : null;
+    if (f && !isNaN(f)) return f;
+    return null;
+}
+
+function TryRenderAnalitica() {
+    // Se renderiza cuando ya llegó al menos uno de los dos datasets.
+    if (_casosData === null && _logData === null) return;
+    $("#pn_Analitica").removeClass("d-none");
+
+    RenderKpis();
+    RenderComportamiento();
+    RenderCriminal();
+}
+
+function RenderKpis() {
+    var log = _logData || [];
+    var casos = _casosData || [];
+
+    // Lugares distintos: coordenadas redondeadas a 3 decimales (~110 m) para agrupar consultas cercanas.
+    var lugares = {};
+    var fechas = [];
+    log.forEach(function (x) {
+        if (x.latitud && x.longitud) {
+            lugares[Number(x.latitud).toFixed(3) + "," + Number(x.longitud).toFixed(3)] = true;
+        }
+        var f = parseFechaLog(x);
+        if (f) fechas.push(f);
+    });
+
+    var rango = "-";
+    if (fechas.length > 0) {
+        fechas.sort(function (a, b) { return a - b; });
+        rango = fmtCorta(fechas[0]) + " → " + fmtCorta(fechas[fechas.length - 1]);
+    }
+
+    var conResultado = casos.filter(function (c) {
+        return (c.resultados || "").toLowerCase().indexOf("tiene resultados (") >= 0;
+    }).length;
+
+    $("#kpiConsultas").text(log.length);
+    $("#kpiLugares").text(Object.keys(lugares).length);
+    $("#kpiRango").text(rango);
+    $("#kpiCasos").text(casos.length);
+    $("#kpiConResultado").text(conResultado);
+}
+
+function fmtCorta(d) {
+    return ("0" + d.getDate()).slice(-2) + "/" + MESES_CORTO[d.getMonth()] + "/" + d.getFullYear();
+}
+
+// ---- COMPORTAMIENTO (a partir de las consultas de antecedentes por PDA) ----
+function RenderComportamiento() {
+    var log = _logData || [];
+
+    // Actividad por mes (línea temporal)
+    var porMes = {};
+    log.forEach(function (x) {
+        var f = parseFechaLog(x);
+        if (!f) return;
+        var k = f.getFullYear() + "-" + ("0" + (f.getMonth() + 1)).slice(-2);
+        porMes[k] = (porMes[k] || 0) + 1;
+    });
+    var mesesOrden = Object.keys(porMes).sort();
+    crearGrafico("graficoActividadMes", {
+        type: "line",
+        data: {
+            labels: mesesOrden.map(function (k) { var p = k.split("-"); return MESES_CORTO[parseInt(p[1], 10) - 1] + " " + p[0].slice(2); }),
+            datasets: [{
+                label: "Consultas", data: mesesOrden.map(function (k) { return porMes[k]; }),
+                borderColor: "#08a6cb", backgroundColor: "rgba(8,166,203,.15)", fill: true, tension: 0.3, pointRadius: 3
+            }]
+        },
+        options: opcionesBarra(false)
+    });
+
+    // Por hora del día (0-23)
+    var horas = new Array(24).fill(0);
+    log.forEach(function (x) { var f = parseFechaLog(x); if (f) horas[f.getHours()]++; });
+    crearGrafico("graficoHoraConsulta", {
+        type: "bar",
+        data: {
+            labels: horas.map(function (_, i) { return ("0" + i).slice(-2) + "h"; }),
+            datasets: [{ label: "Consultas", data: horas, backgroundColor: "#0d6efd" }]
+        },
+        options: opcionesBarra(false)
+    });
+
+    // Por día de la semana
+    var dias = new Array(7).fill(0);
+    log.forEach(function (x) { var f = parseFechaLog(x); if (f) dias[f.getDay()]++; });
+    crearGrafico("graficoDiaSemana", {
+        type: "bar",
+        data: {
+            labels: DIAS_SEMANA.map(function (d) { return d.slice(0, 3); }),
+            datasets: [{ label: "Consultas", data: dias, backgroundColor: "#f18f08" }]
+        },
+        options: opcionesBarra(false)
+    });
+
+    // Tipo de consulta (clase)
+    var tipos = contarPor(log, function (x) { return x.clase; });
+    crearGrafico("graficoClaseConsulta", {
+        type: "doughnut",
+        data: { labels: tipos.labels, datasets: [{ data: tipos.valores, backgroundColor: PALETA }] },
+        options: opcionesDoughnut()
+    });
+}
+
+// ---- CRIMINAL (a partir de los casos IRISP1 donde el sujeto es integrante) ----
+function RenderCriminal() {
+    var casos = _casosData || [];
+
+    var muni = contarPor(casos, function (x) { return x.municipio; }, 10);
+    crearGrafico("graficoCasosMunicipio", {
+        type: "horizontalBar",
+        data: { labels: muni.labels, datasets: [{ label: "Casos", data: muni.valores, backgroundColor: "#c53a1d" }] },
+        options: opcionesBarra(true)
+    });
+
+    var clase = contarPor(casos, function (x) { return x.clase; });
+    crearGrafico("graficoCasosClase", {
+        type: "doughnut",
+        data: { labels: clase.labels, datasets: [{ data: clase.valores, backgroundColor: PALETA }] },
+        options: opcionesDoughnut()
+    });
+
+    var exist = contarPor(casos, function (x) { return x.estadoExistenciaDescripcion; });
+    crearGrafico("graficoExistenciaCasos", {
+        type: "doughnut",
+        data: { labels: exist.labels, datasets: [{ data: exist.valores, backgroundColor: PALETA }] },
+        options: opcionesDoughnut()
+    });
+}
+
+function opcionesBarra(horizontal) {
+    return {
+        responsive: true, maintainAspectRatio: false,
+        legend: { display: false },
+        scales: {
+            xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
+            yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }]
+        }
+    };
+}
+
+function opcionesDoughnut() {
+    return {
+        responsive: true, maintainAspectRatio: false,
+        legend: { position: "right", labels: { boxWidth: 12, fontSize: 10 } }
+    };
+}
+
+function LimpiarAnalitica() {
+    Object.keys(_analytCharts).forEach(function (k) { try { _analytCharts[k].destroy(); } catch (e) { } });
+    _analytCharts = {};
+    _casosData = null;
+    _logData = null;
+    $("#pn_Analitica").addClass("d-none");
+}
+
 function Limpiar() {
 
     $("#txtIdentificacion").val("");
@@ -336,6 +539,7 @@ function Limpiar() {
     $("#txtApellidos").val("");
     $("#txtObservacion").val("");
     MostrarBadgeReincidente(0, null);
+    LimpiarAnalitica();
 }
 
 
@@ -364,6 +568,9 @@ function F_GetLogPorIdentificacion(V_Identificacion) {
 
 
 function GetGrillaLog(Datos) {
+
+    _logData = Datos || [];
+    TryRenderAnalitica();
 
     $("#pn_GrillaUbicaciones").removeClass('hidden');
 
@@ -474,22 +681,25 @@ $("#btnAbrirMapaUbicaciones").on("click", function () {
     // 🔥 Obtener TODAS las filas cargadas (no solo las visibles)
     let datos = table.rows().data().toArray();
 
-    // Extraer latitud y longitud de cada registro válido
+    // Extraer coordenadas válidas ORDENADAS CRONOLÓGICAMENTE para reconstruir el recorrido
+    // del sujeto (por dónde se ha desplazado, en qué orden temporal).
     let ubicaciones = datos
         .filter(x => x.latitud && x.longitud)
         .map(x => ({
             latitud: parseFloat(x.latitud),
-            longitud: parseFloat(x.longitud)
-        }));
+            longitud: parseFloat(x.longitud),
+            fecha: x.fecha_creacion ? new Date(x.fecha_creacion) : null,
+            fechaStr: x.fecha_creacion_str || "",
+            tipo: x.clase || ""
+        }))
+        .sort((a, b) => (a.fecha && b.fecha) ? (a.fecha - b.fecha) : 0);
 
     if (ubicaciones.length === 0) {
         Swal.fire("Aviso", "No hay ubicaciones para mostrar.", "info");
         return;
     }
 
-   // console.log("🔵 Coordenadas recopiladas:", ubicaciones);
-
-    // Abrir modal y enviar lista al mapa
+    // Abrir modal y enviar lista ordenada al mapa
     OpenModalTodasUbicaciones(ubicaciones);
 });
 
@@ -508,7 +718,11 @@ function OpenModalTodasUbicaciones(listaCoordenadas) {
 
         // esperar a que cargue ArcGIS correctamente
         setTimeout(() => {
-            if (typeof window.pintarMultiplesUbicaciones === "function") {
+            // Preferir el recorrido cronológico (con línea de desplazamiento); si no está
+            // disponible, caer al pintado simple de puntos.
+            if (typeof window.pintarRecorrido === "function") {
+                window.pintarRecorrido(listaCoordenadas);
+            } else if (typeof window.pintarMultiplesUbicaciones === "function") {
                 window.pintarMultiplesUbicaciones(listaCoordenadas);
             }
         }, 700);
