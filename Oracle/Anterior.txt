@@ -1,0 +1,3237 @@
+
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Comun.GeneralDTO;
+
+    using Microsoft.AspNetCore.Http;
+
+    using Negocio.Aplicacion;
+    using Negocio.General;
+    using Newtonsoft.Json;
+    using SpreadsheetLight;
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Drawing;
+    using System.Drawing.Imaging;
+    using System.IO;
+    using System.Linq;
+    using System.Security.Cryptography;
+    using System.Threading.Tasks;
+    using System.Web;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Funcional Dependencia IRISP1,Funcional Unidad IRISP1,Verificacion IRISP1,Seguimiento IRISP1,Regional IRISP1,Consulta IRISP1"))]
+    public class CriminalidadController : BaseController
+    {
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Funcional Dependencia IRISP1,Funcional Unidad IRISP1"))]
+
+        [HttpGet]
+        public JsonResult ListarDelitos()
+        {
+            DelitosRepositorio core2 = new DelitosRepositorio();
+            //var data = frente.F_ConsultarDominioConParametro(761);
+            var data= core2.ConsultarDelitos();
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+
+        public async Task<ActionResult> Index()
+        {
+            try
+            {
+                ListasRepositorio core2 = new ListasRepositorio();
+
+                var ListaAniosIrisp = new CriminalidadRepositorio().ConsultarAniosIrisp();
+                var listaEstado = core2.ListaDominio((int)EnumeracionListasDominios.Lista_Estados_IRISP1);
+                var listaEstadoExiste = core2.ListaDominio((int)EnumeracionListasDominios.Lista_Estado_Existencia_IRISP);
+                var listaClase = core2.ListaDominio((int)EnumeracionListasDominios.Lista_clase_criminal);
+                var listaFuente = core2.ListaDominio((int)EnumeracionListasDominios.Lista_fuente_IRISP1);
+
+                await Task.WhenAll(ListaAniosIrisp, listaEstado, listaEstadoExiste, listaClase, listaFuente);
+
+
+                ViewBag.ID_ESTADO = new SelectList(listaEstado.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_ESTADO_EXISTENCIA = new SelectList(listaEstadoExiste.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_CLASE = new SelectList(listaClase.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_FUENTE = new SelectList(listaFuente.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ANIO = new SelectList(ListaAniosIrisp.Result, "DOMINIO_ID", "DESCRIPCION");
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "Index", ex, "No se pudo consultar el formulario");
+            }
+        }
+
+        public async Task<ActionResult> Create()
+        {
+            try
+            {
+                ListasRepositorio core2 = new ListasRepositorio();
+                UnidadesRepositorio core3 = new UnidadesRepositorio();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1"))
+                    ViewBag.UNIDAD = new SelectList(await core3.ConsultarUnidades(), "SIGLA_PAPA", "DEPENDENCIA_SIGLA");
+                else if (User.IsInRole("Funcional Unidad IRISP1") || User.IsInRole("Funcional Dependencia IRISP1"))
+                    ViewBag.UNIDAD = new SelectList(await core3.ConsultarUnidad(gestionClaims.UnidadFisica), "SIGLA_PAPA", "DEPENDENCIA_SIGLA");
+
+                ViewBag.ID_TIPO_SERVICIO = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_tipo_servicio), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_ESPECIALIDAD = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_especialidades), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ENTORNO_AFECTADO = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_entornos_afectados), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_ZONA = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_Zona), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_CLASE = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_clase_criminal), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_FUENTE = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_fuente_IRISP1), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.TIPO_DOCUMENTO = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_Tipo_Documento), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.TIEMPO_DELITO = new SelectList(await core2.ListaDominio((int)EnumeracionListasDominios.Lista_Tiempo_Delito), "DOMINIO_ID", "DESCRIPCION");
+                //ViewBag.ID_FUENTE = listasRepositorio.ListaDominio((int)EnumeracionListasDominios.ListaTipoIdentificacion);
+                ViewBag.ID_DELITO = new SelectList(await new DelitosRepositorio().ConsultarDelitos(), "CODIGO", "DESCRIPCION");
+                ViewBag.ID_DELITO_PRINCIPAL = new SelectList(await new DelitosRepositorio().ConsultarDelitos(), "CODIGO", "DESCRIPCION");
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "Criminalidad", "Create", ex, "Error al ingresar al formulario de registro");
+            }
+        }
+
+        public Image GetImage(string strEncoded)
+        {
+            byte[] arrBytImage = Convert.FromBase64String(strEncoded);
+            Image objImage = null;
+            // Convierte un array de bytes a una imagen
+            using (System.IO.MemoryStream stmBitmap = new System.IO.MemoryStream(arrBytImage, 0, arrBytImage.Length))
+            {
+                // Escribe el array de bytes en el stream de memoria
+                stmBitmap.Write(arrBytImage, 0, arrBytImage.Length);
+                // Carga la imagen del stream
+                objImage = Image.FromStream(stmBitmap);
+                // Cierra el stream
+                stmBitmap.Close();
+            }
+            // Devuelve la imagen
+            return objImage;
+        }
+
+
+
+        List<Delito_DTO> ConvertirAListaDeNumeros(string valor)
+        {
+            // Dividir el string por la coma
+            string[] partes = valor.Split(',');
+            List<Delito_DTO> numeros = new List<Delito_DTO>();
+
+            // Crear un objeto Numero por cada parte y añadirlo a la lista
+            foreach (string parte in partes)
+            {
+                numeros.Add(new Delito_DTO { ID_DELITO = int.Parse(parte) });
+            }
+
+            return numeros;
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(Criminalidad_DTO Datos)
+        {
+            try
+            {
+
+                string ListaResponsables = null;
+                if (Datos.DELITO_PRINCIPAL == 0)
+                {
+                    return Json(new { ok = false, mensaje = "Seleccione el delito principal !!!" });
+                }
+
+                if (Datos.ARRAY_DELITO[0] != "")
+                {
+                    for (int i = 0; i < Datos.ARRAY_DELITO.Length; ++i)
+                    {
+                        ListaResponsables += Datos.ARRAY_DELITO[i];
+                        Datos.delito_DTO = ConvertirAListaDeNumeros(ListaResponsables);
+                    }
+                }
+               
+                if(Datos.FOTO_EXPENDIO != null)
+                {
+                    Datos.ID_CRIMINALIDAD_FOTOS = Guid.NewGuid().ToString();
+                    Datos.tipo_doc = Path.GetExtension(Datos.FOTO_EXPENDIO.FileName);
+                    Datos.ruta = SubirAdjunto(Datos.FOTO_EXPENDIO, Datos.tipo_doc, Datos.ID_CRIMINALIDAD_FOTOS);
+                    Datos.servidor = System.Configuration.ConfigurationManager.AppSettings["AdjuntosPMU"] + "IRISP1/EXPENDIOSWEB";
+                    Datos.name_file = Datos.FOTO_EXPENDIO.FileName;
+                }
+                
+
+                if (Convert.ToInt32(Datos.ID_UNIDAD) == 0 || Datos.ID_ZONA == null || Datos.IDENTIFICACION_INFORMA == null ||
+                    Datos.CELULAR == null || Datos.ID_TIPO_SERVICIO == null || Datos.ID_ESPECIALIDAD == null || Datos.ID_CLASE == null ||
+                    Datos.NOMBRE_CLASE == null || Datos.ENTORNO_AFECTADO == null ||
+                    Datos.ID_FUENTE == null || Datos.CARACTERISTICAS_GENERALES == null || Datos.NOMBRE_ENTORNO_AFECTADO == null) 
+
+                    return Json(new { ok = false, mensaje = "Faltan campos de información que son obligatorios y no pueden estar vacíos !!!" });
+
+                if (!await new PersonaRepositorio().ConsultarFuncionarioPorIdentificacion(Convert.ToInt64(Datos.IDENTIFICACION_INFORMA)))
+                    return Json(new { ok = false, mensaje = "La identificacion suministrada no corresponde a un funcionario, la cual es obligatoria para la creación del IRISP1" });
+
+
+
+                if (Datos.ARRAY_DELITO.Count() == 0)
+                {
+                    return Json(new { ok = false, mensaje = "Seleccione el delito principal !!!" });
+                }
+                
+
+                if (string.IsNullOrEmpty(Datos.LONGITUD) && string.IsNullOrEmpty(Datos.LATITUD))
+                    return Json(new { ok = false, mensaje = "La latitud y longitud no pueden estar vacias, seleccione un punto geográfico valido con coordenadas" });
+
+                if (Datos.CODIGO_DANE == null && Datos.MUNICIPIO == null)
+                    return Json(new { ok = false, mensaje = "La ubicación debe ser dentro del territorio Colombiano !!!" });
+
+                Datos.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                Datos.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                {
+                    if (await new CriminalidadRepositorio().Agregar(Datos))
+                    {
+                        if (true)
+                        {
+                            //var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(Datos.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(Datos.IDENTIFICACION_INFORMA), "Se creó un caso IRISP1 con código de radicado: " + Datos.CODIGO + ". Para ver detalles de su caso, ingrese al sistema de información IRISP1.");
+                            return Json(new { ok = true, mensaje = "Se agregó correctamente el registro " + Datos.CODIGO });
+                        }
+                    }
+                }
+                    
+
+                string listaErrores = null;
+                int contadorErrores = 0;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                    {
+                        contadorErrores++;
+                        listaErrores += $" {contadorErrores}. {key.Value.Errors[0].ErrorMessage}";
+                    }
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = listaErrores });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+
+        public string SubirAdjunto(HttpPostedFileBase Archivo, string Tipo, string Id_Foto)
+        {
+            string enlace;
+
+            if (ValidarArchivo(Archivo))
+            {
+                int Ano = Convert.ToInt32(DateTime.Now.Year.ToString());
+                string Month = DateTime.Now.Month.ToString();
+                string Day = DateTime.Now.Day.ToString();
+                string Hora = DateTime.Now.Hour.ToString();
+                string Minutos = DateTime.Now.Minute.ToString();
+                string Segundos = DateTime.Now.Second.ToString();
+                string Ruta = System.Configuration.ConfigurationManager.AppSettings["AdjuntosPMU"];
+                string Ubicacion = "IRISP1/EXPENDIOSWEB";
+                string filename = Id_Foto + Tipo;
+                string Directorio = Ruta + Ubicacion + "/" + Ano + "/" + "/" + Month;
+
+                //valida si existe el directorio de lo contrario lo crea
+                if (!Directory.Exists(Directorio))
+                    Directory.CreateDirectory(Directorio);
+                enlace = Directorio + "/" + filename;
+                Archivo.SaveAs(enlace);
+                //Actualizar ruta
+                return "/" + Ano + "/" + "/" + Month + "/" + filename;
+            }
+            else
+            {
+                return "0";
+            }
+        }
+
+        public bool ValidarArchivo(HttpPostedFileBase _archivo)
+        {
+            //1. El archivo no puede ser nulo
+            if (_archivo == null)
+                return false;
+
+            ////2. Solo se permite extensión jpg
+            //if (_archivo.ContentType != "application/png")
+            //    return false;
+
+            //3. el tamaño permito solo es 24 MB
+            if (_archivo.ContentLength >= 909715100)
+                return false;
+            return true;
+        }
+        public async Task<ActionResult> Details(string _id, string _fuente)
+        {
+            try
+            {
+                if (_id == null)
+                    return RedirectToAction("Index", "Home", new { area = "Irisp" });
+
+                if (User.IsInRole("Funcional Dependencia IRISP1") || User.IsInRole("Funcional Unidad IRISP1"))
+                {
+                    ViewBag.UBICACION = await new UbicacionRepositorio().ConsultarRegistrosBasica(_id);
+                    ViewBag.INTEGRANTE = await new IntegranteRepositorio().ConsultarRegistrosBasica(_id);
+                    ViewBag.INFORMACION = await new InformacionRepositorio().ConsultarRegistrosBasica(_id);
+                    ViewBag.DELITO = await new DelitoRepositorio().ConsultarRegistrosBasica(_id);
+                    ViewBag.DOCUMENTO = await new DocumentoRepositorio().ConsultarRegistrosBasica(_id);
+                    ViewBag.RESPONSABLE = await new ResponsableRepositorio().ConsultarRegistrosBasica(_id);
+                }
+                else
+                {
+                    ViewBag.UBICACION = await new UbicacionRepositorio().ConsultarRegistrosTodos(_id);
+                    ViewBag.INTEGRANTE = await new IntegranteRepositorio().ConsultarRegistrosTodos(_id);
+                    ViewBag.INFORMACION = await new InformacionRepositorio().ConsultarRegistrosTodos(_id);
+                    ViewBag.DELITO = await new DelitoRepositorio().ConsultarRegistrosTodos(_id);
+                    ViewBag.DOCUMENTO = await new DocumentoRepositorio().ConsultarRegistrosTodos(_id);
+                    ViewBag.RESPONSABLE = await new ResponsableRepositorio().ConsultarRegistrosTodos(_id);
+                }
+
+                foreach (var item in ViewBag.DELITO)
+                {
+                    item.IRISP_MODALIDAD = await new ModalidadRepositorio().ConsultarRegistros(item.DELITO_ID);
+                }
+
+                ViewBag.IRISP1 = await new CriminalidadRepositorio().ConsultarRelacionOtrosIrisp(_id, ViewBag.INTEGRANTE);
+                ViewBag.ID_DELITO = new SelectList(await new DelitosRepositorio().ConsultarDelitos(), "CODIGO", "DESCRIPCION");
+                ViewBag.ID_TIPO = new SelectList(await new ListasRepositorio().ListaDominio((int)EnumeracionListasDominios.Listas_tipo_delito), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.FUENTE = _fuente;
+                return View(await new CriminalidadRepositorio().ConsultarRegistro(_id));
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "Criminalidad", "Details", ex, "No se pudo consultar el detalle del IRISP1");
+            }
+        }
+
+        
+
+        // Método auxiliar para guardar el archivo en el servidor o almacenamiento
+        private string GuardarArchivoEnElServidor(IFormFile archivo)
+        {
+            // Lógica para guardar el archivo en el servidor
+            // Puedes utilizar System.IO para guardar en una carpeta del servidor
+            // o servicios de almacenamiento como Azure Blob Storage.
+
+            // Ejemplo para guardar en una carpeta del servidor:
+            var rutaDeGuardado = Path.Combine("CarpetaDeFotos", archivo.FileName);
+            using (var stream = new FileStream(rutaDeGuardado, FileMode.Create))
+            {
+                archivo.CopyTo(stream);
+            }
+
+            return rutaDeGuardado;
+        }
+
+
+
+        [HttpPost]
+        [Authorize(Roles = ("Administrador,Administrador IRISP1"))]
+        public async Task<ActionResult> ActualizarAjax(CriminalidadDTO criminalidadDTO)
+        {
+            try
+            {
+                if (criminalidadDTO.ID_CLASE == null || criminalidadDTO.NOMBRE_CLASE == null || criminalidadDTO.CANTIDAD_INTEGRANTE == null ||
+                    criminalidadDTO.ID_FUENTE == null || criminalidadDTO.CARACTERISTICAS_GENERALES == null)
+                    return Json(new { ok = false, mensaje = "Faltan campos de información para actualizar el IRISP1 !!!" });
+
+                criminalidadDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                criminalidadDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new CriminalidadRepositorio().Actualizar(criminalidadDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo actualizar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "ActualizarAjax", ex, "No se pudo actualizar el registro");
+            }
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaVerificacion(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1"))
+                    resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacion(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Regional IRISP1"))
+                    resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorRegion(parametrosPaginacionDTO, gestionClaims.CodigoRegional, variables);
+                else if (User.IsInRole("Funcional Unidad IRISP1") || User.IsInRole("Seguimiento IRISP1")) { 
+
+                    if (gestionClaims.UnidadFisica == "DESAB")  { 
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorUnidad(parametrosPaginacionDTO, "REMSA", variables); 
+                    } else
+                    {
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorUnidad(parametrosPaginacionDTO, gestionClaims.UnidadFisica, variables);
+                    }
+                }
+
+                else if (User.IsInRole("Funcional Dependencia IRISP1"))
+                {
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        decimal codigoAnterior = (decimal)await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (int)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario(codigoAnterior);
+                            if (idUnidad != null)
+                                resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (int)idUnidad, variables);
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (int)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario(gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                                resultadosConsulta = await core.ConsultarRegistrosEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (int)idUnidad, variables);
+                        }
+                    }
+
+
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "ConsultarCriminalidadEtapaVerificacion", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaInvestigacion(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1"))
+                    resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacion(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Regional IRISP1"))
+                    resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorRegion(parametrosPaginacionDTO, gestionClaims.CodigoRegional, variables);
+                else if (User.IsInRole("Funcional Unidad IRISP1") || User.IsInRole("Seguimiento IRISP1")) { 
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorUnidad(parametrosPaginacionDTO, "REMSA", variables);
+                    }
+                    else
+                    {
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorUnidad(parametrosPaginacionDTO, gestionClaims.UnidadFisica, variables);
+                    }
+                }
+
+
+                else if (User.IsInRole("Funcional Dependencia IRISP1"))
+                {
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        decimal codigoAnterior = (decimal)await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (int)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario(codigoAnterior);
+                            if (idUnidad != null)
+                                resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (int)idUnidad, variables);
+                        }
+
+                    }
+                    else
+                    {
+
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (int)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario(gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                                resultadosConsulta = await core.ConsultarRegistrosEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (int)idUnidad, variables);
+                        }
+                    }
+
+
+
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "ConsultarCriminalidadEtapaInvestigacion", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaFinal(int? variables)
+        {
+            ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+            {
+                Start = Convert.ToInt32(Request["start"]),
+                Length = Convert.ToInt32(Request["length"]),
+                SearchValue = Request["search[value]"],
+                SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                SortDirection = Request["order[0][dir]"]
+            };
+
+            try
+            {
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1"))
+                    resultadosConsulta = await core.ConsultarRegistrosEtapaFinal(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Regional IRISP1"))
+                    resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorRegion(parametrosPaginacionDTO, gestionClaims.CodigoRegional, variables);
+                else if (User.IsInRole("Funcional Unidad IRISP1") || User.IsInRole("Seguimiento IRISP1"))
+                {
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+
+                      
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorUnidad(parametrosPaginacionDTO, "REMSA", variables);
+                    }
+                    else
+                    {
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorUnidad(parametrosPaginacionDTO, gestionClaims.UnidadFisica, variables);
+                    }
+                }
+
+               
+                else if (User.IsInRole("Funcional Dependencia IRISP1"))
+                {
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        decimal codigoAnterior = (decimal)await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorDependencia(parametrosPaginacionDTO, (int)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario(codigoAnterior);
+                            if (idUnidad != null)
+                                resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorDependencia(parametrosPaginacionDTO, (int)idUnidad, variables);
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorDependencia(parametrosPaginacionDTO, (int)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario(gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                                resultadosConsulta = await core.ConsultarRegistrosEtapaFinalPorDependencia(parametrosPaginacionDTO, (int)idUnidad, variables);
+                        }
+                    }
+
+
+                   
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "ConsultarCriminalidadEtapaFinal", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Seguimiento IRISP1,Regional IRISP1"))]
+        public async Task<ActionResult> Seguimiento()
+        {
+            var ListaAniosIrisp = new CriminalidadRepositorio().ConsultarAniosIrisp();
+            ViewBag.ANIO = new SelectList(await ListaAniosIrisp, "DOMINIO_ID", "DESCRIPCION");
+            return View();
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Consulta IRISP1"))]
+        public async Task<ActionResult> Consulta()
+        {
+            var ListaAniosIrisp = new CriminalidadRepositorio().ConsultarAniosIrisp();
+            ViewBag.ANIO = new SelectList(await ListaAniosIrisp, "DOMINIO_ID", "DESCRIPCION");
+            return View();
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEspecialidades(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                return Json(new { data = await new CriminalidadRepositorio().ConsultarRegistros(parametrosPaginacionDTO, variables), draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "ConsultarCriminalidadEspecialidades", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Seguimiento IRISP1,Regional IRISP1"))]
+        public async Task<ActionResult> AsignarResponsable(string _id)
+        {
+            try
+            {
+                if (_id == null)
+                    return RedirectToAction("Index", "Home", new { area = "Irisp" });
+
+                CriminalidadDTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistro(_id);
+                ViewBag.RESULTADO = await new ResultadoRepositorio().ConsultarRegistrosPorId(_id);
+                ViewBag.UBICACION = await new UbicacionRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.INTEGRANTE = await new IntegranteRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.INFORMACION = await new InformacionRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.DELITO = await new DelitoRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.DOCUMENTO = await new DocumentoRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.RESPONSABLE_VALIDACION = await new ResponsableValidacionRepositorio().ConsultarRegistrosPorId(_id);
+                ViewBag.RESPONSABLE = await new ResponsableRepositorio().ConsultarRegistrosTodos(_id);
+
+                foreach (var item in ViewBag.DELITO)
+                {
+                    item.IRISP_MODALIDAD = await new ModalidadRepositorio().ConsultarRegistros(item.DELITO_ID);
+                }
+
+                // Listas para modal Responsable
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1"))
+                    ViewBag.UNIDAD = new SelectList(await new UnidadesRepositorio().ConsultarUnidades(), "SIGLA_PAPA", "DEPENDENCIA_SIGLA");
+                else if (User.IsInRole("Seguimiento IRISP1"))
+                    ViewBag.UNIDAD = new SelectList(await new UnidadesRepositorio().ConsultarUnidad(gestionClaims.UnidadFisica), "SIGLA_PAPA", "DEPENDENCIA_SIGLA");
+
+                // Listas para modal Tarea
+                ViewBag.ID_LISTA_TAREAS = new SelectList(await new ListasRepositorio().ListaDominio((int)EnumeracionListasDominios.Lista_Tareas), "DOMINIO_ID", "DESCRIPCION");
+
+                return View(criminalidadDTO);
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "Criminalidad", "AsignarResponsable", ex, "No se pudo consultar el formulario");
+            }
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Consulta IRISP1"))]
+        public async Task<ActionResult> DetalleConsulta(string _id)
+        {
+            try
+            {
+                if (_id == null)
+                    return RedirectToAction("Index", "Home", new { area = "Irisp" });
+
+                CriminalidadDTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistro(_id);
+
+                ViewBag.UBICACION = await new UbicacionRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.INTEGRANTE = await new IntegranteRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.INFORMACION = await new InformacionRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.DELITO = await new DelitoRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.DOCUMENTO = await new DocumentoRepositorio().ConsultarRegistrosTodos(_id);
+                ViewBag.RESPONSABLE_VALIDACION = await new ResponsableValidacionRepositorio().ConsultarRegistrosPorId(_id);
+                ViewBag.RESPONSABLE = await new ResponsableRepositorio().ConsultarRegistrosTodos(_id);
+
+                foreach (var item in ViewBag.DELITO)
+                {
+                    item.IRISP_MODALIDAD = await new ModalidadRepositorio().ConsultarRegistros(item.DELITO_ID);
+                }
+
+                return View(criminalidadDTO);
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "Criminalidad", "DetalleConsulta", ex, "No se pudo consultar el formulario");
+            }
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Seguimiento IRISP1"))]
+        public ActionResult Finalizar(string _id)
+        {
+            ViewBag.CRIMINALIDAD_ID = _id;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> FinalizarPost(string _id, string _tramite)
+        {
+            try
+            {
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+
+                if (_id == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (_tramite == null)
+                    return Json(new { ok = false, mensaje = "Digite alguna información para finalizar el IRISP1" });
+
+                if (await core.ConsultaIRISPFinalizado(_id))
+                    return Json(new { ok = false, mensaje = "El IRISP1 seleccionado ya fue finalizado !!!" });
+
+                if (await core.FinalizarIRISP(_id, _tramite, gestionClaims.Identificacion, Request.UserHostAddress))
+                {
+                    if (true)
+                    {
+                        Criminalidad_DTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistroPorId(_id);
+                        var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Se realizó cambio de estado al caso IRISP1: " + criminalidadDTO.CODIGO + " a FINALIZADO, para ver detalles de la modificación y resultados, ingrese al sistema de información IRISP1.");
+                        return Json(new { ok = true, mensaje = "El IRISP1 se finalizo correctamente" });
+                    }
+                }
+                else
+                    return Json(new { ok = false, mensaje = "No se pudo finalizar !!!" });
+
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "Finalizar", ex, "No se pudo finalizar el IRISP1");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CambiarEstado(CriminalidadDTO criminalidadDTO)
+        {
+            try
+            {
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+
+                if (criminalidadDTO.CRIMINALIDAD_ID == null && criminalidadDTO.ID_ESTADO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (await core.CambiarEstadoIRISP(criminalidadDTO))
+                {
+                    if (true)
+                    {
+                        Criminalidad_DTO criminalidad_DTO = await new CriminalidadRepositorio().ConsultarRegistroPorId(criminalidadDTO.CRIMINALIDAD_ID);
+                        var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(criminalidad_DTO.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(criminalidad_DTO.IDENTIFICACION_INFORMA), "Se realizó cambio de estado al caso IRISP1: " + criminalidad_DTO.CODIGO + " a " + criminalidad_DTO.STR_ESTADO + ", para ver detalles de la modificación y resultados, ingrese al sistema de información IRISP1.");
+                        return Json(new { ok = true, mensaje = "Se cambio el estado del IRISP1" });
+                    }
+                    
+                }
+                    
+                else
+                    return Json(new { ok = false, mensaje = "No se pudo cambiar el estado !!!" });
+
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "Finalizar", ex, "No se pudo finalizar el IRISP1");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CambiarEstadoExistencia(CriminalidadDTO criminalidadDTO)
+        {
+            try
+            {
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+
+                if (criminalidadDTO.CRIMINALIDAD_ID == null && criminalidadDTO.ID_ESTADO_EXISTENCIA == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (await core.CambiarEstadoExistenciaIRISP(criminalidadDTO))
+                    return Json(new { ok = true, mensaje = "Se cambio el estado existencia del IRISP1" });
+                else
+                    return Json(new { ok = false, mensaje = "No se pudo cambiar el estado existencia !!!" });
+
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "Finalizar", ex, "No se pudo finalizar el IRISP1");
+            }
+        }
+
+        public ActionResult DesactivarIRISP(string _id)
+        {
+            ViewBag.CRIMINALIDAD_ID = _id;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> DesactivarPOST(string _id)
+        {
+            try
+            {
+                if (await new CriminalidadRepositorio().DesactivarRegistrosIRISP(_id, gestionClaims.Identificacion, Request.UserHostAddress))
+                    return Json(new { ok = true, mensaje = "Se eliminó correctamente" });
+                else
+                    return Json(new { ok = false, mensaje = "No se pudo eliminar" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "DesactivarIRISP", ex, "No se pudo eliminar el IRISP1");
+            }
+        }
+
+        public async Task<FileResult> DescargarIrisp1(int? anio)
+        {
+            string ruta = System.Web.Configuration.WebConfigurationManager.AppSettings["servidorArchivosExcel"];
+            string pathFile = ruta + $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
+            System.Data.DataTable dt = new System.Data.DataTable();
+
+            //Columnas
+            dt.Columns.Add("Estado", typeof(string));
+            dt.Columns.Add("Estado existencia", typeof(string));
+            dt.Columns.Add("Código", typeof(string));
+            dt.Columns.Add("Región", typeof(string));
+            dt.Columns.Add("Unidad", typeof(string));
+            dt.Columns.Add("Dependencia", typeof(string));
+            dt.Columns.Add("Municipio", typeof(string));
+            dt.Columns.Add("Fecha Inicio Actividad", typeof(string));
+            dt.Columns.Add("Clase", typeof(string));
+            dt.Columns.Add("Nombre clase", typeof(string));
+            dt.Columns.Add("Cantidad", typeof(string));
+            dt.Columns.Add("Caracteristicas generales", typeof(string));
+            dt.Columns.Add("Descripción tramite", typeof(string));
+            dt.Columns.Add("Zona", typeof(string));
+            dt.Columns.Add("Tipo servicio", typeof(string));
+            dt.Columns.Add("Fuente", typeof(string));
+            dt.Columns.Add("Fecha creacion", typeof(string));
+            dt.Columns.Add("Unidad Verificación Existencia", typeof(string));
+            dt.Columns.Add("Fecha Asignación Verificación Existencia", typeof(string));
+            dt.Columns.Add("Fecha Respuesta Verificación Existencia", typeof(string));
+            dt.Columns.Add("Contador Verificación Existencia", typeof(string));
+            dt.Columns.Add("Unidad Proceso Investigativo", typeof(string));
+            dt.Columns.Add("Fecha Asignación Proceso Investigativo", typeof(string));
+            dt.Columns.Add("Fecha Respuesta Proceso Investigativo", typeof(string));
+            dt.Columns.Add("Contador Proceso Investigativo", typeof(string));
+            dt.Columns.Add("Resultados", typeof(string));
+
+            //Filas
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            CriminalidadRepositorio core = new CriminalidadRepositorio();
+            List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+            if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Consulta IRISP1"))
+                resultadosConsulta = await core.ConsultarRegistrosReporte(anio);
+            else if (User.IsInRole("Regional IRISP1"))
+                resultadosConsulta = await core.ConsultarRegistrosPorRegionReporte(gestionClaims.CodigoRegional, anio);
+            else if (User.IsInRole("Funcional Unidad IRISP1") || User.IsInRole("Seguimiento IRISP1"))
+                resultadosConsulta = await core.ConsultarRegistrosPorUnidadReporte(gestionClaims.UnidadFisica, anio);
+            else if (User.IsInRole("Funcional Dependencia IRISP1"))
+            {
+                resultadosConsulta = await core.ConsultarRegistrosPorDependenciaReporte((int)gestionClaims.CodigoDependencia, anio);
+
+                if (resultadosConsulta.Count == 0)
+                {
+                    decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                    if (idUnidad != null)
+                        resultadosConsulta = await core.ConsultarRegistrosPorDependenciaReporte((int)idUnidad, anio);
+                }
+            }
+
+            foreach (var item in resultadosConsulta)
+            {
+                dt.Rows.Add(
+                    item.ID_ESTADO_STR,
+                    item.ID_ESTADO_EXISTENCIA_STR,
+                    item.CODIGO,
+                    item.REGION,
+                    item.SIGLA_PAPA,
+                    item.ID_UNIDAD_STR,
+                    item.MUNICIPIO,
+                    item.FECHA_INICIO_EXISTENCIA_STR,
+                    item.ID_CLASE_STR,
+                    item.NOMBRE_CLASE,
+                    item.CANTIDAD_INTEGRANTE,
+                    item.CARACTERISTICAS_GENERALES,
+                    item.DESCRIPCION_TRAMITE,
+                    item.ID_ZONA_STR,
+                    item.ID_TIPO_SERVICIO_STR,
+                    item.ID_FUENTE_STR,
+                    item.FECHA_CREACION,
+                    item.UNIDAD_VERIFICACION,
+                    item.FECHA_ASIGNACION_VERIFICA,
+                    item.FECHA_RESPUESTA_VERIFICA,
+                    item.CONTADOR_VERIFICA,
+                    item.UNIDAD_PROCESO_INVESTIGATIVO,
+                    item.FECHA_ASIGNACION_INVESTIGA,
+                    item.FECHA_RESPUESTA_INVESTIGA,
+                    item.CONTADOR_INVESTIGA,
+                    item.IRISP_RESULTADO_STR
+                    );
+            }
+
+            SLDocument sLDocument = new SLDocument();
+            sLDocument.ApplyNamedCellStyleToRow(1, SLNamedCellStyleValues.Neutral);
+            sLDocument.ImportDataTable(1, 1, dt, true);
+            sLDocument.SaveAs(pathFile);
+            sw.Stop();
+            new UtilidadesRepositorio().EliminarArchivo(pathFile, Convert.ToInt32(sw.ElapsedMilliseconds));
+            decimal identificacion = Convert.ToDecimal(gestionClaims.Identificacion);
+            new AdministracionUsuarios().RegistroAuditoria(new AuditoriaDTO { ID_PROCESO = (int)EnumListaAcciones.DescargaReporte, USUARIO = gestionClaims.UsuarioEmpresarial, IDENTIFICACION = identificacion, DESCRIPCION = "Descarga Reporte IRISP1", MAQUINA = Request.UserHostAddress });
+            return File(pathFile, "application/xlsx", $"ReporteIrisp.xlsx");
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> Mapa()
+        {
+            var ListaAniosIrisp = await new CriminalidadRepositorio().ConsultarAniosIrisp();
+            ViewBag.ANIO = new SelectList(ListaAniosIrisp, "DOMINIO_ID", "DESCRIPCION");
+            ViewBag.DATA = new List<ReporteUbicacion>();
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> ConsultarDatosUbicacion(UbicacionFiltrosDTO ubicacionFiltrosDTO)
+        {
+            if (ubicacionFiltrosDTO.Anio == 0)
+                return Json(new { ok = false, mensaje = "Faltan campos de información !!!" });
+
+            CriminalidadRepositorio core = new CriminalidadRepositorio();
+            JsonResult json = new JsonResult();
+
+            if (User.IsInRole("Regional IRISP1"))
+                ubicacionFiltrosDTO.Region = gestionClaims.CodigoRegional.ToString();
+            else if (User.IsInRole("Funcional Unidad IRISP1") || User.IsInRole("Seguimiento IRISP1"))
+                ubicacionFiltrosDTO.SiglaUnidad = gestionClaims.UnidadFisica;
+            else if (User.IsInRole("Funcional Dependencia IRISP1"))
+                ubicacionFiltrosDTO.CodigoDependencia = gestionClaims.DescripcionDependencia.Contains("ESTACION") ? (int)gestionClaims.CodigoDependencia : await new UnidadesRepositorio().ConsultarUnidadFuncionario(gestionClaims.CodigoDependencia);
+
+            json = Json(new { ok = true, data = await core.ConsultarReporteUbicacion(ubicacionFiltrosDTO) });
+            json.MaxJsonLength = int.MaxValue;
+            return json;
+        }
+
+
+        public ActionResult Fotos(string V_Ruta)
+        {
+            //var ruta_Foto = ClsEncriptar.Desencriptar(V_Ruta);
+            string Ruta = System.Configuration.ConfigurationManager.AppSettings["AdjuntosPMU"];
+            string Ubicacion = "IRISP1/EXPENDIOSWEB";
+            var ruta_Foto = Ruta + Ubicacion+ V_Ruta;
+           
+            string ContenType = null;
+            string Ext = null;
+
+            try
+            {
+                var reporte = LeerArchivo(ruta_Foto);
+                var stream = new MemoryStream(reporte);
+                var stream2 = new MemoryStream(reporte);
+                Bitmap bmpReturn = null;
+                bmpReturn = (Bitmap)Bitmap.FromStream(stream2);
+
+                if (bmpReturn.RawFormat.Equals(ImageFormat.Jpeg))
+                {
+                    ContenType = "image/jpeg";
+                    Ext = ".jpg";
+                }
+                else if (bmpReturn.RawFormat.Equals(ImageFormat.Png))
+                {
+                    ContenType = "image/png";
+                    Ext = ".png";
+                }
+                else
+                {
+                    ContenType = "video/mp4";
+                    Ext = ".mp4";
+                }
+
+                return File(stream, ContenType, "Foto" + Ext);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var reporte = LeerArchivo(Ruta + "NO" + ".png");
+                    var stream = new MemoryStream(reporte);
+                    return File(stream, "image/png", "Foto" + ".png");
+                }
+                catch (Exception exi)
+                {
+                    return null;
+                }
+            }
+
+        }
+        public byte[] LeerArchivo(string RutaDocumento)
+        {
+            try
+            {
+                return System.IO.File.ReadAllBytes(RutaDocumento);
+            }
+            catch (Exception ex)
+            {
+                var cua = ex;
+            }
+            return null;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CargarFoto(FotosCriminalidadDTO Datos)
+        {
+            try
+            {
+
+                Datos.ID_FOTOS_CRIMINALIDAD = Guid.NewGuid().ToString();
+                Datos.tipo_doc = Path.GetExtension(Datos.FOTO_CRIMINALIDAD.FileName);
+                Datos.ruta = SubirAdjunto(Datos.FOTO_CRIMINALIDAD, Datos.tipo_doc, Datos.ID_FOTOS_CRIMINALIDAD);
+                //Datos.servidor = System.Configuration.ConfigurationManager.AppSettings["servidorArchivosirisp1"] + "IRISP1/EXPENDIOS";
+                Datos.servidor = System.Configuration.ConfigurationManager.AppSettings["AdjuntosPMU"] + "IRISP1/EXPENDIOSWEB";
+                Datos.name_file = Datos.FOTO_CRIMINALIDAD.FileName;
+                Datos.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                Datos.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new CriminalidadRepositorio().AgregarFoto(Datos))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+                int contadorErrores = 0;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                    {
+                        contadorErrores++;
+                        listaErrores += $" {contadorErrores}. {key.Value.Errors[0].ErrorMessage}";
+                    }
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = listaErrores });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Criminalidad", "CargarFoto", ex, "No se pudo cargar la foto");
+            }
+        }
+
+        public async Task<ActionResult> BorrarFoto(string id_Foto)
+        {
+            try
+            {
+                var IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                var MAQUINA_MODIFICA = Request.UserHostAddress;
+                if (ModelState.IsValid)
+                    if (await new CriminalidadRepositorio().BorradoFoto(id_Foto, IDENTIFICACION_MODIFICA, MAQUINA_MODIFICA))
+                        return Json(new { success = true, mensaje = "Se elimino correctamente la foto" });
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { success = false, mensaje = "No se pudo borrar la foto" });
+                else
+                    return Json(new { success = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+             catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "IRISP_CRIMINALIDAD_FOTOS", "BorrarFoto", ex, "No se pudo eliminar");
+            }
+
+        }
+
+
+        public async Task<JsonResult> GetInternoRegistraduria(int V_Identificacion)
+        {
+            try
+            {
+
+                if (V_Identificacion == 0 || V_Identificacion == null)
+                    return Json(new { ok = false, msg = "La identificación no puede estar vacia." });
+
+                var retorno = await new CorreoRepositorio().ConsultarCCRegistraduria(V_Identificacion);
+
+                if (retorno.APELLIDO != "null null" && retorno.NOMBRE != "null null")
+                {
+                    //var Auditoria = new Administracion().InsAuditoria(User.Identity.GetIdentificacion(), "F_GetInterno", "Consulta CC en la registraduria modulo PPL" + V_Identificacion, Convert.ToString(Session["IpMaquina"]));
+                    return Json(new { success = true, data = retorno }, JsonRequestBehavior.AllowGet);
+                }
+                else
+                {
+                    return Json(new { success = false, data = retorno }, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = "Error en la base de datos" }, JsonRequestBehavior.AllowGet);
+            }
+
+        }
+
+
+    }
+}
+-----------------------------------------------------------------------------------------------------------
+
+namespace Web.Controllers
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+    using Comun.AplicacionDTO;
+    using Comun.GeneralDTO;
+    using Negocio.Aplicacion;
+    using Negocio.General;
+    using SpreadsheetLight;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1,Consulta IRISP1,Regional Investigacion Criminal"))]
+    public class CriminalidadDirecController : BaseController
+    {
+        public async Task<ActionResult> Index()
+        {
+            ListasRepositorio core2 = new ListasRepositorio();
+            var estado = core2.ListaDominio((int)EnumeracionListasDominios.Lista_Estados_IRISP1_Direc);
+            await Task.WhenAll(estado);
+            ViewBag.ID_ESTADO = new SelectList(estado.Result.Where(x => x.DOMINIO_ID != (int)EnumeracionEstadoIrispDirecciones.Verificacion).ToList(), "DOMINIO_ID", "DESCRIPCION");
+
+            ViewBag.ERRADICADO = new List<SelectListItem>
+            {
+                new SelectListItem { Text = "SI", Value = "true" },
+                new SelectListItem { Text = "NO", Value = "false" }
+            };
+
+            return View();
+        }
+
+        public async Task<ActionResult> Create()
+        {
+            try
+            {
+                UnidadesRepositorio core3 = new UnidadesRepositorio();
+                ListasRepositorio core2 = new ListasRepositorio();
+
+                dynamic unidadGen = 0;
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Consulta IRISP1"))
+                    unidadGen = core3.ConsultarUnidades();
+                else if (User.IsInRole("Verificacion IRISP1"))
+                    unidadGen = core3.ConsultarUnidad(gestionClaims.UnidadFisica);
+
+                var zona = core2.ListaDominio((int)EnumeracionListasDominios.Lista_Zona);
+                var clase = core2.ListaDominioClaseDirec();
+                var fuente = core2.ListaDominio((int)EnumeracionListasDominios.Lista_fuente_IRISP1);
+                var categoria = core2.ListaDominio((int)EnumeracionListasDominios.Lista_Tipo_Categoria);
+                var delito = new DelitosRepositorio().ConsultarDelitosDirec();
+
+                await Task.WhenAll(unidadGen, zona, clase, fuente, categoria, delito);
+
+                ViewBag.UNIDAD_GEN = new SelectList(unidadGen.Result, "SIGLA_PAPA", "DEPENDENCIA_SIGLA");
+                ViewBag.ID_ZONA = new SelectList(zona.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_CLASE = new SelectList(clase.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_FUENTE = new SelectList(fuente.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_CATEGORIA = new SelectList(categoria.Result, "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.ID_DELITO = new SelectList(delito.Result, "CODIGO", "DESCRIPCION");
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "CriminalidadDirec", "Create", ex, "Error al ingresar al formulario de registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(CriminalidadDirecDTO criminalidadDirecDTO, List<IntegranteDirecDTO> lstIntegranteDirecDTO, List<DelitoDirecDTO> lstDelitoDirecDTO)
+        {
+            try
+            {
+                if (lstIntegranteDirecDTO != null)
+                {
+                    foreach (var integranteDirecDTO in lstIntegranteDirecDTO)
+                    {
+                        if (integranteDirecDTO.ALIAS == null && integranteDirecDTO.APELLIDO == null && integranteDirecDTO.IDENTIFICACION == null && integranteDirecDTO.NOMBRE == null)
+                            return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+                        else if (integranteDirecDTO.IDENTIFICACION != null && (integranteDirecDTO.APELLIDO == null && integranteDirecDTO.ALIAS == null && integranteDirecDTO.NOMBRE == null))
+                            return Json(new { ok = false, mensaje = "No puede registrar soló la cedula, digite en más campos !!!" });
+                    }
+                }
+
+                if (lstDelitoDirecDTO.Count == 0)
+                    return Json(new { ok = false, mensaje = "Seleccione al menos un delito !!!" });
+
+                if (string.IsNullOrEmpty(criminalidadDirecDTO.LONGITUD) && string.IsNullOrEmpty(criminalidadDirecDTO.LATITUD))
+                    return Json(new { ok = false, mensaje = "La latitud y longitud no pueden estar vacias, seleccione un punto geográfico valido con coordenadas" });
+
+                if (criminalidadDirecDTO.MUNICIPIO == null)
+                    return Json(new { ok = false, mensaje = "La ubicación debe ser dentro del territorio Colombiano !!!" });
+
+                criminalidadDirecDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                criminalidadDirecDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new CriminalidadDirecRepositorio().Agregar(criminalidadDirecDTO, lstIntegranteDirecDTO, lstDelitoDirecDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+                int contadorErrores = 0;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                    {
+                        contadorErrores++;
+                        listaErrores += $" {contadorErrores}. {key.Value.Errors[0].ErrorMessage}";
+                    }
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = listaErrores });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "CriminalidadDirec", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ActualizarAjax(CriminalidadDirecDTO criminalidadDirecDTO)
+        {
+            try
+            {
+                if (criminalidadDirecDTO.ID_ESTADO == (int)EnumeracionEstadoIrispDirecciones.Investigacion)
+                {
+                    if (string.IsNullOrEmpty(criminalidadDirecDTO.NUNC))
+                        return Json(new { ok = false, mensaje = "El NUNC es obligatorio !!!" });
+
+                    //if (string.IsNullOrEmpty(criminalidadDirecDTO.CODIGO_MORED) || string.IsNullOrEmpty(criminalidadDirecDTO.NOMBRE_MORED))
+                    //    return Json(new { ok = false, mensaje = "El código y nombre de la MORED es obligatorio" });
+                }
+                else if (criminalidadDirecDTO.ID_ESTADO == (int)EnumeracionEstadoIrispDirecciones.Finalizado)
+                {
+                    if (criminalidadDirecDTO.ERRADICADO == null)
+                        return Json(new { ok = false, mensaje = "El campo Erradicado debe estar diligenciado !!!" });
+                    
+                    if (criminalidadDirecDTO.ERRADICADO.Value)
+                        if (string.IsNullOrWhiteSpace(criminalidadDirecDTO.SIEDCO))
+                            return Json(new { ok = false, mensaje = "El campo SIEDCO debe estar diligenciado !!!" });
+                }
+                else if (criminalidadDirecDTO.ID_ESTADO == (int)EnumeracionEstadoIrispDirecciones.Descartado)
+                {
+                    if (string.IsNullOrEmpty(criminalidadDirecDTO.OBSERVACION))
+                        return Json(new { ok = false, mensaje = "El campo Observación debe estar diligenciado !!!" });
+                }
+
+                criminalidadDirecDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                criminalidadDirecDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new CriminalidadDirecRepositorio().ActualizarEstado(criminalidadDirecDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+                int contadorErrores = 0;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                    {
+                        contadorErrores++;
+                        listaErrores += $" {contadorErrores}. {key.Value.Errors[0].ErrorMessage}";
+                    }
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = listaErrores });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "CriminalidadDirec", "ActualizarAjax", ex, "No se pudo actualizar el registro");
+            }
+        }
+
+        //[HttpPost]
+        //public async Task<ActionResult> ConsultaGeneral()
+        //{
+        //    try
+        //    {
+        //        JsonResult lista = new JsonResult();
+
+        //        if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Consulta IRISP1"))
+        //            lista = Json(new { data = await new CriminalidadDirecRepositorio().ConsultaGeneral() });
+        //        else if (User.IsInRole("Regional Investigacion Criminal"))
+        //            lista = Json(new { data = await new CriminalidadDirecRepositorio().ConsultaRegion((int)gestionClaims.CodigoRegional) });
+        //        else if (User.IsInRole("Verificacion IRISP1"))
+
+        //            if (gestionClaims.UnidadFisica == "DESAB")
+        //            {
+        //                decimal codigoAnterior = (decimal)await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+        //                lista = Json(new { data = await new CriminalidadDirecRepositorio().ConsultaUnidad("REMSA") });
+
+        //                lista.MaxJsonLength = int.MaxValue;
+
+        //            }
+        //            else
+        //            {
+        //                lista = Json(new { data = await new CriminalidadDirecRepositorio().ConsultaUnidad(gestionClaims.UnidadFisica) });
+
+        //                lista.MaxJsonLength = int.MaxValue;
+        //            }
+
+        //        return lista;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return await CapturaError("POST", "Irisp", "CriminalidadDirec", "ConsultaGeneral", ex, "No se pudo consultar el reporte");
+        //    }
+        //}
+
+        [HttpPost]
+        public async Task<ActionResult> ConsultaGeneral()
+        {
+            try
+            {
+                object resultadoBusqueda = null;
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Consulta IRISP1"))
+                {
+                    resultadoBusqueda = await new CriminalidadDirecRepositorio().ConsultaGeneral();
+                }
+                else if (User.IsInRole("Regional Investigacion Criminal"))
+                {
+                    resultadoBusqueda = await new CriminalidadDirecRepositorio().ConsultaRegion((int)gestionClaims.CodigoRegional);
+                }
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        resultadoBusqueda = await new CriminalidadDirecRepositorio().ConsultaUnidad("REMSA");
+                    }
+                    else
+                    {
+                        resultadoBusqueda = await new CriminalidadDirecRepositorio().ConsultaUnidad(gestionClaims.UnidadFisica);
+                    }
+                }
+
+                // IMPORTANTE: Configurar el JSON aquí para TODOS los casos
+                var jsonResult = Json(new { data = resultadoBusqueda }, JsonRequestBehavior.AllowGet);
+                jsonResult.MaxJsonLength = int.MaxValue;
+                return jsonResult;
+            }
+            catch (Exception ex)
+            {
+                // Esto te ayudará a ver el error real en la consola del navegador
+                Response.StatusCode = 500;
+                return Json(new { error = ex.Message, stack = ex.StackTrace });
+            }
+        }
+
+        public async Task<ActionResult> Details(string _id)
+        {
+            var delito = new DelitosRepositorio().ConsultarDelitosDirec();
+            var tipoResultado = new DominioRepositorio().ConsultarPorId((int)EnumeracionListasDominios.Lista_Tipo_Resultado_Direc);
+
+            await Task.WhenAll(delito, tipoResultado);
+
+            ViewBag.ID_DELITO = new SelectList(delito.Result, "CODIGO", "DESCRIPCION");
+            ViewBag.ID_TIPO = new SelectList(tipoResultado.Result, "DOMINIO_ID", "DESCRIPCION");
+
+            return View(await new CriminalidadDirecRepositorio().ConsultaPorId(_id));
+        }
+
+        public async Task<FileResult> DescargarIrisp1Direc()
+        {
+            string ruta = System.Web.Configuration.WebConfigurationManager.AppSettings["servidorArchivosExcel"];
+            string pathFile = ruta + $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
+            System.Data.DataTable dt = new System.Data.DataTable();
+
+            //Columnas
+            dt.Columns.Add("Código", typeof(string));
+            dt.Columns.Add("Unidad Informa", typeof(string));
+            dt.Columns.Add("Sigla Informa", typeof(string));
+            dt.Columns.Add("Región", typeof(string));
+            dt.Columns.Add("Unidad", typeof(string));
+            dt.Columns.Add("Sigla", typeof(string));
+            dt.Columns.Add("Zona", typeof(string));
+            dt.Columns.Add("Clase", typeof(string));
+            dt.Columns.Add("Tipo expendio", typeof(string));
+            dt.Columns.Add("Estado", typeof(string));
+            dt.Columns.Add("Fuente", typeof(string));
+            dt.Columns.Add("Fecha existencia", typeof(string));
+            dt.Columns.Add("Caracteriristicas generales", typeof(string));
+            dt.Columns.Add("Categoria", typeof(string));
+            dt.Columns.Add("Otra categoria", typeof(string));
+            dt.Columns.Add("Código MORED", typeof(string));
+            dt.Columns.Add("Nombre MORED", typeof(string));
+            dt.Columns.Add("NUNC", typeof(string));
+            dt.Columns.Add("SIEDCO", typeof(string));
+            dt.Columns.Add("Erradicado", typeof(string));
+            dt.Columns.Add("Barrio", typeof(string));
+            dt.Columns.Add("Dirección", typeof(string));
+            dt.Columns.Add("Latitud", typeof(string));
+            dt.Columns.Add("Longitud", typeof(string));
+            dt.Columns.Add("Cuadrante", typeof(string));
+            dt.Columns.Add("Municipio", typeof(string));
+
+            dt.Columns.Add("Total Capturas", typeof(string));
+            dt.Columns.Add("Total Allanamientos", typeof(string));
+            dt.Columns.Add("Total Incaptaciones", typeof(string));
+
+            //Filas
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            CriminalidadDirecRepositorio core = new CriminalidadDirecRepositorio();
+            List<CriminalidadDirecDTO> resultadosConsulta = new List<CriminalidadDirecDTO>();
+
+            if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Consulta IRISP1"))
+                resultadosConsulta = await core.ConsultaGeneral();
+            else if (User.IsInRole("Regional Investigacion Criminal"))
+                resultadosConsulta = await core.ConsultaRegion((int)gestionClaims.CodigoRegional);
+            else if (User.IsInRole("Verificacion IRISP1"))
+                resultadosConsulta = await core.ConsultaUnidad(gestionClaims.UnidadFisica);
+
+
+            foreach (var item in resultadosConsulta)
+            {
+                dt.Rows.Add(
+                    item.CODIGO,
+                    item.UNIDAD_INFORMA_STR,
+                    item.SIGLA_UNIDAD_INFORMA_STR,
+                    item.REGION,
+                    item.UNIDAD_STR,
+                    item.SIGLA_UNIDAD_STR,
+                    item.ID_ZONA_STR,
+                    item.ID_CLASE_STR,
+                    item.ID_TIPO_EXPENDIO_STR,
+                    item.ID_ESTADO_STR,
+                    item.ID_FUENTE_STR,
+                    item.FECHA_INICIO_EXISTENCIA,
+                    item.CARACTERISTICAS_GENERALES,
+                    item.ID_CATEGORIA_STR,
+                    item.OTRA_CATEGORIA,
+                    item.CODIGO_MORED,
+                    item.NOMBRE_MORED,
+                    item.NUNC,
+                    item.SIEDCO,
+                    item.ERRADICADO,
+                    item.BARRIO,
+                    item.DIRECCION,
+                    item.LATITUD,
+                    item.LONGITUD,
+                    item.CUADRANTE,
+                    item.MUNICIPIO,
+                    item.IRISP_RESULTADO_DIREC.Where(y => y.ID_TIPO== 79).Sum(x => x.CANTIDAD),
+                    item.IRISP_RESULTADO_DIREC.Where(y => y.ID_TIPO == 78).Sum(x => x.CANTIDAD),
+                    item.IRISP_RESULTADO_DIREC.Where(y => y.ID_TIPO == 77).Sum(x => x.CANTIDAD)
+                    );
+            }
+
+            SLDocument sLDocument = new SLDocument();
+            sLDocument.ApplyNamedCellStyleToRow(1, SLNamedCellStyleValues.Neutral);
+            sLDocument.ImportDataTable(1, 1, dt, true);
+            sLDocument.SaveAs(pathFile);
+            sw.Stop();
+            new UtilidadesRepositorio().EliminarArchivo(pathFile, Convert.ToInt32(sw.ElapsedMilliseconds));
+            decimal identificacion = Convert.ToDecimal(gestionClaims.Identificacion);
+            new AdministracionUsuarios().RegistroAuditoria(new AuditoriaDTO { ID_PROCESO = (int)EnumListaAcciones.DescargaReporte, USUARIO = gestionClaims.UsuarioEmpresarial, IDENTIFICACION = identificacion, DESCRIPCION = "Descarga Reporte Expendios", MAQUINA = Request.UserHostAddress });
+            return File(pathFile, "application/xlsx", $"ReporteIrispDirec.xlsx");
+        }
+    }
+}
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Negocio.Aplicacion;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Funcional Dependencia IRISP1,Funcional Unidad IRISP1,Verificacion IRISP1,Seguimiento IRISP1,Consulta IRISP1"))]
+    public class IntegranteController : BaseController
+    {
+        public ActionResult Create() => View();
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(IntegranteDTO integranteDTO)
+        {
+            try
+            {
+                IntegranteRepositorio core = new IntegranteRepositorio();
+
+                if (integranteDTO.CRIMINALIDAD_ID == null || integranteDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar el integrante" });
+
+                if (integranteDTO.ALIAS == null && integranteDTO.APELLIDO == null && integranteDTO.CEDULA == null && integranteDTO.NOMBRE == null)
+                    return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+                else if (integranteDTO.CEDULA != null && (integranteDTO.APELLIDO == null || integranteDTO.CEDULA == null || integranteDTO.NOMBRE == null))
+                    return Json(new { ok = false, mensaje = "No puede registrar soló la cedula, digite en más campos !!!" });
+
+                if (integranteDTO.CEDULA != null)
+                    if (await core.ConsultarExistenciaPorCedula(integranteDTO.CEDULA, integranteDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "La identificación suministrada ya ha sido registrada anteriormente !!!" });
+
+                integranteDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                integranteDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (User.IsInRole("Funcional Dependencia IRISP1") || User.IsInRole("Funcional Unidad IRISP1"))
+                    integranteDTO.ID_TIPO_INFO = (int)EnumeracionTipoInfo.Basica;
+                else
+                    integranteDTO.ID_TIPO_INFO = (int)EnumeracionTipoInfo.Verificacion;
+
+                if (ModelState.IsValid)
+                    if (await core.Agregar(integranteDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Integrante", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ActualizarAjax(IntegranteDTO integranteDTO)
+        {
+            try
+            {
+                IntegranteRepositorio core = new IntegranteRepositorio();
+
+                if (integranteDTO.INTEGRANTE_ID == null || integranteDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (integranteDTO.ALIAS == null && integranteDTO.APELLIDO == null && integranteDTO.CEDULA == null && integranteDTO.NOMBRE == null)
+                    return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+                else if (integranteDTO.CEDULA != null && (integranteDTO.APELLIDO == null || integranteDTO.CEDULA == null || integranteDTO.NOMBRE == null))
+                    return Json(new { ok = false, mensaje = "No puede registrar soló la cedula, digite en más campos !!!" });
+
+                integranteDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                integranteDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (User.IsInRole("Funcional Dependencia IRISP1") || User.IsInRole("Funcional Unidad IRISP1"))
+                    integranteDTO.ID_TIPO_INFO = (int)EnumeracionTipoInfo.Basica;
+                else
+                    integranteDTO.ID_TIPO_INFO = (int)EnumeracionTipoInfo.Verificacion;
+
+                if (ModelState.IsValid)
+                    if (await core.Actualizar(integranteDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Integrante", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        public async Task<ActionResult> AntecedentePersonaCriminal(long _id)
+        {
+            try
+            {
+                if (_id == 0)
+                    return RedirectToAction("Index", "Home");
+
+                ViewBag.NOTICIA_CRIMINAL = await new NoticiaCriminalRepositorio().ConsultarRegistros(_id);
+
+                return View(await new IntegranteRepositorio().ConsultarHistorialPorCedula(_id));
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "Integrante", "AntecedentePersonaCriminal", ex, "No se pudo consultar el historial del Integrante");
+            }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> ConsultarHistoricoIrispIntegrante(long _id)
+        {
+            try
+            {
+                if (_id == 0)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido !!!" });
+
+                List<HistorialIntegranteDTO> resultados = await new IntegranteRepositorio().ConsultarHistorialPorCedula(_id);
+
+                if (resultados.Count > 0)
+                    return Json(new { ok = true, mensaje = resultados });
+                else
+                    return Json(new { ok = false, mensaje = "La identificación suministrada no se encuentra relacionada en algún IRISP1 !!!" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaErrorJson("GET", "Irisp", "Integrante", "ConsultarHistoricoIrispIntegrante", ex, "No se pudo consultar el historial del Integrante");
+            }
+        }
+
+        public ActionResult ConsultaIntegrante()
+        {
+            return View(new List<CriminalidadDTO>());
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ConsultarIntegrante(int? _identificacion)
+        {
+            if (_identificacion == null)
+                return Json(new { data = new IntegranteDTO()});
+            else
+                return Json(new { datos = await new IntegranteRepositorio().ConsultarIntegrantePorCedula(_identificacion) });
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ConsultaIrispIntegrante(int? _identificacion)
+        {
+            try
+            {
+                JsonResult lista = new JsonResult();
+
+                if (_identificacion == null)
+                    lista = Json(new { data = new List<CriminalidadDTO>() });
+                else
+                    lista = Json(new { data = await new CriminalidadRepositorio().ConsultarRegistrosPorIntegrante((int)_identificacion) });
+
+                lista.MaxJsonLength = int.MaxValue;
+                return lista;
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Integrante", "ConsultaIrispIntegrante", ex, "No se pudo consultar el reporte");
+            }
+        }
+
+
+    }
+}
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------
+
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Negocio.Aplicacion;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1,Consulta IRISP1"))]
+    public class IntegranteDirecController : BaseController
+    {
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(IntegranteDirecDTO integranteDirecDTO)
+        {
+            try
+            {
+                IntegranteDirecRepositorio core = new IntegranteDirecRepositorio();
+
+                if (integranteDirecDTO.CRIMINALIDAD_DIREC_ID == null || integranteDirecDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar el integrante" });
+
+                if (integranteDirecDTO.ALIAS == null && integranteDirecDTO.APELLIDO == null && integranteDirecDTO.IDENTIFICACION == null && integranteDirecDTO.NOMBRE == null)
+                    return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+                else if (integranteDirecDTO.IDENTIFICACION != null && (integranteDirecDTO.APELLIDO == null && integranteDirecDTO.ALIAS == null && integranteDirecDTO.NOMBRE == null))
+                    return Json(new { ok = false, mensaje = "No puede registrar soló la cedula, digite en más campos !!!" });
+
+                if (integranteDirecDTO.IDENTIFICACION != null)
+                    if (await core.ConsultarExistenciaPorCedula(integranteDirecDTO.IDENTIFICACION, integranteDirecDTO.CRIMINALIDAD_DIREC_ID))
+                        return Json(new { ok = false, mensaje = "La identificación suministrada ya ha sido registrada anteriormente !!!" });
+
+                integranteDirecDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                integranteDirecDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await core.Agregar(integranteDirecDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "IntegranteDirec", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ActualizarAjax(IntegranteDirecDTO integranteDirecDTO)
+        {
+            try
+            {
+                IntegranteDirecRepositorio core = new IntegranteDirecRepositorio();
+
+                if (integranteDirecDTO.INTEGRANTE_DIREC_ID == null || integranteDirecDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (integranteDirecDTO.ALIAS == null && integranteDirecDTO.APELLIDO == null && integranteDirecDTO.IDENTIFICACION == null && integranteDirecDTO.NOMBRE == null)
+                    return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+                else if (integranteDirecDTO.IDENTIFICACION != null && (integranteDirecDTO.APELLIDO == null || integranteDirecDTO.IDENTIFICACION == null || integranteDirecDTO.NOMBRE == null))
+                    return Json(new { ok = false, mensaje = "No puede registrar soló la cedula, digite en más campos !!!" });
+
+                integranteDirecDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                integranteDirecDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await core.Actualizar(integranteDirecDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "IntegranteDirec", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+    }
+}
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+namespace Web.Controllers
+{
+    using Comun.GeneralDTO;
+    using Comun.AplicacionDTO;
+    using Negocio.General;
+    using Negocio.Aplicacion;
+    using Web.Controllers;
+    using Web.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Seguimiento IRISP1, Verificacion IRISP1"))]
+    public class ResponsabilidadValidacionController : BaseController
+    {
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1"))]
+        public async Task<ActionResult> Details(string _id, string _idCriminalidad)
+        {
+            try
+            {
+                if (_id == null)
+                    return RedirectToAction("Index", "Home");
+
+                var resultadoTarea = await new TareaRepositorio().ConsultarRegistrosPorId(_id);
+                ViewBag.TAREA = resultadoTarea;
+
+
+                foreach (var item in resultadoTarea)
+                {
+                    if (item.ID_LISTA_TAREAS == (int)EnumeracionTarea.Asignacion_Proceso_Investigativo)
+                    {
+                        ViewBag.RESULTADO = await new ResultadoRepositorio().ConsultarRegistrosPorId(_idCriminalidad);
+                        break;
+                    }
+                    else
+                    {
+                        ViewBag.RESULTADO = null;
+                    }
+                }
+
+
+                ViewBag.RESPONSABLE_VALIDACION = await new ResponsableValidacionRepositorio().ConsultarRegistrosPorId(_idCriminalidad);
+
+                // Lista para modal de creacion Resultado
+                ViewBag.ID_TIPO = new SelectList(await new ListasRepositorio().ListaDominio((int)EnumeracionListasDominios.Lista_Tipo_Resultado), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.RESPON_VALIDACION_ID = _id;
+                ViewBag.CRIMINALIDAD_ID = _idCriminalidad;
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "ResponsabilidadValidacion", "Details", ex, "No se pudo ingresar al formulario");
+            }
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1"))]
+        public async Task<ActionResult> Index()
+        {
+            var ListaAniosIrisp = new CriminalidadRepositorio().ConsultarAniosIrisp();
+            ViewBag.ANIO = new SelectList(await ListaAniosIrisp, "DOMINIO_ID", "DESCRIPCION");
+            return View();
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaVerificacion(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Admin PreAisec"))
+                    resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacion(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        // 1. Captura como nullable
+                        decimal codigoAnterior = 0;
+                        decimal? codigoAnteriorNullable = await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        // 2. Valida antes de usar
+                        if (codigoAnteriorNullable.HasValue)
+                        {
+                             codigoAnterior = codigoAnteriorNullable.Value;
+                            resultadosConsulta = await new ResponsableValidacionRepositorio()
+                                .ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, codigoAnterior, variables);
+                        }
+                        else
+                        {
+                            // Manejo en caso de que no exista unidad anterior (ej. lista vacía o lógica alternativa)
+                            resultadosConsulta = new List<CriminalidadDTO>();
+                        }
+
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (decimal)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)codigoAnterior);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (decimal)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "ConsultarCriminalidadEtapaVerificacion", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaInvestigacion(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Admin PreAisec"))
+                    resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacion(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        // 1. Captura como nullable
+                        decimal codigoAnterior = 0;
+                        decimal? codigoAnteriorNullable = await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        // 2. Valida antes de usar
+                        if (codigoAnteriorNullable.HasValue)
+                        {
+                            codigoAnterior = codigoAnteriorNullable.Value;
+                            resultadosConsulta = await new ResponsableValidacionRepositorio()
+                                .ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, codigoAnterior, variables);
+                        }
+                        else
+                        {
+                            // Manejo en caso de que no exista unidad anterior (ej. lista vacía o lógica alternativa)
+                            resultadosConsulta = new List<CriminalidadDTO>();
+                        }
+
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (decimal)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)codigoAnterior);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (decimal)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+                    }
+
+                   
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "ConsultarCriminalidadEtapaInvestigacion", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaFinal(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Admin PreAisec"))
+                    resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinal(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+
+
+
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        // 1. Captura como nullable
+                        decimal codigoAnterior = 0;
+                        decimal? codigoAnteriorNullable = await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        // 2. Valida antes de usar
+                        if (codigoAnteriorNullable.HasValue)
+                        {
+                            codigoAnterior = codigoAnteriorNullable.Value;
+                            resultadosConsulta = await new ResponsableValidacionRepositorio()
+                                .ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, codigoAnterior, variables);
+                        }
+                        else
+                        {
+                            // Manejo en caso de que no exista unidad anterior (ej. lista vacía o lógica alternativa)
+                            resultadosConsulta = new List<CriminalidadDTO>();
+                        }
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, (decimal)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)codigoAnterior);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, (decimal)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+                    }
+
+                   
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "ConsultarCriminalidadEtapaFinal", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(ResponsabilidadValidacionDTO responsabilidadValidacionDTO, TareaDTO tareaDTO)
+        {
+            try
+            {
+                if (responsabilidadValidacionDTO.CRIMINALIDAD_ID == null || responsabilidadValidacionDTO == null || tareaDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar el delito" });
+
+                if (responsabilidadValidacionDTO.ID_UNIDAD_RESPON == 0 || responsabilidadValidacionDTO.ID_UNIDAD_RESPON == null)
+                    return Json(new { ok = false, mensaje = "Seleccione una dependencia" });
+
+                if (tareaDTO.ID_LISTA_TAREAS == null)
+                    return Json(new { ok = false, mensaje = "Seleccione una tarea a asignar" });
+
+                if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Verificacion_Existencia)
+                    if (await new ResponsableValidacionRepositorio().ExistenciaResponsableVerificacion(responsabilidadValidacionDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "Ya se registró una unidad responsable de la verificación de la existencia ó existen tareas de verificación no rechazadas" });
+
+                if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Asignacion_Proceso_Investigativo)
+                    if (!await new CriminalidadRepositorio().ConsultaExistenciaIRISP(responsabilidadValidacionDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "Para asignar el proceso investigativo, el IRISP debe estar en estado existencia 'Si Existe' " });
+                    else if (await new ResponsableValidacionRepositorio().ExistenciaResponsableInvestigacion(responsabilidadValidacionDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "Ya se registró una unidad responsable del proceso investigativo ó existen tareas de investigación no rechazadas" });
+
+                responsabilidadValidacionDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                responsabilidadValidacionDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                {
+                    if (await new ResponsableValidacionRepositorio().Agregar(responsabilidadValidacionDTO, tareaDTO))
+                        if (true)
+                        {
+                            if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Verificacion_Existencia)
+                            {
+                                Criminalidad_DTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistroPorId(responsabilidadValidacionDTO.CRIMINALIDAD_ID);
+                                var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Se realizó cambio de estado al caso IRISP1: " + criminalidadDTO.CODIGO + " a VERIFICACIÓN DE LA EXISTENCIA (ASIGNADO), para ver detalles de la modificación, ingrese al sistema de información IRISP1.");
+                                return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+                            }else if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Asignacion_Proceso_Investigativo)
+                            {
+                                Criminalidad_DTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistroPorId(responsabilidadValidacionDTO.CRIMINALIDAD_ID);
+                                var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Se realizó cambio de estado al caso IRISP1: " + criminalidadDTO.CODIGO + " a ASIGNACIÓN PROCESO INVESTIGATIVO (INVESTIGACIÓN), para ver detalles de la modificación, ingrese al sistema de información IRISP1.");
+                                return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+                            }
+                                
+                        }
+                   
+                }
+                    
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CambiarUnidad(ResponsabilidadValidacionDTO responsabilidadValidacionDTO)
+        {
+            try
+            {
+                if (responsabilidadValidacionDTO.RESPON_VALIDACION_ID == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (responsabilidadValidacionDTO.ID_UNIDAD_RESPON == 0 || responsabilidadValidacionDTO.ID_UNIDAD_RESPON == null)
+                    return Json(new { ok = false, mensaje = "Seleccione una dependencia" });
+
+                responsabilidadValidacionDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                responsabilidadValidacionDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new ResponsableValidacionRepositorio().CambiarUnidad(responsabilidadValidacionDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "CambiarUnidad", ex, "No se pudo actualizar el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> EliminarUnidad(ResponsabilidadValidacionDTO responsabilidadValidacionDTO)
+        {
+            try
+            {
+                if (responsabilidadValidacionDTO.RESPON_VALIDACION_ID == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                responsabilidadValidacionDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                responsabilidadValidacionDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new ResponsableValidacionRepositorio().EliminarUnidad(responsabilidadValidacionDTO))
+                        return Json(new { ok = true, mensaje = "Se eliminó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "EliminarUnidad", ex, "No se pudo eliminar el registro");
+            }
+        }
+    }
+}
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Negocio.General;
+    using Negocio.Aplicacion;
+    using Web.Controllers;
+    using Web.Models;
+    using System;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+    using System.Collections.Generic;
+    using Comun.GeneralDTO;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Funcional Dependencia IRISP1,Funcional Unidad IRISP1,Verificacion IRISP1"))]
+    public class ResponsableController : BaseController
+    {
+        public ActionResult Create() => View();
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(ResponsableDTO responsableDTO)
+        {
+            try
+            {
+                if (responsableDTO.CRIMINALIDAD_ID == null || responsableDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar el delito" });
+
+                bool existe = await new PersonaRepositorio().ConsultarFuncionarioPorIdentificacion(responsableDTO.CEDULA);
+
+                if (responsableDTO.CEDULA == 0 || !existe)
+                    return Json(new { ok = false, mensaje = "Digite una identificación valida !!!" });
+
+                if (await new ResponsableRepositorio().ConsultarExistenciaPorCedula(responsableDTO.CEDULA, responsableDTO.CRIMINALIDAD_ID))
+                    return Json(new { ok = false, mensaje = "El funcionario ya esta asociado al IRISP1 !!!" });
+
+                responsableDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                responsableDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (User.IsInRole("Funcional Dependencia IRISP1") || User.IsInRole("Funcional Unidad IRISP1"))
+                    responsableDTO.ID_TIPO_INFO = (int)EnumeracionTipoInfo.Basica;
+                else
+                    responsableDTO.ID_TIPO_INFO = (int)EnumeracionTipoInfo.Verificacion;
+
+                if (ModelState.IsValid)
+                    if (await new ResponsableRepositorio().Agregar(responsableDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Responsable", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> ConsultarPorId(string variables)
+        {
+            JsonResult lista = new JsonResult();
+            List<ResponsableDTO> resp = new List<ResponsableDTO>();
+
+            if (User.IsInRole("Funcional Dependencia IRISP1") || User.IsInRole("Funcional Unidad IRISP1"))
+                resp = await new ResponsableRepositorio().ConsultarRegistrosBasica(variables);
+            else
+                resp = await new ResponsableRepositorio().ConsultarRegistrosTodos(variables);
+
+            if(resp.Count > 0)
+            {
+                foreach (var item in resp)
+                {
+                    new AdministracionUsuarios().RegistroAuditoria(new AuditoriaDTO { ID_PROCESO = (int)EnumListaAcciones.ConsultaIdentificacion, USUARIO = gestionClaims.UsuarioEmpresarial, IDENTIFICACION = Convert.ToInt32(gestionClaims.Identificacion), DESCRIPCION = $"Consulta Funcionario Informa IRISP1 / CriminalidadId: {item.CRIMINALIDAD_ID}", MAQUINA = Request.UserHostAddress, IDENTIFICACION_CONSULTA = item.CEDULA.ToString() });
+                }
+            }
+
+            lista = Json(new { data = resp });
+            lista.MaxJsonLength = int.MaxValue;
+            return lista;
+        }
+
+    }
+}
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+namespace Web.Controllers
+{
+    using Comun.GeneralDTO;
+    using Comun.AplicacionDTO;
+    using Negocio.General;
+    using Negocio.Aplicacion;
+    using Web.Controllers;
+    using Web.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Seguimiento IRISP1, Verificacion IRISP1"))]
+    public class ResponsabilidadValidacionController : BaseController
+    {
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1"))]
+        public async Task<ActionResult> Details(string _id, string _idCriminalidad)
+        {
+            try
+            {
+                if (_id == null)
+                    return RedirectToAction("Index", "Home");
+
+                var resultadoTarea = await new TareaRepositorio().ConsultarRegistrosPorId(_id);
+                ViewBag.TAREA = resultadoTarea;
+
+
+                foreach (var item in resultadoTarea)
+                {
+                    if (item.ID_LISTA_TAREAS == (int)EnumeracionTarea.Asignacion_Proceso_Investigativo)
+                    {
+                        ViewBag.RESULTADO = await new ResultadoRepositorio().ConsultarRegistrosPorId(_idCriminalidad);
+                        break;
+                    }
+                    else
+                    {
+                        ViewBag.RESULTADO = null;
+                    }
+                }
+
+
+                ViewBag.RESPONSABLE_VALIDACION = await new ResponsableValidacionRepositorio().ConsultarRegistrosPorId(_idCriminalidad);
+
+                // Lista para modal de creacion Resultado
+                ViewBag.ID_TIPO = new SelectList(await new ListasRepositorio().ListaDominio((int)EnumeracionListasDominios.Lista_Tipo_Resultado), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.RESPON_VALIDACION_ID = _id;
+                ViewBag.CRIMINALIDAD_ID = _idCriminalidad;
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "ResponsabilidadValidacion", "Details", ex, "No se pudo ingresar al formulario");
+            }
+        }
+
+        [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1"))]
+        public async Task<ActionResult> Index()
+        {
+            var ListaAniosIrisp = new CriminalidadRepositorio().ConsultarAniosIrisp();
+            ViewBag.ANIO = new SelectList(await ListaAniosIrisp, "DOMINIO_ID", "DESCRIPCION");
+            return View();
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaVerificacion(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Admin PreAisec"))
+                    resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacion(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        // 1. Captura como nullable
+                        decimal codigoAnterior = 0;
+                        decimal? codigoAnteriorNullable = await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        // 2. Valida antes de usar
+                        if (codigoAnteriorNullable.HasValue)
+                        {
+                             codigoAnterior = codigoAnteriorNullable.Value;
+                            resultadosConsulta = await new ResponsableValidacionRepositorio()
+                                .ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, codigoAnterior, variables);
+                        }
+                        else
+                        {
+                            // Manejo en caso de que no exista unidad anterior (ej. lista vacía o lógica alternativa)
+                            resultadosConsulta = new List<CriminalidadDTO>();
+                        }
+
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (decimal)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)codigoAnterior);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, (decimal)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "ConsultarCriminalidadEtapaVerificacion", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaInvestigacion(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Admin PreAisec"))
+                    resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacion(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        // 1. Captura como nullable
+                        decimal codigoAnterior = 0;
+                        decimal? codigoAnteriorNullable = await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        // 2. Valida antes de usar
+                        if (codigoAnteriorNullable.HasValue)
+                        {
+                            codigoAnterior = codigoAnteriorNullable.Value;
+                            resultadosConsulta = await new ResponsableValidacionRepositorio()
+                                .ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, codigoAnterior, variables);
+                        }
+                        else
+                        {
+                            // Manejo en caso de que no exista unidad anterior (ej. lista vacía o lógica alternativa)
+                            resultadosConsulta = new List<CriminalidadDTO>();
+                        }
+
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (decimal)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)codigoAnterior);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, (decimal)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaInvestigacionPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+                    }
+
+                   
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "ConsultarCriminalidadEtapaInvestigacion", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        public async Task<ActionResult> ConsultarCriminalidadEtapaFinal(int? variables)
+        {
+            try
+            {
+                ParametrosPaginacionDTO parametrosPaginacionDTO = new ParametrosPaginacionDTO
+                {
+                    Start = Convert.ToInt32(Request["start"]),
+                    Length = Convert.ToInt32(Request["length"]),
+                    SearchValue = Request["search[value]"],
+                    SortColumnName = Request["columns[" + Request["order[0][column]"] + "][name]"],
+                    SortDirection = Request["order[0][dir]"]
+                };
+
+                CriminalidadRepositorio core = new CriminalidadRepositorio();
+                List<CriminalidadDTO> resultadosConsulta = new List<CriminalidadDTO>();
+
+                if (User.IsInRole("Administrador") || User.IsInRole("Administrador IRISP1") || User.IsInRole("Admin PreAisec"))
+                    resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinal(parametrosPaginacionDTO, variables);
+                else if (User.IsInRole("Verificacion IRISP1"))
+                {
+
+
+
+
+                    if (gestionClaims.UnidadFisica == "DESAB")
+                    {
+                        // 1. Captura como nullable
+                        decimal codigoAnterior = 0;
+                        decimal? codigoAnteriorNullable = await new UnidadesRepositorio().ConsultarUnidadAnterior(gestionClaims.CodigoDependencia);
+
+                        // 2. Valida antes de usar
+                        if (codigoAnteriorNullable.HasValue)
+                        {
+                            codigoAnterior = codigoAnteriorNullable.Value;
+                            resultadosConsulta = await new ResponsableValidacionRepositorio()
+                                .ConsultarRegistrosCriminalidadEtapaVerificacionPorDependencia(parametrosPaginacionDTO, codigoAnterior, variables);
+                        }
+                        else
+                        {
+                            // Manejo en caso de que no exista unidad anterior (ej. lista vacía o lógica alternativa)
+                            resultadosConsulta = new List<CriminalidadDTO>();
+                        }
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, (decimal)codigoAnterior, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)codigoAnterior);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, (decimal)gestionClaims.CodigoDependencia, variables);
+
+                        if (resultadosConsulta.Count == 0)
+                        {
+                            decimal? idUnidad = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)gestionClaims.CodigoDependencia);
+                            if (idUnidad != null)
+                            {
+                                resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad, variables);
+                                if (resultadosConsulta.Count == 0)
+                                {
+                                    decimal? idUnidad2 = await new UnidadesRepositorio().ConsultarUnidadFuncionario((decimal)idUnidad);
+                                    if (idUnidad2 != null)
+                                        resultadosConsulta = await new ResponsableValidacionRepositorio().ConsultarRegistrosCriminalidadEtapaFinalPorDependencia(parametrosPaginacionDTO, idUnidad2, variables);
+                                }
+                            }
+                        }
+                    }
+
+                   
+                }
+
+                return Json(new { data = resultadosConsulta, draw = Request["draw"], recordsTotal = parametrosPaginacionDTO.CantidadRegistrosTotal, recordsFiltered = parametrosPaginacionDTO.CantidadRegistrosFiltrados });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "ConsultarCriminalidadEtapaFinal", ex, "No se pudo consultar y enviar el JSON de los IRISP1");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(ResponsabilidadValidacionDTO responsabilidadValidacionDTO, TareaDTO tareaDTO)
+        {
+            try
+            {
+                if (responsabilidadValidacionDTO.CRIMINALIDAD_ID == null || responsabilidadValidacionDTO == null || tareaDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar el delito" });
+
+                if (responsabilidadValidacionDTO.ID_UNIDAD_RESPON == 0 || responsabilidadValidacionDTO.ID_UNIDAD_RESPON == null)
+                    return Json(new { ok = false, mensaje = "Seleccione una dependencia" });
+
+                if (tareaDTO.ID_LISTA_TAREAS == null)
+                    return Json(new { ok = false, mensaje = "Seleccione una tarea a asignar" });
+
+                if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Verificacion_Existencia)
+                    if (await new ResponsableValidacionRepositorio().ExistenciaResponsableVerificacion(responsabilidadValidacionDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "Ya se registró una unidad responsable de la verificación de la existencia ó existen tareas de verificación no rechazadas" });
+
+                if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Asignacion_Proceso_Investigativo)
+                    if (!await new CriminalidadRepositorio().ConsultaExistenciaIRISP(responsabilidadValidacionDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "Para asignar el proceso investigativo, el IRISP debe estar en estado existencia 'Si Existe' " });
+                    else if (await new ResponsableValidacionRepositorio().ExistenciaResponsableInvestigacion(responsabilidadValidacionDTO.CRIMINALIDAD_ID))
+                        return Json(new { ok = false, mensaje = "Ya se registró una unidad responsable del proceso investigativo ó existen tareas de investigación no rechazadas" });
+
+                responsabilidadValidacionDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                responsabilidadValidacionDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                {
+                    if (await new ResponsableValidacionRepositorio().Agregar(responsabilidadValidacionDTO, tareaDTO))
+                        if (true)
+                        {
+                            if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Verificacion_Existencia)
+                            {
+                                Criminalidad_DTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistroPorId(responsabilidadValidacionDTO.CRIMINALIDAD_ID);
+                                var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Se realizó cambio de estado al caso IRISP1: " + criminalidadDTO.CODIGO + " a VERIFICACIÓN DE LA EXISTENCIA (ASIGNADO), para ver detalles de la modificación, ingrese al sistema de información IRISP1.");
+                                return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+                            }else if (tareaDTO.ID_LISTA_TAREAS == (int)EnumeracionTarea.Asignacion_Proceso_Investigativo)
+                            {
+                                Criminalidad_DTO criminalidadDTO = await new CriminalidadRepositorio().ConsultarRegistroPorId(responsabilidadValidacionDTO.CRIMINALIDAD_ID);
+                                var ExitoCorreo = new CorreoRepositorio().EnvioCorreoBasico(Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Notificación IRISP1.", Convert.ToInt64(criminalidadDTO.IDENTIFICACION_INFORMA), "Se realizó cambio de estado al caso IRISP1: " + criminalidadDTO.CODIGO + " a ASIGNACIÓN PROCESO INVESTIGATIVO (INVESTIGACIÓN), para ver detalles de la modificación, ingrese al sistema de información IRISP1.");
+                                return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+                            }
+                                
+                        }
+                   
+                }
+                    
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CambiarUnidad(ResponsabilidadValidacionDTO responsabilidadValidacionDTO)
+        {
+            try
+            {
+                if (responsabilidadValidacionDTO.RESPON_VALIDACION_ID == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (responsabilidadValidacionDTO.ID_UNIDAD_RESPON == 0 || responsabilidadValidacionDTO.ID_UNIDAD_RESPON == null)
+                    return Json(new { ok = false, mensaje = "Seleccione una dependencia" });
+
+                responsabilidadValidacionDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                responsabilidadValidacionDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new ResponsableValidacionRepositorio().CambiarUnidad(responsabilidadValidacionDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "CambiarUnidad", ex, "No se pudo actualizar el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> EliminarUnidad(ResponsabilidadValidacionDTO responsabilidadValidacionDTO)
+        {
+            try
+            {
+                if (responsabilidadValidacionDTO.RESPON_VALIDACION_ID == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                responsabilidadValidacionDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                responsabilidadValidacionDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new ResponsableValidacionRepositorio().EliminarUnidad(responsabilidadValidacionDTO))
+                        return Json(new { ok = true, mensaje = "Se eliminó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "ResponsabilidadValidacion", "EliminarUnidad", ex, "No se pudo eliminar el registro");
+            }
+        }
+    }
+}
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Negocio.Aplicacion;
+    using Web.Controllers;
+    using Web.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Verificacion IRISP1, Seguimiento IRISP1"))]
+    public class ResultadoController : BaseController
+    {
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(ResultadoDTO resultadoDTO)
+        {
+            try
+            {
+                if (resultadoDTO.CRIMINALIDAD_ID == null || resultadoDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar el delito" });
+
+                resultadoDTO.IDENTIFICACION_CREA = Convert.ToInt32(gestionClaims.Identificacion);
+                resultadoDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new ResultadoRepositorio().Agregar(resultadoDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Resultado", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+
+        public async Task<JsonResult> ConsultarSIEDCO(string _id)
+        {
+            try
+            {
+                List<PlanoDelitosDTO> resultado = await new ResultadoRepositorio().ConsultarRegistrosSIEDCO(_id);
+
+                if (resultado.Count > 0)
+                    return Json(new { ok = true, data = resultado });
+
+                return Json(new { ok = false, data = "No hay conexión actualmente con SIEDCO" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaErrorJson("POST", "Irisp", "Resultado", "ConsultarSIEDCO", ex, "No se pudo consultar y enviar el JSON");
+            }
+        }
+
+        public async Task<JsonResult> ConsultarSPOA(string _id)
+        {
+            try
+            {
+                List<PlanoDelitosDTO> resultado = await new ResultadoRepositorio().ConsultarRegistrosSPOA(_id);
+
+                if (resultado.Count > 0)
+                    return Json(new { ok = true, data = resultado });
+                else
+                    return Json(new { ok = false, data = "No hay conexión actualmente con SPOA" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaErrorJson("POST", "Irisp", "Resultado", "ConsultarSPOA", ex, "No se pudo consultar y enviar el JSON");
+            }
+        }
+    }
+}
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Negocio.General;
+    using Negocio.Aplicacion;
+    using Web.Controllers;
+    using Web.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Seguimiento IRISP1,Verificacion IRISP1"))]
+    public class TareaController : BaseController
+    {
+        [HttpPost]
+        public async Task<ActionResult> CreateTareaAjax(TareaDTO tareaDTO)
+        {
+            try
+            {
+                if (tareaDTO.RESPON_VALIDACION_ID == null || tareaDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar la tarea" });
+
+                tareaDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                tareaDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await new TareaRepositorio().AgregarTarea(tareaDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Tarea", "CreateTareaAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        public async Task<ActionResult> ActualizarTarea(string _id)
+        {
+            try
+            {
+                ViewBag.ID_ESTADO_EXISTENCIA = new SelectList(await new ListasRepositorio().ListaDominio((int)EnumeracionListasDominios.Lista_Estado_Existencia_IRISP), "DOMINIO_ID", "DESCRIPCION");
+                ViewBag.EXISTE = await new TareaRepositorio().ConsultarRespuestaExistencia(_id);
+                ViewBag.TAREA_ID = _id;
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Tarea", "ActualizarTarea", ex, "No se pudo abrir el formulario");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ActualizarTareaAjax(TareaDTO tareaDTO)
+        {
+            try
+            {
+                TareaRepositorio tarea = new TareaRepositorio();
+
+                if(!await new TareaRepositorio().ConsultarRespuestaExistencia(tareaDTO.TAREA_ID) && tareaDTO.ID_ESTADO_EXISTENCIA == null)
+                    return Json(new { ok = false, mensaje = "Confirme la existencia del IRISP1 para responder la tarea !!!" });
+
+                if (tareaDTO.TAREA_ID == null || tareaDTO == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido para asociar la tarea" });
+
+                if (tareaDTO.JUSTIFICACION == null)
+                    return Json(new { ok = false, mensaje = "Justifique la actividad realizada" });
+
+                if (await tarea.ConsultarRespuestaTarea(tareaDTO.TAREA_ID))
+                    return Json(new { ok = false, mensaje = "La tarea seleccionada ya ha sido respondida !!!" });
+
+                tareaDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                tareaDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await tarea.ResponderTarea(tareaDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Tarea", "ActualizarTareaAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        public ActionResult FinalizarTarea(string _id)
+        {
+            List<SelectListItem> evaluacion = new List<SelectListItem>();
+            evaluacion.Add(new SelectListItem { Text = "Aceptada", Value = "61" });
+            evaluacion.Add(new SelectListItem { Text = "Rechazada", Value = "62" });
+
+            ViewBag.ID_ESTADO_TAREA = new SelectList(evaluacion, "Value", "Text");
+            ViewBag.TAREA_ID = _id;
+            return View();
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult> FinalizarTareaAjax(string _idTarea, int _idEvaluacion)
+        {
+            try
+            {
+                if (_idTarea == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (_idEvaluacion == 0)
+                    return Json(new { ok = false, mensaje = "Seleccione una evaluación" });
+
+                if (await new TareaRepositorio().EvaluarTarea(_idTarea, _idEvaluacion))
+                    return Json(new { ok = true, mensaje = "La tarea se evaluo correctamente" });
+                else
+                    return Json(new { ok = false, mensaje = "No se pudo evaluar !!!" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("GET", "Irisp", "Tarea", "FinalizarTareaAjax", ex, "No se pudo guardar el registro");
+            }
+        }
+
+
+
+        public FileResult Descargar(string _url, string _nombre)
+        {
+            return File(_url, new ArchivoRepositorio().ContentType(_url.ToLower()), _nombre + " - " + DateTime.Now + ".pdf");
+        }
+    }
+}
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+namespace Web.Controllers
+{
+    using Comun.AplicacionDTO;
+    using Negocio.Aplicacion;
+    using System;
+    using System.Threading.Tasks;
+    using System.Web.Mvc;
+
+    [Authorize(Roles = ("Administrador,Administrador IRISP1,Funcional Dependencia IRISP1,Funcional Unidad IRISP1,Verificacion IRISP1,Seguimiento IRISP1,Consulta IRISP1"))]
+    public class ReincidenteController : BaseController
+    {
+        public async Task<ActionResult> Consulta()
+        {
+            ViewBag.ID_TIPO = new SelectList(await new ListasRepositorio().ListaDominio((int)EnumeracionListasDominios.Lista_Reincidentes), "DOMINIO_ID", "DESCRIPCION");
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> Consultar()
+        {
+            try
+            {
+                JsonResult lista = new JsonResult();
+                lista = Json(new { data = await new ReincidenteRepositorio().Consultar() });
+
+                lista.MaxJsonLength = int.MaxValue;
+                return lista;
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Reincidente", "Consultar", ex, "No se pudo consultar el reporte");
+            }
+        }
+
+        public ActionResult Create() => View();
+
+        [HttpPost]
+        public async Task<ActionResult> CreateAjax(ReincidenteDTO reincidenteDTO)
+        {
+            try
+            {
+                ReincidenteRepositorio core = new ReincidenteRepositorio();
+
+                if (reincidenteDTO.ALIAS == null && reincidenteDTO.APELLIDO == null && reincidenteDTO.NOMBRE == null)
+                    return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+
+                if (reincidenteDTO.IDENTIFICACION == 0)
+                    return Json(new { ok = false, mensaje = "No puede registrar soló la cedula, digite en más campos !!!" });
+
+                if (reincidenteDTO.IDENTIFICACION != 0)
+                    if (await core.ConsultarExistenciaPorCedula(reincidenteDTO.IDENTIFICACION))
+                        return Json(new { ok = false, mensaje = "La identificación suministrada ya ha sido registrada anteriormente !!!" });
+
+                reincidenteDTO.IDENTIFICACION_CREACION = Convert.ToInt32(gestionClaims.Identificacion);
+                reincidenteDTO.MAQUINA_CREACION = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await core.Agregar(reincidenteDTO))
+                        return Json(new { ok = true, mensaje = "Se agregó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Reincidente", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ActualizarAjax(ReincidenteDTO reincidenteDTO)
+        {
+            try
+            {
+                ReincidenteRepositorio core = new ReincidenteRepositorio();
+
+                if (reincidenteDTO.ALIAS == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                if (reincidenteDTO.OBSERVACION == null)
+                    return Json(new { ok = false, mensaje = "Tiene que registrar por lo menos algún campo del integrante !!!" });
+
+                reincidenteDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                reincidenteDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (ModelState.IsValid)
+                    if (await core.Actualizar(reincidenteDTO))
+                        return Json(new { ok = true, mensaje = "Se actualizó correctamente el registro" });
+
+                string listaErrores = null;
+
+                foreach (var key in ModelState)
+                {
+                    if (key.Value.Errors.Count > 0)
+                        listaErrores += "<li>" + key.Value.Errors[0].ErrorMessage + "</li>";
+                }
+
+                if (string.IsNullOrEmpty(listaErrores))
+                    return Json(new { ok = false, mensaje = "No se pudo guardar el registro" });
+                else
+                    return Json(new { ok = false, mensaje = "<ul>" + listaErrores + "</ul>" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Reincidente", "CreateAjax", ex, "No se pudo crear el registro");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> EliminarAjax(string _idReincidente)
+        {
+            try
+            {
+                if (_idReincidente == null)
+                    return Json(new { ok = false, mensaje = "No se encuentra un identificador valido" });
+
+                ReincidenteDTO reincidenteDTO = new ReincidenteDTO();
+                reincidenteDTO.REINCIDENTE_ID = _idReincidente;
+                reincidenteDTO.IDENTIFICACION_MODIFICA = Convert.ToInt32(gestionClaims.Identificacion);
+                reincidenteDTO.MAQUINA_MODIFICA = Request.UserHostAddress;
+
+                if (await new ReincidenteRepositorio().Eliminar(reincidenteDTO))
+                    return Json(new { ok = true, mensaje = "Se eliminó correctamente el registro" });
+                return Json(new { ok = false, mensaje = "No se pudo eliminar el registro" });
+            }
+            catch (Exception ex)
+            {
+                return await CapturaError("POST", "Irisp", "Reincidente", "EliminarAjax", ex, "No se pudo eliminar el registro");
+            }
+        }
+    }
+}
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------
