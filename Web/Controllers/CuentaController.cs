@@ -155,29 +155,24 @@ namespace Web.Controllers
                     return View("InicioSesion", loginUsuario);
                 }
 
-                // MFA es OBLIGATORIO mientras el sistema lo tenga habilitado. Antes, un usuario NO
-                // enrolado (MfaHabilitado != 1) caía al "flujo normal sin MFA" e ingresaba sin segundo
-                // factor, porque el bloque de enrolamiento estaba anidado bajo "MfaHabilitado == 1"
-                // (su rama de enrolar era inalcanzable). Ahora, con MFA habilitado, TODOS pasan por
-                // verificación o son forzados a enrolarse.
-                bool enrolado = mfaState.Data?.MfaHabilitado == 1;
-
-                // Datos que necesitan por igual el paso de verificación y el de enrolamiento.
-                TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
-                TempData[TdMfaPending] = JsonConvert.SerializeObject(new MfaPendingDto
+                // MFA es OPCIONAL por usuario (comportamiento por diseño de este sistema): solo se
+                // aplica a quienes tienen MFA habilitado (MfaHabilitado == 1). Los usuarios NO
+                // enrolados continúan al login normal, sin segundo factor.
+                if (mfaState.Data?.MfaHabilitado == 1)
                 {
-                    IdUsuario = Usuario.Data.IdUsuario,
-                    Identificacion = Usuario.Data.Identificacion,
-                    Usuario = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString(),
-                    Funcionario = Usuario.Data.Funcionario ?? "",
-                    Ip = ip
-                });
-                TempData.Keep(TdLoginUserData);
-                TempData.Keep(TdMfaPending);
+                    // Datos que necesitan por igual el paso de verificación y el de re-enrolamiento.
+                    TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
+                    TempData[TdMfaPending] = JsonConvert.SerializeObject(new MfaPendingDto
+                    {
+                        IdUsuario = Usuario.Data.IdUsuario,
+                        Identificacion = Usuario.Data.Identificacion,
+                        Usuario = Usuario.Data.Usuario ?? Usuario.Data.Identificacion.ToString(),
+                        Funcionario = Usuario.Data.Funcionario ?? "",
+                        Ip = ip
+                    });
+                    TempData.Keep(TdLoginUserData);
+                    TempData.Keep(TdMfaPending);
 
-                // Bloqueo temporal y "equipo confiable" solo aplican a usuarios ya enrolados.
-                if (enrolado)
-                {
                     if (mfaState.Data?.BloqueoHasta.HasValue == true && mfaState.Data.BloqueoHasta.Value > DateTime.Now)
                     {
                         ViewBag.MfaShow = true;
@@ -208,45 +203,45 @@ namespace Web.Controllers
                             return await FinalizeMfaLoginInternal();
                         }
                     }
-                }
 
-                ViewBag.MfaShow = true;
+                    ViewBag.MfaShow = true;
 
-                // No enrolado (o marcado para re-enrolar) -> se fuerza enrolamiento con QR; de lo
-                // contrario, verificación del código TOTP.
-                bool debeEnrollar = !enrolado || (mfaState.Data?.RequireReenroll == 1);
+                    // Usuario enrolado: normalmente verifica su código TOTP; si el servicio pide
+                    // re-enrolar (RequireReenroll), se muestra el QR de enrolamiento.
+                    bool debeReenrolar = mfaState.Data?.RequireReenroll == 1;
 
-                if (debeEnrollar)
-                {
-                    var enrollStart = await _mfaWs.EnrollStartAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
-
-                    if (enrollStart.CodigoExito != 1 || enrollStart.Data == null)
+                    if (debeReenrolar)
                     {
-                        var emsg = enrollStart.Mensaje ?? "";
-                        if (emsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                        var enrollStart = await _mfaWs.EnrollStartAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
+
+                        if (enrollStart.CodigoExito != 1 || enrollStart.Data == null)
                         {
-                            ViewBag.MfaMode = "svcdown"; ViewBag.MfaSvcMsg = emsg.Replace("MFA_SVC_DOWN|", "");
+                            var emsg = enrollStart.Mensaje ?? "";
+                            if (emsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                            {
+                                ViewBag.MfaMode = "svcdown"; ViewBag.MfaSvcMsg = emsg.Replace("MFA_SVC_DOWN|", "");
+                                return View("InicioSesion", loginUsuario);
+                            }
+
+                            ModelState.AddModelError("", $"No fue posible iniciar enrolamiento MFA: {enrollStart.Mensaje}");
                             return View("InicioSesion", loginUsuario);
                         }
 
-                        ModelState.AddModelError("", $"No fue posible iniciar enrolamiento MFA: {enrollStart.Mensaje}");
-                        return View("InicioSesion", loginUsuario);
+                        ViewBag.MfaMode = "enroll";
+                        ViewBag.MfaQrBase64 = enrollStart.Data.QrBase64;
+                        ViewBag.MfaManualKey = enrollStart.Data.ManualKey;
+
+                        TempData["MFA_ENROLL_TOKEN"] = enrollStart.Data.EnrollToken;
+                        TempData.Keep("MFA_ENROLL_TOKEN");
+                    }
+                    else
+                    {
+                        ViewBag.MfaMode = "verify";
                     }
 
-                    ViewBag.MfaMode = "enroll";
-                    ViewBag.MfaQrBase64 = enrollStart.Data.QrBase64;
-                    ViewBag.MfaManualKey = enrollStart.Data.ManualKey;
-
-                    TempData["MFA_ENROLL_TOKEN"] = enrollStart.Data.EnrollToken;
-                    TempData.Keep("MFA_ENROLL_TOKEN");
+                    return View("InicioSesion", loginUsuario);
                 }
-                else
-                {
-                    ViewBag.MfaMode = "verify";
-                }
-
-                // Con MFA habilitado SIEMPRE se retorna aquí: nunca se cae al login sin segundo factor.
-                return View("InicioSesion", loginUsuario);
+                // Usuario sin MFA habilitado -> continúa al login normal (MFA opcional por usuario).
             }
             // Flujo normal sin MFA (solo cuando MFA global está deshabilitado)
             var menuNormal = superUsuario
