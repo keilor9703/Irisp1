@@ -189,33 +189,43 @@ function inicializarMapa(idMapa) {
                 } catch (err) { console.warn("No se pudo trazar la línea de recorrido:", err); }
             }
 
-            // 2) Marcadores por punto + número de orden
+            // 2) Marcadores por punto (PASADA 1) + cálculo de extent.
+            // Inicio/fin más grandes para destacarlos; intermedios grandes y legibles.
             var xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+            var ultimo = puntosMapa.length - 1;
             puntosMapa.forEach(function (punto, idx) {
                 try {
-                    var color;
-                    if (idx === 0) color = new Color("#0a9242");                    // inicio
-                    else if (idx === puntosValidos.length - 1) color = new Color("#c53a1d"); // fin
-                    else color = new Color("#08a6cb");                              // intermedios
+                    var color, tam;
+                    if (idx === 0) { color = new Color("#0a9242"); tam = 34; }               // inicio
+                    else if (idx === ultimo) { color = new Color("#c53a1d"); tam = 34; }      // fin
+                    else { color = new Color("#08a6cb"); tam = 26; }                          // intermedios
 
-                    var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 14,
-                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 1), color);
+                    var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, tam,
+                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 2), color);
                     map.graphics.add(new Graphic(punto, marker));
-
-                    // Número de orden encima del punto
-                    try {
-                        var etiqueta = new TextSymbol((idx + 1).toString());
-                        etiqueta.setColor(new Color("#ffffff"));
-                        etiqueta.setFont(new Font("9pt").setWeight(Font.WEIGHT_BOLD));
-                        map.graphics.add(new Graphic(punto, etiqueta));
-                    } catch (e) { /* etiqueta opcional */ }
 
                     if (punto.x < xmin) xmin = punto.x; if (punto.x > xmax) xmax = punto.x;
                     if (punto.y < ymin) ymin = punto.y; if (punto.y > ymax) ymax = punto.y;
                 } catch (err) { console.warn("Punto de recorrido inválido:", punto); }
             });
 
-            // 3) Ajustar el zoom para incluir todo el recorrido (coordenadas ya en Web Mercator)
+            // 3) Números de orden (PASADA 2): se dibujan al final para que queden SIEMPRE por
+            // encima de los círculos (aunque haya puntos vecinos superpuestos). Texto blanco,
+            // negrita, centrado dentro del círculo y con halo oscuro para máxima legibilidad.
+            puntosMapa.forEach(function (punto, idx) {
+                try {
+                    var etiqueta = new TextSymbol((idx + 1).toString());
+                    etiqueta.setColor(new Color("#ffffff"));
+                    etiqueta.setFont(new Font("12pt").setWeight(Font.WEIGHT_BOLD));
+                    if (etiqueta.setHaloColor) { etiqueta.setHaloColor(new Color([0, 0, 0, 0.65])); }
+                    if (etiqueta.setHaloSize) { etiqueta.setHaloSize(1); }
+                    if (etiqueta.setVerticalAlignment) { etiqueta.setVerticalAlignment("middle"); }
+                    if (etiqueta.setHorizontalAlignment) { etiqueta.setHorizontalAlignment("middle"); }
+                    map.graphics.add(new Graphic(punto, etiqueta));
+                } catch (e) { /* etiqueta opcional */ }
+            });
+
+            // 4) Ajustar el zoom para incluir todo el recorrido (coordenadas ya en Web Mercator)
             try {
                 if (xmax > xmin && ymax > ymin) {
                     map.setExtent(new Extent(xmin, ymin, xmax, ymax, map.spatialReference).expand(1.4));
