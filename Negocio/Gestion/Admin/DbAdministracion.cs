@@ -45,6 +45,12 @@ namespace Negocio.Gestion.Admin
         }
         #endregion
 
+        // Interruptor único de MFA del sistema (MfaCentral:Enabled en appsettings). El módulo de
+        // administración debe respetar el MISMO flag que el login: si MFA está deshabilitado, no se
+        // consulta ni se modifica nada contra el servicio central de MFA (evita errores confusos
+        // cuando el servicio no está disponible / el sistema no usa segundo factor).
+        private bool MfaHabilitadoSistema() => _iConfiguration.GetValue<bool>("MfaCentral:Enabled");
+
         // Convierte Base64 → Texto (como en proyecto viejo)
         public string ConvertirBase64Bytes(string texto)
         {
@@ -261,15 +267,28 @@ namespace Negocio.Gestion.Admin
 
             try
             {
-                var EstadoMfa = await _mfaWs.StateAsync(V_Identificacion, V_Usuario);
-                if (EstadoMfa?.Data != null)
+                // Coherencia con el flag global: si MFA está deshabilitado en el sistema, no se
+                // consulta el servicio central; se reporta estado neutro (0 = sin 2FA).
+                if (!MfaHabilitadoSistema())
                 {
-                    resp.Data = new DtoUserRoles
-                    {
-                        EstadoMfa = EstadoMfa.Data.MfaHabilitado
-                    };
+                    resp.Data = new DtoUserRoles { EstadoMfa = 0 };
+                    resp.IdRespuesta = 1;
+                    resp.Mensaje = "MFA deshabilitado en el sistema";
+                    return resp;
                 }
 
+                var EstadoMfa = await _mfaWs.StateAsync(V_Identificacion, V_Usuario);
+
+                // Antes se reportaba "éxito" aunque el servicio fallara o no devolviera datos,
+                // dejando resp.Data en null y confundiendo al front. Ahora se refleja el fallo.
+                if (EstadoMfa == null || EstadoMfa.CodigoExito != 1)
+                {
+                    resp.IdRespuesta = 0;
+                    resp.Mensaje = EstadoMfa?.Mensaje ?? "No fue posible consultar el estado MFA";
+                    return resp;
+                }
+
+                resp.Data = new DtoUserRoles { EstadoMfa = EstadoMfa.Data?.MfaHabilitado ?? 0 };
                 resp.IdRespuesta = 1;
                 resp.Mensaje = "Consulta Exitosa";
             }
@@ -565,15 +584,20 @@ namespace Negocio.Gestion.Admin
                     return resp;
                 }
 
-                // 3) ✅ Cambiar MFA SOLO si vino un valor
-                if (V_Estado2Fa != null)
+                // Operaciones contra el servicio central de MFA: solo si el sistema tiene MFA
+                // habilitado (mismo flag que el login). Con MFA deshabilitado se ignoran en vez de
+                // llamar a un servicio que no aplica / puede estar caído.
+                bool mfaHabilitado = MfaHabilitadoSistema();
+
+                // 3) ✅ Cambiar MFA SOLO si vino un valor y MFA está habilitado en el sistema
+                if (mfaHabilitado && V_Estado2Fa != null)
                 {
                     var mfaResp = await _mfaWs.ChangeMfaAsync(
                         V_Identificacion,
                         V_UsuarioInst,
                         V_Estado2Fa.Value,
                         V_Maquina
-                      
+
                     );
 
                     if (mfaResp.CodigoExito != 1)
@@ -585,14 +609,14 @@ namespace Negocio.Gestion.Admin
                     }
                 }
 
-                // 4) ✅ Limpiar Dispositivos confiables SOLO si vino un valor
-                if (V_LimpiarDispConfiable != null)
+                // 4) ✅ Limpiar Dispositivos confiables SOLO si vino un valor y MFA está habilitado
+                if (mfaHabilitado && V_LimpiarDispConfiable != null)
                 {
                     var TrustedClean = await _mfaWs.TrustClearUserAsync(
                         V_Identificacion,
                         V_UsuarioInst,
                         V_Maquina
-                      
+
                     );
 
                     if (TrustedClean.CodigoExito != 1)

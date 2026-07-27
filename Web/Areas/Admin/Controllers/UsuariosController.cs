@@ -15,12 +15,14 @@ namespace Web.Areas.Admin.Controllers
     {
         #region Propiedades
         private readonly IDbAdministracion _iDbAdministracion;
+        private readonly IConfiguration _iConfiguration;
         private readonly ILogger<UsuariosController> _logger;
         #endregion
         #region Constructor
-        public UsuariosController(IDbAdministracion iDbAdministracion, ILogger<UsuariosController> logger)
+        public UsuariosController(IDbAdministracion iDbAdministracion, IConfiguration iConfiguration, ILogger<UsuariosController> logger)
         {
             _iDbAdministracion = iDbAdministracion;
+            _iConfiguration = iConfiguration;
             _logger = logger;
         }
         #endregion
@@ -29,6 +31,9 @@ namespace Web.Areas.Admin.Controllers
         {
             var Auditoria = await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo", "Ingreso módulo Administracion/Usuarios", Convert.ToInt64(User.FindFirstValue("Identificacion")), HttpContext.Session.GetString("IpMaquina"));
             ViewBag.ddlRol = new SelectList((await _iDbAdministracion.F_GetRoles()).Data.ToList().OrderBy(x => x.DESCRIPCION).ToList(), "IDROL", "DESCRIPCION");
+            // Solo se muestran los controles de 2FA cuando el sistema tiene MFA habilitado
+            // (mismo flag que respeta el login), evitando exponer acciones MFA que no aplican.
+            ViewBag.MfaEnabled = _iConfiguration.GetValue<bool>("MfaCentral:Enabled");
             return View();
         }
 

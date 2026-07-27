@@ -23,7 +23,6 @@ namespace Web.Controllers
         private readonly IConfiguration _iConfiguration;
         private readonly IDbMfaCentralWs _mfaWs;
 
-        private bool SuperUsuario = false;
 
         private const string TdLoginUserData = "LOGIN_USERDATA";
         private const string TdMfaPending = "MFA_PENDING";
@@ -95,8 +94,10 @@ namespace Web.Controllers
 
             if (!ModelState.IsValid) return View("InicioSesion", loginUsuario);
 
+            // Validación de credenciales contra OUD. OJO: respuestaOud.Respuesta == true significa
+            // FALLO de autenticación (booleano invertido por el contrato del servicio PIP/OUD).
             var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
-     
+
             if (respuestaOud.Respuesta)
             {
                 ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
@@ -127,7 +128,7 @@ namespace Web.Controllers
                 return View("InicioSesion", loginUsuario);
             }
 
-            SuperUsuario = Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1);
+            bool superUsuario = Usuario.Data.DtoUserRoles.Any(x => x.IdRol == 1);
 
             // ============================================================
             // ✅ MFA CENTRALIZADO 
@@ -135,26 +136,33 @@ namespace Web.Controllers
 
             bool skipMfa = !MfaEnabled();
 
-            if (!skipMfa) { 
+            if (!skipMfa)
+            {
                 var mfaState = await _mfaWs.StateAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "");
 
-            if (mfaState.CodigoExito != 1)
-            {
-                var msg = mfaState.Mensaje ?? "No fue posible validar MFA en este momento.";
-                if (msg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                if (mfaState.CodigoExito != 1)
                 {
-                    ViewBag.MfaShow = true;
-                    ViewBag.MfaMode = "svcdown";
-                    ViewBag.MfaSvcMsg = msg.Replace("MFA_SVC_DOWN|", "");
+                    var msg = mfaState.Mensaje ?? "No fue posible validar MFA en este momento.";
+                    if (msg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ViewBag.MfaShow = true;
+                        ViewBag.MfaMode = "svcdown";
+                        ViewBag.MfaSvcMsg = msg.Replace("MFA_SVC_DOWN|", "");
+                        return View("InicioSesion", loginUsuario);
+                    }
+
+                    ModelState.AddModelError("", $"No fue posible consultar estado MFA: {msg}");
                     return View("InicioSesion", loginUsuario);
                 }
 
-                ModelState.AddModelError("", $"No fue posible consultar estado MFA: {msg}");
-                return View("InicioSesion", loginUsuario);
-            }
+                // MFA es OBLIGATORIO mientras el sistema lo tenga habilitado. Antes, un usuario NO
+                // enrolado (MfaHabilitado != 1) caía al "flujo normal sin MFA" e ingresaba sin segundo
+                // factor, porque el bloque de enrolamiento estaba anidado bajo "MfaHabilitado == 1"
+                // (su rama de enrolar era inalcanzable). Ahora, con MFA habilitado, TODOS pasan por
+                // verificación o son forzados a enrolarse.
+                bool enrolado = mfaState.Data?.MfaHabilitado == 1;
 
-            if (mfaState.Data?.MfaHabilitado == 1)
-            {
+                // Datos que necesitan por igual el paso de verificación y el de enrolamiento.
                 TempData[TdLoginUserData] = JsonConvert.SerializeObject(Usuario.Data);
                 TempData[TdMfaPending] = JsonConvert.SerializeObject(new MfaPendingDto
                 {
@@ -164,43 +172,49 @@ namespace Web.Controllers
                     Funcionario = Usuario.Data.Funcionario ?? "",
                     Ip = ip
                 });
-
                 TempData.Keep(TdLoginUserData);
                 TempData.Keep(TdMfaPending);
 
-                if (mfaState.Data?.BloqueoHasta.HasValue == true && mfaState.Data.BloqueoHasta.Value > DateTime.Now)
+                // Bloqueo temporal y "equipo confiable" solo aplican a usuarios ya enrolados.
+                if (enrolado)
                 {
-                    ViewBag.MfaShow = true;
-                    ViewBag.MfaMode = "blocked";
-                    ViewBag.BloqueoHasta = mfaState.Data.BloqueoHasta.Value;
-                    return View("InicioSesion", loginUsuario);
-                }
-
-                var deviceId = Request.Cookies[CookieTrusted];
-                if (!string.IsNullOrWhiteSpace(deviceId))
-                {
-                    var trustedResp = await _mfaWs.IsTrustedAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "", deviceId);
-
-                    if (trustedResp.CodigoExito != 1)
+                    if (mfaState.Data?.BloqueoHasta.HasValue == true && mfaState.Data.BloqueoHasta.Value > DateTime.Now)
                     {
-                        var tmsg = trustedResp.Mensaje ?? "";
-                        if (tmsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ViewBag.MfaShow = true; ViewBag.MfaMode = "svcdown"; ViewBag.MfaSvcMsg = tmsg.Replace("MFA_SVC_DOWN|", "");
-                            return View("InicioSesion", loginUsuario);
-                        }
-                        ModelState.AddModelError("", $"No fue posible validar equipo confiable: {tmsg}");
+                        ViewBag.MfaShow = true;
+                        ViewBag.MfaMode = "blocked";
+                        ViewBag.BloqueoHasta = mfaState.Data.BloqueoHasta.Value;
                         return View("InicioSesion", loginUsuario);
                     }
 
-                    if (trustedResp.CodigoExito == 1 && trustedResp.Data == 1)
+                    var deviceId = Request.Cookies[CookieTrusted];
+                    if (!string.IsNullOrWhiteSpace(deviceId))
                     {
-                        return await FinalizeMfaLoginInternal();
+                        var trustedResp = await _mfaWs.IsTrustedAsync(Usuario.Data.Identificacion, Usuario.Data.Usuario ?? "", deviceId);
+
+                        if (trustedResp.CodigoExito != 1)
+                        {
+                            var tmsg = trustedResp.Mensaje ?? "";
+                            if (tmsg.StartsWith("MFA_SVC_DOWN|", StringComparison.OrdinalIgnoreCase))
+                            {
+                                ViewBag.MfaShow = true; ViewBag.MfaMode = "svcdown"; ViewBag.MfaSvcMsg = tmsg.Replace("MFA_SVC_DOWN|", "");
+                                return View("InicioSesion", loginUsuario);
+                            }
+                            ModelState.AddModelError("", $"No fue posible validar equipo confiable: {tmsg}");
+                            return View("InicioSesion", loginUsuario);
+                        }
+
+                        if (trustedResp.CodigoExito == 1 && trustedResp.Data == 1)
+                        {
+                            return await FinalizeMfaLoginInternal();
+                        }
                     }
                 }
 
-                bool debeEnrollar = (mfaState.Data?.MfaHabilitado != 1) || (mfaState.Data?.RequireReenroll == 1);
                 ViewBag.MfaShow = true;
+
+                // No enrolado (o marcado para re-enrolar) -> se fuerza enrolamiento con QR; de lo
+                // contrario, verificación del código TOTP.
+                bool debeEnrollar = !enrolado || (mfaState.Data?.RequireReenroll == 1);
 
                 if (debeEnrollar)
                 {
@@ -231,11 +245,11 @@ namespace Web.Controllers
                     ViewBag.MfaMode = "verify";
                 }
 
+                // Con MFA habilitado SIEMPRE se retorna aquí: nunca se cae al login sin segundo factor.
                 return View("InicioSesion", loginUsuario);
             }
-             }
-            // Flujo normal sin MFA
-            var menuNormal = SuperUsuario
+            // Flujo normal sin MFA (solo cuando MFA global está deshabilitado)
+            var menuNormal = superUsuario
                 ? await _iDbAdministracion.F_GetMenu(1, Usuario.Data.Identificacion)
                 : await _iDbAdministracion.F_GetMenu(0, Usuario.Data.Identificacion);
 

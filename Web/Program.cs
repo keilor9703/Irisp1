@@ -117,11 +117,24 @@ builder.Services.AddScoped<IDbBuscarIntegrantes, DbBuscarIntegrantes>();
 builder.Services.AddScoped<IDbReportesGeneral, DbReportesGeneral>();
 builder.Services.AddScoped<IDbReporteVerificacion, DbReporteVerificacion>();
 builder.Services.AddScoped<IDbControlGestion, DbControlGestion>();
-builder.Services.AddScoped<IMfaTotpService, MfaTotpService>();
 
-// Inyección de la librería MFA (registra sus propias URLs)
+// Inyección de la librería MFA (registra sus propias URLs). El MFA real se atiende por
+// IDbMfaCentralWs (proyecto Ponal.Seguridad.MfaCliente); el antiguo IMfaTotpService quedó
+// huérfano (registrado pero sin inyectarse en ningún lado) y se retiró.
 builder.Services.AddMemoryCache();
 builder.Services.AddPonalMfa(builder.Configuration);
+
+// Salvaguarda de configuración: si MFA está habilitado pero su BaseUrl apunta a un entorno
+// local, todos los inicios de sesión fallarían. Se advierte fuerte en el log de arranque.
+{
+    var mfaEnabled = builder.Configuration.GetValue<bool>("MfaCentral:Enabled");
+    var mfaUrl = builder.Configuration.GetValue<string>("MfaCentral:BaseUrl") ?? "";
+    if (mfaEnabled && (mfaUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+                       || mfaUrl.Contains("127.0.0.1")))
+    {
+        logger.Warning("MFA está habilitado (MfaCentral:Enabled=true) pero MfaCentral:BaseUrl apunta a un entorno local ({MfaUrl}). Los inicios de sesión con MFA fallarán hasta corregir la URL.", mfaUrl);
+    }
+}
 
 // httpClient
 builder.Services.AddHttpClient<IPipWebServices, PipWebServices>();
