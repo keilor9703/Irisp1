@@ -156,11 +156,70 @@ function inicializarMapa(idMapa) {
 
 
 
+        // -------- Helpers de dibujo del recorrido (nodo numerado, cluster y despliegue) --------
+        var C_INICIO = "#0a9242", C_FIN = "#c53a1d", C_MEDIO = "#08a6cb", C_CLUSTER = "#6f42c1";
+
+        function etiquetaNumero(texto) {
+            var t = new TextSymbol(texto);
+            t.setColor(new Color("#ffffff"));
+            t.setFont(new Font("12pt").setWeight(Font.WEIGHT_BOLD));
+            if (t.setHaloColor) { t.setHaloColor(new Color([0, 0, 0, 0.65])); }
+            if (t.setHaloSize) { t.setHaloSize(1); }
+            if (t.setVerticalAlignment) { t.setVerticalAlignment("middle"); }
+            if (t.setHorizontalAlignment) { t.setHorizontalAlignment("middle"); }
+            return t;
+        }
+
+        // Dibuja un nodo (círculo + número). Inicio verde y fin rojo, ambos más grandes.
+        function dibujarNodo(mapPoint, orden, total) {
+            var color, tam;
+            if (orden === 1) { color = new Color(C_INICIO); tam = 34; }
+            else if (orden === total) { color = new Color(C_FIN); tam = 34; }
+            else { color = new Color(C_MEDIO); tam = 26; }
+
+            var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, tam,
+                new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 2), color);
+            map.graphics.add(new Graphic(mapPoint, marker));
+            map.graphics.add(new Graphic(mapPoint, etiquetaNumero(orden.toString())));
+        }
+
+        // Dibuja un marcador de agrupación (varias consultas en el mismo sitio) con contador ×N.
+        // Guarda sus miembros en attributes para poder desplegarlo al hacer clic.
+        function dibujarCluster(centerMapPoint, miembros) {
+            var n = miembros.length;
+            var tam = Math.min(48, 28 + n * 2);
+            var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, tam,
+                new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 2), new Color(C_CLUSTER));
+            map.graphics.add(new Graphic(centerMapPoint, marker, { cluster: true, miembros: miembros }));
+            map.graphics.add(new Graphic(centerMapPoint, etiquetaNumero(n.toString()), { cluster: true, miembros: miembros }));
+        }
+
+        // Despliega en abanico los nodos de un cluster alrededor de su ubicación real, con una
+        // línea punteada del centro a cada nodo. El radio es proporcional al zoom actual.
+        function expandirCluster(miembros) {
+            var R;
+            try { R = map.extent.getWidth() * 0.02; } catch (e) { R = 60; }
+            var ordenados = miembros.slice().sort(function (a, b) { return a.orden - b.orden; });
+            ordenados.forEach(function (m, j) {
+                var base = aPuntoMapa(m.lng, m.lat);
+                var ang = (2 * Math.PI * j) / ordenados.length - Math.PI / 2;
+                var off = new Point(base.x + R * Math.cos(ang), base.y + R * Math.sin(ang), map.spatialReference);
+                try {
+                    var linea = new Polyline(map.spatialReference);
+                    linea.addPath([base, off]);
+                    map.graphics.add(new Graphic(linea,
+                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_DOT, new Color([111, 66, 193, 0.9]), 1)));
+                } catch (e) { /* conector opcional */ }
+                dibujarNodo(off, m.orden, m.total);
+            });
+        }
+
         // ===========================================================
         // 🚶 RECORRIDO CRONOLÓGICO: dibuja la línea de desplazamiento del sujeto
         // conectando las consultas de antecedentes en orden temporal, con marca de
-        // inicio (verde) y fin (rojo). Permite ver por dónde se ha movido y anticipar
-        // su siguiente ubicación probable.
+        // inicio (verde) y fin (rojo). Los puntos co-localizados se agrupan en un
+        // marcador ×N que se despliega en abanico al hacer clic. Permite ver por
+        // dónde se ha movido y anticipar su siguiente ubicación probable.
         // ===========================================================
         window.pintarRecorrido = function (lista) {
             if (!lista || lista.length === 0) { console.warn("Sin recorrido para pintar"); return; }
@@ -189,40 +248,29 @@ function inicializarMapa(idMapa) {
                 } catch (err) { console.warn("No se pudo trazar la línea de recorrido:", err); }
             }
 
-            // 2) Marcadores por punto (PASADA 1) + cálculo de extent.
-            // Inicio/fin más grandes para destacarlos; intermedios grandes y legibles.
+            // 2) Extent del recorrido (coordenadas ya en Web Mercator)
             var xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
-            var ultimo = puntosMapa.length - 1;
-            puntosMapa.forEach(function (punto, idx) {
-                try {
-                    var color, tam;
-                    if (idx === 0) { color = new Color("#0a9242"); tam = 34; }               // inicio
-                    else if (idx === ultimo) { color = new Color("#c53a1d"); tam = 34; }      // fin
-                    else { color = new Color("#08a6cb"); tam = 26; }                          // intermedios
-
-                    var marker = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, tam,
-                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 2), color);
-                    map.graphics.add(new Graphic(punto, marker));
-
-                    if (punto.x < xmin) xmin = punto.x; if (punto.x > xmax) xmax = punto.x;
-                    if (punto.y < ymin) ymin = punto.y; if (punto.y > ymax) ymax = punto.y;
-                } catch (err) { console.warn("Punto de recorrido inválido:", punto); }
+            puntosMapa.forEach(function (mp) {
+                if (mp.x < xmin) xmin = mp.x; if (mp.x > xmax) xmax = mp.x;
+                if (mp.y < ymin) ymin = mp.y; if (mp.y > ymax) ymax = mp.y;
             });
 
-            // 3) Números de orden (PASADA 2): se dibujan al final para que queden SIEMPRE por
-            // encima de los círculos (aunque haya puntos vecinos superpuestos). Texto blanco,
-            // negrita, centrado dentro del círculo y con halo oscuro para máxima legibilidad.
-            puntosMapa.forEach(function (punto, idx) {
-                try {
-                    var etiqueta = new TextSymbol((idx + 1).toString());
-                    etiqueta.setColor(new Color("#ffffff"));
-                    etiqueta.setFont(new Font("12pt").setWeight(Font.WEIGHT_BOLD));
-                    if (etiqueta.setHaloColor) { etiqueta.setHaloColor(new Color([0, 0, 0, 0.65])); }
-                    if (etiqueta.setHaloSize) { etiqueta.setHaloSize(1); }
-                    if (etiqueta.setVerticalAlignment) { etiqueta.setVerticalAlignment("middle"); }
-                    if (etiqueta.setHorizontalAlignment) { etiqueta.setHorizontalAlignment("middle"); }
-                    map.graphics.add(new Graphic(punto, etiqueta));
-                } catch (e) { /* etiqueta opcional */ }
+            // 3) Agrupar puntos co-localizados (misma celda ~11 m). Los que caen en el mismo
+            //    sitio se colapsan en un marcador ×N (se despliega en abanico al hacer clic);
+            //    los únicos se dibujan como nodo numerado normal. Así los números dejan de
+            //    amontonarse cuando hay muchas consultas en la misma ubicación.
+            var total = puntosValidos.length;
+            var GRID = 0.0004; // ~11 m
+            var grupos = {};
+            puntosValidos.forEach(function (p, idx) {
+                var key = Math.round(p.lat / GRID) + "_" + Math.round(p.lng / GRID);
+                (grupos[key] = grupos[key] || []).push({ lng: p.lng, lat: p.lat, orden: idx + 1, total: total });
+            });
+            Object.keys(grupos).forEach(function (key) {
+                var g = grupos[key];
+                var centro = aPuntoMapa(g[0].lng, g[0].lat);
+                if (g.length === 1) { dibujarNodo(centro, g[0].orden, total); }
+                else { dibujarCluster(centro, g); }
             });
 
             // 4) Ajustar el zoom para incluir todo el recorrido (coordenadas ya en Web Mercator)
@@ -280,6 +328,18 @@ function inicializarMapa(idMapa) {
         map.addLayer(capaEstaciones);
         map.addLayer(capaBarrios);
         map.addLayer(capaRurales);
+
+        // Clic sobre un marcador de agrupación (×N) -> despliega sus consultas en abanico.
+        try {
+            map.graphics.on("click", function (evt) {
+                try {
+                    var a = evt && evt.graphic && evt.graphic.attributes;
+                    if (a && a.cluster && a.miembros) {
+                        expandirCluster(a.miembros);
+                    }
+                } catch (e) { console.warn("No se pudo desplegar el grupo:", e); }
+            });
+        } catch (e) { console.warn("No se pudo enlazar el clic de agrupación:", e); }
 
 
 
