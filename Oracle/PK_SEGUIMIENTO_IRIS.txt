@@ -112,6 +112,7 @@ PROCEDURE P_InsResponsable(
     V_TareaId       VARCHAR2(100);
     V_codigo_iris   VARCHAR2(100);
     V_tipo_Tarea    VARCHAR2(50);
+    V_ident_informa NUMBER;
     v_resultado_correo number;
 BEGIN
     -- Generar UUID para responsable
@@ -170,10 +171,11 @@ BEGIN
         P_RESULTADO := 1;
         SRV_Message := 'Responsable y tarea insertados correctamente.';
 
-        -- Recuperar datos adicionales para notificación
+        -- Recuperar datos adicionales para notificación: código del caso, tipo de tarea y el
+        -- funcionario que INFORMÓ (a él se le notifica, no al operador que hace la asignación).
         BEGIN
-            SELECT c.codigo
-              INTO V_codigo_iris
+            SELECT c.codigo, c.identificacion_informa
+              INTO V_codigo_iris, V_ident_informa
               FROM IRISP_CRIMINALIDAD c
              WHERE c.criminalidad_id = P_CRIMINALIDAD_ID;
 
@@ -184,19 +186,24 @@ BEGIN
                AND t.padre_id = 51;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                V_codigo_iris := 'N/A';
-                V_tipo_Tarea  := 'N/A';
+                V_codigo_iris   := 'N/A';
+                V_tipo_Tarea    := 'N/A';
+                V_ident_informa := NULL;
         END;
 
-        -- Enviar notificación
-        usr_disec.pk_correo.EnvioCorreoBasico(
-            P_USUARIO,
-            'Notificación IRISP1.',
-            P_USUARIO,
-            'Se realizó cambio de estado al caso IRISP1: ' ||
-            V_codigo_iris || ' a ' || V_tipo_Tarea ||
-            ', para ver detalles de la modificación, ingrese al sistema de información IRISP1.',v_resultado_correo
-        );
+        -- Notificación al funcionario que informó (implicado). Aislada: si falla, la asignación
+        -- ya quedó registrada y confirmada arriba.
+        BEGIN
+            usr_disec.pk_correo.EnvioCorreoIrisp1(
+                V_ident_informa,
+                'IRIS-P1: caso ' || V_codigo_iris || ' asignado para verificación',
+                'De manera atenta se le informa que el caso IRIS-P1 con código <b>' || V_codigo_iris ||
+                '</b> que usted reportó fue asignado para su verificación/investigación con la tarea: <b>' ||
+                V_tipo_Tarea || '</b>. Ingrese al sistema de información IRIS-P1 para ver el detalle.',
+                v_resultado_correo
+            );
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
 
     ELSE
         -- No se insertó responsable
@@ -791,6 +798,9 @@ END F_GetResponsablesTareasIris;*/
     P_RESULTADO               OUT NUMBER,
     SRV_Message               OUT VARCHAR2
 ) IS
+    v_codigo_iris   VARCHAR2(100);
+    v_ident_informa NUMBER;
+    v_correo_res    NUMBER;
 BEGIN
     UPDATE IRISP_CRIMINALIDAD
        SET ID_ESTADO               = 5,  -- Finalizado
@@ -803,6 +813,27 @@ BEGIN
     IF SQL%ROWCOUNT > 0 THEN
         P_RESULTADO := 1;
         SRV_Message := 'Registro finalizado correctamente';
+
+        -- Persistir la finalización antes de notificar (patrón igual a P_InsResponsable).
+        COMMIT;
+
+        -- Notificación al funcionario que informó (implicado): su caso fue finalizado. Aislada:
+        -- si el correo falla, la finalización ya quedó guardada.
+        BEGIN
+            SELECT c.codigo, c.identificacion_informa
+              INTO v_codigo_iris, v_ident_informa
+              FROM IRISP_CRIMINALIDAD c
+             WHERE c.criminalidad_id = P_CRIMINALIDAD_ID;
+
+            usr_disec.pk_correo.EnvioCorreoIrisp1(
+                v_ident_informa,
+                'IRIS-P1: caso ' || v_codigo_iris || ' finalizado',
+                'De manera atenta se le informa que el caso IRIS-P1 con código <b>' || v_codigo_iris ||
+                '</b> que usted reportó fue FINALIZADO. Ingrese al sistema de información IRIS-P1 ' ||
+                'para consultar el resultado y el detalle del trámite.',
+                v_correo_res);
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
     ELSE
         P_RESULTADO := 0;
         SRV_Message := 'No se encontró el registro especificado';

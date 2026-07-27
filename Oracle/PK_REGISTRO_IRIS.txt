@@ -770,7 +770,8 @@ END F_GetCriminalidadFotos;
     v_ubicacionId        NVARCHAR2(100);
     V_ResponsableId      NVARCHAR2(100);
     V_IdResponsable      number;
-  
+    v_correo_res         number;
+
   BEGIN
     -- Asignar año actual
     v_anio := EXTRACT(YEAR FROM SYSDATE);
@@ -1083,10 +1084,23 @@ END F_GetCriminalidadFotos;
     -- FINALIZAR TRANSACCIÓN
     --------------------------------------------------------------------
     COMMIT;
-  
+
     P_RESULTADO := 1;
     SRV_Message := 'Registro insertado correctamente';
-  
+
+    -- Notificación por correo al funcionario que INFORMÓ (implicado), tras confirmar el registro.
+    -- Va aparte del proceso: si el correo falla, el registro ya quedó guardado.
+    BEGIN
+      usr_disec.pk_correo.EnvioCorreoIrisp1(
+        P_IDENTIFICACION_INFORMA,
+        'IRIS-P1: nuevo caso registrado ' || v_codigo,
+        'De manera atenta se le informa que la información reportada por usted generó el caso ' ||
+        'IRIS-P1 con código <b>' || v_codigo || '</b>. Ingrese al sistema de información IRIS-P1 ' ||
+        'para consultar el detalle y el avance de su trámite.',
+        v_correo_res);
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+
   EXCEPTION
     WHEN OTHERS THEN
       P_RESULTADO := 0;

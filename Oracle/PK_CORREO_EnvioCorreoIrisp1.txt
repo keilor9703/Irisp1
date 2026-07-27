@@ -1,0 +1,119 @@
+--------------------------------------------------------------------------------------------------
+-- NUEVO PROCEDIMIENTO DE CORREO PARA IRIS-P1
+--------------------------------------------------------------------------------------------------
+-- Se agrega al paquete usr_disec.PK_CORREO (el mismo que ya usan otros sistemas), SIN modificar
+-- EnvioCorreoBasico ni EnvioCorreoBasicoMFA (que están funcionando). Este procedimiento envía las
+-- notificaciones del ciclo de vida de un caso IRIS-P1 SIEMPRE al funcionario IMPLICADO (el que se
+-- pasa en P_Identificacion), NUNCA al funcionario que ejecuta la acción en el sistema.
+--
+-- El remitente es una identidad fija del sistema (no un funcionario), como hace
+-- ENVIO_ANTECEDENTE_FUNC_MINUTA. Ajuste v_correoenv si su relay exige otra dirección.
+--
+-- DESPLIEGUE (2 pasos):
+--   1) Agregar la DECLARACIÓN al SPEC del paquete  (CREATE OR REPLACE PACKAGE PK_CORREO IS ...):
+--
+--        Procedure EnvioCorreoIrisp1(
+--            P_Identificacion In Number,
+--            P_Asunto         In Varchar2,
+--            P_Mensaje        In Varchar2,
+--            P_Resultado      Out Number
+--        );
+--
+--   2) Agregar el CUERPO (lo de abajo) al BODY del paquete, antes de "end PK_CORREO;".
+--------------------------------------------------------------------------------------------------
+
+  Procedure EnvioCorreoIrisp1(
+      P_Identificacion In Number,    -- funcionario IMPLICADO (destinatario), NO el operador
+      P_Asunto         In Varchar2,
+      P_Mensaje        In Varchar2,  -- texto/HTML del cuerpo (se envuelve en la plantilla)
+      P_Resultado      Out Number
+  )
+  Is
+    L_HTML         Clob;
+    v_confirmacion Number;
+    v_error        Varchar2(4000);
+    -- Identidad fija del sistema IRIS-P1 (no un funcionario). envia_mail_html_new reemplaza
+    -- '@policia.gov.co' por '@correo.policia.gov.co' para el relay.
+    v_correoenv    Varchar2(255) := 'irisp1@policia.gov.co';
+    v_firma        Varchar2(255) := 'Sistema de Información IRIS-P1';
+    v_cargo        Varchar2(255) := 'Policía Nacional de Colombia';
+    v_total        Number := 0;
+    v_ok           Number := 0;
+  Begin
+    P_Resultado := 0;
+
+    For I In (
+      Select A.*
+        From VM_REHU_PERSONAL A
+       Where A.Identificacion In (P_Identificacion)
+         And A.Correo_Electronico Is Not Null
+    ) Loop
+      v_total := v_total + 1;
+
+      Begin
+        L_HTML := '<!DOCTYPE html>' ||
+                  '<html xmlns="http://www.w3.org/1999/xhtml">' ||
+                  '<head><meta http-equiv="content-type" content="text/html;charset=iso-8859-1" /></head>' ||
+                  '<body>' ||
+                  '<p><center><img src="https://psi.policia.gov.co/Descargas/descargas/images/inicio-ofite.png" /></center></p>' ||
+                  '<div><br/>' ||
+
+                  '<div style="font-size:15px; font-family:Arial; font-style:italic; color:Black; font-weight:bold;">BOGOTA D.C., ' ||
+                  TO_CHAR(Sysdate,'FMDay, DD "de" Month "de" YYYY','NLS_DATE_LANGUAGE=SPANISH') ||
+                  '</div><br/>' ||
+
+                  '<div style="font-size:15px; font-family:Arial; font-style:italic; color:Black; font-weight:bold;">Señor(a) ' ||
+                  INITCAP(I.NOMBRE_GRADO) || '</div>' ||
+                  '<div style="font-size:15px; font-family:Arial; font-style:italic; color:Black; font-weight:bold;">' ||
+                  I.NOMBRES || ' ' || I.APELLIDOS || '</div>' ||
+                  '<div style="font-size:15px; font-family:Arial; font-style:italic; color:Black; font-weight:bold;">' ||
+                  INITCAP(I.CARGO_ACTUAL) || '</div>' ||
+                  '<div style="font-size:15px; font-family:Arial; font-style:italic; color:Black; font-weight:bold;">' ||
+                  I.FISICA || ' - ' || I.DESCRIPCION_DEPENDENCIA ||
+                  '</div><br/>' ||
+
+                  '<div style="font-size:16px; font-family:Arial; color:Black; text-align:justify; font-weight:normal;">Asunto: ' ||
+                  P_Asunto || '</div><br/>' ||
+
+                  '<div style="font-size:16px; font-family:Arial; color:Black; text-align:justify; font-weight:normal;">' ||
+                  P_Mensaje || '</div><br/>' ||
+
+                  '<div style="font-size:16px; font-family:Arial; color:Black; font-weight:normal;">Cordial Saludo,</div><br/>' ||
+                  '<div style="font-size:16px; font-family:Arial; color:Black; font-weight:normal;">' || v_firma || '</div>' ||
+                  '<p><div style="font-size:16px; font-family:Arial; color:Black; font-weight:normal;">' || v_cargo || '</div>' ||
+                  '<p><center><img src="https://psi.policia.gov.co/Descargas/descargas/images/final-ofite.png" /></center></p>' ||
+                  '</body></html>';
+
+        USR_PSI.psi_srvcorreo_235.envia_mail_html_new@DBL2TELEPOL4USRDISEC(
+            v_correoenv,
+            I.CORREO_ELECTRONICO,
+            P_Asunto,
+            L_HTML,
+            v_confirmacion,
+            v_error,
+            Null
+        );
+
+        If Nvl(v_confirmacion, 0) = 1 And v_error Is Null Then
+          v_ok := v_ok + 1;
+        End If;
+
+      Exception
+        When Others Then
+          Null;  -- una notificación fallida NO debe interrumpir el proceso de negocio
+      End;
+
+    End Loop;
+
+    If v_total > 0 And v_ok = v_total Then
+      P_Resultado := 1;
+    Else
+      P_Resultado := 0;
+    End If;
+
+    Commit Work;
+
+  Exception
+    When Others Then
+      P_Resultado := 0;
+  End EnvioCorreoIrisp1;

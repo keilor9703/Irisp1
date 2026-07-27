@@ -643,6 +643,10 @@ END P_GuardarDocumentoTarea;
 ) AS
     v_rows_tarea NUMBER := 0;
     v_rows_crimi NUMBER := 0;
+    v_codigo_iris     VARCHAR2(100);
+    v_ident_informa   NUMBER;
+    v_desc_existencia VARCHAR2(200);
+    v_correo_res      NUMBER;
 BEGIN
     -- Actualiza la tarea
     UPDATE IRISP_TAREA
@@ -678,6 +682,36 @@ BEGIN
     ELSE
         P_RESULTADO := 0;
         SRV_Message  := 'No se encontraron registros para actualizar';
+    END IF;
+
+    -- Persistir el cambio antes de notificar (patrón igual a P_InsResponsable).
+    IF P_RESULTADO = 1 THEN
+        COMMIT;
+
+        -- Notificación al funcionario que informó (implicado): el caso cambió de resultado de
+        -- existencia (EXISTE / NO EXISTE). Aislada: si el correo falla, el cambio ya quedó guardado.
+        BEGIN
+            SELECT c.codigo, c.identificacion_informa
+              INTO v_codigo_iris, v_ident_informa
+              FROM IRISP_CRIMINALIDAD c
+             WHERE c.criminalidad_id = P_CRIMINALIDAD_ID;
+
+            BEGIN
+                SELECT d.descripcion INTO v_desc_existencia
+                  FROM IRISP_CTRL_DOMINIO d
+                 WHERE d.dominio_id = P_ESTADO_EXISTENCIA AND d.padre_id = 63;
+            EXCEPTION WHEN NO_DATA_FOUND THEN v_desc_existencia := 'ACTUALIZADO';
+            END;
+
+            usr_disec.pk_correo.EnvioCorreoIrisp1(
+                v_ident_informa,
+                'IRIS-P1: resultado de existencia del caso ' || v_codigo_iris,
+                'De manera atenta se le informa que el caso IRIS-P1 con código <b>' || v_codigo_iris ||
+                '</b> que usted reportó fue verificado con resultado de existencia: <b>' ||
+                v_desc_existencia || '</b>. Ingrese al sistema de información IRIS-P1 para ver el detalle.',
+                v_correo_res);
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
     END IF;
 
 EXCEPTION
