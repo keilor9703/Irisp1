@@ -14,14 +14,22 @@ function inicializarMapa(idMapa) {
         "esri/geometry/Polyline",
         "esri/symbols/TextSymbol",
         "esri/symbols/Font",
+        "esri/geometry/webMercatorUtils",
         "dojo/domReady!",
         "esri/renderers/SimpleRenderer",
         "esri/layers/LabelClass"
 
     ], function (
         Map, Point, SimpleMarkerSymbol, Graphic, Color, Extent, FeatureLayer, SimpleLineSymbol, Query, SimpleFillSymbol,
-        Polyline, TextSymbol, Font
+        Polyline, TextSymbol, Font, webMercatorUtils
     ) {
+
+        // El basemap OSM está en Web Mercator (metros); las coordenadas de la BD son geográficas
+        // (grados lat/long). Sin convertir, un punto (-74, 4) se interpreta como metros y cae en el
+        // océano (~0,0). Este helper devuelve el punto ya proyectado al SR del mapa.
+        function aPuntoMapa(lng, lat) {
+            return webMercatorUtils.geographicToWebMercator(new Point(lng, lat));
+        }
 
 
 
@@ -119,7 +127,7 @@ function inicializarMapa(idMapa) {
 
             lista.forEach(coord => {
                 try {
-                    let punto = new Point(coord.longitud, coord.latitud);
+                    let punto = aPuntoMapa(parseFloat(coord.longitud), parseFloat(coord.latitud));
                     let g = new Graphic(punto, symbol);
 
                     map.graphics.add(g);
@@ -130,14 +138,16 @@ function inicializarMapa(idMapa) {
             });
 
             if (extentBuilder.length > 0) {
-                // Ajusta el zoom para incluir todos los puntos
-                //let xmin = Math.min(...extentBuilder.map(p => p.x));
-                //let xmax = Math.max(...extentBuilder.map(p => p.x));
-                //let ymin = Math.min(...extentBuilder.map(p => p.y));
-                //let ymax = Math.max(...extentBuilder.map(p => p.y));
-
-                //let newExtent = new Extent(xmin, ymin, xmax, ymax, map.spatialReference);
-                //map.setExtent(newExtent.expand(1.5));
+                try {
+                    if (extentBuilder.length === 1) {
+                        map.centerAndZoom(extentBuilder[0], 14);
+                    } else {
+                        let xs = extentBuilder.map(p => p.x), ys = extentBuilder.map(p => p.y);
+                        map.setExtent(new Extent(
+                            Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys),
+                            map.spatialReference).expand(1.4));
+                    }
+                } catch (e) { console.warn("No se pudo ajustar el extent:", e); }
             }
 
             console.log("🟢 Se pintaron", extentBuilder.length, "ubicaciones");
@@ -165,11 +175,14 @@ function inicializarMapa(idMapa) {
             });
             if (puntosValidos.length === 0) { console.warn("Recorrido sin coordenadas válidas"); return; }
 
+            // Convertir todo a Web Mercator (SR del basemap OSM) antes de dibujar.
+            var puntosMapa = puntosValidos.map(function (p) { return aPuntoMapa(p.lng, p.lat); });
+
             // 1) Línea del recorrido (si hay 2+ puntos)
-            if (puntosValidos.length > 1) {
+            if (puntosMapa.length > 1) {
                 try {
                     var polyline = new Polyline(map.spatialReference);
-                    polyline.addPath(puntosValidos.map(function (p) { return new Point(p.lng, p.lat); }));
+                    polyline.addPath(puntosMapa);
                     var lineSymbol = new SimpleLineSymbol(
                         SimpleLineSymbol.STYLE_DASH, new Color([8, 102, 203, 0.9]), 3);
                     map.graphics.add(new Graphic(polyline, lineSymbol));
@@ -177,10 +190,9 @@ function inicializarMapa(idMapa) {
             }
 
             // 2) Marcadores por punto + número de orden
-            var xmin = 999, ymin = 999, xmax = -999, ymax = -999;
-            puntosValidos.forEach(function (p, idx) {
+            var xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+            puntosMapa.forEach(function (punto, idx) {
                 try {
-                    var punto = new Point(p.lng, p.lat);
                     var color;
                     if (idx === 0) color = new Color("#0a9242");                    // inicio
                     else if (idx === puntosValidos.length - 1) color = new Color("#c53a1d"); // fin
@@ -198,17 +210,17 @@ function inicializarMapa(idMapa) {
                         map.graphics.add(new Graphic(punto, etiqueta));
                     } catch (e) { /* etiqueta opcional */ }
 
-                    if (p.lng < xmin) xmin = p.lng; if (p.lng > xmax) xmax = p.lng;
-                    if (p.lat < ymin) ymin = p.lat; if (p.lat > ymax) ymax = p.lat;
-                } catch (err) { console.warn("Punto de recorrido inválido:", p); }
+                    if (punto.x < xmin) xmin = punto.x; if (punto.x > xmax) xmax = punto.x;
+                    if (punto.y < ymin) ymin = punto.y; if (punto.y > ymax) ymax = punto.y;
+                } catch (err) { console.warn("Punto de recorrido inválido:", punto); }
             });
 
-            // 3) Ajustar el zoom para incluir todo el recorrido
+            // 3) Ajustar el zoom para incluir todo el recorrido (coordenadas ya en Web Mercator)
             try {
                 if (xmax > xmin && ymax > ymin) {
                     map.setExtent(new Extent(xmin, ymin, xmax, ymax, map.spatialReference).expand(1.4));
                 } else {
-                    map.centerAndZoom(new Point(puntosValidos[0].lng, puntosValidos[0].lat), 13);
+                    map.centerAndZoom(puntosMapa[0], 13);
                 }
             } catch (err) { console.warn("No se pudo ajustar el extent:", err); }
 
@@ -229,7 +241,7 @@ function inicializarMapa(idMapa) {
 
             console.log("Ubicando llamada en el mapa - Lat:", latitud, "Lng:", longitud);
 
-            var punto = new Point(parseFloat(longitud), parseFloat(latitud));
+            var punto = aPuntoMapa(parseFloat(longitud), parseFloat(latitud));
             var symbolLlamada = crearMunecoVerde();
 
             var pointGraphic = new Graphic(punto, symbolLlamada);
