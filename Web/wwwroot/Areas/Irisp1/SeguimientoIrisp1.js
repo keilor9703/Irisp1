@@ -318,7 +318,9 @@ function EstadosExistencia() {
 
 function columnaAcciones(datosFiltrados) {
     return {
-        data: datosFiltrados,
+        // data: null es el patrón correcto para una columna que solo pinta botones vía render()
+        // (antes usaba "data: datosFiltrados", el arreglo completo, origen de datos inválido).
+        data: null,
         "autoWidth": true,
         render: function (data, type, row) {
 

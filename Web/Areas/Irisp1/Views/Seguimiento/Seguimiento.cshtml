@@ -27,8 +27,10 @@
 
     @* <script src="~/areas/rutas/RutasIris.js"></script> *@
    
-    <script src="~/areas/irisp1/CrearUbicacion.js"></script>
-    <script src="~/areas/irisp1/seguimientoirisp1.js"></script>
+    @* asp-append-version fuerza al navegador a bajar la versión nueva del JS cuando cambia
+       (evita servir copias cacheadas viejas de estos scripts por área). *@
+    <script src="~/areas/irisp1/CrearUbicacion.js" asp-append-version="true"></script>
+    <script src="~/areas/irisp1/seguimientoirisp1.js" asp-append-version="true"></script>
 
 
 }

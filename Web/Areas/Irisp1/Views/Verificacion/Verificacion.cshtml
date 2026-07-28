@@ -11,10 +11,13 @@
     <link rel="stylesheet" href="https://js.arcgis.com/3.44/esri/css/esri.css">
     <script src="https://js.arcgis.com/3.44/"></script>
       
-   <script src="~/areas/irisp1/CrearUbicacion.js"></script>
+   <script src="~/areas/irisp1/CrearUbicacion.js" asp-append-version="true"></script>
     @* <script src="~/areas/rutas/rutasiris.js"></script> *@
- 
-    <script src="~/areas/irisp1/VerificacionIris.js"></script>
+
+    @* asp-append-version agrega un hash de contenido (?v=...) para forzar al navegador a bajar
+       la versión nueva del JS cuando cambia. Sin esto, el navegador servía una copia cacheada
+       vieja de VerificacionIris.js (por eso "Ver Tareas" no se veía en una grilla). *@
+    <script src="~/areas/irisp1/VerificacionIris.js" asp-append-version="true"></script>
 
 
     <script type='text/javascript'>

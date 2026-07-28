@@ -245,10 +245,14 @@ function Resultados() {
 
 
 
-// Acciones de la tabla
+// Acciones de la tabla.
+// data: null es el patrón correcto para una columna que solo pinta botones vía render()
+// (igual que el resto de grillas del archivo). Antes usaba "data: datosFiltrados" (el arreglo
+// completo), lo cual es inválido como origen de datos de columna y podía hacer que la celda de
+// acciones se renderizara de forma inconsistente.
 function columnaAcciones(datosFiltrados) {
     return {
-        data: datosFiltrados,
+        data: null,
         autoWidth: true,
         render: function (data, type, row) {
             var DatosFila = JSON.stringify(row).replace(/"/g, '&quot;');
