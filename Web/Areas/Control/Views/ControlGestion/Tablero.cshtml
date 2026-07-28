@@ -138,13 +138,13 @@
 </div>
 
 <div class="row align-items-end">
-    <div class="col-md-2 MargFloatBoos">
+    <div class="col-md-1 MargFloatBoos">
         <div class="form-group has-float-label">
             <input type="text" id="txtFechaInicioTablero" style="width:100%" class="Calendario " placeholder=" " />
             <label class="Labels">Fecha inicio</label>
         </div>
     </div>
-    <div class="col-md-2 MargFloatBoos">
+    <div class="col-md-1 MargFloatBoos">
         <div class="form-group has-float-label">
             <input type="text" id="txtFechaFinTablero" style="width:100%" class="Calendario " placeholder=" " />
             <label class="Labels">Fecha fin</label>
@@ -157,7 +157,7 @@
             <label class="Labels">Región</label>
         </div>
     </div>
-    <div class="col-md-2 MargFloatBoos">
+    <div class="col-md-1 MargFloatBoos">
         <div class="form-group has-float-label">
             @Html.DropDownList("ddlSiglaUnidad", null, String.Format("Todas las unidades"),
                      htmlAttributes: new { id = "ddlSiglaUnidad", @class = "form-control select2", style = "width: 100%;" })
@@ -176,14 +176,14 @@
             <i class="fas fa-filter"></i> Aplicar
         </button>
     </div>
-    <div class="col-md-2 MargFloatBoos text-right">
+    @* <div class="col-md-2 MargFloatBoos text-right">
         <button type="button" id="btnExportarPdfTablero" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-danger" title="Exportar informe en PDF con marca de agua">
             <i class="fas fa-file-pdf"></i> PDF
         </button>
         <a href="@Url.Action("Mapa", "ControlGestion", new { Area = "Control" })" style="border-radius: 0px 16px 0px 16px !important;" class="btn btn-buscar">
             <i class="fas fa-map-marked-alt"></i> Ver mapa
         </a>
-    </div>
+    </div> *@
 </div>
 <div class="row">
     <div class="col-md-12 MargFloatBoos">
