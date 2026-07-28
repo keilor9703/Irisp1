@@ -333,6 +333,12 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
            ORDER BY v.FECHA_ACTUALIZA DESC
         )
        WHERE ROWNUM = 1;
+
+      -- Equivalencias históricas (opción cableada): la región 9 (La Sabana) fue absorbida por la
+      -- 1, y la unidad REMSA es ahora DESAB. Se normaliza el ámbito del funcionario para que su
+      -- filtro por rol trabaje sobre los códigos vigentes.
+      IF V_Region = 9 THEN V_Region := 1; END IF;
+      IF V_Sigla = 'REMSA' THEN V_Sigla := 'DESAB'; END IF;
     EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
     END;
     ------------------------------------------------------------------
@@ -436,8 +442,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       WHERE t.VIGENTE = 1
         AND t.FECHA_CREACION >= P_FechaInicio
         AND t.FECHA_CREACION <  (P_FechaFin + 1)
-        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
-        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_RegionCodigo IS NULL OR DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = P_RegionCodigo)
+        AND (P_SiglaUnidad IS NULL OR DECODE(c.SIGLA_UNIDAD, 'REMSA', 'DESAB', c.SIGLA_UNIDAD) = P_SiglaUnidad)
         AND (P_IdClase IS NULL OR c.ID_CLASE = P_IdClase)
 
         ------------------------------------------------------------
@@ -450,13 +456,13 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                  -- Rol región: casos cuya unidad de registro pertenece a su región.
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
-                   AND ureg.REGI_CODIGO = V_Region
+                   AND DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = V_Region
                  )
 
                  -- Roles unidad: casos de su misma unidad (SIGLA_PAPA).
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 7))
-                   AND ureg.SIGLA_PAPA = V_Sigla
+                   AND DECODE(ureg.SIGLA_PAPA, 'REMSA', 'DESAB', ureg.SIGLA_PAPA) = V_Sigla
                  )
 
                  -- Rol dependencia: casos registrados por su misma dependencia/estación.
@@ -534,6 +540,12 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
            ORDER BY v.FECHA_ACTUALIZA DESC
         )
        WHERE ROWNUM = 1;
+
+      -- Equivalencias históricas (opción cableada): la región 9 (La Sabana) fue absorbida por la
+      -- 1, y la unidad REMSA es ahora DESAB. Se normaliza el ámbito del funcionario para que su
+      -- filtro por rol trabaje sobre los códigos vigentes.
+      IF V_Region = 9 THEN V_Region := 1; END IF;
+      IF V_Sigla = 'REMSA' THEN V_Sigla := 'DESAB'; END IF;
     EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
     END;
     FOR i IN 1..3 LOOP
@@ -669,8 +681,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       WHERE c.VIGENTE = 1
         AND c.FECHA_CREACION >= P_FechaInicio
         AND c.FECHA_CREACION <  (P_FechaFin + 1)
-        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
-        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_RegionCodigo IS NULL OR DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = P_RegionCodigo)
+        AND (P_SiglaUnidad IS NULL OR DECODE(c.SIGLA_UNIDAD, 'REMSA', 'DESAB', c.SIGLA_UNIDAD) = P_SiglaUnidad)
         AND (P_IdClase IS NULL OR c.ID_CLASE = P_IdClase)
 
         AND (
@@ -680,13 +692,13 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                  -- Rol región: casos cuya unidad de registro pertenece a su región.
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
-                   AND ureg.REGI_CODIGO = V_Region
+                   AND DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = V_Region
                  )
 
                  -- Roles unidad: casos de su misma unidad (SIGLA_PAPA).
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 7))
-                   AND ureg.SIGLA_PAPA = V_Sigla
+                   AND DECODE(ureg.SIGLA_PAPA, 'REMSA', 'DESAB', ureg.SIGLA_PAPA) = V_Sigla
                  )
 
                  -- Rol dependencia: casos registrados por su misma dependencia/estación.
@@ -736,26 +748,17 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetRegionesIrisp1 RETURN SYS_REFCURSOR IS
     l_rc SYS_REFCURSOR;
   BEGIN
+    -- Fuente de verdad: TODAS las regiones vigentes de VM_UNIDADES (no solo las que tienen casos).
+    -- Se EXCLUYE la región 9 (REGION DE POLICIA LA SABANA): ya no existe, fue absorbida por la 1
+    -- (sus unidades se listan/consultan bajo la región 1 en el resto del paquete).
     OPEN l_rc FOR
-      WITH
-      UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO, DESC_REGIONAL
-          FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.DESC_REGIONAL,
-                   ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
-              FROM VM_UNIDADES v
-             WHERE v.SIGLA_FISICA IS NOT NULL
-               AND v.VIGENTE = 'SI'
-          )
-         WHERE rn = 1
-      )
-      SELECT DISTINCT u.REGI_CODIGO AS RegionCodigo, u.DESC_REGIONAL AS RegionDescripcion
-        FROM IRISP_CRIMINALIDAD c
-        JOIN UND_POR_SIGLA u ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
-       WHERE c.VIGENTE = 1
-         AND c.SIGLA_UNIDAD IS NOT NULL
-         AND u.REGI_CODIGO IS NOT NULL
-       ORDER BY u.REGI_CODIGO;
+      SELECT REGI_CODIGO AS RegionCodigo, MAX(DESC_REGIONAL) AS RegionDescripcion
+        FROM VM_UNIDADES
+       WHERE VIGENTE = 'SI'
+         AND REGI_CODIGO IS NOT NULL
+         AND REGI_CODIGO <> 9
+       GROUP BY REGI_CODIGO
+       ORDER BY REGI_CODIGO;
 
     RETURN l_rc;
 
@@ -807,26 +810,18 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   FUNCTION F_GetSiglasUnidadIrisp1(P_RegionCodigo IN NUMBER DEFAULT NULL) RETURN SYS_REFCURSOR IS
     l_rc SYS_REFCURSOR;
   BEGIN
+    -- Fuente de verdad: TODAS las siglas vigentes de VM_UNIDADES (no solo las que tienen casos).
+    -- Se EXCLUYE REMSA (renombrada a DESAB) y la cascada por región trata la región 9 como la 1
+    -- (La Sabana absorbida), para que las unidades de La Sabana aparezcan al elegir la región 1.
     OPEN l_rc FOR
-      WITH
-      UND_POR_SIGLA AS (
-        SELECT SIGLA_FISICA, REGI_CODIGO, SIGLA_PAPA
-          FROM (
-            SELECT v.SIGLA_FISICA, v.REGI_CODIGO, v.SIGLA_PAPA,
-                   ROW_NUMBER() OVER (PARTITION BY v.SIGLA_FISICA ORDER BY v.FECHA_ACTUALIZA DESC) rn
-              FROM VM_UNIDADES v
-             WHERE v.SIGLA_FISICA IS NOT NULL
-               AND v.VIGENTE = 'SI'
-          )
-         WHERE rn = 1
-      )
-      SELECT DISTINCT c.SIGLA_UNIDAD AS SiglaUnidad
-        FROM IRISP_CRIMINALIDAD c
-        LEFT JOIN UND_POR_SIGLA u ON c.SIGLA_UNIDAD = u.SIGLA_FISICA
-       WHERE c.VIGENTE = 1
-         AND c.SIGLA_UNIDAD IS NOT NULL
-         AND (P_RegionCodigo IS NULL OR u.REGI_CODIGO = P_RegionCodigo)
-       ORDER BY c.SIGLA_UNIDAD;
+      SELECT DISTINCT v.SIGLA_FISICA AS SiglaUnidad
+        FROM VM_UNIDADES v
+       WHERE v.VIGENTE = 'SI'
+         AND v.SIGLA_FISICA IS NOT NULL
+         AND v.SIGLA_FISICA <> 'REMSA'
+         AND (P_RegionCodigo IS NULL
+              OR DECODE(v.REGI_CODIGO, 9, 1, v.REGI_CODIGO) = P_RegionCodigo)
+       ORDER BY v.SIGLA_FISICA;
 
     RETURN l_rc;
 
@@ -875,6 +870,12 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
            ORDER BY v.FECHA_ACTUALIZA DESC
         )
        WHERE ROWNUM = 1;
+
+      -- Equivalencias históricas (opción cableada): la región 9 (La Sabana) fue absorbida por la
+      -- 1, y la unidad REMSA es ahora DESAB. Se normaliza el ámbito del funcionario para que su
+      -- filtro por rol trabaje sobre los códigos vigentes.
+      IF V_Region = 9 THEN V_Region := 1; END IF;
+      IF V_Sigla = 'REMSA' THEN V_Sigla := 'DESAB'; END IF;
     EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
     END;
     FOR i IN 1..3 LOOP
@@ -1001,8 +1002,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       WHERE c.VIGENTE = 1
         AND c.FECHA_CREACION >= P_FechaInicio
         AND c.FECHA_CREACION <  (P_FechaFin + 1)
-        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
-        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_RegionCodigo IS NULL OR DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = P_RegionCodigo)
+        AND (P_SiglaUnidad IS NULL OR DECODE(c.SIGLA_UNIDAD, 'REMSA', 'DESAB', c.SIGLA_UNIDAD) = P_SiglaUnidad)
         AND (P_IdClase IS NULL OR c.ID_CLASE = P_IdClase)
 
         AND (
@@ -1012,13 +1013,13 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                  -- Rol región: casos cuya unidad de registro pertenece a su región.
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
-                   AND ureg.REGI_CODIGO = V_Region
+                   AND DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = V_Region
                  )
 
                  -- Roles unidad: casos de su misma unidad (SIGLA_PAPA).
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 7))
-                   AND ureg.SIGLA_PAPA = V_Sigla
+                   AND DECODE(ureg.SIGLA_PAPA, 'REMSA', 'DESAB', ureg.SIGLA_PAPA) = V_Sigla
                  )
 
                  -- Rol dependencia: casos registrados por su misma dependencia/estación.
@@ -1089,6 +1090,12 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
            ORDER BY v.FECHA_ACTUALIZA DESC
         )
        WHERE ROWNUM = 1;
+
+      -- Equivalencias históricas (opción cableada): la región 9 (La Sabana) fue absorbida por la
+      -- 1, y la unidad REMSA es ahora DESAB. Se normaliza el ámbito del funcionario para que su
+      -- filtro por rol trabaje sobre los códigos vigentes.
+      IF V_Region = 9 THEN V_Region := 1; END IF;
+      IF V_Sigla = 'REMSA' THEN V_Sigla := 'DESAB'; END IF;
     EXCEPTION WHEN OTHERS THEN V_Sigla := NULL; V_Region := NULL;
     END;
 
@@ -1131,8 +1138,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND REGEXP_LIKE(c.longitud, '^[0-9\.\-]+$')
         AND c.FECHA_CREACION_IRISP1 >= P_FechaInicio
         AND c.FECHA_CREACION_IRISP1 <  (P_FechaFin + 1)
-        AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
-        AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_RegionCodigo IS NULL OR DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = P_RegionCodigo)
+        AND (P_SiglaUnidad IS NULL OR DECODE(c.SIGLA_UNIDAD, 'REMSA', 'DESAB', c.SIGLA_UNIDAD) = P_SiglaUnidad)
         AND (
                  -- Roles país (super admin / admin): ven todo.
                  EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (1, 2))
@@ -1140,7 +1147,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                  -- Rol región: puntos cuya unidad pertenece a su región.
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL = 10)
-                   AND ureg.REGI_CODIGO = V_Region
+                   AND DECODE(ureg.REGI_CODIGO, 9, 1, ureg.REGI_CODIGO) = V_Region
                  )
 
                  -- Roles unidad/dependencia/investigativo: puntos de su misma unidad (SIGLA_PAPA).
@@ -1148,7 +1155,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                  -- la granularidad disponible es la de unidad; se compara SIGLA_PAPA con SIGLA_PAPA.
               OR (
                    EXISTS (SELECT 1 FROM ROLES_LIST rl WHERE rl.ID_ROL IN (5, 6, 7, 8))
-                   AND ureg.SIGLA_PAPA = V_Sigla
+                   AND DECODE(ureg.SIGLA_PAPA, 'REMSA', 'DESAB', ureg.SIGLA_PAPA) = V_Sigla
                  )
             )
       ORDER BY c.FECHA_CREACION_IRISP1 DESC;
