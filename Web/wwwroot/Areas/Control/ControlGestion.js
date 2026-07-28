@@ -989,6 +989,19 @@ function InicializarDrillDown() {
         abrirDetalle("Casos en estado " + estado, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
     });
 
+    // Barras "Cantidad de casos IRISP1 por clase" (dataset de resultados, filtra por clase)
+    var canvasClase = document.getElementById("graficoPorClase");
+    if (canvasClase) {
+        canvasClase.addEventListener("dblclick", function (evt) {
+            if (!chartPorClase) return;
+            var idx = obtenerIndiceChart(chartPorClase, evt);
+            if (idx === null) return;
+            var clase = chartPorClase.data.labels[idx];
+            var filtrados = datosResultadosActuales.filter(function (c) { return (c.Clase || "Sin clase") === clase; });
+            abrirDetalle("Casos de la clase " + clase, filtrados.length + " caso(s)", columnasResultadosDetalle, filasResultadosDetalle(filtrados));
+        });
+    }
+
     // Top 10 con más/menos casos (dataset de resultados, filtra por unidad)
     ["graficoTopMasCasos", "graficoTopMenosCasos"].forEach(function (canvasId) {
         document.getElementById(canvasId).addEventListener("dblclick", function (evt) {
