@@ -548,6 +548,45 @@ function renderGraficoVolumenVerificacion(ranking) {
     chartVolumenVerificacion = renderBarraTopUnidad("graficoVolumenVerificacion", chartVolumenVerificacion, top10, "#6f42c1");
 }
 
+// Paleta refinada para la dona de existencia: cada resultado tiene un color base y un color
+// claro para armar un degradado sutil, en vez de tonos planos "de colegio".
+var PALETA_EXISTENCIA = [
+    { base: "#0ea472", light: "#34d399" }, // Existe   → esmeralda
+    { base: "#e11d48", light: "#fb7185" }, // No existe → carmín
+    { base: "#64748b", light: "#94a3b8" }  // Otro/Sin  → pizarra
+];
+
+// Construye un degradado lineal suave para cada segmento; da profundidad sin recargar.
+function gradientesExistencia(ctx, n) {
+    var out = [];
+    for (var i = 0; i < n; i++) {
+        var c = PALETA_EXISTENCIA[i % PALETA_EXISTENCIA.length];
+        var g = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height || 260);
+        g.addColorStop(0, c.light);
+        g.addColorStop(1, c.base);
+        out.push(g);
+    }
+    return out;
+}
+
+// Plugin: sombra difusa detrás del anillo para separarlo del fondo (Chart.js v2 no trae
+// sombras nativas). Se activa antes de dibujar los arcos y se limpia después.
+var pluginSombraDona = {
+    beforeDatasetsDraw: function (chart) {
+        if (chart.config.type !== "doughnut") return;
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.shadowColor = "rgba(15, 23, 42, 0.18)";
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+    },
+    afterDatasetsDraw: function (chart) {
+        if (chart.config.type !== "doughnut") return;
+        chart.ctx.restore();
+    }
+};
+
 // Plugin que dibuja el total en el centro de la dona — evita el hueco vacío en medio del
 // gráfico y da de entrada el dato más importante (cuántos casos hay en total).
 var pluginTotalCentroDona = {
@@ -563,12 +602,18 @@ var pluginTotalCentroDona = {
         ctx.save();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = "bold 26px Arial";
-        ctx.fillStyle = "#002a66";
-        ctx.fillText(total, cx, cy - 10);
-        ctx.font = "11px Arial";
-        ctx.fillStyle = "#6c757d";
-        ctx.fillText("casos", cx, cy + 14);
+        ctx.shadowColor = "transparent";
+
+        // Número total: tipografía grande y sobria.
+        ctx.font = "700 30px 'Segoe UI', Arial, sans-serif";
+        ctx.fillStyle = "#0f172a";
+        ctx.fillText(total.toLocaleString("es-CO"), cx, cy - 8);
+
+        // Subtítulo en versalitas espaciadas para un acabado más pulido.
+        ctx.font = "600 10px 'Segoe UI', Arial, sans-serif";
+        ctx.fillStyle = "#94a3b8";
+        var etiqueta = "C A S O S";
+        ctx.fillText(etiqueta, cx, cy + 15);
         ctx.restore();
     }
 };
@@ -579,13 +624,18 @@ function renderGraficoResultadoExistencia(porExistencia) {
 
     var etiquetas = porExistencia.map(function (e) { return e.resultado; });
     var valores = porExistencia.map(function (e) { return e.cantidad; });
-    var colores = ["#28a745", "#dc3545", "#6c757d"];
+    // Colores sólidos (base) para la leyenda HTML; el gráfico usa degradados de esos mismos tonos.
+    var colores = porExistencia.map(function (e, i) { return PALETA_EXISTENCIA[i % PALETA_EXISTENCIA.length].base; });
 
     renderLeyendaResultadoExistencia(porExistencia, colores);
+
+    var ctx2d = ctx.getContext ? ctx.getContext("2d") : null;
+    var fondos = ctx2d ? gradientesExistencia(ctx2d, valores.length) : colores;
 
     if (chartResultadoExistencia) {
         chartResultadoExistencia.data.labels = etiquetas;
         chartResultadoExistencia.data.datasets[0].data = valores;
+        chartResultadoExistencia.data.datasets[0].backgroundColor = fondos;
         chartResultadoExistencia.update();
         return;
     }
@@ -594,25 +644,44 @@ function renderGraficoResultadoExistencia(porExistencia) {
         type: "doughnut",
         data: {
             labels: etiquetas,
-            datasets: [{ data: valores, backgroundColor: colores, borderWidth: 2, borderColor: "#fff" }]
+            datasets: [{
+                data: valores,
+                backgroundColor: fondos,
+                // Separación fina entre segmentos: da aire y hace ver el anillo más "premium".
+                borderWidth: 3,
+                borderColor: "#ffffff",
+                hoverBorderWidth: 3,
+                hoverBorderColor: "#ffffff"
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutoutPercentage: 62,
+            // Anillo más delgado y moderno.
+            cutoutPercentage: 72,
+            // Animación de entrada elegante (barrido circular suave).
+            animation: { animateRotate: true, animateScale: true, duration: 900, easing: "easeOutQuart" },
             legend: { display: false },
             tooltips: {
+                backgroundColor: "rgba(15, 23, 42, 0.92)",
+                titleFontFamily: "'Segoe UI', Arial, sans-serif",
+                bodyFontFamily: "'Segoe UI', Arial, sans-serif",
+                bodyFontSize: 12,
+                xPadding: 10,
+                yPadding: 8,
+                cornerRadius: 6,
+                displayColors: true,
                 callbacks: {
                     label: function (item, data) {
                         var valor = data.datasets[0].data[item.index];
                         var total = data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
                         var pct = total > 0 ? Math.round(valor * 1000 / total) / 10 : 0;
-                        return data.labels[item.index] + ": " + valor + " (" + pct + "%)";
+                        return "  " + data.labels[item.index] + ": " + valor.toLocaleString("es-CO") + " (" + pct + "%)";
                     }
                 }
             }
         },
-        plugins: [pluginTotalCentroDona]
+        plugins: [pluginSombraDona, pluginTotalCentroDona]
     });
 }
 
@@ -627,9 +696,10 @@ function renderLeyendaResultadoExistencia(porExistencia, colores) {
 
     var html = porExistencia.map(function (e, i) {
         var pct = total > 0 ? Math.round(e.cantidad * 1000 / total) / 10 : 0;
-        return '<div class="d-flex justify-content-between align-items-center" style="font-size:.85rem; padding:4px 2px; cursor:pointer;" data-existencia="' + e.resultado + '">' +
-            '<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + colores[i] + ';margin-right:6px;"></span>' + e.resultado + '</span>' +
-            '<strong>' + e.cantidad + ' <span class="text-muted" style="font-weight:normal;">(' + pct + '%)</span></strong>' +
+        return '<div class="leyenda-existencia-item d-flex justify-content-between align-items-center" style="font-size:.85rem; padding:7px 8px; border-radius:8px; cursor:pointer; transition:background .15s;" data-existencia="' + e.resultado + '"' +
+            ' onmouseover="this.style.background=\'#f1f5f9\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<span style="display:flex;align-items:center;color:#334155;font-weight:500;"><span style="display:inline-block;width:12px;height:12px;border-radius:4px;background:' + colores[i] + ';margin-right:9px;box-shadow:0 1px 2px rgba(15,23,42,.15);"></span>' + e.resultado + '</span>' +
+            '<span style="color:#0f172a;font-weight:700;">' + e.cantidad.toLocaleString("es-CO") + ' <span style="color:#94a3b8;font-weight:500;">· ' + pct + '%</span></span>' +
             '</div>';
     }).join("");
 
