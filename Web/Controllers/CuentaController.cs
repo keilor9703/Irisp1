@@ -98,7 +98,7 @@ namespace Web.Controllers
             // FALLO de autenticación (booleano invertido por el contrato del servicio PIP/OUD).
             var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
 
-            if (respuestaOud.Respuesta)
+            if (!respuestaOud.Respuesta)
             {
                 ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
                 return View("InicioSesion", loginUsuario);
