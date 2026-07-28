@@ -7,6 +7,7 @@ $(document).ready(function () {
 
     $("#ddlRegion").select2({ placeholder: "Todas las regiones", allowClear: true, width: "100%" });
     $("#ddlSiglaUnidad").select2({ placeholder: "Todas las unidades", allowClear: true, width: "100%" });
+    $("#ddlClase").select2({ placeholder: "Todas las clases", allowClear: true, width: "100%" });
 
     var hoy = new Date();
     var haceUnAnio = new Date();
@@ -154,7 +155,8 @@ function obtenerFiltrosTablero() {
         V_FechaInicio: formatearFechaIso(obtenerFechaKendo("#txtFechaInicioTablero")),
         V_FechaFin: formatearFechaIso(obtenerFechaKendo("#txtFechaFinTablero")),
         V_RegionCodigo: $("#ddlRegion").val() || "",
-        V_SiglaUnidad: $("#ddlSiglaUnidad").val() || ""
+        V_SiglaUnidad: $("#ddlSiglaUnidad").val() || "",
+        V_IdClase: $("#ddlClase").val() || ""
     };
 }
 
@@ -171,6 +173,7 @@ function RenderRangoFechas() {
     if ($("#ddlRegion").val()) texto += " | Región: " + region;
     var sigla = $("#ddlSiglaUnidad").val();
     if (sigla) texto += " | Unidad: " + sigla;
+    if ($("#ddlClase").val()) texto += " | Clase: " + $("#ddlClase option:selected").text();
 
     $("#rangoFechasTablero").text(texto);
 }
@@ -442,6 +445,7 @@ var chartTopMasCasos = null;
 var chartTopMenosCasos = null;
 var chartVolumenVerificacion = null;
 var chartTopInformantes = null;
+var chartPorClase = null;
 
 function renderResultadosCasos(kpis) {
     if (!kpis) {
@@ -454,6 +458,7 @@ function renderResultadosCasos(kpis) {
         renderGraficoVolumenVerificacion([]);
         renderTablaFuncionariosInforma([]);
         renderGraficoTopInformantes([]);
+        renderGraficoPorClase([]);
         return;
     }
 
@@ -471,6 +476,7 @@ function renderResultadosCasos(kpis) {
     renderGraficoVolumenVerificacion(kpis.rankingUnidadesVerificacion || []);
     renderTablaFuncionariosInforma(kpis.rankingFuncionariosInforma || []);
     renderGraficoTopInformantes(kpis.rankingFuncionariosInforma || []);
+    renderGraficoPorClase(kpis.porClase || []);
 }
 
 // --- Funcionarios que INFORMARON (IDENTIFICACION_INFORMA) ---
@@ -651,6 +657,41 @@ function renderGraficoPorEstado(porEstado) {
         data: {
             labels: etiquetas,
             datasets: [{ label: "Casos", data: valores, backgroundColor: "#08a6cb" }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: { display: false },
+            scales: {
+                xAxes: [{ ticks: { beginAtZero: true, suggestedMax: maxSugerido } }]
+            }
+        },
+        plugins: [crearPluginValoresBarra(function (v) { return String(v); })]
+    });
+}
+
+// Cantidad de casos IRISP1 por CLASE (kpis.porClase: [{clase, cantidad}]).
+function renderGraficoPorClase(porClase) {
+    var ctx = document.getElementById("graficoPorClase");
+    if (!ctx) return;
+
+    var etiquetas = porClase.map(function (e) { return e.clase; });
+    var valores = porClase.map(function (e) { return e.cantidad; });
+    var maxSugerido = valores.length ? Math.max.apply(null, valores) * 1.15 : undefined;
+
+    if (chartPorClase) {
+        chartPorClase.data.labels = etiquetas;
+        chartPorClase.data.datasets[0].data = valores;
+        chartPorClase.options.scales.xAxes[0].ticks.suggestedMax = maxSugerido;
+        chartPorClase.update();
+        return;
+    }
+
+    chartPorClase = new Chart(ctx, {
+        type: "horizontalBar",
+        data: {
+            labels: etiquetas,
+            datasets: [{ label: "Casos", data: valores, backgroundColor: "#6f42c1" }]
         },
         options: {
             responsive: true,

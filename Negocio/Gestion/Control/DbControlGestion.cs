@@ -73,7 +73,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoTareaControlGestion>>> F_GetTareasControlGestion(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoTareaControlGestion>>> F_GetTareasControlGestion(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, int? idClase, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoTareaControlGestion>>
             {
@@ -93,6 +93,7 @@ namespace Negocio.Gestion.Control
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+                p.Add("P_IdClase", idClase.HasValue ? (object)idClase.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
 
                 await connection.OpenAsync();
 
@@ -125,7 +126,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoCasoControlGestion>>> F_GetCasosControlGestion(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, int? idClase, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoCasoControlGestion>>
             {
@@ -145,6 +146,7 @@ namespace Negocio.Gestion.Control
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+                p.Add("P_IdClase", idClase.HasValue ? (object)idClase.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
 
                 await connection.OpenAsync();
 
@@ -216,6 +218,50 @@ namespace Negocio.Gestion.Control
                 _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
                 resp.IdRespuesta = 0;
                 resp.Mensaje = "Error al consultar las regiones.";
+            }
+
+            return resp;
+        }
+
+        public async Task<DtoResultado<List<DtoClaseIrisp1>>> F_GetClasesIrisp1()
+        {
+            var resp = new DtoResultado<List<DtoClaseIrisp1>>
+            {
+                Operacion = "F_GetClasesIrisp1",
+                Data = new List<DtoClaseIrisp1>()
+            };
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoClaseIrisp1>(
+                    "PK_CONTROL_GESTION_IRIS.F_GetClasesIrisp1",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).AsList();
+
+                resp.Data = lista ?? new List<DtoClaseIrisp1>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta Exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar las clases.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Dapper en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = "Error al consultar las clases.";
             }
 
             return resp;
@@ -318,7 +364,7 @@ namespace Negocio.Gestion.Control
             return resp;
         }
 
-        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, string rolesUsuario, long codigoUnidad)
+        public async Task<DtoResultado<List<DtoResultadoCasoIrisp1>>> F_GetResultadosCasosIrisp1(DateTime fechaInicio, DateTime fechaFin, int? regionCodigo, string? siglaUnidad, int? idClase, string rolesUsuario, long codigoUnidad)
         {
             var resp = new DtoResultado<List<DtoResultadoCasoIrisp1>>
             {
@@ -338,6 +384,7 @@ namespace Negocio.Gestion.Control
                 p.Add("P_SiglaUnidad", string.IsNullOrWhiteSpace(siglaUnidad) ? (object)DBNull.Value : siglaUnidad.Trim(), OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_Roles", rolesUsuario ?? string.Empty, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_CodigoUnidad", codigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+                p.Add("P_IdClase", idClase.HasValue ? (object)idClase.Value : DBNull.Value, OracleMappingType.Int32, ParameterDirection.Input);
 
                 await connection.OpenAsync();
 

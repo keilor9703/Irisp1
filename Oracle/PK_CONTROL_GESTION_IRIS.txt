@@ -53,7 +53,8 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR;
 
   -- KPIs de tiempo de gestión a NIVEL DE CASO (no de tarea): una fila por IRISP1 del rango de
@@ -67,7 +68,8 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR;
 
   -- Catálogo de las 8 regiones de Policía (VM_UNIDADES.REGI_CODIGO/DESC_REGIONAL) que tienen al
@@ -80,6 +82,10 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
   -- dependiente "Sigla de unidad" cuando el usuario elige una región.
   FUNCTION F_GetSiglasUnidadIrisp1(P_RegionCodigo IN NUMBER DEFAULT NULL) RETURN SYS_REFCURSOR;
 
+  -- Catálogo de CLASES (IRISP_CRIMINALIDAD.ID_CLASE, dominio PADRE_ID=12) con al menos un caso
+  -- IRISP1 registrado, para el filtro "Clase" del tablero y las cifras de casos por clase.
+  FUNCTION F_GetClasesIrisp1 RETURN SYS_REFCURSOR;
+
   -- Resultado de cada caso IRISP1 del rango de fechas: estado general (ID_ESTADO, dominio
   -- PADRE_ID=1) y resultado de existencia (ID_ESTADO_EXISTENCIA, dominio PADRE_ID=63), con la
   -- unidad responsable. Alimenta las métricas de efectividad/uso del sistema por unidad (casos
@@ -90,7 +96,8 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR;
 
   -- Puntos de georreferenciación de casos IRISP1 (mapa de calor/cluster/puntos), filtrables por
@@ -101,7 +108,8 @@ CREATE OR REPLACE PACKAGE PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR;
 
 END PK_CONTROL_GESTION_IRIS;
@@ -300,7 +308,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR IS
 
     l_rc        SYS_REFCURSOR;
@@ -429,6 +438,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND t.FECHA_CREACION <  (P_FechaFin + 1)
         AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_IdClase IS NULL OR c.ID_CLASE = P_IdClase)
 
         ------------------------------------------------------------
         -- FILTRO DE ROLES: idéntico al de PK_VERIFICACION_IRIS.F_GetInfoGrillas
@@ -499,7 +509,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR IS
 
     l_rc        SYS_REFCURSOR;
@@ -660,6 +671,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND c.FECHA_CREACION <  (P_FechaFin + 1)
         AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_IdClase IS NULL OR c.ID_CLASE = P_IdClase)
 
         AND (
                  -- Roles país (super admin / admin): ven todo.
@@ -761,6 +773,36 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
   END F_GetRegionesIrisp1;
 
   --------------------------------------------------------------------------
+  -- Catálogo de CLASES con casos reales (para el filtro del tablero). Fuente de verdad
+  -- IRISP_CRIMINALIDAD VIGENTE=1; la descripción se resuelve del dominio (PADRE_ID=12).
+  FUNCTION F_GetClasesIrisp1 RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      SELECT DISTINCT c.ID_CLASE AS IdClase, d.DESCRIPCION AS ClaseDescripcion
+        FROM IRISP_CRIMINALIDAD c
+        JOIN IRISP_CTRL_DOMINIO d
+          ON d.DOMINIO_ID = c.ID_CLASE AND d.PADRE_ID = 12 AND d.VIGENTE = 1
+       WHERE c.VIGENTE = 1
+         AND c.ID_CLASE IS NOT NULL
+       ORDER BY d.DESCRIPCION;
+
+    RETURN l_rc;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      Pks_Administracion_IRIS.P_InsErrorsystem(
+        P_Procedimiento => 'PK_CONTROL_GESTION_IRIS.F_GetClasesIrisp1',
+        P_Descripcion   => 'Error ' || SQLERRM,
+        P_IdDocumento   => 0,
+        P_Usuario       => 0
+      );
+
+      OPEN l_rc FOR SELECT NULL AS IdClase, NULL AS ClaseDescripcion FROM dual WHERE 1 = 0;
+      RETURN l_rc;
+  END F_GetClasesIrisp1;
+
+  --------------------------------------------------------------------------
   -- Ver nota de F_GetRegionesIrisp1: fuente de verdad es IRISP_CRIMINALIDAD VIGENTE=1.
   FUNCTION F_GetSiglasUnidadIrisp1(P_RegionCodigo IN NUMBER DEFAULT NULL) RETURN SYS_REFCURSOR IS
     l_rc SYS_REFCURSOR;
@@ -808,7 +850,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR IS
 
     l_rc        SYS_REFCURSOR;
@@ -917,6 +960,9 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         de.DESCRIPCION            AS DescEstado,
         c.ID_ESTADO_EXISTENCIA    AS IdEstadoExistencia,
         dx.DESCRIPCION            AS DescEstadoExistencia,
+        -- Clase del caso (dominio PADRE_ID=12): alimenta el filtro y las cifras "casos por clase".
+        c.ID_CLASE                AS IdClase,
+        dcl.DESCRIPCION           AS Clase,
         -- Funcionario que INFORMÓ el caso (IRISP_CRIMINALIDAD.IDENTIFICACION_INFORMA): es quien
         -- está en la calle detectando el posible delito. Nombre, sigla de su unidad (SIGLA_FISICA,
         -- ej. MEBAR), dependencia y cargo se resuelven de VM_REHU_PERSONAL (identificacion es única
@@ -946,6 +992,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
       LEFT JOIN UND_POR_SIGLA ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
       LEFT JOIN IRISP_CTRL_DOMINIO de ON de.DOMINIO_ID = c.ID_ESTADO AND de.PADRE_ID = 1 AND de.VIGENTE = 1
       LEFT JOIN IRISP_CTRL_DOMINIO dx ON dx.DOMINIO_ID = c.ID_ESTADO_EXISTENCIA AND dx.PADRE_ID = 63 AND dx.VIGENTE = 1
+      LEFT JOIN IRISP_CTRL_DOMINIO dcl ON dcl.DOMINIO_ID = c.ID_CLASE AND dcl.PADRE_ID = 12 AND dcl.VIGENTE = 1
       -- Datos del funcionario que informó (identificacion es única en VM_REHU_PERSONAL: sin fan-out)
       LEFT JOIN VM_REHU_PERSONAL pinf ON pinf.identificacion = c.IDENTIFICACION_INFORMA
       -- Sigla física de la unidad donde labora el informante (ej. MEBAR), vía su unidad de trabajo
@@ -956,6 +1003,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         AND c.FECHA_CREACION <  (P_FechaFin + 1)
         AND (P_RegionCodigo IS NULL OR ureg.REGI_CODIGO = P_RegionCodigo)
         AND (P_SiglaUnidad IS NULL OR c.SIGLA_UNIDAD = P_SiglaUnidad)
+        AND (P_IdClase IS NULL OR c.ID_CLASE = P_IdClase)
 
         AND (
                  -- Roles país (super admin / admin): ven todo.
@@ -1004,6 +1052,7 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
                NULL AS Dependencia, NULL AS UnidadVerificacion, NULL AS UnidadVerificacionSigla,
                NULL AS FechaCreacion, NULL AS IdEstado, NULL AS DescEstado,
                NULL AS IdEstadoExistencia, NULL AS DescEstadoExistencia,
+               NULL AS IdClase, NULL AS Clase,
                NULL AS IdentificacionInforma, NULL AS FuncionarioInforma,
                NULL AS SiglaInforma, NULL AS DependenciaInforma, NULL AS CargoInforma,
                NULL AS TieneResultados
@@ -1022,7 +1071,8 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
     P_RegionCodigo  IN NUMBER,
     P_SiglaUnidad   IN VARCHAR2,
     P_Roles         IN VARCHAR2,
-    P_CodigoUnidad  IN NUMBER
+    P_CodigoUnidad  IN NUMBER,
+    P_IdClase       IN NUMBER DEFAULT NULL
   ) RETURN SYS_REFCURSOR IS
     l_rc     SYS_REFCURSOR;
     V_Sigla  VARCHAR2(20);

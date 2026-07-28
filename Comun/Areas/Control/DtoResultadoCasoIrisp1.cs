@@ -40,6 +40,12 @@ namespace Comun.Areas.Control
         [JsonPropertyName("DescEstadoExistencia")]
         public string? DescEstadoExistencia { get; set; }
 
+        [JsonPropertyName("IdClase")]
+        public int? IdClase { get; set; }
+
+        [JsonPropertyName("Clase")]
+        public string? Clase { get; set; }
+
         [JsonPropertyName("IdentificacionInforma")]
         public long? IdentificacionInforma { get; set; }
 

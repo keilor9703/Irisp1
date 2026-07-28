@@ -72,6 +72,13 @@ namespace Web.Areas.Control.Controllers
 
             ViewBag.ddlSiglaUnidad = new SelectList(siglas, "SiglaUnidad", "SiglaUnidad");
             ViewBag.SiglasCargadasError = resultadoSiglas.IdRespuesta <= 0;
+
+            // Catálogo de clases (dominio PADRE_ID=12) con casos reales, para el filtro "Clase".
+            var resultadoClases = await _iDbControlGestion.F_GetClasesIrisp1();
+            var clases = resultadoClases.Data
+                .Where(cl => cl.IdClase.HasValue && !string.IsNullOrWhiteSpace(cl.ClaseDescripcion))
+                .ToList();
+            ViewBag.ddlClase = new SelectList(clases, "IdClase", "ClaseDescripcion");
         }
 
         public async Task<ActionResult> Mapa()
@@ -89,7 +96,7 @@ namespace Web.Areas.Control.Controllers
         #region Métodos de Consulta
 
         [HttpGet]
-        public async Task<IActionResult> F_GetTareasControlGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetTareasControlGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad, int? V_IdClase)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -98,7 +105,7 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, V_IdClase, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoTareaControlGestion>(), kpis = ArmarKpis(new List<DtoTareaControlGestion>()) });
@@ -110,7 +117,7 @@ namespace Web.Areas.Control.Controllers
         // por etapa (Verificación/Investigación). Se consulta aparte de F_GetTareasControlGestion
         // porque es un dataset distinto (un caso IRISP1 puede tener varias tareas).
         [HttpGet]
-        public async Task<IActionResult> F_GetKpisTiempoGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetKpisTiempoGestion(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad, int? V_IdClase)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -119,7 +126,7 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, V_IdClase, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoCasoControlGestion>(), kpis = ArmarKpisCasos(new List<DtoCasoControlGestion>()) });
@@ -132,7 +139,7 @@ namespace Web.Areas.Control.Controllers
         // ranking de unidades por efectividad — responde a "qué unidades sí están tramitando lo
         // que se les asigna" y no solo a los tiempos de SLA.
         [HttpGet]
-        public async Task<IActionResult> F_GetResultadosCasos(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad)
+        public async Task<IActionResult> F_GetResultadosCasos(DateTime? V_FechaInicio, DateTime? V_FechaFin, int? V_RegionCodigo, string? V_SiglaUnidad, int? V_IdClase)
         {
             var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
 
@@ -141,7 +148,7 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(V_FechaInicio, V_FechaFin);
 
-            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var resultado = await _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, V_RegionCodigo, V_SiglaUnidad, V_IdClase, rolesUsuario, codigoUnidad);
 
             if (resultado.IdRespuesta <= 0)
                 return Json(new { success = false, message = resultado.Mensaje, data = new List<DtoResultadoCasoIrisp1>(), kpis = ArmarKpisResultados(new List<DtoResultadoCasoIrisp1>()) });
@@ -260,6 +267,14 @@ namespace Web.Areas.Control.Controllers
 
             var casosSinAsignar = casos.Count(c => string.IsNullOrWhiteSpace(c.UnidadVerificacionSigla) && string.IsNullOrWhiteSpace(c.UnidadVerificacion));
 
+            // Cifras de casos IRISP1 por CLASE (dominio PADRE_ID=12): alimenta el gráfico/cifras
+            // "Casos por clase" del tablero.
+            var porClase = casos
+                .GroupBy(c => string.IsNullOrWhiteSpace(c.Clase) ? "Sin clase" : c.Clase!)
+                .Select(g => new { clase = g.Key, cantidad = g.Count() })
+                .OrderByDescending(g => g.cantidad)
+                .ToList();
+
             // Funcionarios que INFORMARON (IDENTIFICACION_INFORMA). Son quienes están en la calle
             // detectando delitos; interesa reconocer a los que informaron casos que resultaron
             // exitosos (existencia confirmada) o con resultados (SPOA/SIEDCO).
@@ -302,7 +317,8 @@ namespace Web.Areas.Control.Controllers
                 rankingUnidades,
                 rankingUnidadesVerificacion,
                 casosSinAsignar,
-                rankingFuncionariosInforma
+                rankingFuncionariosInforma,
+                porClase
             };
         }
 
@@ -396,9 +412,9 @@ namespace Web.Areas.Control.Controllers
 
             var (fechaInicio, fechaFin) = ResolverRangoFechas(req.V_FechaInicio, req.V_FechaFin);
 
-            var tareaTask = _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, rolesUsuario, codigoUnidad);
-            var casosTask = _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, rolesUsuario, codigoUnidad);
-            var resultadosTask = _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, rolesUsuario, codigoUnidad);
+            var tareaTask = _iDbControlGestion.F_GetTareasControlGestion(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, req.V_IdClase, rolesUsuario, codigoUnidad);
+            var casosTask = _iDbControlGestion.F_GetCasosControlGestion(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, req.V_IdClase, rolesUsuario, codigoUnidad);
+            var resultadosTask = _iDbControlGestion.F_GetResultadosCasosIrisp1(fechaInicio, fechaFin, req.V_RegionCodigo, req.V_SiglaUnidad, req.V_IdClase, rolesUsuario, codigoUnidad);
             await Task.WhenAll(tareaTask, casosTask, resultadosTask);
 
             var tareas = tareaTask.Result.IdRespuesta > 0 ? tareaTask.Result.Data : new List<DtoTareaControlGestion>();
@@ -831,6 +847,7 @@ namespace Web.Areas.Control.Controllers
         public DateTime? V_FechaFin { get; set; }
         public int? V_RegionCodigo { get; set; }
         public string? V_SiglaUnidad { get; set; }
+        public int? V_IdClase { get; set; }
 
         public string? GraficoPorUnidad { get; set; }
         public string? GraficoExistencia { get; set; }
