@@ -686,8 +686,15 @@ namespace Web.Areas.Irisp1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error interpretando los datos del IRIS");
-                return Json(new { success = false, message = "Error interpretando los datos del IRIS." });
+                // El detalle real (campo/tipo) queda en el log; al cliente se le da un mensaje
+                // accionable sin exponer internals. El caso típico es un campo numérico (p. ej.
+                // "Cantidad") que llegó con texto y no se pudo convertir.
+                _logger.LogError(ex, "Error interpretando los datos del IRIS (datosJson)");
+                return Json(new
+                {
+                    success = false,
+                    message = "No fue posible interpretar los datos del registro. Verifique que los campos numéricos (por ejemplo, la Cantidad) no contengan letras ni símbolos."
+                });
             }
 
             if (string.IsNullOrWhiteSpace(Obj_NuevoIrisP1.CriminalidadId))

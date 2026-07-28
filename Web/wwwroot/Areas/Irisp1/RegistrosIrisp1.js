@@ -981,6 +981,18 @@ function P_InsRegistroIrisP1() {
             Id_ClasiNarcotrafico = 0;
     }
 
+    // La cantidad es un dato numérico (la columna en BD es NUMBER y el DTO la recibe como Int32?).
+    // Se valida aquí para no enviar texto (p. ej. "prueba"), que rompía la deserialización en el back.
+    Cantidad = (Cantidad === null || Cantidad === undefined) ? "" : String(Cantidad).trim();
+    if (Cantidad !== "" && !/^\d+$/.test(Cantidad)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Señor(a) Funcionario(a)',
+            text: 'La cantidad debe ser un número entero (sin letras ni símbolos).'
+        });
+        return;
+    }
+
     var Obj_DelitosSecundarios = obtenerDelitosSecundariosSeleccionados()
         .filter(x => x !== null && x !== "" && !isNaN(x))
         .map(Number);
