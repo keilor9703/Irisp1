@@ -712,66 +712,119 @@ function renderGraficoPorEstado(porEstado) {
 
     var etiquetas = porEstado.map(function (e) { return e.estado; });
     var valores = porEstado.map(function (e) { return e.cantidad; });
-    var maxSugerido = valores.length ? Math.max.apply(null, valores) * 1.15 : undefined;
 
     if (chartPorEstadoCriminalidad) {
         chartPorEstadoCriminalidad.data.labels = etiquetas;
         chartPorEstadoCriminalidad.data.datasets[0].data = valores;
-        chartPorEstadoCriminalidad.options.scales.xAxes[0].ticks.suggestedMax = maxSugerido;
         chartPorEstadoCriminalidad.update();
         return;
     }
 
+    // Diagrama de araña (radar): cada estado es un vértice de la telaraña y el área rellena
+    // deja ver de un vistazo hacia dónde se concentran los casos.
     chartPorEstadoCriminalidad = new Chart(ctx, {
-        type: "horizontalBar",
+        type: "radar",
         data: {
             labels: etiquetas,
-            datasets: [{ label: "Casos", data: valores, backgroundColor: "#08a6cb" }]
+            datasets: [{
+                label: "Casos",
+                data: valores,
+                backgroundColor: "rgba(8, 166, 203, 0.18)",
+                borderColor: "#08a6cb",
+                borderWidth: 2,
+                pointBackgroundColor: "#08a6cb",
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 1.5,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: "#0369a1"
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             legend: { display: false },
-            scales: {
-                xAxes: [{ ticks: { beginAtZero: true, suggestedMax: maxSugerido } }]
+            animation: { duration: 900, easing: "easeOutQuart" },
+            scale: {
+                ticks: { beginAtZero: true, precision: 0, backdropColor: "rgba(255,255,255,0.75)" },
+                pointLabels: { fontSize: 13, fontStyle: "600", fontColor: "#334155" },
+                gridLines: { color: "rgba(148, 163, 184, 0.35)" },
+                angleLines: { color: "rgba(148, 163, 184, 0.35)" }
+            },
+            tooltips: {
+                backgroundColor: "rgba(15, 23, 42, 0.92)",
+                cornerRadius: 6,
+                xPadding: 10,
+                yPadding: 8,
+                callbacks: {
+                    label: function (item, data) {
+                        var valor = data.datasets[0].data[item.index];
+                        return "  " + data.labels[item.index] + ": " + valor.toLocaleString("es-CO");
+                    }
+                }
             }
-        },
-        plugins: [crearPluginValoresBarra(function (v) { return String(v); })]
+        }
     });
 }
 
-// Cantidad de casos IRISP1 por CLASE (kpis.porClase: [{clase, cantidad}]).
+// Paleta cualitativa para la torta de clases (colores distinguibles, no un degradado).
+var PALETA_CLASES = [
+    "#6f42c1", "#08a6cb", "#0ea472", "#f59e0b", "#e11d48",
+    "#3b82f6", "#14b8a6", "#a855f7", "#ef4444", "#64748b"
+];
+
+// Cantidad de casos IRISP1 por CLASE (kpis.porClase: [{clase, cantidad}]) — gráfico de torta.
 function renderGraficoPorClase(porClase) {
     var ctx = document.getElementById("graficoPorClase");
     if (!ctx) return;
 
     var etiquetas = porClase.map(function (e) { return e.clase; });
     var valores = porClase.map(function (e) { return e.cantidad; });
-    var maxSugerido = valores.length ? Math.max.apply(null, valores) * 1.15 : undefined;
+    var colores = porClase.map(function (e, i) { return PALETA_CLASES[i % PALETA_CLASES.length]; });
 
     if (chartPorClase) {
         chartPorClase.data.labels = etiquetas;
         chartPorClase.data.datasets[0].data = valores;
-        chartPorClase.options.scales.xAxes[0].ticks.suggestedMax = maxSugerido;
+        chartPorClase.data.datasets[0].backgroundColor = colores;
         chartPorClase.update();
         return;
     }
 
     chartPorClase = new Chart(ctx, {
-        type: "horizontalBar",
+        type: "pie",
         data: {
             labels: etiquetas,
-            datasets: [{ label: "Casos", data: valores, backgroundColor: "#6f42c1" }]
+            datasets: [{
+                data: valores,
+                backgroundColor: colores,
+                borderWidth: 2,
+                borderColor: "#ffffff",
+                hoverBorderColor: "#ffffff"
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            legend: { display: false },
-            scales: {
-                xAxes: [{ ticks: { beginAtZero: true, suggestedMax: maxSugerido } }]
+            animation: { animateRotate: true, animateScale: true, duration: 900, easing: "easeOutQuart" },
+            legend: {
+                position: "right",
+                labels: { fontColor: "#334155", boxWidth: 14, padding: 12, fontSize: 12 }
+            },
+            tooltips: {
+                backgroundColor: "rgba(15, 23, 42, 0.92)",
+                cornerRadius: 6,
+                xPadding: 10,
+                yPadding: 8,
+                callbacks: {
+                    label: function (item, data) {
+                        var valor = data.datasets[0].data[item.index];
+                        var total = data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
+                        var pct = total > 0 ? Math.round(valor * 1000 / total) / 10 : 0;
+                        return "  " + data.labels[item.index] + ": " + valor.toLocaleString("es-CO") + " (" + pct + "%)";
+                    }
+                }
             }
-        },
-        plugins: [crearPluginValoresBarra(function (v) { return String(v); })]
+        }
     });
 }
 
@@ -1008,6 +1061,11 @@ function abrirDetalleKpi(kpi) {
 // Índice del punto/barra sobre el que se hizo doble click en un canvas de Chart.js v2.
 function obtenerIndiceChart(chart, evt) {
     var elementos = chart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, false);
+    // Fallback: en radar/torta el punto exacto es difícil de acertar; si no hubo intersección
+    // se toma el elemento más cercano al clic.
+    if (!elementos.length) {
+        elementos = chart.getElementsAtEventForMode(evt, "nearest", { intersect: false }, false);
+    }
     return elementos.length ? elementos[0]._index : null;
 }
 
