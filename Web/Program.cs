@@ -93,10 +93,41 @@ var logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
-var dpConn = builder.Configuration.GetConnectionString("strConexionIris_Disec");
-
-builder.Services.AddDataProtection()
+// Data Protection: el key ring cifra las cookies de sesión y el token antiforgery. DEBE
+// persistirse en una ubicación estable y COMPARTIDA por todas las instancias. Si no se persiste
+// (comportamiento por defecto: carpeta efímera del perfil/temporal), cada reciclado del app pool,
+// cada redeploy y cada servidor del balanceador genera llaves nuevas, y las cookies emitidas
+// antes fallan al descifrarse -> "The key {...} was not found in the key ring" (WRN de sesión y
+// ERR de antiforgery, exactamente los que aparecen en producción).
+var dpBuilder = builder.Services.AddDataProtection()
     .SetApplicationName("IRIS-P1");
+
+// Ruta configurable (appsettings -> DataProtection:KeysPath). En producción debe apuntar a una
+// carpeta persistente y compartida (p. ej. el file server institucional), con permisos de
+// lectura/escritura para la identidad del app pool. Todas las instancias deben usar la MISMA ruta.
+var dpKeysPath = builder.Configuration.GetValue<string>("DataProtection:KeysPath");
+if (!string.IsNullOrWhiteSpace(dpKeysPath))
+{
+    try
+    {
+        Directory.CreateDirectory(dpKeysPath); // idempotente; asegura que exista al arrancar
+        dpBuilder.PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
+        logger.Information("DataProtection: key ring persistido en {KeysPath}.", dpKeysPath);
+    }
+    catch (Exception ex)
+    {
+        // Un recurso de red inaccesible no debe tumbar el arranque; se registra y se continúa con
+        // el almacenamiento por defecto (efímero). Ops debe corregir la ruta/permisos.
+        logger.Error(ex, "No se pudo persistir el key ring en {KeysPath}; se usará almacenamiento " +
+            "efímero y las cookies se invalidarán en cada reinicio. Revise la ruta y los permisos.", dpKeysPath);
+    }
+}
+else
+{
+    logger.Warning("DataProtection:KeysPath no está configurado: el key ring se guardará en una " +
+        "ubicación efímera y las cookies de sesión/antiforgery se invalidarán en cada reinicio o " +
+        "redeploy. Configure una carpeta persistente y compartida para evitarlo.");
+}
 
 builder.Services.AddHttpContextAccessor();
 
