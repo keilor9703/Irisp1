@@ -146,6 +146,9 @@ namespace Comun.Areas.Reportes
         [JsonPropertyName("direccion")]
         public string? Direccion { get; set; }
 
+        [JsonPropertyName("origen")]
+        public string? Origen { get; set; }
+
 
 
         // ==============================

@@ -54,6 +54,9 @@ function GetGrillaLista(Datos) {
         EstadosExistencia(), // usa: estado_existencia_descripcion
 
         { title: "Código", data: "codigo" },
+
+        { title: "Origen", data: "origen" }, // Origen del registro
+
         { title: "Delito Principal", data: "delito_principal" },
         { title: "Región", data: "region_p" },
         { title: "Unidad", data: "sigla_unidad" },

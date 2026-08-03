@@ -132,13 +132,13 @@ namespace Web.Areas.Reportes.Controllers
         "Fecha Creación","Funcionario Informa","Unidad Funcionario","Identificación Func.",
         "Descripción Trámite","Unidad Verificación","Fecha Asig. Ver.","Fecha Resp. Ver.",
         "Unidad Investigación","Fecha Asig. Inv.","Fecha Resp. Inv.","Longitud","Latitud",
-        "Municipio 2","Barrio","Dirección","Cantidad SPOA","NUNC","Cantidad SIEDCO"
+        "Municipio 2","Barrio","Dirección","Cantidad SPOA","NUNC","Cantidad SIEDCO","Origen"
     };
 
             for (int i = 0; i < headers.Length; i++)
                 ws.Cell(5, i + 1).Value = headers[i];
 
-            ws.Range("A5:AI5").Style
+            ws.Range("A5:AK5").Style
                 .Font.SetBold()
                 .Fill.SetBackgroundColor(XLColor.FromHtml("#D9E1F2"));
 
@@ -184,6 +184,7 @@ namespace Web.Areas.Reportes.Controllers
                 ws.Cell(fila, 34).Value = x.CantidadSpoa;
                 ws.Cell(fila, 35).Value = x.Nunc;
                 ws.Cell(fila, 36).Value = x.CantidadSiedco;
+                ws.Cell(fila, 37).Value = x.Origen;
 
                 fila++;
             }
