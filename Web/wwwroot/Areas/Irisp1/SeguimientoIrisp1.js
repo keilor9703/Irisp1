@@ -1523,13 +1523,16 @@ function P_InsResponsabeValModal() {
     if (tipoTarea === 52) {
         if (estadoAceptada === 'no aceptada') {
             // OK, continúa
-        } else {
+        } else if (estadoAceptada === 'Aceptada'){
             Swal.fire({
                 icon: 'warning',
                 title: 'Señor(a) Funcionario(a):',
                 text: 'Ya se registró una unidad responsable de la verificación de la existencia o existen tareas de verificación no rechazadas.'
             });
             return;
+
+        } else {
+            // OK, continúa
         }
     }
 

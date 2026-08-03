@@ -2088,6 +2088,8 @@ function InsIntegrantesModal() {
 }
 
 
+
+
 function P_InsDelitosModal() {
 
     var Obj_DelitosSecundarios = obtenerDelitosSecundariosSeleccionadosModal();
