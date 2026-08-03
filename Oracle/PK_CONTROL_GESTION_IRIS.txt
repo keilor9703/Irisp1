@@ -1143,7 +1143,10 @@ CREATE OR REPLACE PACKAGE BODY PK_CONTROL_GESTION_IRIS AS
         c.latitud                AS Latitud,
         c.longitud               AS Longitud
       FROM VM_GENERAL_IRISP c
-      LEFT JOIN UND_POR_SIGLA ureg ON c.SIGLA_UNIDAD = ureg.SIGLA_FISICA
+      -- Se normaliza REMSA->DESAB en la llave del join (no solo en el combo): así un caso
+      -- histórico con SIGLA_UNIDAD='REMSA' resuelve contra la fila vigente de DESAB y queda
+      -- correctamente atribuido en el filtro por rol de un funcionario DESAB.
+      LEFT JOIN UND_POR_SIGLA ureg ON DECODE(c.SIGLA_UNIDAD, 'REMSA', 'DESAB', c.SIGLA_UNIDAD) = ureg.SIGLA_FISICA
       WHERE REGEXP_LIKE(c.latitud, '^[0-9\.\-]+$')
         AND REGEXP_LIKE(c.longitud, '^[0-9\.\-]+$')
         AND c.FECHA_CREACION_IRISP1 >= P_FechaInicio
