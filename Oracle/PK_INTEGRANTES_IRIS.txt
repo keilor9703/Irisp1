@@ -444,8 +444,13 @@ RETURN SYS_REFCURSOR IS
                ELSE
                 'Tiene resultados (SIEDCO: ' || NVL(rst.NumeroSiedco, '0') ||
                 ' - SPOA: ' || NVL(rst.NumeroSpoa, '0') || ')'
-             END AS Resultados
-      
+             END AS Resultados,
+
+             -- Coordenadas del IRIS P1 (desde la vista general, misma fuente que el mapa/reportes):
+             -- para ubicar el caso con un punto rojo en el mapa de antecedentes del integrante.
+             CASE WHEN REGEXP_LIKE(vg.latitud,  '^[0-9\.\-]+$') THEN vg.latitud  ELSE NULL END AS Latitud,
+             CASE WHEN REGEXP_LIKE(vg.longitud, '^[0-9\.\-]+$') THEN vg.longitud ELSE NULL END AS Longitud
+
         FROM IRISP_CRIMINALIDAD c
 
         -- Una persona puede estar dos veces como integrante del MISMO caso; se deduplica a un solo
@@ -499,7 +504,11 @@ RETURN SYS_REFCURSOR IS
       
         LEFT JOIN RESULTADOS rst
           ON c.criminalidad_id = rst.criminalidad_id
-      
+
+        -- Vista general (una fila por caso): aporta las coordenadas del IRIS P1.
+        LEFT JOIN VM_GENERAL_IRISP vg
+          ON vg.CRIMINALIDAD_ID = c.CRIMINALIDAD_ID
+
        WHERE c.FECHA_CREACION IS NOT NULL
          AND c.vigente = 1
 

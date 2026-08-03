@@ -15,13 +15,14 @@ function inicializarMapa(idMapa) {
         "esri/symbols/TextSymbol",
         "esri/symbols/Font",
         "esri/geometry/webMercatorUtils",
+        "esri/InfoTemplate",
         "dojo/domReady!",
         "esri/renderers/SimpleRenderer",
         "esri/layers/LabelClass"
 
     ], function (
         Map, Point, SimpleMarkerSymbol, Graphic, Color, Extent, FeatureLayer, SimpleLineSymbol, Query, SimpleFillSymbol,
-        Polyline, TextSymbol, Font, webMercatorUtils
+        Polyline, TextSymbol, Font, webMercatorUtils, InfoTemplate
     ) {
 
         // El basemap OSM está en Web Mercator (metros); las coordenadas de la BD son geográficas
@@ -305,6 +306,70 @@ function inicializarMapa(idMapa) {
             } catch (err) { console.warn("No se pudo ajustar el extent:", err); }
 
             console.log("🚶 Recorrido pintado con", puntosValidos.length, "puntos");
+        };
+
+
+        // --- Pin rojo grande (forma de marcador de ubicación) para los IRIS P1 vinculados ---
+        function crearPinIrisRojo() {
+            // Path de "map pin" clásico (gota con orificio central).
+            var pinPath = "M16,3.5c-4.142,0-7.5,3.358-7.5,7.5c0,4.143,7.5,18.121,7.5,18.121S23.5,15.143,23.5,11" +
+                "C23.5,6.858,20.142,3.5,16,3.5z M16,14.584c-1.979,0-3.584-1.605-3.584-3.584S14.021,7.416,16,7.416" +
+                "s3.584,1.605,3.584,3.584S17.979,14.584,16,14.584z";
+            var s = new SimpleMarkerSymbol();
+            s.setPath(pinPath);
+            s.setColor(new Color("#e11d48")); // rojo
+            s.setSize(42);
+            s.setOutline(new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 255, 255]), 1.5));
+            return s;
+        }
+
+        // ===========================================================
+        // 📍 PUNTOS IRIS P1: marca con un pin rojo grande la ubicación del/los caso(s) IRIS P1
+        // a los que está vinculado el integrante. Se dibuja SOBRE el recorrido (no lo borra).
+        // fitSolo=true ajusta el zoom solo a estos puntos (cuando no hay recorrido de antecedentes).
+        // ===========================================================
+        window.pintarPuntosIrisp1 = function (casos, fitSolo) {
+            if (!casos || casos.length === 0) return;
+
+            var pin = crearPinIrisRojo();
+            var pts = [];
+
+            casos.forEach(function (c) {
+                var lat = parseFloat(c.latitud), lng = parseFloat(c.longitud);
+                if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+                var punto = aPuntoMapa(lng, lat);
+                var attrs = { codigo: c.codigo || "IRIS P1", municipio: c.municipio || "-", clase: c.clase || "-" };
+                var info = new InfoTemplate("IRIS P1 vinculado",
+                    "Código: ${codigo}<br/>Municipio: ${municipio}<br/>Clase: ${clase}");
+                map.graphics.add(new Graphic(punto, pin, attrs, info));
+                pts.push(punto);
+            });
+
+            if (pts.length === 0) return;
+
+            try {
+                var xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+                pts.forEach(function (p) {
+                    if (p.x < xmin) xmin = p.x; if (p.x > xmax) xmax = p.x;
+                    if (p.y < ymin) ymin = p.y; if (p.y > ymax) ymax = p.y;
+                });
+
+                // Si hay recorrido, unir con el extent actual para que todo quede a la vista;
+                // si no lo hay, ajustar solo a los puntos IRIS P1.
+                if (!fitSolo && map.extent) {
+                    xmin = Math.min(xmin, map.extent.xmin); ymin = Math.min(ymin, map.extent.ymin);
+                    xmax = Math.max(xmax, map.extent.xmax); ymax = Math.max(ymax, map.extent.ymax);
+                }
+
+                if (xmax > xmin && ymax > ymin) {
+                    map.setExtent(new Extent(xmin, ymin, xmax, ymax, map.spatialReference).expand(1.3));
+                } else if (fitSolo) {
+                    map.centerAndZoom(pts[0], 14);
+                }
+            } catch (e) { console.warn("No se pudo ajustar el extent de los IRIS P1:", e); }
+
+            console.log("📍 Se pintaron", pts.length, "IRIS P1 vinculados");
         };
 
 

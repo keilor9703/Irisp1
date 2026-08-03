@@ -694,18 +694,23 @@ $("#btnAbrirMapaUbicaciones").on("click", function () {
         }))
         .sort((a, b) => (a.fecha && b.fecha) ? (a.fecha - b.fecha) : 0);
 
-    if (ubicaciones.length === 0) {
+    // Casos IRIS P1 vinculados al integrante que tienen coordenadas (para el punto rojo).
+    let casosIris = (_casosData || []).filter(function (c) { return c.latitud && c.longitud; });
+
+    if (ubicaciones.length === 0 && casosIris.length === 0) {
         Swal.fire("Aviso", "No hay ubicaciones para mostrar.", "info");
         return;
     }
 
-    // Abrir modal y enviar lista ordenada al mapa
-    OpenModalTodasUbicaciones(ubicaciones);
+    // Abrir modal y enviar al mapa el recorrido (antecedentes) + ubicación de los IRIS P1.
+    OpenModalTodasUbicaciones(ubicaciones, casosIris);
 });
 
 
 
-function OpenModalTodasUbicaciones(listaCoordenadas) {
+function OpenModalTodasUbicaciones(listaCoordenadas, casosIris) {
+
+    casosIris = casosIris || [];
 
     // Abre el modal
     $("#myModal").modal("show");
@@ -724,6 +729,12 @@ function OpenModalTodasUbicaciones(listaCoordenadas) {
                 window.pintarRecorrido(listaCoordenadas);
             } else if (typeof window.pintarMultiplesUbicaciones === "function") {
                 window.pintarMultiplesUbicaciones(listaCoordenadas);
+            }
+
+            // Punto(s) rojo(s): ubicación de los IRIS P1 vinculados. Se dibuja sobre el recorrido.
+            // Si no hubo recorrido de antecedentes, el zoom se ajusta solo a estos puntos.
+            if (typeof window.pintarPuntosIrisp1 === "function") {
+                window.pintarPuntosIrisp1(casosIris, (listaCoordenadas || []).length === 0);
             }
         }, 700);
     });

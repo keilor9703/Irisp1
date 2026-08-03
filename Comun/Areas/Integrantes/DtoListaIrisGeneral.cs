@@ -82,5 +82,11 @@ namespace Comun.Areas.Integrantes
         [JsonPropertyName("resultados")]
         public string? Resultados { get; set; }
 
+        [JsonPropertyName("latitud")]
+        public string? Latitud { get; set; }
+
+        [JsonPropertyName("longitud")]
+        public string? Longitud { get; set; }
+
     }
 }
