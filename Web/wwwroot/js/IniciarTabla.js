@@ -110,6 +110,27 @@ function AplicarPluginTablas(tablaId, ruta, columnas) {
 //   - columnDefs: sobrescribe el columnDefs por defecto
 //   - preserveDraw: si es true, al refrescar mantiene la página/orden actual (table.draw(false))
 //     en vez de volver a la página 1 (table.draw())
+// Con scrollX activo, DataTables envuelve la tabla en .dataTables_scrollBody (overflow:auto).
+// Ese contenedor RECORTA el menú de acciones (dropdown de Bootstrap) cuando la grilla queda baja
+// —por ejemplo al filtrar y dejar un solo registro—, obligando al usuario a hacer scroll para ver
+// opciones como "Ver Tareas". Se reconfigura cada dropdown de la grilla para que Popper lo
+// posicione con strategy:'fixed': así el menú se ancla al viewport y NO lo recorta el overflow del
+// contenedor. Se ejecuta en cada draw porque DataTables recrea el HTML de las filas (y por tanto
+// los botones) en cada dibujado.
+function fijarDropdownsGrilla(settings) {
+    if (!window.bootstrap || !bootstrap.Dropdown) return;
+    try {
+        var cont = new $.fn.dataTable.Api(settings).table().container();
+        cont.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (btn) {
+            bootstrap.Dropdown.getOrCreateInstance(btn, {
+                popperConfig: function (defaultConfig) {
+                    return Object.assign({}, defaultConfig, { strategy: 'fixed' });
+                }
+            });
+        });
+    } catch (e) { /* si falla, el dropdown sigue funcionando con el posicionamiento por defecto */ }
+}
+
 function renderDataTable(selector, datosFiltrados, columnas, opciones) {
     opciones = opciones || {};
 
@@ -129,6 +150,11 @@ function renderDataTable(selector, datosFiltrados, columnas, opciones) {
         deferRender: true,  // retrasa render hasta que sean visibles
         autoWidth: false,
         responsive: false,
+
+        drawCallback: function (settings) {
+            fijarDropdownsGrilla(settings);
+            if (typeof opciones.drawCallback === "function") { opciones.drawCallback.call(this, settings); }
+        },
 
         columnDefs: opciones.columnDefs || [
             { targets: '_all', className: 'dt-head-center dt-body-center' },
