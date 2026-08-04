@@ -1479,14 +1479,49 @@ function P_InsResponsabeValModal() {
     const tipoTarea = parseInt($("#ddlTipoTarea").val());
     const estadoExistencia = (typeof EstadoExistencia !== "undefined" ? EstadoExistencia.toLowerCase() : "");
     const estadoAceptada = (typeof EstadoGlobalAceptada !== "undefined" ? EstadoGlobalAceptada.toLowerCase() : "");
+    let nuevoEstado = "";
 
 
+    // 🔹 Validación: asignar proceso investigativo (71)
+    if (tipoTarea === 71) {
+        if (estadoExistencia === 'si existe') {
+            // OK, continúa
+            nuevoEstado = 72
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Señor(a) Funcionario(a):',
+                text: 'Para asignar el proceso investigativo, el IRISP debe estar en estado existencia "Si Existe".'
+            });
+            return;
+        }
+    }
+
+    // 🔹 Validación: verificación de existencia (52)
+    if (tipoTarea === 52) {
+        if (estadoAceptada === 'no aceptada') {
+            // OK, continúa
+            nuevoEstado =3
+        } else if (estadoAceptada === 'Aceptada') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Señor(a) Funcionario(a):',
+                text: 'Ya se registró una unidad responsable de la verificación de la existencia o existen tareas de verificación no rechazadas.'
+            });
+            return;
+
+        } else {
+            // OK, continúa
+            nuevoEstado = 3
+        }
+    }
     // 🔹 Objeto a enviar
     const Obj_Responsable = {
         CriminalidadId: $("#txtCriminalidadIdModal").val(),
         IdUnidad: $('#ddlTipoDependencia').data('idSeleccionado'),
         IdTareai: tipoTarea,
-        Observacion: $("#txtObservaciones").val()
+        Observacion: $("#txtObservaciones").val(),
+        IdEstado: nuevoEstado
     };
 
     // 🔹 Validar campos obligatorios (excepto Observacion)
@@ -1505,36 +1540,6 @@ function P_InsResponsabeValModal() {
     }
 
 
-    // 🔹 Validación: asignar proceso investigativo (71)
-    if (tipoTarea === 71) {
-        if (estadoExistencia === 'si existe') {
-            // OK, continúa
-        } else {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Señor(a) Funcionario(a):',
-                text: 'Para asignar el proceso investigativo, el IRISP debe estar en estado existencia "Si Existe".'
-            });
-            return;
-        }
-    }
-
-    // 🔹 Validación: verificación de existencia (52)
-    if (tipoTarea === 52) {
-        if (estadoAceptada === 'no aceptada') {
-            // OK, continúa
-        } else if (estadoAceptada === 'Aceptada'){
-            Swal.fire({
-                icon: 'warning',
-                title: 'Señor(a) Funcionario(a):',
-                text: 'Ya se registró una unidad responsable de la verificación de la existencia o existen tareas de verificación no rechazadas.'
-            });
-            return;
-
-        } else {
-            // OK, continúa
-        }
-    }
 
    
     // 🔹 Enviar solicitud AJAX

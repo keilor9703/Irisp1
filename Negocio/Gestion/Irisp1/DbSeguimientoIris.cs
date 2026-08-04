@@ -409,6 +409,7 @@ namespace Negocio.Gestion.Irisp1
                 p.Add("P_OBSERVACION", Obj_Responsable.Observacion, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_USUARIO", usuario, OracleMappingType.Varchar2, ParameterDirection.Input);
                 p.Add("P_MAQUINA", maquina, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_ESTADO", Obj_Responsable.IdEstado, OracleMappingType.Varchar2, ParameterDirection.Input);
 
                 p.Add("P_RESULTADO", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
                 p.Add("SRV_Message", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 500);
