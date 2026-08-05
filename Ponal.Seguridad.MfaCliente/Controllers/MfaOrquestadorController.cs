@@ -64,7 +64,9 @@ namespace Ponal.Seguridad.MfaCliente.Controllers
             }
 
             HttpContext.Session.SetString($"MFA_PASSED_{pending.Identificacion}", "true");
-            return Json(new { success = true, redirectUrl = "/Cuenta/FinalizeMfaLogin" });
+            // Url.Content("~/...") respeta el PathBase / directorio virtual (p.ej. "/iris2fa"),
+            // evitando que la redirección apunte a la raíz del dominio.
+            return Json(new { success = true, redirectUrl = Url.Content("~/Cuenta/FinalizeMfaLogin") });
         }
 
         [HttpPost("EnrollConfirmAjax")]
@@ -91,7 +93,9 @@ namespace Ponal.Seguridad.MfaCliente.Controllers
                 return Json(new { success = false, message = resp.Mensaje ?? "Código inválido." });
 
             HttpContext.Session.SetString($"MFA_PASSED_{pending.Identificacion}", "true");
-            return Json(new { success = true, redirectUrl = "/Cuenta/FinalizeMfaLogin" });
+            // Url.Content("~/...") respeta el PathBase / directorio virtual (p.ej. "/iris2fa"),
+            // evitando que la redirección apunte a la raíz del dominio.
+            return Json(new { success = true, redirectUrl = Url.Content("~/Cuenta/FinalizeMfaLogin") });
         }
 
         [HttpPost("ResetRequestAjax")]

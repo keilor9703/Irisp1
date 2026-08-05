@@ -226,13 +226,20 @@ app.Use(async (context, next) =>
         {
             if (obj == null || string.IsNullOrEmpty(ipMaquina))
             {
-                context.Response.Redirect($"{context.Request.Scheme}://{context.Request.Host}/Cuenta/CerrarSesion");
+                // PathBase respeta el directorio virtual (p.ej. "/iris2fa"); sin él la redirección
+                // apuntaría a la raíz del dominio y daría 404 cuando la app está bajo subdirectorio.
+                context.Response.Redirect($"{context.Request.PathBase}/Cuenta/CerrarSesion");
                 return;
             }
         }
     }
     await next();
 });
+
+// Necesario para los controladores con rutas por atributo (p.ej. MfaOrquestadorController
+// del paquete Ponal.Seguridad.MfaCliente: [Route("MfaOrquestador")] + [HttpPost("VerifyAjax")]).
+// El ruteo convencional (MapControllerRoute) NO activa las rutas por atributo.
+app.MapControllers();
 
 app.MapControllerRoute(
     name: "areas",
