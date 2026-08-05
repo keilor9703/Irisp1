@@ -257,11 +257,17 @@
     </div>
 </div>
 <script>
+    // Base de la aplicación (respeta el directorio virtual / PathBase, p.ej. "/iris2fa").
+    // Se resuelve en el servidor con Razor: en raíz queda "" y bajo /iris2fa queda "/iris2fa".
+    // Todas las llamadas AJAX y redirecciones deben anteponer esta base para no apuntar a la
+    // raíz del dominio cuando la app está publicada bajo un subdirectorio.
+    const MFA_BASE = '@Url.Content("~/")'.replace(/\/+$/, '');
+
     async function mfaCancel() {
         try {
-            await fetch('/MfaOrquestador/CancelAjax', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            await fetch(MFA_BASE + '/MfaOrquestador/CancelAjax', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         } catch (e) { console.error(e); }
-        window.location.href = '/Cuenta/InicioSesion';
+        window.location.href = MFA_BASE + '/Cuenta/InicioSesion';
     }
 
     // Pinta los datos del enroll (QR + clave manual) y limpia los OTP boxes.
@@ -492,10 +498,10 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        submitMfaFormAjax('frmMfaVerify',        '/MfaOrquestador/VerifyAjax',        'verifyErrorContainer');
-        submitMfaFormAjax('otpEnroll',           '/MfaOrquestador/EnrollConfirmAjax', 'enrollErrorContainer');
-        submitMfaFormAjax('frmMfaResetReq',      '/MfaOrquestador/ResetRequestAjax',  'resetReqErrorContainer');
-        submitMfaFormAjax('frmMfaResetConfirm',  '/MfaOrquestador/ResetConfirmAjax',  'resetConfirmErrorContainer');
+        submitMfaFormAjax('frmMfaVerify',        MFA_BASE + '/MfaOrquestador/VerifyAjax',        'verifyErrorContainer');
+        submitMfaFormAjax('otpEnroll',           MFA_BASE + '/MfaOrquestador/EnrollConfirmAjax', 'enrollErrorContainer');
+        submitMfaFormAjax('frmMfaResetReq',      MFA_BASE + '/MfaOrquestador/ResetRequestAjax',  'resetReqErrorContainer');
+        submitMfaFormAjax('frmMfaResetConfirm',  MFA_BASE + '/MfaOrquestador/ResetConfirmAjax',  'resetConfirmErrorContainer');
 
         const show = '@(mfaShow ? "1" : "0")';
         const mode = '@mfaMode'.toLowerCase();
