@@ -745,7 +745,7 @@ function F_GetFuncionariosIris(V_Identificacion) {
              
                 $("#txtFuncionario").val(respuesta.data.Funcionario);
               
-                $("#txtDependencia2").val(respuesta.data.Estacion);
+               
                 $("#txtTelefono").val(respuesta.data.Celular);
                 $("#txtDependencia").val(respuesta.data.Dependencia).trigger('change');
                
@@ -756,7 +756,10 @@ function F_GetFuncionariosIris(V_Identificacion) {
                 $("#txtSiglaUnidad").val(respuesta.data.Fisica);
 
                 
-                
+                //handleDropdownChange('Irisp1/RegistrosIrisp1/F_GetCuadrantes', {
+                //    V_unidadLabora: respuesta.data.IdUndeLaborando,
+
+                //}, '#ddlCuadrante');
                 
             } else {
                
@@ -871,18 +874,33 @@ $('#ddlClaseModal').on('change', function () {
     }
 });
 
-$('#txtDependencia').change(function () {
+$('#ddlUnidad').change(function () {
     const valor1 = $(this).val();
-    const valor2 = $('#txtDependencia2').val();
+    
+
+    handleDropdownChange('Irisp1/RegistrosIrisp1/F_GetEstaciones', {
+        V_unidad: valor1,
+    
+    }, '#ddlEstacion');
+});
+
+
+$('#ddlEstacion').change(function () {
+    const valor1 = $(this).val();
+
 
     handleDropdownChange('Irisp1/RegistrosIrisp1/F_GetCuadrantes', {
-        V_unidadLabora: valor1,
-        V_unidadLabora2: valor2
+        V_unidad: valor1,
+
     }, '#ddlCuadrante');
 });
 
+
+
+
+
 function handleDropdownChange(url, params, dropdownSelector, callback) {
-    if (params && params.V_unidadLabora) {
+    if (params) {
         $.getJSON(url, params, function (data) {
             const dropdown = $(dropdownSelector);
             dropdown.empty().append('<option value="">Seleccione</option>');
@@ -1000,7 +1018,7 @@ function P_InsRegistroIrisP1() {
 
     const Obj_NuevoIrisP1 = {
         CriminalidadId: $("#txtConsecutivoIris").val(),
-        IdUnidad: $("#txtUndeLabora").val(),
+        IdUnidad: $("#ddlEstacion").val(),
         IdZona: $("#ddlZona").val(),
         IdentificacionInforma: $("#txtIdentificacion").val(),
         Celular: $("#txtTelefono").val(),
@@ -1202,6 +1220,8 @@ function limpiarFormularioIrisP1() {
     $("#txtRadioAccion").val('');
 
     // Combos con select2 o similares
+    $("#ddlUnidad").val('').trigger('change');
+    $("#ddlEstacion").val('').trigger('change');
     $("#ddlCuadrante").val('').trigger('change');
     $("#ddlEspecialidad").val('').trigger('change');
     $("#ddlTipoServicio").val('').trigger('change');

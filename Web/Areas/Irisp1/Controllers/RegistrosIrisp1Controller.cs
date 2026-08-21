@@ -28,7 +28,7 @@ using Web.Models;
 namespace Web.Areas.Irisp1.Controllers
 {
     [Area("Irisp1")]
-    [Authorize(Roles = "1,2,3,7")]
+    [Authorize(Roles = "1,2,3,6")]
     [AutoValidateAntiforgeryToken]
     public class RegistrosIrisp1Controller : Controller
     {
@@ -84,11 +84,23 @@ namespace Web.Areas.Irisp1.Controllers
             var estadosTask = _IDbDominios.F_GetDominiosIris(1);
             var especialidadTask = _IDbDominios.F_GetDominiosIris(160);
 
+
+            var codigoUnidad = Convert.ToInt64(User.FindFirstValue("IdUndeLabora"));
+            var rolesUsuarioRegistro = string.Join(",",
+                User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+            );
+
+            var unidadTask = _iDbIrisp1.F_GetUnidades(rolesUsuarioRegistro, codigoUnidad); 
+
             await Task.WhenAll(auditoriaTask, aniosTask, claseTask, modExpendioTask, clasiNarcotraficoTask, actividadTask,
                 fuenteTask, entornoTask, zonaTask, delitoTask, tipoServicioTask, existenciaTask, estadosTask, especialidadTask);
 
             var ddlAnioIris = (await aniosTask).Data.ToList();
             ViewBag.ddlAnioIris = new SelectList(ddlAnioIris, "AnoIrisp1", "AnoIrisp1");
+
+            var unidad = (await unidadTask).Data?.OrderBy(x => x.DESCRIPCION_DEPENDENCIA).ToList();
 
             var claseData = (await claseTask).Data?.OrderBy(x => x.Descripcion).ToList();
             var modExpendioData = (await modExpendioTask).Data?.OrderBy(x => x.Descripcion).ToList();
@@ -96,6 +108,7 @@ namespace Web.Areas.Irisp1.Controllers
             var fuenteData = (await fuenteTask).Data?.OrderBy(x => x.Descripcion).ToList();
             var delitoData = (await delitoTask).Data?.OrderBy(x => x.Descripcion).ToList();
 
+            ViewBag.ddlUnidad = new SelectList(unidad, "CONSECUTIVO", "DESCRIPCION_DEPENDENCIA"); 
             ViewBag.ddlClase = new SelectList(claseData, "IdDominio", "Descripcion");
             ViewBag.ddlModExpendio = new SelectList(modExpendioData, "IdDominio", "Descripcion");
             ViewBag.ddlClasiNarcotrafico = new SelectList(clasiNarcotraficoData, "IdDominio", "Descripcion");
@@ -113,6 +126,8 @@ namespace Web.Areas.Irisp1.Controllers
             ViewBag.ddlEstadosIrisP1 = new SelectList((await estadosTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlEspecialidad = new SelectList((await especialidadTask).Data?.OrderBy(x => x.Descripcion), "IdDominio", "Descripcion");
             ViewBag.ddlCuadrante = new SelectList(Enumerable.Empty<SelectListItem>());
+            ViewBag.ddlEstacion = new SelectList(Enumerable.Empty<SelectListItem>());
+          
 
             ViewBag.ddlClaseModal = new SelectList(claseData, "IdDominio", "Descripcion");
             ViewBag.ddlModExpendioModal = new SelectList(modExpendioData, "IdDominio", "Descripcion");
@@ -150,10 +165,44 @@ namespace Web.Areas.Irisp1.Controllers
 
 
 
-		[HttpGet]
-        public async Task<IActionResult> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetEstaciones(Int64 V_Unidad)
         {
-            var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidadLabora, V_unidadLabora2);
+            var estaciones = await _iDbIrisp1.F_GetEstaciones(V_Unidad);
+
+
+
+            if (estaciones.IdRespuesta > 0)
+            {
+
+
+                // Seleccionar solo los campos necesarios: Consecutivo y Descripcion
+                var resultado = estaciones.Data.Select(x => new
+                {
+                    Codigo = x.CONSECUTIVO,
+                    Descripcion = x.DESCRIPCION_DEPENDENCIA   // Accediendo a la propiedad 'DESCRIPCION'
+                }).ToList();
+
+                // Devolver la lista de resultados como JSON
+                return Json(resultado);
+
+
+
+            }
+            else
+            {
+                return Json(new { success = false });
+            }
+        }
+
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> F_GetCuadrantes(Int64 V_unidad)
+        {
+            var cuadrantes = await _iDbIrisp1.F_GetCuadrantes(V_unidad);
 
 
 

@@ -181,27 +181,53 @@
                                 <label class="Labels">Identificación</label>
                             </div>
                         </div>
-                        <div class="col-md-3 MargFloatBoos">
+                        <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                                 <input tabindex="5" name="txtFuncionario" type="text" id="txtFuncionario" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
                                 <label class="Labels">Funcionario:</label>
                             </div>
                         </div>
-                        <div class="col-md-5 MargFloatBoos">
+                        <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                             <input tabindex="5" name="txtUnidad" type="text" id="txtUnidad" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
                             <label class="Labels">Unidad:</label>
                             </div>
                         </div>
+
+                         <div class="col-md-2 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                                <input tabindex="2" id="txtTelefono" name="txtTelefono" type="number" value="" autocomplete="off" placeholder="Digite # de teléfono" class="form-control InputPading">
+                                <label class="Labels">Celular:</label>
+                            </div>
+                        </div>
+
                         <div class="row">
-                            <div class="col-md-3 MargFloatBoos hidden">
+                            <div class="col-md-0 MargFloatBoos hidden">
                                <div class="form-group has-float-label">
                                     <input tabindex="5" name="txtDependencia" type="text" id="txtDependencia" autocomplete="off" placeholder=" " class="form-control InputPading"  readonly/>
                                     <label class="Labels">txtDependencia:</label>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3 MargFloatBoos">
+
+                        <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                               
+                                @Html.DropDownList("ddlUnidad", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlUnidad", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Unidad:</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 MargFloatBoos">
+                            <div class="form-group has-float-label">
+                               
+                                @Html.DropDownList("ddlEstacion", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlEstacion", @class = "form-control select2", style = "width: 100%;" })
+                                <label class="Labels">Estación:</label>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-4 MargFloatBoos">
                             <div class="form-group has-float-label">
                                
                                 @Html.DropDownList("ddlCuadrante", null, String.Format("Seleccione"), htmlAttributes: new { @tabindex = 12, id = "ddlCuadrante", @class = "form-control select2", style = "width: 100%;" })
@@ -209,14 +235,7 @@
                             </div>
                         </div>
 
-                      
-
-                        <div class="col-md-2 MargFloatBoos">
-                            <div class="form-group has-float-label">
-                                <input tabindex="2" id="txtTelefono" name="txtTelefono" type="number" value="" autocomplete="off" placeholder="Digite # de teléfono" class="form-control InputPading">
-                                <label class="Labels">Celular:</label>
-                            </div>
-                        </div>
+                       
                         <div class="col-md-3 MargFloatBoos">
                             <div class="form-group has-float-label">
                                

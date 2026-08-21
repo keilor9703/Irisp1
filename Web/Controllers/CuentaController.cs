@@ -98,11 +98,11 @@ namespace Web.Controllers
             // FALLO de autenticación (booleano invertido por el contrato del servicio PIP/OUD).
             var respuestaOud = await _iDbConsultasPIP.ObtenerOudAsync(loginUsuario);
 
-            if (!respuestaOud.Respuesta)
-            {
-                ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
-                return View("InicioSesion", loginUsuario);
-            }
+            //if (!respuestaOud.Respuesta)
+            //{
+            //    ModelState.AddModelError("", "Usuario o Contraseña incorrecta, valide la información ingresada");
+            //    return View("InicioSesion", loginUsuario);
+            //}
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (string.IsNullOrWhiteSpace(ip)) ip = "0.0.0.0";

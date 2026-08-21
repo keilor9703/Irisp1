@@ -164,7 +164,122 @@ namespace Negocio.Gestion.Irisp1
         }
 
 
-        public async Task<DtoResultado<List<DtoCuadrantes>>> F_GetCuadrantes(string V_unidadLabora, string V_unidadLabora2)
+        // ================================================================
+        // F_GetUnidades
+        // ================================================================
+        public async Task<DtoResultado<List<DtoDominios>>> F_GetUnidades(string RolesUsuario, long CodigoUnidad)
+        {
+            var resp = new DtoResultado<List<DtoDominios>>
+            {
+                Operacion = "F_GetUnidades",
+                Data = new List<DtoDominios>()
+            };
+
+
+            RolesUsuario = (RolesUsuario ?? string.Empty).Trim();
+
+            try
+            {
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var p = new OracleDynamicParameters();
+
+                p.Add("P_Roles", RolesUsuario, OracleMappingType.Varchar2, ParameterDirection.Input);
+                p.Add("P_CodigoUnidad", CodigoUnidad, OracleMappingType.Int64, ParameterDirection.Input);
+
+                // 👇 IMPORTANTE: una FUNCTION se lee por RETURN VALUE (ReturnValue)
+                // El nombre puede ser "RETURN_VALUE" o el que tú quieras,
+                // lo clave es direction: ReturnValue
+                p.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                var lista = (await connection.QueryAsync<DtoDominios>(
+                    "PK_REGISTRO_IRIS.f_GetUnidades",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 120
+                )).ToList();
+
+                resp.Data = lista ?? new List<DtoDominios>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex, "OracleException en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                resp.Data = new List<DtoDominios>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en {Operacion}", resp.Operacion);
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                resp.Data = new List<DtoDominios>();
+            }
+
+            return resp;
+        }
+
+
+        public async Task<DtoResultado<List<DtoEstacion>>> F_GetEstaciones(Int64 V_Unidad)
+        {
+            var resp = new DtoResultado<List<DtoEstacion>>
+            {
+                Operacion = "F_GetEstaciones",
+                Data = new List<DtoEstacion>()
+            };
+
+            try
+            {
+
+                using var connection = new OracleConnection(_strConexionIris_Disec);
+
+                var parametros = new OracleDynamicParameters();
+                parametros.Add("P_Unidad", V_Unidad, OracleMappingType.Int64, ParameterDirection.Input);
+
+
+
+                // RefCursor de salida
+                parametros.Add("RETURN_VALUE", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.ReturnValue);
+
+                await connection.OpenAsync();
+
+                var lista = (await connection.QueryAsync<DtoEstacion>("PK_REGISTRO_IRIS.F_GetEstaciones", parametros, commandType: CommandType.StoredProcedure, commandTimeout: 120)).AsList();
+
+                resp.Data = lista ?? new List<DtoEstacion>();
+                resp.IdRespuesta = resp.Data.Count > 0 ? 1 : 0;
+                resp.Mensaje = resp.Data.Count > 0 ? "Consulta exitosa" : "No se encontraron datos";
+
+            }
+            catch (OracleException oex)
+            {
+                _logger.LogError(oex,
+                    "OracleException en {Operacion} | V_unidadLabora={V_Unidad} ",
+                    resp.Operacion, V_Unidad);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = $"OracleException: {oex.Message}";
+                // resp.Data ya va como lista vacía
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error Dapper en {Operacion} | V_unidadLabora={V_Unidad} ",
+                    resp.Operacion, V_Unidad);
+
+                resp.IdRespuesta = 0;
+                resp.Mensaje = ex.Message;
+                // resp.Data ya va como lista vacía
+            }
+
+            return resp;
+        }
+
+
+
+
+        public async Task<DtoResultado<List<DtoCuadrantes>>> F_GetCuadrantes(Int64 V_unidad)
         {
             var resp = new DtoResultado<List<DtoCuadrantes>>
             {
@@ -178,8 +293,8 @@ namespace Negocio.Gestion.Irisp1
                 using var connection = new OracleConnection(_strConexionIris_Disec);
 
                 var parametros = new OracleDynamicParameters();
-                parametros.Add("P_Dependencia", V_unidadLabora, OracleMappingType.Varchar2, ParameterDirection.Input);
-                parametros.Add("P_Dependencia2", V_unidadLabora2, OracleMappingType.Varchar2, ParameterDirection.Input);
+                parametros.Add("P_Dependencia", V_unidad, OracleMappingType.Int64, ParameterDirection.Input);
+                
                
 
                 // RefCursor de salida
@@ -197,8 +312,8 @@ namespace Negocio.Gestion.Irisp1
             catch (OracleException oex)
             {
                 _logger.LogError(oex,
-                    "OracleException en {Operacion} | V_unidadLabora={V_unidadLabora} | V_unidadLabora2={V_unidadLabora2} ",
-                    resp.Operacion, V_unidadLabora, V_unidadLabora2);
+                    "OracleException en {Operacion} | V_unidadLabora={V_unidad} ",
+                    resp.Operacion, V_unidad);
 
                 resp.IdRespuesta = 0;
                 resp.Mensaje = $"OracleException: {oex.Message}";
@@ -207,8 +322,8 @@ namespace Negocio.Gestion.Irisp1
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Error Dapper en {Operacion} | V_unidadLabora={V_unidadLabora} | V_unidadLabora2={V_unidadLabora2} ",
-                    resp.Operacion, V_unidadLabora, V_unidadLabora2);
+                    "Error Dapper en {Operacion} | V_unidadLabora={V_unidad} ",
+                    resp.Operacion, V_unidad);
 
                 resp.IdRespuesta = 0;
                 resp.Mensaje = ex.Message;
