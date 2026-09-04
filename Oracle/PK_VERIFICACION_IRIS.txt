@@ -58,8 +58,8 @@ BEGIN
           FROM IRISP_RESPON_VALIDACION c
           JOIN VM_UNIDADES f ON c.id_unidad_respon = f.consecutivo
          WHERE c.vigente = 1
-           AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-           AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+           AND c.FECHA_CREACION >= TO_DATE(NVL(NULLIF(P_Anio,0), EXTRACT(YEAR FROM SYSDATE)) || '-01-01', 'YYYY-MM-DD')
+           AND c.FECHA_CREACION < TO_DATE((NVL(NULLIF(P_Anio,0), EXTRACT(YEAR FROM SYSDATE)) + 1) || '-01-01', 'YYYY-MM-DD')
            AND NVL(f.CONSECUTIVO,0) = V_NuevaUnde;
 
         DBMS_OUTPUT.PUT_LINE('Nivel ' || i || ' ? Unidad: ' || V_NuevaUnde || ' ? Registros: ' || V_Count);
@@ -184,8 +184,8 @@ BEGIN
         WHERE c.VIGENTE = 1
           -- Filtro por rango (sargable, permite usar índice sobre FECHA_CREACION) en vez de
           -- EXTRACT(YEAR FROM ...) = P_Anio, que obligaba a recorrer toda la tabla.
-          AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-          AND c.FECHA_CREACION <  TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
+          AND c.FECHA_CREACION >= TO_DATE(NVL(NULLIF(P_Anio,0), EXTRACT(YEAR FROM SYSDATE)) || '-01-01', 'YYYY-MM-DD')
+          AND c.FECHA_CREACION <  TO_DATE((NVL(NULLIF(P_Anio,0), EXTRACT(YEAR FROM SYSDATE)) + 1) || '-01-01', 'YYYY-MM-DD')
 
        -- (1) SOLO REGISTROS CON RESPONSABLE (aplica SIEMPRE)
               AND EXISTS (

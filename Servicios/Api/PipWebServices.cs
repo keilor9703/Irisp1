@@ -37,15 +37,55 @@ namespace Servicios.Api
                 "application/json"
             );
             var request = await _httpClient.PostAsync(_apiGatewayUrl.Token, content);
+            var cuerpo = await request.Content.ReadAsStringAsync();
 
-            var contenido = JsonSerializer.Deserialize<DtoRespuesta<string>>(
-                await request.Content.ReadAsStringAsync(),
-                new JsonSerializerOptions
+            // El gateway PIP a veces responde con cuerpo vacío o no-JSON (servicio caído, URL
+            // incorrecta o red/firewall bloqueado desde el servidor). Antes esto reventaba en
+            // JsonSerializer.Deserialize con "The input does not contain any JSON tokens"; ahora se
+            // devuelve un DtoRespuesta con mensaje diagnóstico (código HTTP + fragmento del cuerpo).
+            if (!request.IsSuccessStatusCode || string.IsNullOrWhiteSpace(cuerpo))
+            {
+                var fragmento = string.IsNullOrEmpty(cuerpo)
+                    ? "(cuerpo vacío)"
+                    : cuerpo.Substring(0, Math.Min(300, cuerpo.Length));
+                return new DtoRespuesta<string>
                 {
-                    //no distingue entre mayúsculas y minúsculas durante la deserialización
-                    PropertyNameCaseInsensitive = true
-                });
-            return contenido!;
+                    Estado = false,
+                    Codigo = EstadoOperacion.Malo,
+                    Mensaje = $"Respuesta no válida del servicio PIP de token. HTTP {(int)request.StatusCode} {request.StatusCode}. Cuerpo: {fragmento}",
+                    Respuesta = string.Empty
+                };
+            }
+
+            try
+            {
+                var contenido = JsonSerializer.Deserialize<DtoRespuesta<string>>(
+                    cuerpo,
+                    new JsonSerializerOptions
+                    {
+                        //no distingue entre mayúsculas y minúsculas durante la deserialización
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                return contenido ?? new DtoRespuesta<string>
+                {
+                    Estado = false,
+                    Codigo = EstadoOperacion.Malo,
+                    Mensaje = "El servicio PIP de token devolvió un JSON nulo.",
+                    Respuesta = string.Empty
+                };
+            }
+            catch (JsonException jex)
+            {
+                var fragmento = cuerpo.Substring(0, Math.Min(300, cuerpo.Length));
+                return new DtoRespuesta<string>
+                {
+                    Estado = false,
+                    Codigo = EstadoOperacion.Malo,
+                    Mensaje = $"El servicio PIP de token devolvió un cuerpo no-JSON: {jex.Message}. Cuerpo: {fragmento}",
+                    Respuesta = string.Empty
+                };
+            }
         }
 
         public async Task<DtoRespuesta<bool>> ObtenerOudSeviciosAsync(DtoCredenciales _credenciales, string token)
