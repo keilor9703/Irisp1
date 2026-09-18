@@ -59,7 +59,22 @@ QuestPDF.Settings.License = LicenseType.Community;
 // Anti-CSRF: el token puede llegar por header (lo adjunta el _Layout vía ajaxSend)
 // además del campo de formulario. Los controladores propios lo exigen con
 // [AutoValidateAntiforgeryToken]; la librería MFA externa no se ve afectada.
-builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+    // La cookie antiforgery también debe viajar solo por HTTPS (CWE-614).
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+});
+
+// HSTS robusto (CWE-319: HSTS permisivo). El pipeline ya llama app.UseHsts(); aquí se sube el
+// max-age a 1 año e incluye subdominios, en vez del valor por defecto (30 días) que el escáner
+// reporta como permisivo. Preload queda deshabilitado (habilitar solo si se registrará el dominio).
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+});
 
 builder.Services.AddHttpClient();
 
@@ -200,6 +215,40 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Fuerza el atributo Secure en TODAS las cookies emitidas por la app —antiforgery, TempData,
+// las de la librería MFA, etc.— no solo las de auth/sesión que ya lo traen (CWE-614).
+// Nota: si el escáner marca una cookie del balanceador (p.ej. ARRAffinity), esa se configura
+// como Secure en el balanceador/IIS ARR, no desde la aplicación.
+app.UseCookiePolicy(new CookiePolicyOptions
+{
+    Secure = CookieSecurePolicy.Always
+});
+
+// Cabeceras de seguridad HTTP. Se fijan en OnStarting (justo antes de enviar la respuesta) para
+// que apliquen también a archivos estáticos y páginas de error.
+//   - X-Content-Type-Options: nosniff  -> CWE-693 (MIME sniffing)
+//   - Cache-Control no-store            -> CWE-525, solo en documentos HTML (páginas con sesión/
+//     datos sensibles), para no romper el cacheo de los assets estáticos versionados.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+
+        var contentType = context.Response.ContentType ?? string.Empty;
+        if (contentType.Contains("text/html", StringComparison.OrdinalIgnoreCase))
+        {
+            headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private";
+            headers["Pragma"] = "no-cache";
+            headers["Expires"] = "0";
+        }
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 app.UseStaticFiles();
 app.UseRouting();
 
