@@ -9,53 +9,23 @@ create or replace package body PK_REPORTES_IRIS is
 ) AS
 
     V_Sigla        VARCHAR2(20);
-    --V_Region       VARCHAR2(2);
-    V_NuevaUnde    NUMBER := P_CodigoUnidad;
-    V_Count        NUMBER := 0;
-    V_TempUnde     NUMBER;
 
 BEGIN
     ------------------------------------------------------------------
-    -- 1. Obtener SIGLA_PAPA y REGIÓN de la unidad del usuario
+    -- SIGLA_PAPA de la unidad del usuario (para el filtro por rol 7).
     ------------------------------------------------------------------
     BEGIN
         SELECT sig.sigla_papa
-        INTO V_Sigla
-        FROM VM_UNIDADES sig
-        WHERE sig.consecutivo = P_CodigoUnidad;
-
+          INTO V_Sigla
+          FROM VM_UNIDADES sig
+         WHERE sig.consecutivo = P_CodigoUnidad
+           AND ROWNUM = 1;
     EXCEPTION WHEN NO_DATA_FOUND THEN
         V_Sigla := NULL;
-      
     END;
-  DBMS_OUTPUT.PUT_LINE('Sigla: ' || NVL(V_Sigla,'NULL') );
-    ------------------------------------------------------------------
-    -- 2. Subir niveles hasta encontrar registros (máx 3)
-    ------------------------------------------------------------------
-    FOR i IN 1..3 LOOP
-        
-        SELECT COUNT(*)
-        INTO V_Count
-        FROM IRISP_CRIMINALIDAD c
-        JOIN VM_UNIDADES f ON c.ID_UNIDAD = f.consecutivo
-        WHERE c.vigente = 1
-          AND c.FECHA_CREACION >= TO_DATE(P_Anio || '-01-01', 'YYYY-MM-DD')
-          AND c.FECHA_CREACION < TO_DATE((P_Anio + 1) || '-01-01', 'YYYY-MM-DD')
-          AND f.consecutivo = NVL(V_NuevaUnde, 0);
-
-        EXIT WHEN V_Count > 0;
-
-        BEGIN
-            V_TempUnde := TO_NUMBER(F_Consultar_UndeConsecutivo(V_NuevaUnde));
-            IF V_TempUnde IS NOT NULL THEN
-                V_NuevaUnde := V_TempUnde;
-            ELSE
-                EXIT;
-            END IF;
-        EXCEPTION
-            WHEN OTHERS THEN EXIT;
-        END;
-    END LOOP;
+    -- NOTA de rendimiento: se eliminó el bucle de escalado de unidad (V_NuevaUnde). Calculaba un
+    -- valor que NUNCA se usaba en el cursor (el filtro por rol usa V_Sigla) y hacía 3 COUNT sobre
+    -- IRISP_CRIMINALIDAD + VM_UNIDADES en cada llamada.
 
 
     ------------------------------------------------------------------
@@ -70,22 +40,33 @@ BEGIN
             CONNECT BY LEVEL <= REGEXP_COUNT(P_Roles, '[^,]+')
         ),
 
-        MAX_FECHAS AS (
-            SELECT consecutivo, MAX(FECHA_ACTUALIZA) AS FECHA_MAX
-            FROM VM_UNIDADES
-            GROUP BY consecutivo
-        ),
-
-
-        RESP AS (
-            SELECT rv.*
+        -- Una fila por consecutivo (VM_UNIDADES trae históricos): resuelve el nombre de la unidad
+        -- responsable por JOIN, en lugar de con la función f_consultar_unidad ejecutada por fila.
+        UND AS (
+            SELECT consecutivo, descripcion_dependencia, sigla_depende
             FROM (
-                SELECT r.*,
-                       ROW_NUMBER() OVER(PARTITION BY r.criminalidad_id ORDER BY r.fecha_creacion DESC) rn
-                FROM IRISP_RESPON_VALIDACION r
-                WHERE r.vigente = 1
-            ) rv
-            WHERE rv.rn = 1
+                SELECT v.consecutivo, v.descripcion_dependencia, v.sigla_depende,
+                       ROW_NUMBER() OVER (PARTITION BY v.consecutivo ORDER BY v.fecha_actualiza DESC) rn
+                FROM VM_UNIDADES v
+            )
+            WHERE rn = 1
+        ),
+        -- Última unidad responsable por caso y tipo de tarea (52 = verificación, 71 = investigación).
+        -- Reemplaza las funciones escalares f_unidad_verif_existe / f_unidad_asig_inves, que se
+        -- ejecutaban FILA A FILA (cada una: join de 2 tablas + ORDER BY + otra función).
+        TAREAS_UND AS (
+            SELECT criminalidad_id, id_lista_tareas, id_unidad_respon
+            FROM (
+                SELECT t.criminalidad_id, it.id_lista_tareas, t.id_unidad_respon,
+                       ROW_NUMBER() OVER (PARTITION BY t.criminalidad_id, it.id_lista_tareas
+                                          ORDER BY it.fecha_creacion DESC) rn
+                FROM IRISP_RESPON_VALIDACION t
+                JOIN IRISP_TAREA it ON it.respon_validacion_id = t.respon_validacion_id
+                WHERE t.vigente = 1
+                  AND it.vigente = 1
+                  AND it.id_lista_tareas IN (52, 71)
+            )
+            WHERE rn = 1
         )
 
 
@@ -130,11 +111,13 @@ BEGIN
 
            
 
-            -- UNIDAD RESPONSABLE
-            f_unidad_verif_existe(c.CRIMINALIDAD_ID) AS unidad_verifica,
+            -- UNIDAD RESPONSABLE (verificación) — resuelta por JOIN, ya no con función por fila.
+            CASE WHEN uv.consecutivo IS NULL THEN NULL
+                 ELSE uv.descripcion_dependencia || ' - ' || uv.sigla_depende END AS unidad_verifica,
 
-            -- PROCESO INVESTIGATIVO
-            f_unidad_asig_inves(c.CRIMINALIDAD_ID) AS unidad_asig_inves,
+            -- PROCESO INVESTIGATIVO — resuelto por JOIN, ya no con función por fila.
+            CASE WHEN ui.consecutivo IS NULL THEN NULL
+                 ELSE ui.descripcion_dependencia || ' - ' || ui.sigla_depende END AS unidad_asig_inves,
 
             -- FUNCIONARIO INFORMA
             c.funcionario_informa,
@@ -157,9 +140,10 @@ BEGIN
             c.tipo_servicio
 
         FROM VM_GENERAL_IRISP c
-       
-        LEFT JOIN RESP res ON res.criminalidad_id = c.CRIMINALIDAD_ID
-       -- LEFT JOIN VM_UNIDADES f ON f.consecutivo = c.unidad
+        LEFT JOIN TAREAS_UND tv ON tv.criminalidad_id = c.CRIMINALIDAD_ID AND tv.id_lista_tareas = 52
+        LEFT JOIN UND uv        ON uv.consecutivo     = tv.id_unidad_respon
+        LEFT JOIN TAREAS_UND ti ON ti.criminalidad_id = c.CRIMINALIDAD_ID AND ti.id_lista_tareas = 71
+        LEFT JOIN UND ui        ON ui.consecutivo     = ti.id_unidad_respon
 
         WHERE
             -- Filtro por rango (sargable) en vez de EXTRACT(YEAR FROM ...) = ..., que obligaba
