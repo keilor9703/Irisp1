@@ -9,6 +9,7 @@ DECLARE
   v_tipo      CTR_MENU_IRIS.TIPO%TYPE;
   v_posicion  NUMBER;
   v_id_menu   NUMBER;
+  v_idmenurol NUMBER;
   v_existe    NUMBER;
 BEGIN
   -- Padre (nodo ADMINISTRACIÓN) y TIPO, tomados de la opción "Usuarios".
@@ -32,7 +33,9 @@ BEGIN
     SELECT NVL(MAX(posicion), 0) + 1 INTO v_posicion
       FROM CTR_MENU_IRIS WHERE idpadre = v_idpadre;
 
-    v_id_menu := CTR_MENU_IRIS_SEQ.NEXTVAL;  -- si la secuencia tiene otro nombre, ajústelo
+    -- ID del menú: siguiente valor libre de la tabla (sin depender de una secuencia,
+    -- ya que CTR_MENU_IRIS_SEQ puede no existir o tener otro nombre en este esquema).
+    SELECT NVL(MAX(id_menu), 0) + 1 INTO v_id_menu FROM CTR_MENU_IRIS;
 
     INSERT INTO CTR_MENU_IRIS
       (id_menu, descripcion, idpadre, posicion, tipo, area, controlador, vista, icono,
@@ -43,12 +46,16 @@ BEGIN
        0, SYSDATE, 'DEPLOY');
 
     -- Roles que pueden ver la opción: los mismos que "Usuarios" (normalmente 1 y 2).
+    -- El id_menurol también se calcula con MAX+1 (más ROWNUM para no repetir en el lote).
+    SELECT NVL(MAX(id_menurol), 0) INTO v_idmenurol FROM CTR_MENU_ROLES_IRIS;
+
     INSERT INTO CTR_MENU_ROLES_IRIS
       (id_menurol, id_rol, id_menu, usuario_creacion, fecha_creacion, maquina_creacion)
-    SELECT CTR_MENU_ROLES_IRIS_SEQ.NEXTVAL, mr.id_rol, v_id_menu, 0, SYSDATE, 'DEPLOY'
-      FROM CTR_MENU_ROLES_IRIS mr
-      JOIN CTR_MENU_IRIS m ON m.id_menu = mr.id_menu
-     WHERE UPPER(m.controlador) = 'USUARIOS' AND UPPER(m.area) = 'ADMIN';
+    SELECT v_idmenurol + ROWNUM, mr.id_rol, v_id_menu, 0, SYSDATE, 'DEPLOY'
+      FROM (SELECT DISTINCT mr.id_rol
+              FROM CTR_MENU_ROLES_IRIS mr
+              JOIN CTR_MENU_IRIS m ON m.id_menu = mr.id_menu
+             WHERE UPPER(m.controlador) = 'USUARIOS' AND UPPER(m.area) = 'ADMIN') mr;
 
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Menú creado. ID_MENU=' || v_id_menu || ' bajo IDPADRE=' || v_idpadre);
