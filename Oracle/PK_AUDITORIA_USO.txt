@@ -1,0 +1,234 @@
+--==================================================================================================
+-- PK_AUDITORIA_USO
+-- Agregaciones para el Dashboard de Uso y Auditoría del sistema (módulo Administración).
+-- Fuente: CTR_AUDITORIA_IRIS (cada ingreso al sistema, ingreso a módulo, exportación y descarga se
+-- registra con PKS_ADMINISTRACION_IRIS.P_InsAuditoria). La unidad del funcionario se resuelve por
+-- VM_REHU_PERSONAL (identificacion -> sigla_papa / descripcion_dependencia).
+--
+-- Todas las funciones filtran por: rango de fechas, unidad (sigla_papa, opcional) y usuario/cédula
+-- (opcional). Las cifras de "usuarios creados" y "nunca ingresaron" se calculan en la capa .NET
+-- cruzando F_GetUsuarios con F_GetPorUsuario (igual que el Tablero de Control de Gestión calcula
+-- sus KPIs en memoria), para no depender aquí de la tabla interna de usuarios.
+--==================================================================================================
+
+CREATE OR REPLACE PACKAGE PK_AUDITORIA_USO AS
+
+  FUNCTION F_GetResumen(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR;
+
+  FUNCTION F_GetPorModulo(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR;
+
+  FUNCTION F_GetPorFecha(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR;
+
+  FUNCTION F_GetPorUnidad(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR;
+
+  FUNCTION F_GetPorUsuario(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR;
+
+END PK_AUDITORIA_USO;
+/
+
+CREATE OR REPLACE PACKAGE BODY PK_AUDITORIA_USO AS
+
+  --------------------------------------------------------------------------------------------------
+  -- F_GetResumen: una fila con los totales del periodo (KPIs agregados).
+  --------------------------------------------------------------------------------------------------
+  FUNCTION F_GetResumen(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      WITH PERS AS (
+        SELECT identificacion,
+               MAX(sigla_papa)              AS sigla_papa,
+               MAX(descripcion_dependencia) AS unidad
+          FROM VM_REHU_PERSONAL
+         GROUP BY identificacion
+      )
+      SELECT
+        COUNT(*) AS TOTAL_EVENTOS,
+        COUNT(DISTINCT a.usuario_creacion) AS USUARIOS_ACTIVOS,
+        COUNT(CASE WHEN UPPER(a.evento) LIKE 'INICIO%' THEN 1 END) AS TOTAL_INGRESOS,
+        COUNT(DISTINCT CASE WHEN UPPER(a.evento) LIKE 'INGRESO%DULO%'
+                            THEN TRIM(SUBSTR(a.descripcion, INSTR(LOWER(a.descripcion), 'dulo ') + 5)) END) AS MODULOS_DISTINTOS,
+        COUNT(CASE WHEN UPPER(a.evento) LIKE 'EXPORTAR%'
+                     OR UPPER(a.descripcion) LIKE 'EXCEL%'
+                     OR UPPER(a.descripcion) LIKE 'PDF%' THEN 1 END) AS EXPORTACIONES,
+        COUNT(CASE WHEN UPPER(a.evento) LIKE 'DESCARGA%' THEN 1 END) AS DESCARGAS
+      FROM CTR_AUDITORIA_IRIS a
+      LEFT JOIN PERS p ON p.identificacion = a.usuario_creacion
+      WHERE a.fecha_creacion >= P_FechaIni
+        AND a.fecha_creacion <  P_FechaFin + 1
+        AND (P_Sigla   IS NULL OR p.sigla_papa = P_Sigla)
+        AND (P_Usuario IS NULL OR a.usuario_creacion = P_Usuario);
+    RETURN l_rc;
+  END F_GetResumen;
+
+  --------------------------------------------------------------------------------------------------
+  -- F_GetPorModulo: ingresos a módulo agrupados por módulo/funcionalidad (texto tras "módulo ").
+  --------------------------------------------------------------------------------------------------
+  FUNCTION F_GetPorModulo(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      WITH PERS AS (
+        SELECT identificacion, MAX(sigla_papa) AS sigla_papa
+          FROM VM_REHU_PERSONAL GROUP BY identificacion
+      ),
+      BASE AS (
+        SELECT NVL(TRIM(SUBSTR(a.descripcion, INSTR(LOWER(a.descripcion), 'dulo ') + 5)), 'Sin módulo') AS modulo,
+               a.usuario_creacion
+          FROM CTR_AUDITORIA_IRIS a
+          LEFT JOIN PERS p ON p.identificacion = a.usuario_creacion
+         WHERE a.fecha_creacion >= P_FechaIni
+           AND a.fecha_creacion <  P_FechaFin + 1
+           AND UPPER(a.evento) LIKE 'INGRESO%DULO%'
+           AND (P_Sigla   IS NULL OR p.sigla_papa = P_Sigla)
+           AND (P_Usuario IS NULL OR a.usuario_creacion = P_Usuario)
+      )
+      SELECT modulo AS MODULO,
+             COUNT(*) AS CANTIDAD,
+             COUNT(DISTINCT usuario_creacion) AS USUARIOS
+        FROM BASE
+       GROUP BY modulo
+       ORDER BY CANTIDAD DESC;
+    RETURN l_rc;
+  END F_GetPorModulo;
+
+  --------------------------------------------------------------------------------------------------
+  -- F_GetPorFecha: actividad por día (serie temporal).
+  --------------------------------------------------------------------------------------------------
+  FUNCTION F_GetPorFecha(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      WITH PERS AS (
+        SELECT identificacion, MAX(sigla_papa) AS sigla_papa
+          FROM VM_REHU_PERSONAL GROUP BY identificacion
+      )
+      SELECT TRUNC(a.fecha_creacion) AS DIA,
+             COUNT(*) AS TOTAL_EVENTOS,
+             COUNT(CASE WHEN UPPER(a.evento) LIKE 'INICIO%' THEN 1 END) AS TOTAL_INGRESOS
+        FROM CTR_AUDITORIA_IRIS a
+        LEFT JOIN PERS p ON p.identificacion = a.usuario_creacion
+       WHERE a.fecha_creacion >= P_FechaIni
+         AND a.fecha_creacion <  P_FechaFin + 1
+         AND (P_Sigla   IS NULL OR p.sigla_papa = P_Sigla)
+         AND (P_Usuario IS NULL OR a.usuario_creacion = P_Usuario)
+       GROUP BY TRUNC(a.fecha_creacion)
+       ORDER BY DIA;
+    RETURN l_rc;
+  END F_GetPorFecha;
+
+  --------------------------------------------------------------------------------------------------
+  -- F_GetPorUnidad: actividad agrupada por unidad (sigla_papa / dependencia del funcionario).
+  --------------------------------------------------------------------------------------------------
+  FUNCTION F_GetPorUnidad(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      WITH PERS AS (
+        SELECT identificacion,
+               MAX(sigla_papa)              AS sigla_papa,
+               MAX(descripcion_dependencia) AS unidad
+          FROM VM_REHU_PERSONAL GROUP BY identificacion
+      )
+      SELECT NVL(p.sigla_papa, '-')          AS SIGLA,
+             NVL(p.unidad, 'Sin unidad')     AS UNIDAD,
+             COUNT(*)                        AS CANTIDAD,
+             COUNT(DISTINCT a.usuario_creacion) AS USUARIOS
+        FROM CTR_AUDITORIA_IRIS a
+        LEFT JOIN PERS p ON p.identificacion = a.usuario_creacion
+       WHERE a.fecha_creacion >= P_FechaIni
+         AND a.fecha_creacion <  P_FechaFin + 1
+         AND (P_Sigla   IS NULL OR p.sigla_papa = P_Sigla)
+         AND (P_Usuario IS NULL OR a.usuario_creacion = P_Usuario)
+       GROUP BY NVL(p.sigla_papa, '-'), NVL(p.unidad, 'Sin unidad')
+       ORDER BY CANTIDAD DESC;
+    RETURN l_rc;
+  END F_GetPorUnidad;
+
+  --------------------------------------------------------------------------------------------------
+  -- F_GetPorUsuario: actividad por funcionario (cédula). Alimenta la tabla de depuración de usuarios,
+  -- el top de usuarios y el cruce con F_GetUsuarios para detectar quién NUNCA ingresó.
+  --------------------------------------------------------------------------------------------------
+  FUNCTION F_GetPorUsuario(
+    P_FechaIni IN DATE,
+    P_FechaFin IN DATE,
+    P_Sigla    IN VARCHAR2 DEFAULT NULL,
+    P_Usuario  IN NUMBER   DEFAULT NULL
+  ) RETURN SYS_REFCURSOR IS
+    l_rc SYS_REFCURSOR;
+  BEGIN
+    OPEN l_rc FOR
+      WITH PERS AS (
+        SELECT identificacion,
+               MAX(sigla_papa)              AS sigla_papa,
+               MAX(descripcion_dependencia) AS unidad
+          FROM VM_REHU_PERSONAL GROUP BY identificacion
+      )
+      SELECT a.usuario_creacion AS IDENTIFICACION,
+             MAX(p.sigla_papa)  AS SIGLA,
+             MAX(p.unidad)      AS UNIDAD,
+             COUNT(*)           AS TOTAL_EVENTOS,
+             COUNT(CASE WHEN UPPER(a.evento) LIKE 'INICIO%' THEN 1 END) AS TOTAL_INGRESOS,
+             MAX(CASE WHEN UPPER(a.evento) LIKE 'INICIO%' THEN a.fecha_creacion END) AS ULTIMO_INGRESO,
+             MIN(CASE WHEN UPPER(a.evento) LIKE 'INICIO%' THEN a.fecha_creacion END) AS PRIMER_INGRESO,
+             COUNT(DISTINCT CASE WHEN UPPER(a.evento) LIKE 'INGRESO%DULO%'
+                                 THEN TRIM(SUBSTR(a.descripcion, INSTR(LOWER(a.descripcion), 'dulo ') + 5)) END) AS MODULOS_DISTINTOS,
+             MAX(a.fecha_creacion) AS ULTIMA_ACTIVIDAD
+        FROM CTR_AUDITORIA_IRIS a
+        LEFT JOIN PERS p ON p.identificacion = a.usuario_creacion
+       WHERE a.fecha_creacion >= P_FechaIni
+         AND a.fecha_creacion <  P_FechaFin + 1
+         AND (P_Sigla   IS NULL OR p.sigla_papa = P_Sigla)
+         AND (P_Usuario IS NULL OR a.usuario_creacion = P_Usuario)
+       GROUP BY a.usuario_creacion
+       ORDER BY TOTAL_EVENTOS DESC;
+    RETURN l_rc;
+  END F_GetPorUsuario;
+
+END PK_AUDITORIA_USO;
+/

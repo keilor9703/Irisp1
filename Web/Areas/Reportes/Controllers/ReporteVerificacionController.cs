@@ -40,6 +40,10 @@ namespace Web.Areas.Reportes.Controllers
 
         public async Task<IActionResult> ReporteVerificacion()
         {
+            await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo",
+                "Ingreso módulo Reportes/ReporteVerificacion", Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                HttpContext.Session.GetString("IpMaquina"));
+
             var ddlAnioIris = (await _iDbReportesGeneral.F_GetAniosIrisP1()).Data?.ToList() ?? new List<DtoAnioR>();
             var anioActual = ddlAnioIris.Any() ? ddlAnioIris.Max(x => x.AnoIrisp1) : (int?)null;
 

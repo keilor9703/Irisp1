@@ -40,8 +40,12 @@ namespace Web.Areas.Integrantes.Controllers
 
 
 
-        public IActionResult BuscarIntegrantes()
+        public async Task<IActionResult> BuscarIntegrantes()
         {
+            await _iDbAdministracion.P_InsAuditoria(Convert.ToInt64(User.FindFirstValue("Identificacion")), "Ingreso Módulo",
+                "Ingreso módulo Integrantes/Buscar", Convert.ToInt64(User.FindFirstValue("Identificacion")),
+                HttpContext.Session.GetString("IpMaquina"));
+
             return View();
         }
 

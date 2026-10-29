@@ -152,6 +152,7 @@ builder.Services.AddScoped<IPipWebServices, PipWebServices>();
 
 // Áreas
 builder.Services.AddScoped<IDbAdministracion, DbAdministracion>();
+builder.Services.AddScoped<IDbAuditoriaUso, DbAuditoriaUso>();
 builder.Services.AddScoped<IDbIrisp1, DbIrisp1>();
 builder.Services.AddScoped<IDbFuncionarios, DbFuncionarios>();
 builder.Services.AddScoped<IDbDominios, DbDominios>();
