@@ -102,6 +102,11 @@
 </div>
 
 @section scripts {
+    <script>
+        // URL absoluta de la acción (el layout define <base href="~/">, por eso las
+        // rutas relativas resolverían contra la raíz y darían 404).
+        var UrlGetDashboardUso = "@Url.Action("GetDashboard", "AuditoriaUso", new { Area = "Admin" })";
+    </script>
     <script src="~/TemplateMonster_bt5/assets/libs/chart.js/dist/Chart.min.js"></script>
     <script src="~/areas/admin/DashboardUso.js" asp-append-version="true"></script>
 }

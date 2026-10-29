@@ -25,7 +25,7 @@ function cargarDashboard() {
     };
 
     $.ajax({
-        url: "GetDashboard",
+        url: (typeof UrlGetDashboardUso !== "undefined") ? UrlGetDashboardUso : "GetDashboard",
         type: "GET",
         data: params,
         success: function (resp) {
