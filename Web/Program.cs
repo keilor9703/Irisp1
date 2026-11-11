@@ -251,6 +251,21 @@ app.Use(async (context, next) =>
 });
 
 app.UseStaticFiles();
+
+// Manual de Usuario: se sirve el contenido del servidor de archivos (HTML + CSS/JS/imágenes)
+// bajo la ruta web /manuales. La carpeta es configurable (RutasArchivosIris:RutaManuales) para
+// poder actualizar el manual sin redesplegar. Se valida Directory.Exists para no impedir el
+// arranque en entornos donde el share no esté disponible (p. ej. desarrollo local).
+var rutaManuales = app.Configuration["RutasArchivosIris:RutaManuales"];
+if (!string.IsNullOrWhiteSpace(rutaManuales) && Directory.Exists(rutaManuales))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(rutaManuales),
+        RequestPath = "/manuales"
+    });
+}
+
 app.UseRouting();
 
 app.UseSession();
