@@ -252,43 +252,6 @@ app.Use(async (context, next) =>
 
 app.UseStaticFiles();
 
-// Manual de Usuario: se sirve el contenido del servidor de archivos (HTML + CSS/JS/imágenes)
-// bajo la ruta web /manuales. La carpeta es configurable (RutasArchivosIris:RutaManuales) para
-// poder actualizar el manual sin redesplegar. Se valida Directory.Exists para no impedir el
-// arranque en entornos donde el share no esté disponible (p. ej. desarrollo local).
-var rutaManuales = app.Configuration["RutasArchivosIris:RutaManuales"];
-if (!string.IsNullOrWhiteSpace(rutaManuales) && Directory.Exists(rutaManuales))
-{
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(rutaManuales),
-        RequestPath = "/manuales"
-    });
-}
-
-// Diagnóstico temporal del Manual de Usuario: muestra la ruta configurada, si la carpeta es
-// accesible para el app pool y qué archivos contiene. Se ubica antes del routing/sesión para
-// no ser interceptado. Quitar una vez verificado el acceso al manual.
-app.Map("/manuales-diag", diag => diag.Run(async ctx =>
-{
-    ctx.Response.ContentType = "text/plain; charset=utf-8";
-    var ruta = app.Configuration["RutasArchivosIris:RutaManuales"];
-    await ctx.Response.WriteAsync("RutaManuales configurada: " + (ruta ?? "(null)") + "\n");
-    if (string.IsNullOrWhiteSpace(ruta)) { await ctx.Response.WriteAsync("La clave no está configurada.\n"); return; }
-    bool existe;
-    try { existe = Directory.Exists(ruta); }
-    catch (Exception ex) { await ctx.Response.WriteAsync("Error al acceder: " + ex.Message + "\n"); return; }
-    await ctx.Response.WriteAsync("Directory.Exists: " + existe + "\n");
-    if (!existe) { await ctx.Response.WriteAsync("La carpeta no existe o el app pool no tiene acceso.\n"); return; }
-    try
-    {
-        var archivos = Directory.GetFileSystemEntries(ruta);
-        await ctx.Response.WriteAsync("Elementos encontrados (" + archivos.Length + "):\n");
-        foreach (var a in archivos) await ctx.Response.WriteAsync("  " + Path.GetFileName(a) + "\n");
-    }
-    catch (Exception ex) { await ctx.Response.WriteAsync("Error al listar: " + ex.Message + "\n"); }
-}));
-
 app.UseRouting();
 
 app.UseSession();
