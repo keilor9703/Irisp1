@@ -266,6 +266,29 @@ if (!string.IsNullOrWhiteSpace(rutaManuales) && Directory.Exists(rutaManuales))
     });
 }
 
+// Diagnóstico temporal del Manual de Usuario: muestra la ruta configurada, si la carpeta es
+// accesible para el app pool y qué archivos contiene. Se ubica antes del routing/sesión para
+// no ser interceptado. Quitar una vez verificado el acceso al manual.
+app.Map("/manuales-diag", diag => diag.Run(async ctx =>
+{
+    ctx.Response.ContentType = "text/plain; charset=utf-8";
+    var ruta = app.Configuration["RutasArchivosIris:RutaManuales"];
+    await ctx.Response.WriteAsync("RutaManuales configurada: " + (ruta ?? "(null)") + "\n");
+    if (string.IsNullOrWhiteSpace(ruta)) { await ctx.Response.WriteAsync("La clave no está configurada.\n"); return; }
+    bool existe;
+    try { existe = Directory.Exists(ruta); }
+    catch (Exception ex) { await ctx.Response.WriteAsync("Error al acceder: " + ex.Message + "\n"); return; }
+    await ctx.Response.WriteAsync("Directory.Exists: " + existe + "\n");
+    if (!existe) { await ctx.Response.WriteAsync("La carpeta no existe o el app pool no tiene acceso.\n"); return; }
+    try
+    {
+        var archivos = Directory.GetFileSystemEntries(ruta);
+        await ctx.Response.WriteAsync("Elementos encontrados (" + archivos.Length + "):\n");
+        foreach (var a in archivos) await ctx.Response.WriteAsync("  " + Path.GetFileName(a) + "\n");
+    }
+    catch (Exception ex) { await ctx.Response.WriteAsync("Error al listar: " + ex.Message + "\n"); }
+}));
+
 app.UseRouting();
 
 app.UseSession();
